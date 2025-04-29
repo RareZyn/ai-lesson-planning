@@ -1,4 +1,30 @@
+/* client/main.css */
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+:root {
+  --white: #ffffff;
+  --main: #f9fafb;
+  --section: #eff4fc;
+  --blue: #1890ff;
+  --dark-blue: #00246b;
+  --light-blue: #8ab5f9;
+  --black: #000000;
+}
+
 body {
-  padding: 10px;
-  font-family: sans-serif;
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #F9FAFB;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  font-family: "Roboto", sans-serif;
+  box-sizing: border-box;
 }

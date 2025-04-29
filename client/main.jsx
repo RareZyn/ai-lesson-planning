@@ -1,9 +1,10 @@
+// client/main.jsx
 import React from "react";
 import { Meteor } from "meteor/meteor";
 import { createRoot } from "react-dom/client";
 import App from "/imports/ui/App.jsx";
-import "antd/dist/reset.css"; 
-import "bootstrap/dist/css/bootstrap.min.css";
+import "antd/dist/reset.css";
+import "./main.css";
 
 Meteor.startup(() => {
   const container = document.getElementById("react-target");
