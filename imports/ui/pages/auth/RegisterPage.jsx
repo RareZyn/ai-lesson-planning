@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Checkbox } from "antd";
+import { Form, Input, Button, Radio } from "antd";
 import {
   UserOutlined,
   LockOutlined,
@@ -64,7 +64,7 @@ const RegisterPage = () => {
         <Form
           name="register_form"
           className="register-form"
-          initialValues={{ remember: true }}
+          initialValues={{ schoolLevel: "middle" }}
         >
           <Form.Item
             name="name"
@@ -99,15 +99,23 @@ const RegisterPage = () => {
             />
           </Form.Item>
 
-          <Form.Item name="schoolLevel" className="school-level-checkboxes">
-            <div className="d-flex">
-              <div className="me-4">
-                <Checkbox>Middle School</Checkbox>
+          <Form.Item
+            name="schoolLevel"
+            className="school-level-radio"
+            rules={[
+              { required: true, message: "Please select a school level!" },
+            ]}
+          >
+            <Radio.Group>
+              <div className="d-flex">
+                <div className="me-4">
+                  <Radio value="middle">Middle School</Radio>
+                </div>
+                <div>
+                  <Radio value="high">High School</Radio>
+                </div>
               </div>
-              <div>
-                <Checkbox>High School</Checkbox>
-              </div>
-            </div>
+            </Radio.Group>
           </Form.Item>
 
           <Form.Item
