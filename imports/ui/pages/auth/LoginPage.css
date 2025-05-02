@@ -15,11 +15,20 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Header styles for logo and title in one row */
+.header-container {
+  display: flex;
+  flex-direction: column;
+justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
 .app-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
+  min-width: 48px;
   height: 48px;
   background-color: #1890ff;
   border-radius: 8px;
@@ -27,10 +36,24 @@
   font-size: 24px;
 }
 
-.checklist-icon {
-  font-weight: bold;
+.title-container {
+  display:flex;
+  justify-content: center;
+  align-items: center;
 }
 
+.app-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Tab styles */
 .nav-tabs {
   border-bottom: 1px solid #dee2e6;
   display: flex;
@@ -55,6 +78,7 @@
   font-weight: 500;
 }
 
+/* Button styles */
 .login-form-button {
   background-color: #1890ff;
   border-color: #1890ff;
@@ -67,15 +91,19 @@
 }
 
 .login-form-forgot {
-  float: right;
   color: #1890ff;
+  text-decoration: none;
+}
+
+.login-form-forgot:hover {
+  text-decoration: underline;
 }
 
 .site-form-item-icon {
   color: rgba(0, 0, 0, 0.25);
 }
 
-/* Tab content animation */
-.tab-content {
-  transition: all 0.3s;
+/* Form styles */
+.login-form {
+  width: 100%;
 }

@@ -1,25 +1,30 @@
 import React, { useState } from "react";
 import { Form, Input, Button, Checkbox } from "antd";
-import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./LoginPage.css";
+import "./RegisterPage.css";
 
-const LoginPage = () => {
-  const [activeTab, setActiveTab] = useState("login");
+const RegisterPage = () => {
+  const [activeTab, setActiveTab] = useState("signup");
   const navigate = useNavigate();
 
   const handleTabChange = (tab) => {
-    if (tab === "signup") {
-      navigate("/register");
+    if (tab === "login") {
+      navigate("/");
     } else {
       setActiveTab(tab);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
+    <div className="register-container">
+      <div className="register-box">
         <div className="header-container mb-4">
           <div className="app-icon">
             <img src="/logo.png" alt="App Icon" />
@@ -57,58 +62,76 @@ const LoginPage = () => {
         </div>
 
         <Form
-          name="login_form"
-          className="login-form"
+          name="register_form"
+          className="register-form"
           initialValues={{ remember: true }}
         >
+          <Form.Item
+            name="name"
+            rules={[{ required: true, message: "Please input your name!" }]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="Name"
+              size="large"
+            />
+          </Form.Item>
+
           <Form.Item
             name="email"
             rules={[{ required: true, message: "Please input your email!" }]}
           >
             <Input
-              prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="email"
+              prefix={<MailOutlined className="site-form-item-icon" />}
+              placeholder="Email"
               size="large"
             />
           </Form.Item>
+
           <Form.Item
             name="password"
             rules={[{ required: true, message: "Please input your password!" }]}
           >
             <Input.Password
               prefix={<LockOutlined className="site-form-item-icon" />}
-              placeholder="password"
+              placeholder="Password"
               size="large"
             />
           </Form.Item>
-          <Form.Item>
-            <div className="d-flex justify-content-between align-items-center">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox>Remember me</Checkbox>
-              </Form.Item>
-              <a className="login-form-forgot" href="#">
-                Forgot your password
-              </a>
+
+          <Form.Item name="schoolLevel" className="school-level-checkboxes">
+            <div className="d-flex">
+              <div className="me-4">
+                <Checkbox>Middle School</Checkbox>
+              </div>
+              <div>
+                <Checkbox>High School</Checkbox>
+              </div>
             </div>
+          </Form.Item>
+
+          <Form.Item
+            name="schoolName"
+            rules={[
+              { required: true, message: "Please input your school name!" },
+            ]}
+          >
+            <Input
+              prefix={<BankOutlined className="site-form-item-icon" />}
+              placeholder="School Name"
+              size="large"
+            />
           </Form.Item>
 
           <Form.Item>
             <Button
               type="primary"
               htmlType="submit"
-              className="login-form-button mb-3"
+              className="register-form-button"
               block
               size="large"
             >
-              Sign In
-            </Button>
-            <Button
-              icon={<GoogleOutlined />}
-              className="google-button"
-              block
-              size="large"
-            >
-              Sign in with google
+              Sign Up
             </Button>
           </Form.Item>
         </Form>
@@ -117,4 +140,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
