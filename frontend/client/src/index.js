@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import "./index.css";
 
 // Import Bootstrap and Ant Design CSS
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -15,4 +16,3 @@ root.render(
     </BrowserRouter>
   </React.StrictMode>
 );
-
