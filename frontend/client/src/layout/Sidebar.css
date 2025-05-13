@@ -1,71 +1,238 @@
+/* Sidebar Container */
 .sidebar {
-  width: 240px;
+  width: 80px;
   height: 100%;
-  background-color: var(--white);
-  border-right: 1px solid #e8e8e8;
-  overflow-y: auto;
-  transition: all 0.3s ease;
+  background-color: #EDEDED;
+  color: #000000;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  will-change: width;
+  box-sizing: border-box;
+  z-index: 1000;
+  padding: 0 16px;
 }
 
+.sidebar.expanded {
+  width: 200px;
+}
+
+/* Menu List */
 .sidebar-menu {
   list-style: none;
   padding: 0;
   margin: 0;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
-.sidebar-item {
-  margin: 4px 0;
-}
-
-.sidebar-link {
+/* Menu Items */
+.menu-item {
+  padding:  10px;
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 4px;
   text-decoration: none;
-  transition: all 0.3s;
+  color: inherit;
 }
 
-.sidebar-link:hover {
-  color: var(--blue);
-  background-color: rgba(24, 144, 255, 0.1);
+.menu-item:hover {
+  background-color: #e0e0e0;
 }
 
-.sidebar-link.active {
-  color: var(--blue);
-  background-color: rgba(24, 144, 255, 0.1);
-  border-right: 3px solid var(--blue);
+/* Active State - Controlled by React Router */
+.menu-item.active {
+  color: #5880F1;
+  background-color: rgba(88, 128, 241, 0.1);
 }
 
-.sidebar-link i {
-  margin-right: 10px;
-  font-size: 18px;
+.menu-item.active .menu-icon {
+  color: #5880F1;
+  opacity: 1;
 }
 
-/* Collapsed sidebar for mobile */
+/* Icons */
+.menu-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.sidebar:not(.expanded) .menu-item:hover .menu-icon {
+  transform: scale(1.1);
+}
+
+/* Labels */
+.menu-label {
+  margin-left: 15px;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+  pointer-events: none;
+}
+
+.sidebar:not(.expanded) {
+  .menu-icon {
+    justify-content: center;
+  }
+  .menu-label {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition:
+      opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0.2s;
+    visibility: none;
+  }
+}
+
+/* Tooltip for collapsed state */
+.sidebar:not(.expanded) .menu-item:hover .menu-label {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition-delay: 0.1s;
+  position: absolute;
+  left: 80px;
+  background: #34495e;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  z-index: 100;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Footer Section */
+.sidebar-footer {
+  padding: 6px 0;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ddd;
+}
+
+/* Expand/Collapse Button */
+.expand-btn {
+  background: none;
+  border: none;
+  color: #000000;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 0 8px 0 0;
+}
+
+.expand-btn:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.expand-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: fill 0.3s ease;
+}
+
+/* Bottom Navigation Styles */
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #EDEDED;
+  z-index: 1000;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: space-around;
+}
+
+.bottom-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 12px;
+  flex: 1;
+}
+
+.bottom-menu-item.active {
+  color: #5880F1;
+}
+
+.bottom-menu-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.bottom-menu-label {
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 769px) {
+  .bottom-navigation {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
-    width: 100%;
-    height: auto;
-    max-height: 60px;
-    overflow: hidden;
-    border-right: none;
-    border-bottom: 1px solid #e8e8e8;
+    display: none;
   }
   
   .sidebar.expanded {
-    max-height: 300px;
-    overflow-y: auto;
+    display: none;
   }
-  
-  .sidebar-toggle {
-    display: block;
-    text-align: center;
-    padding: 10px;
-    border-bottom: 1px solid #e8e8e8;
-  }
-  
-  .sidebar-menu {
-    padding-bottom: 10px;
-  }
+}
+
+/* Material Icons Specific Adjustments */
+.menu-icon .MuiSvgIcon-root,
+.bottom-menu-icon .MuiSvgIcon-root {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+  fill: currentColor;
+}
+
+/* Remove default NavLink active styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Ensure active state doesn't show multiple items */
+.menu-item:not(.active) {
+  background-color: transparent;
 }

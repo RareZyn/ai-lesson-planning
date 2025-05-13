@@ -11,9 +11,11 @@ const MainLayout = () => {
       <Navbar />
       <div className="content-wrapper">
         <Sidebar />
-        <main className="main-content">
-          <Outlet />
-        </main>
+        <div className ="content-area">  
+          <main className="main-content">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

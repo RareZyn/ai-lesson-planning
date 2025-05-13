@@ -1,0 +1,107 @@
+/* Main Container */
+.my-lessons-container {
+    width: 100%;
+  }
+  
+  /* Main Tabs */
+  .main-tabs-container {
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .main-tabs .MuiTabs-indicator {
+    background-color: #1976d2;
+  }
+  
+  .main-tab {
+    text-transform: none;
+    min-width: 120px;
+  }
+  
+  /* Tab Content */
+  .tab-content {
+    padding: 24px;
+  }
+  
+  /* Calendar View */
+  .calendar-view {
+    width: 100%;
+  }
+  
+  .calendar-tabs-container {
+    margin-bottom: 24px;
+  }
+  
+  .calendar-tabs .MuiTabs-indicator {
+    background-color: #1976d2;
+  }
+  
+  .calendar-tab {
+    text-transform: none;
+    min-width: 120px;
+  }
+  
+  .week-calendar,
+  .month-calendar {
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px dashed #ccc;
+    border-radius: 8px;
+  }
+  
+  .calendar-placeholder {
+    color: #666;
+  }
+  
+  /* All Lessons View */
+  .all-lessons-view {
+    width: 100%;
+  }
+  
+  .lessons-title {
+    margin-bottom: 16px;
+    color: #333;
+  }
+  
+  .lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  
+  .lesson-card {
+    min-width: 275px;
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .lesson-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .lesson-title {
+    color: #1976d2;
+    margin-bottom: 8px;
+  }
+  
+  .lesson-meta {
+    color: #666;
+    margin-bottom: 12px;
+    font-size: 0.875rem;
+  }
+  
+  .lesson-description {
+    color: #444;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .lessons-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .week-calendar,
+    .month-calendar {
+      height: 300px;
+    }
+  }

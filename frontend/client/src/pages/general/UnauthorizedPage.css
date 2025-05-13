@@ -1,0 +1,33 @@
+/* src/pages/general/UnauthorizedPage.css */
+.unauthorized-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f0f2f5;
+}
+
+.unauthorized-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.unauthorized-button {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+@media (max-width: 576px) {
+  .unauthorized-actions {
+    flex-direction: column;
+  }
+  
+  .unauthorized-button {
+    width: 100%;
+  }
+}

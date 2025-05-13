@@ -5,8 +5,8 @@
   "scripts": {
     "start": "node backend/server.js",
     "server": "nodemon server/server.js",
-    "client": "npm start --prefix client",
+    "client": "cd frontend && cd client && npm run start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm install && cd client && npm install && npm run build"
+    "build": " concurrently \"npm install && cd frontend && cd client && npm install\" \"cd backend && npm install\" "
   }
 }

@@ -1,15 +1,14 @@
+@import url("https://fonts.googleapis.com/css?family=Quicksand");
+
 body {
   margin: 0;
-  font-family: "Roboto", "Segoe UI", sans-serif;
+  font-family: "Quicksand", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: "Roboto", sans-serif;
   margin: 0;
   padding: 0;
-  height: 100vh;
-  overflow: hidden;
+  height: 100%;
   background-color: #f9fafb;
-  font-family: "Roboto", sans-serif;
   box-sizing: border-box;
   -ms-overflow-style: none;
 }
@@ -30,6 +29,16 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Roboto", sans-serif;
   scroll-behavior: smooth;
 }
+
+/* Allow scrolling but hide the scrollbar */
+html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+

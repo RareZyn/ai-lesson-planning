@@ -1,24 +1,54 @@
+// src/pages/auth/RegisterPage.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Radio } from "antd";
+import { Form, Input, Button, Radio, message } from "antd";
+import { UserOutlined, MailOutlined, LockOutlined, BankOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import {
-  UserOutlined,
-  LockOutlined,
-  MailOutlined,
-  BankOutlined,
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom"; 
+  auth,
+  createUserWithEmailAndPassword,
+  db,
+  doc,
+  setDoc,
+  serverTimestamp
+} from '../../firebase';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
 const RegisterPage = () => {
-  const [activeTab, setActiveTab] = useState("signup");
-  const navigate = useNavigate(); 
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Handle tab changes
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        name: values.name,
+        email: values.email,
+        schoolType: values.schoolType,
+        schoolName: values.schoolName,
+        roles: ["teacher"], // Default role
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      message.success("Registration successful!");
+      navigate("/app");
+    } catch (error) {
+      message.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
     if (tab === "login") {
-      navigate("/"); 
+      navigate("/login");
     }
   };
 
@@ -28,7 +58,7 @@ const RegisterPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/lesson.png" alt="App Icon" />
+              <img src="./logo/logo.png" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>
@@ -43,7 +73,7 @@ const RegisterPage = () => {
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
-                className={`nav-link ${activeTab === "login" ? "active" : ""}`}
+                className={`nav-link`}
                 onClick={() => handleTabChange("login")}
               >
                 Login
@@ -51,7 +81,7 @@ const RegisterPage = () => {
             </li>
             <li className="nav-item">
               <button
-                className={`nav-link ${activeTab === "signup" ? "active" : ""}`}
+                className={`nav-link active`}
                 onClick={() => handleTabChange("signup")}
               >
                 Sign Up
@@ -63,7 +93,7 @@ const RegisterPage = () => {
         <Form
           name="register_form"
           className="login-form"
-          initialValues={{ remember: true }}
+          onFinish={onFinish}
         >
           <Form.Item
             name="name"
@@ -99,26 +129,23 @@ const RegisterPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="schoolType"
-            rules={[{ required: true, message: "Please select school type!" }]}
-          >
-            <Radio.Group>
-              <Radio value="middle">Middle School</Radio>
-              <Radio value="high" style={{ marginLeft: "30px" }}>
-                High School
-              </Radio>
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item
-            name="schoolName"
+            name="confirmPassword"
+            dependencies={['password']}
             rules={[
-              { required: true, message: "Please input your school name!" },
+              { required: true, message: 'Please confirm your password!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('The two passwords do not match!'));
+                },
+              }),
             ]}
           >
-            <Input
-              prefix={<BankOutlined className="site-form-item-icon" />}
-              placeholder="School Name"
+            <Input.Password
+              prefix={<LockOutlined className="site-form-item-icon" />}
+              placeholder="Confirm Password"
               size="large"
             />
           </Form.Item>
@@ -130,6 +157,7 @@ const RegisterPage = () => {
               className="login-form-button mb-3"
               block
               size="large"
+              loading={loading}
             >
               Sign Up
             </Button>
