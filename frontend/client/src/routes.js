@@ -5,6 +5,7 @@ import MainLayout from "./layout/MainLayout";
 import HomePage from "./pages/general/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import Register from "./pages/auth/RegisterPage";
+import ClassDiagram from "./pages/auth/ClassDiagram";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -13,8 +14,8 @@ const router = createBrowserRouter([
       { path: "/", element: <HomePage /> },
 
       // Assessment Generator Module
-      { path: "/assessment/generator", element: <AssessmentForm/> },
-  
+      { path: "/assessment/generator", element: <AssessmentForm /> },
+      { path: "/class", element: <ClassDiagram /> },
     ],
   },
   { path: "/login", element: <LoginPage /> },
