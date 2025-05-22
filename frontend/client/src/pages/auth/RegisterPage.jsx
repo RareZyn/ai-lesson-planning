@@ -7,7 +7,7 @@ import { auth, signInWithEmailAndPassword } from "../../firebase";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
-const LoginPage = () => {
+const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -27,16 +27,17 @@ const LoginPage = () => {
   const handleTabChange = (tab) => {
     if (tab === "signup") {
       navigate("/register");
+    } else if (tab === "login") {
+      navigate("/");
     }
   };
-
   return (
     <div className="login-container">
       <div className="login-box">
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/logo.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.png" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>
@@ -49,15 +50,16 @@ const LoginPage = () => {
         <div className="tabs-container mb-4">
           <ul className="nav nav-tabs">
             <li className="nav-item">
-              <button className="nav-link active">Login</button>
-            </li>
-            <li className="nav-item">
+  
               <button
                 className="nav-link"
-                onClick={() => handleTabChange("signup")}
+                onClick={() => handleTabChange("login")}
               >
-                Sign Up
-              </button>
+                Login
+                </button>
+            </li>
+            <li className="nav-item">
+            <button className="nav-link active">Sign Up</button>
             </li>
           </ul>
         </div>
@@ -110,4 +112,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

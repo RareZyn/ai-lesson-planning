@@ -3,9 +3,14 @@ import React, { useState } from "react";
 import { Form, Input, Button, Checkbox, message } from "antd";
 import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth, signInWithEmailAndPassword, signInWithPopup, googleProvider } from '../../firebase';
+import {
+  auth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  googleProvider,
+} from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from '../../firebase';
+import { db } from "../../firebase";
 import "./LoginPage.css";
 
 const LoginPage = () => {
@@ -26,15 +31,17 @@ const LoginPage = () => {
       if (!userDoc.exists()) {
         await setDoc(userRef, {
           email: result.user.email,
-          name: result.user.displayName || '',
+          name: result.user.displayName || "",
           createdAt: serverTimestamp(),
-          roles: ['teacher'],
-          lastLogin: serverTimestamp()
+          roles: ["teacher"],
+          lastLogin: serverTimestamp(),
         });
       }
 
       message.success("Google login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", { replace: true });
+      navigate(location.state?.from?.pathname || "/app/home", {
+        replace: true,
+      });
     } catch (error) {
       console.error("Google sign-in error:", error);
       message.error(error.message || "Failed to sign in with Google");
@@ -48,7 +55,9 @@ const LoginPage = () => {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       message.success("Login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", { replace: true });
+      navigate(location.state?.from?.pathname || "/app/home", {
+        replace: true,
+      });
     } catch (error) {
       message.error(error.message);
     } finally {
@@ -56,10 +65,11 @@ const LoginPage = () => {
     }
   };
 
-
   const handleTabChange = (tab) => {
     if (tab === "signup") {
       navigate("/register");
+    } else if (tab === "login") {
+      navigate("/");
     }
   };
 
@@ -69,14 +79,13 @@ const LoginPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/logo.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.png" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>
 
           <p className="text-muted">
-            Create, organize, and manage your lessons with ease, all in one
-            place.
+            Welcome back! Sign in to continue planning your lessons.
           </p>
         </div>
 
@@ -84,7 +93,7 @@ const LoginPage = () => {
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
-                className={`nav-link active`}
+                className="nav-link active"
                 onClick={() => handleTabChange("login")}
               >
                 Login
@@ -92,7 +101,7 @@ const LoginPage = () => {
             </li>
             <li className="nav-item">
               <button
-                className={`nav-link`}
+                className="nav-link"
                 onClick={() => handleTabChange("signup")}
               >
                 Sign Up
@@ -113,7 +122,7 @@ const LoginPage = () => {
           >
             <Input
               prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="email"
+              placeholder="Email"
               size="large"
             />
           </Form.Item>
@@ -123,7 +132,7 @@ const LoginPage = () => {
           >
             <Input.Password
               prefix={<LockOutlined className="site-form-item-icon" />}
-              placeholder="password"
+              placeholder="Password"
               size="large"
             />
           </Form.Item>
@@ -132,8 +141,14 @@ const LoginPage = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>Remember me</Checkbox>
               </Form.Item>
-              <a className="login-form-forgot" href="#">
-                Forgot your password
+              <a
+                className="login-form-forgot"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault(); /* Add forgot password logic */
+                }}
+              >
+                Forgot your password?
               </a>
             </div>
           </Form.Item>
