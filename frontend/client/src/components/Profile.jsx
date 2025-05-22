@@ -4,7 +4,6 @@ import { signOut } from 'firebase/auth';
 import { Avatar, IconButton, Menu, MenuItem, Badge, Divider } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import './Profile.css';
 
 const Profile = () => {

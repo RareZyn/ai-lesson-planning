@@ -6,7 +6,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { auth, signInWithEmailAndPassword, signInWithPopup, googleProvider } from '../../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from '../../firebase';
-import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
 const LoginPage = () => {

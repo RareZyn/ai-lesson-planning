@@ -1,54 +1,32 @@
-// src/pages/auth/RegisterPage.jsx
+// src/pages/auth/LoginPage.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Radio, message } from "antd";
-import { UserOutlined, MailOutlined, LockOutlined, BankOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import {
-  auth,
-  createUserWithEmailAndPassword,
-  db,
-  doc,
-  setDoc,
-  serverTimestamp
-} from '../../firebase';
+import { Form, Input, Button, message } from "antd";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import { useNavigate, Link } from "react-router-dom";
+import { auth, signInWithEmailAndPassword } from "../../firebase";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
-const RegisterPage = () => {
+const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        name: values.name,
-        email: values.email,
-        schoolType: values.schoolType,
-        schoolName: values.schoolName,
-        roles: ["teacher"], // Default role
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      message.success("Registration successful!");
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      message.success("Login successful!");
       navigate("/app");
     } catch (error) {
-      message.error(error.message);
+      message.error("Invalid email or password.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleTabChange = (tab) => {
-    if (tab === "login") {
-      navigate("/login");
+    if (tab === "signup") {
+      navigate("/register");
     }
   };
 
@@ -64,24 +42,18 @@ const RegisterPage = () => {
           </div>
 
           <p className="text-muted">
-            Create, organize, and manage your lessons with ease, all in one
-            place.
+            Welcome back! Login to continue planning your lessons.
           </p>
         </div>
 
         <div className="tabs-container mb-4">
           <ul className="nav nav-tabs">
             <li className="nav-item">
-              <button
-                className={`nav-link`}
-                onClick={() => handleTabChange("login")}
-              >
-                Login
-              </button>
+              <button className="nav-link active">Login</button>
             </li>
             <li className="nav-item">
               <button
-                className={`nav-link active`}
+                className="nav-link"
                 onClick={() => handleTabChange("signup")}
               >
                 Sign Up
@@ -90,28 +62,13 @@ const RegisterPage = () => {
           </ul>
         </div>
 
-        <Form
-          name="register_form"
-          className="login-form"
-          onFinish={onFinish}
-        >
-          <Form.Item
-            name="name"
-            rules={[{ required: true, message: "Please input your name!" }]}
-          >
-            <Input
-              prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="Name"
-              size="large"
-            />
-          </Form.Item>
-
+        <Form name="login_form" className="login-form" onFinish={onFinish}>
           <Form.Item
             name="email"
             rules={[{ required: true, message: "Please input your email!" }]}
           >
             <Input
-              prefix={<MailOutlined className="site-form-item-icon" />}
+              prefix={<UserOutlined className="site-form-item-icon" />}
               placeholder="Email"
               size="large"
             />
@@ -128,28 +85,6 @@ const RegisterPage = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="confirmPassword"
-            dependencies={['password']}
-            rules={[
-              { required: true, message: 'Please confirm your password!' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('The two passwords do not match!'));
-                },
-              }),
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined className="site-form-item-icon" />}
-              placeholder="Confirm Password"
-              size="large"
-            />
-          </Form.Item>
-
           <Form.Item>
             <Button
               type="primary"
@@ -159,8 +94,15 @@ const RegisterPage = () => {
               size="large"
               loading={loading}
             >
-              Sign Up
+              Log In
             </Button>
+
+            {/* ✅ This line is the fixed version */}
+            <div className="text-center">
+              <Link to="/forgot-password" className="text-muted">
+                Forgot Password?
+              </Link>
+            </div>
           </Form.Item>
         </Form>
       </div>
@@ -168,4 +110,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default LoginPage;
