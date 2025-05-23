@@ -39,7 +39,7 @@ const LoginPage = () => {
       }
 
       message.success("Google login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", {
+      navigate(location.state?.from?.pathname || "/app/", {
         replace: true,
       });
     } catch (error) {

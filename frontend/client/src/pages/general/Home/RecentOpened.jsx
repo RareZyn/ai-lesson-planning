@@ -1,69 +1,98 @@
-import React from 'react';
-import './RecentOpened.css'; // We'll create this CSS file next
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import "./RecentOpened.css";
 
 const RecentOpened = () => {
-    // Sample data for recently opened items
-    /*
-    TODO:
-    - Change this to fetch from the backend
-    - Change the styling
-    - Add a loading state while fetching data
-    */
-    const recentItems = [
-        {
-            id: 1,
-            title: 'Project Proposal.docx',
-            type: 'document',
-            lastOpened: '2 hours ago',
-            icon: '📄'
-        },
-        {
-            id: 2,
-            title: 'Budget Spreadsheet.xlsx',
-            type: 'spreadsheet',
-            lastOpened: 'Yesterday',
-            icon: '📊'
-        },
-        {
-            id: 3,
-            title: 'Team Meeting Notes',
-            type: 'note',
-            lastOpened: '3 days ago',
-            icon: '📝'
-        },
-        {
-            id: 4,
-            title: 'Product Design',
-            type: 'image',
-            lastOpened: '1 week ago',
-            icon: '🖼️'
-        },
-        {
-            id: 5,
-            title: 'Presentation Deck.pptx',
-            type: 'presentation',
-            lastOpened: '2 weeks ago',
-            icon: '📑'
-        }
-    ];
+  const navigate = useNavigate();
 
-    return (
-        <div className="recent-opened-container">
-            <h2 className="recent-opened-title">Recently Opened</h2>
-            <div className="recent-opened-grid">
-                {recentItems.map((item) => (
-                    <div key={item.id} className="recent-card">
-                        <div className="card-icon">{item.icon}</div>
-                        <div className="card-content">
-                            <h3 className="card-title">{item.title}</h3>
-                            <p className="card-subtitle">{item.type}</p>
-                            <p className="card-meta">Opened {item.lastOpened}</p>
-                        </div>
-                    </div>
-                ))}
+  // Educational subjects data matching the image
+  const recentItems = [
+    {
+      id: 1,
+      title: "Algebraic Expression",
+      subject: "MATH",
+      grade: "5 Ibn Sina",
+      createdBy: "Opened 2 hours ago",
+      image: "/Class/math.jpeg",
+    },
+    {
+      id: 2,
+      title: "English",
+      subject: "ENGLISH",
+      grade: "4 Al-Kindi",
+      createdBy: "Created 5 hours ago",
+      image: "/Class/english.jpg",
+    },
+    {
+      id: 3,
+      title: "Science",
+      subject: "SCIENCE",
+      grade: "3 Al-Khwarizmi",
+      createdBy: "Created 1 day ago",
+      image: "/Class/science.jpg",
+    },
+    {
+      id: 4,
+      title: "Bahasa Melayu",
+      subject: "BAHASA MELAYU",
+      grade: "6 Kreatif",
+      createdBy: "Created 2 days ago",
+      image: "/Class/melayu.jpg",
+    },
+    {
+      id: 5,
+      title: "History",
+      subject: "HISTORY",
+      grade: "5 Al-Khwarizmi",
+      createdBy: "Created 3 days ago",
+      image: "/Class/history.png",
+    },
+  ];
+
+  const handleViewAll = () => {
+    navigate("/recent-all"); // Navigate to view all page
+  };
+
+  const handleCardClick = (item) => {
+    // Navigate to specific lesson/subject page
+    console.log("Navigating to:", `/lesson/${item.id}`, "Item:", item.title);
+    navigate(`/lesson/${item.id}`);
+  };
+
+  return (
+    <div className="recent-opened-container">
+      <div className="recent-header">
+        <h2 className="recent-opened-title">Recently Opened</h2>
+        <button className="view-all-btn" onClick={handleViewAll}>
+          View All
+          <span className="arrow">›</span>
+        </button>
+      </div>
+      <div className="recent-opened-grid">
+        {recentItems.map((item) => (
+          <div
+            key={item.id}
+            className="recent-card"
+            onClick={() => handleCardClick(item)}
+          >
+            <div className="card-header">
+              <img
+                src={item.image}
+                alt={item.subject}
+                className="subject-image"
+              />
+              <div className="subject-badge">{item.subject}</div>
             </div>
-        </div>
-    );
+            <div className="card-content">
+              <h3 className="card-title">{item.title}</h3>
+              <p className="card-grade">{item.grade}</p>
+              <p className="card-meta">{item.createdBy}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default RecentOpened;

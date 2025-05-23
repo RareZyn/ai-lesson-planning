@@ -1,72 +1,177 @@
 .recent-opened-container {
-    max-width: 1200px;
-    margin: 0 auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.recent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.recent-opened-title {
+  color: #333;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.view-all-btn {
+  background: none;
+  border: none;
+  color: var(--blue, #1890ff);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.view-all-btn:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.arrow {
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+}
+
+.view-all-btn:hover .arrow {
+  transform: translateX(2px);
+}
+
+.recent-opened-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.recent-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.subject-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.subject-badge {
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-content {
+  padding: 0.8rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-title {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.3;
+}
+
+.card-grade {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.card-meta {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: auto;
+}
+
+/* Remove subject-specific color overrides since we're using images */
+
+@media (max-width: 768px) {
+  .recent-opened-container {
+    padding: 0.5rem;
   }
   
-  .recent-opened-title {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 24px;
-    text-align: left
+  .recent-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
   
   .recent-opened-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
   
   .recent-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    height: 140px;
   }
   
-  .recent-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  .card-icon {
-    font-size: 48px;
-    padding: 20px;
-    background: #f5f7fa;
-    text-align: center;
+  .card-header {
+    height: 70px;
   }
   
   .card-content {
-    padding: 16px;
-    flex-grow: 1;
+    padding: 0.6rem;
   }
   
   .card-title {
-    margin: 0 0 8px 0;
-    font-size: 16px;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.8rem;
   }
-  
-  .card-subtitle {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    color: #666;
+}
+
+@media (max-width: 480px) {
+  .recent-opened-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  .card-meta {
-    margin: 0;
-    font-size: 12px;
-    color: #999;
-  }
-  
-  @media (max-width: 768px) {
-    .recent-opened-grid {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-  }
+}

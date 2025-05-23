@@ -26,13 +26,18 @@
   padding: 20px;
   overflow-y: auto;
   height: 100%;
-  border-radius: 16px 0 0 0;
   width: 100%;
-  max-width: 1200px; /* Constrain maximum width */
-  min-width: 600px; /* Ensure minimum width */
+  max-width: 1200px; 
+  min-width: 600px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
 
-/* Responsive adjustments */
+.main-content::-webkit-scrollbar {
+  display: none;    
+}     
+
+
 @media (max-width: 768px) {
   .content-wrapper {
     flex-direction: column;
