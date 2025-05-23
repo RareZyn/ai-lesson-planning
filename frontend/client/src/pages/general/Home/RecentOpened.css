@@ -14,10 +14,12 @@
 
 .recent-opened-title {
   color: #333;
+  font-size: 1.6rem;
+  font-weight: 300;
+  margin-bottom: 1.5rem;
+  padding: 0;
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  flex: 1;
+  text-align:left;
 }
 
 .view-all-btn {
