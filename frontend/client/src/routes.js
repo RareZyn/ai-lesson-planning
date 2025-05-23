@@ -6,8 +6,7 @@ import HomePage from "./pages/general/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import UnauthorizedPage from "./pages/general/UnauthorizedPage";
-import ProtectedRoute from "./components/ProtectedRoute";
-
+import ProtectedRoute from "./components/general/ProtectedRoute";
 const router = createBrowserRouter([
   {
     path: "/app",

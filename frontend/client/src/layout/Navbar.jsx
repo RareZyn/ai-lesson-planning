@@ -1,7 +1,7 @@
-import React from 'react';
-import './Navbar.css'
-import Searchbar from '../components/Searchbar';
-import Profile from '../components/Profile';
+import React from "react";
+import "./Navbar.css";
+import Searchbar from "../components/general/Searchbar";
+import Profile from "../components/general/Profile";
 
 const Navbar = () => {
   return (
