@@ -14,7 +14,7 @@ const HomePage = () => {
       <div>
         <Breadcrumb customBreadcrumbs={customBreadcrumbs} />
       </div>
-      <div>
+      <div className="home-container" style={{width: "100%"}}>
         <AITools />
         <RecentOpened />
         <RecentClasses />

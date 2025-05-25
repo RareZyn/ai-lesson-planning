@@ -1,13 +1,12 @@
 .recent-opened-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%; /* Remove max-width and centering */
   padding: 1rem;
 }
 
 .recent-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.8rem;
   margin-bottom: 1.5rem;
   width: 100%;
 }
@@ -19,7 +18,7 @@
   margin-bottom: 1.5rem;
   padding: 0;
   margin: 0;
-  text-align:left;
+  text-align: left;
 }
 
 .view-all-btn {
@@ -144,29 +143,29 @@
   .recent-opened-container {
     padding: 0.5rem;
   }
-  
+
   .recent-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .recent-opened-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
-  
+
   .recent-card {
     height: 140px;
   }
-  
+
   .card-header {
     height: 70px;
   }
-  
+
   .card-content {
     padding: 0.6rem;
   }
-  
+
   .card-title {
     font-size: 0.8rem;
   }

@@ -1,13 +1,12 @@
 .recent-classes-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: 1rem;
 }
 
 .recent-classes-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.8rem;
   margin-bottom: 1.5rem;
   width: 100%;
 }

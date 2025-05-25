@@ -13,30 +13,25 @@
 }
 
 .content-area {
-  background: #ededed;
+  background: #EDEDED;
   flex: 1;
   height: 100%;
   display: flex;
-  justify-content: center; /* Center the main content */
-  padding: 0 2rem; /* Add some padding from edges */
+  padding: 35px; /* Only 5px padding as requested */
 }
 
 .main-content {
   background-color: var(--main);
-  padding: 20px;
+  padding: 25px;
   overflow-y: auto;
   height: 100%;
-  width: 100%;
-  max-width: 1200px; 
-  min-width: 600px;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  width: 100%; /* Take full width of available space */
+  border-radius: 16px; /* Apply radius to all corners since it's 5px from edges */
 }
 
 .main-content::-webkit-scrollbar {
-  display: none;    
-}     
-
+  display: none;
+}
 
 @media (max-width: 768px) {
   .content-wrapper {
@@ -44,25 +39,12 @@
   }
 
   .content-area {
-    padding: 0 1rem;
+    padding: 5px; /* Keep consistent 5px padding on mobile */
   }
 
   .main-content {
     padding: 15px;
-    border-radius: 0;
-    max-width: none;
-    min-width: auto;
+    border-radius: 16px; /* Keep border radius on mobile */
   }
 }
 
-@media (max-width: 1024px) {
-  .main-content {
-    max-width: 900px;
-  }
-}
-
-@media (min-width: 1400px) {
-  .main-content {
-    max-width: 1400px;
-  }
-}
