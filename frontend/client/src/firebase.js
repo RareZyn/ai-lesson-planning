@@ -1,20 +1,21 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
-import { 
+import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile,
 } from "firebase/auth";
-import { 
+import {
   getFirestore,
   doc,
   setDoc,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -24,18 +25,19 @@ const firebaseConfig = {
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Add additional Google scopes if needed
-googleProvider.addScope('email');
-googleProvider.addScope('profile');
+googleProvider.addScope("email");
+googleProvider.addScope("profile");
 
-export { 
+export {
   auth,
   db,
   createUserWithEmailAndPassword,
@@ -44,8 +46,9 @@ export {
   googleProvider,
   signOut,
   onAuthStateChanged,
+  updateProfile,
   doc,
   setDoc,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
 };

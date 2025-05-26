@@ -1,7 +1,12 @@
 // src/pages/auth/LoginPage.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Checkbox, message } from "antd";
-import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Checkbox, message, Modal } from "antd";
+import {
+  UserOutlined,
+  LockOutlined,
+  GoogleOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   auth,
@@ -16,32 +21,64 @@ import "./LoginPage.css";
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+  const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleModalSubmit = async (values) => {
+    if (!pendingGoogleUser) return;
+
+    setModalLoading(true);
+    try {
+      const userRef = doc(db, "users", pendingGoogleUser.uid);
+      await setDoc(userRef, {
+        email: pendingGoogleUser.email,
+        name: values.name,
+        schoolName: values.schoolName,
+        createdAt: serverTimestamp(),
+        roles: ["teacher"],
+        lastLogin: serverTimestamp(),
+      });
+
+      message.success("Google login successful!");
+      navigate(location.state?.from?.pathname || "/app/", {
+        replace: true,
+      });
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error creating user document:", error);
+      message.error("Failed to complete registration");
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
 
-      // Ensure user document exists
+      // Check if user document exists
       const userRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          email: result.user.email,
+        // New user - show modal to collect additional info
+        setPendingGoogleUser(result.user);
+        form.setFieldsValue({
           name: result.user.displayName || "",
-          createdAt: serverTimestamp(),
-          roles: ["teacher"],
-          lastLogin: serverTimestamp(),
+        });
+        setModalVisible(true);
+      } else {
+        // Existing user - proceed with login
+        message.success("Google login successful!");
+        navigate(location.state?.from?.pathname || "/app/", {
+          replace: true,
         });
       }
-
-      message.success("Google login successful!");
-      navigate(location.state?.from?.pathname || "/app/", {
-        replace: true,
-      });
     } catch (error) {
       console.error("Google sign-in error:", error);
       message.error(error.message || "Failed to sign in with Google");
@@ -55,7 +92,7 @@ const LoginPage = () => {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       message.success("Login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", {
+      navigate(location.state?.from?.pathname || "/app/", {
         replace: true,
       });
     } catch (error) {
@@ -177,6 +214,64 @@ const LoginPage = () => {
           </Form.Item>
         </Form>
       </div>
+
+      {/* Modal for Google Sign-in Additional Info */}
+      <Modal
+        title="Complete Your Profile"
+        open={modalVisible}
+        onCancel={() => {
+          setModalVisible(false);
+          setPendingGoogleUser(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <p className="text-muted mb-4">
+          Please provide some additional information to complete your
+          registration.
+        </p>
+        <Form form={form} layout="vertical" onFinish={handleModalSubmit}>
+          <Form.Item
+            name="name"
+            label="Full Name"
+            rules={[
+              { required: true, message: "Please input your full name!" },
+            ]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="Full Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="schoolName"
+            label="School Name"
+            rules={[
+              { required: true, message: "Please input your school name!" },
+            ]}
+          >
+            <Input
+              prefix={<BankOutlined className="site-form-item-icon" />}
+              placeholder="School Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={modalLoading}
+            >
+              Complete Registration
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

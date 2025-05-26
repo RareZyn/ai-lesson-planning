@@ -33,7 +33,7 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { icon: <HomeIcon />, label: "Home", path: "home" },
+    { icon: <HomeIcon />, label: "Home", path: "" },
     { icon: <FolderCopyIcon />, label: "My Lessons", path: "lessons" },
     { icon: <LibraryBooksIcon />, label: "Materials", path: "materials" },
     { icon: <PeopleAltIcon />, label: "Classes", path: "classes" },

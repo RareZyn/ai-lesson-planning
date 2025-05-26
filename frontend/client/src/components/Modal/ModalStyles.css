@@ -12,6 +12,7 @@ div.modal-overlay {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 div.modal-overlay .modal-content {
