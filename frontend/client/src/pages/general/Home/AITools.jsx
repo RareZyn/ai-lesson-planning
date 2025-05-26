@@ -5,30 +5,31 @@ import "./AITools.css";
 const AITools = () => {
   const navigate = useNavigate();
 
+
   const tools = [
     {
       id: "lesson-plans",
       title: "Lesson Plans",
-      icon: "/logo/lessonIcon.png", 
-      path: "/lesson-plans",
+      icon: "/logo/lessonIcon.png",
+      path: "lesson-plans",
     },
     {
       id: "activities",
-      title: "Activities Generator",
-      icon: "/logo/choose.png", 
-      path: "/activities",
+      title: "Assessment",
+      icon: "/logo/choose.png",
+      path: "assessment",
     },
     {
       id: "answer-checker",
       title: "Answer Checker",
-      icon: "/logo/survey.png", 
-      path: "/answer-checker",
+      icon: "/logo/survey.png",
+      path: "answer-checker",
     },
     {
       id: "downloads",
       title: "Downloads",
-      icon: "/logo/folders.png", 
-      path: "/downloads",
+      icon: "/logo/folders.png",
+      path: "downloads",
     },
     {
       id: "calendar",
@@ -39,14 +40,14 @@ const AITools = () => {
     {
       id: "materials",
       title: "Materials",
-      icon: "/logo/lessonIcon.png", 
-      path: "/materials",
+      icon: "/logo/lessonIcon.png",
+      path: "materials",
     },
     {
       id: "graph",
       title: "Graph",
       icon: "/logo/graph.png",
-      path: "/graph",
+      path: "graph",
     },
   ];
 

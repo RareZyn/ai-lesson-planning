@@ -2,19 +2,14 @@ import React from "react";
 import RecentOpened from "./Home/RecentOpened";
 import AITools from "./Home/AITools";
 import RecentClasses from "./Home/RecentClasses";
-import Breadcrumb from "../../layout/Breadcrumb";
+// Remove Breadcrumb import - it's already in MainLayout
 
 const HomePage = () => {
-  const customBreadcrumbs = [
-    { label: "Home" }
-  ];
+  // Remove customBreadcrumbs - let MainLayout handle it
   return (
     <div className="HomePage">
       <h2 style={{ textAlign: "left" }}>HomePage</h2>
-      <div>
-        <Breadcrumb customBreadcrumbs={customBreadcrumbs} />
-      </div>
-      <div className="home-container" style={{width: "100%"}}>
+      <div className="home-container" style={{ width: "100%" }}>
         <AITools />
         <RecentOpened />
         <RecentClasses />

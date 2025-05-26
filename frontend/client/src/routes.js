@@ -17,7 +17,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <HomePage /> },
-      { path: "assessment/generator", element: <AssessmentForm /> }, 
+      { path: "assessment", element: <AssessmentForm /> }, 
     ],
   },
   { path: "/", element: <LoginPage /> },
