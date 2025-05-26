@@ -4,9 +4,10 @@
   },
   "scripts": {
     "start": "node backend/server.js",
-    "server": "nodemon server/server.js",
-    "client": "cd frontend && cd client && npm run start",
+    "server": "cd backend && nodemon server.js",
+    "client": "cd frontend/client && npm start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": " concurrently \"npm install && cd frontend && cd client && npm install\" \"cd backend && npm install\" "
+    "build": "concurrently \"cd backend && npm install\" \"cd frontend/client && npm install\"",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend/client && npm install"
   }
 }
