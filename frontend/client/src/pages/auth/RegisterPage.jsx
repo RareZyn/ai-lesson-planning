@@ -15,6 +15,7 @@ import {
 } from "../../firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
+import { authAPI } from "../../services/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
@@ -30,19 +31,19 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // Create user with email and password
+      // 1. Create user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
 
-      // Update the user's display name
+      // 2. Update Firebase user profile
       await updateProfile(userCredential.user, {
         displayName: values.name,
       });
 
-      // Create user document in Firestore
+      // 3. Create user document in Firestore
       const userRef = doc(db, "users", userCredential.user.uid);
       await setDoc(userRef, {
         email: values.email,
@@ -52,6 +53,22 @@ const RegisterPage = () => {
         roles: ["teacher"],
         lastLogin: serverTimestamp(),
       });
+
+      // 4. Register user in MongoDB backend
+      try {
+        await authAPI.register({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          schoolName: values.schoolName,
+          firebaseUid: userCredential.user.uid, // Link Firebase and MongoDB users
+        });
+        console.log("✅ User registered in MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend registration failed:", backendError);
+        // Don't fail the whole registration if backend fails
+        message.warning("Account created but some features may be limited");
+      }
 
       message.success("Registration successful!");
       navigate("/app/", { replace: true });

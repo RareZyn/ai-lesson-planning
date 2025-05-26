@@ -16,6 +16,7 @@ import {
 } from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
+import { authAPI } from "../../services/api";
 import "./LoginPage.css";
 
 const LoginPage = () => {
@@ -33,6 +34,7 @@ const LoginPage = () => {
 
     setModalLoading(true);
     try {
+      // 1. Create user document in Firestore
       const userRef = doc(db, "users", pendingGoogleUser.uid);
       await setDoc(userRef, {
         email: pendingGoogleUser.email,
@@ -42,6 +44,21 @@ const LoginPage = () => {
         roles: ["teacher"],
         lastLogin: serverTimestamp(),
       });
+
+      // 2. Register user in MongoDB backend via Google OAuth
+      try {
+        await authAPI.googleAuth({
+          googleId: pendingGoogleUser.uid,
+          email: pendingGoogleUser.email,
+          name: values.name,
+          schoolName: values.schoolName,
+          avatar: pendingGoogleUser.photoURL || "",
+        });
+        console.log("✅ Google user registered in MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend Google auth failed:", backendError);
+        message.warning("Account created but some features may be limited");
+      }
 
       message.success("Google login successful!");
       navigate(location.state?.from?.pathname || "/app/", {
@@ -61,7 +78,7 @@ const LoginPage = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
 
-      // Check if user document exists
+      // Check if user document exists in Firestore
       const userRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userRef);
 
@@ -73,7 +90,20 @@ const LoginPage = () => {
         });
         setModalVisible(true);
       } else {
-        // Existing user - proceed with login
+        // Existing user - sync with backend and proceed with login
+        try {
+          await authAPI.googleAuth({
+            googleId: result.user.uid,
+            email: result.user.email,
+            name: result.user.displayName || userDoc.data().name,
+            avatar: result.user.photoURL || "",
+          });
+          console.log("✅ Existing Google user synced with MongoDB backend");
+        } catch (backendError) {
+          console.error("⚠️ Backend sync failed:", backendError);
+          // Don't prevent login if backend sync fails
+        }
+
         message.success("Google login successful!");
         navigate(location.state?.from?.pathname || "/app/", {
           replace: true,
@@ -90,7 +120,22 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
+      // 1. Sign in with Firebase
       await signInWithEmailAndPassword(auth, values.email, values.password);
+
+      // 2. Try to login to backend as well
+      try {
+        await authAPI.login({
+          email: values.email,
+          password: values.password,
+        });
+        console.log("✅ User logged in to MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend login failed:", backendError);
+        // Don't prevent Firebase login if backend fails
+        message.warning("Logged in but some features may be limited");
+      }
+
       message.success("Login successful!");
       navigate(location.state?.from?.pathname || "/app/", {
         replace: true,

@@ -46,7 +46,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    const { name, email, password, schoolName } = req.body;
+    const { name, email, password, schoolName, firebaseUid } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -63,6 +63,7 @@ exports.register = async (req, res) => {
       email,
       password,
       schoolName,
+      firebaseUid, // Link to Firebase user
     });
 
     sendTokenResponse(user, 201, res, "Registration successful");
@@ -110,7 +111,14 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check password
+    // Check password (only if user has a password - some users might be Google-only)
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        message: "Please use Google sign-in for this account",
+      });
+    }
+
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -172,11 +180,11 @@ exports.googleAuth = async (req, res) => {
         user = await User.create({
           name,
           email,
-          password: Math.random().toString(36).slice(-8), // Generate random password
           schoolName,
           googleId,
           avatar: avatar || "",
           isEmailVerified: true, // Assume Google emails are verified
+          // No password for Google users
         });
       }
     } else {
@@ -275,7 +283,7 @@ exports.logout = (req, res) => {
   });
 };
 
-// @desc    Change password
+// @desc    Change password (only for non-Google users)
 // @route   PUT /api/auth/password
 // @access  Private
 exports.changePassword = async (req, res) => {
@@ -290,6 +298,14 @@ exports.changePassword = async (req, res) => {
     }
 
     const user = await User.findById(req.user.id).select("+password");
+
+    // Check if user has a password (Google users don't have passwords)
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot change password for Google-authenticated accounts",
+      });
+    }
 
     // Check current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
