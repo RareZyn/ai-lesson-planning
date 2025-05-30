@@ -1,0 +1,169 @@
+/* src/components/Modal/LessonInfoModal.css */
+
+/* Lesson Info Specific Styles */
+.lesson-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  padding: 8px 12px;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+/* Standard Sections */
+.standard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.standard-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.standard-item label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.standard-value {
+  padding: 10px 12px;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* Skills Grid */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.skill-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.skill-item label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.skill-value {
+  padding: 8px 6px;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #333;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Modal Content Specific */
+.modal-content {
+  max-width: 800px !important;
+  width: 95% !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .info-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .skills-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .skills-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .modal-content {
+    width: 98% !important;
+    max-width: none !important;
+  }
+
+  .lesson-info-grid {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .skills-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .skill-item label {
+    font-size: 0.7rem;
+  }
+
+  .skill-value {
+    padding: 6px 4px;
+    font-size: 0.75rem;
+  }
+
+  .info-value,
+  .standard-value {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+}

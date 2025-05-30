@@ -12,10 +12,11 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
     "/app/lesson-plans": "Lesson Plans",
     "/app/activities": "Activities Generator",
     "/app/answer-checker": "Answer Checker",
-    "/app/downloads": "Downloads",
+    "/app/downloads": "File Download",
     "/app/materials": "Materials",
     "/app/graph": "Graph",
   };
+
 
   // If custom breadcrumbs are provided, use them
   if (customBreadcrumbs) {

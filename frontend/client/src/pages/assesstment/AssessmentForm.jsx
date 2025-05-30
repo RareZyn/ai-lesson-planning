@@ -15,18 +15,15 @@ const AssessmentForm = () => {
     topic: "Ready, Set, Go",
     time: "8:00-10:00",
     date: "1/4/2025",
-    contentStandards: [
-      {
-        component: "4.2 Communicate with appropriate language, form and style",
-        understanding: "1.1 Understand meaning of variety of familiar context",
-      },
-      {
-        component:
-          "4.2.3 Produce a plan or draft of two paragraphs or more and modify this appropriately",
-        understanding:
-          "1.1.4 Understand independently longer sequences of classroom instruction",
-      },
-    ],
+    contentStandard: {
+      main: "4.2 Communicate with appropriate language, form and style",
+      component: "1.1 Understand meaning in a variety of familiar contexts",
+    },
+    learningStandard: {
+      main: "4.2.3 Produce a plan or draft of two paragraphs or more and modify this appropriately independently",
+      component:
+        "1.1.4 Understand independently longer sequences of classroom instructions",
+    },
     learningStandards: {
       iThink: "Tree Map",
       fourSkill: "Four Skill",
@@ -59,12 +56,13 @@ const AssessmentForm = () => {
     }));
   };
 
-  const handleContentStandardChange = (index, field, value) => {
+  const handleStandardChange = (standardType, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      contentStandards: prev.contentStandards.map((standard, i) =>
-        i === index ? { ...standard, [field]: value } : standard
-      ),
+      [standardType]: {
+        ...prev[standardType],
+        [field]: value,
+      },
     }));
   };
 
@@ -174,50 +172,89 @@ const AssessmentForm = () => {
           </div>
         </div>
 
-        {/* Content Standards */}
+        {/* Standards Section - Corrected Structure */}
         <div className="standards-section">
+          {/* Content Standard */}
           <div className="standards-header">
             <h4>Content Standard</h4>
           </div>
-          {formData.contentStandards.map((standard, index) => (
-            <div key={index} className="standard-row">
-              <div className="standard-item">
-                <label>Component</label>
-                <input
-                  type="text"
-                  value={standard.component}
-                  onChange={(e) =>
-                    handleContentStandardChange(
-                      index,
-                      "component",
-                      e.target.value
-                    )
-                  }
-                  readOnly={!isEditMode}
-                  className={!isEditMode ? "readonly" : ""}
-                />
-              </div>
-              <div className="standard-item">
-                <label>Understanding</label>
-                <input
-                  type="text"
-                  value={standard.understanding}
-                  onChange={(e) =>
-                    handleContentStandardChange(
-                      index,
-                      "understanding",
-                      e.target.value
-                    )
-                  }
-                  readOnly={!isEditMode}
-                  className={!isEditMode ? "readonly" : ""}
-                />
-              </div>
+          <div className="standard-row">
+            <div className="standard-item">
+              <label>Main</label>
+              <input
+                type="text"
+                value={formData.contentStandard.main}
+                onChange={(e) =>
+                  handleStandardChange(
+                    "contentStandard",
+                    "main",
+                    e.target.value
+                  )
+                }
+                readOnly={!isEditMode}
+                className={!isEditMode ? "readonly" : ""}
+              />
             </div>
-          ))}
+            <div className="standard-item">
+              <label>Comp.</label>
+              <input
+                type="text"
+                value={formData.contentStandard.component}
+                onChange={(e) =>
+                  handleStandardChange(
+                    "contentStandard",
+                    "component",
+                    e.target.value
+                  )
+                }
+                readOnly={!isEditMode}
+                className={!isEditMode ? "readonly" : ""}
+              />
+            </div>
+          </div>
 
+          {/* Learning Standard */}
           <div className="standards-header">
             <h4>Learning Standard</h4>
+          </div>
+          <div className="standard-row">
+            <div className="standard-item">
+              <label>Main</label>
+              <input
+                type="text"
+                value={formData.learningStandard.main}
+                onChange={(e) =>
+                  handleStandardChange(
+                    "learningStandard",
+                    "main",
+                    e.target.value
+                  )
+                }
+                readOnly={!isEditMode}
+                className={!isEditMode ? "readonly" : ""}
+              />
+            </div>
+            <div className="standard-item">
+              <label>Comp.</label>
+              <input
+                type="text"
+                value={formData.learningStandard.component}
+                onChange={(e) =>
+                  handleStandardChange(
+                    "learningStandard",
+                    "component",
+                    e.target.value
+                  )
+                }
+                readOnly={!isEditMode}
+                className={!isEditMode ? "readonly" : ""}
+              />
+            </div>
+          </div>
+
+          {/* Learning Standards Info */}
+          <div className="standards-header">
+            <h4>Info</h4>
           </div>
           <div className="learning-standards-grid">
             {Object.keys(formData.learningStandards).map((key) => (

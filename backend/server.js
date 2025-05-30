@@ -7,6 +7,14 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Check if MONGO_URI is loaded
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI environment variable is not defined");
+  console.log("Available environment variables:");
+  console.log(Object.keys(process.env).filter((key) => key.includes("MONGO")));
+  process.exit(1);
+}
+
 // CORS configuration
 const corsOptions = {
   origin: ["http://localhost:3000", "http://localhost:3001"],
@@ -22,9 +30,28 @@ app.use(morgan("dev"));
 
 // Import routes
 const authRoutes = require("./route/auth");
+const openAiRoutes = require("./route/openAiRoutes");
+const assessmentRoutes = require("./route/assessment");
 
 // Use routes
 app.use("/api/auth", authRoutes);
+app.use("/api/gpt",openAiRoutes);
+app.use("/api/assessment", assessmentRoutes);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Health check route
 app.get("/api/health", (req, res) => {
@@ -76,8 +103,12 @@ app.use((err, req, res, next) => {
 });
 
 // Connect to MongoDB
+console.log("🔄 Connecting to MongoDB...");
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     console.log("✅ MongoDB connected successfully");
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
