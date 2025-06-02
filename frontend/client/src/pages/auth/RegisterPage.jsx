@@ -1,16 +1,21 @@
 // src/pages/auth/RegisterPage.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Radio, message } from "antd";
-import { UserOutlined, MailOutlined, LockOutlined, BankOutlined } from "@ant-design/icons";
+import { Form, Input, Button, message } from "antd";
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
   auth,
   createUserWithEmailAndPassword,
-  db,
-  doc,
-  setDoc,
-  serverTimestamp
-} from '../../firebase';
+  updateProfile,
+} from "../../firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../firebase";
+import { authAPI } from "../../services/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
@@ -19,36 +24,67 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
+    if (values.password !== values.confirmPassword) {
+      message.error("Passwords do not match!");
+      return;
+    }
+
     setLoading(true);
     try {
+      // 1. Create user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
 
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        name: values.name,
-        email: values.email,
-        schoolType: values.schoolType,
-        schoolName: values.schoolName,
-        roles: ["teacher"], // Default role
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      // 2. Update Firebase user profile
+      await updateProfile(userCredential.user, {
+        displayName: values.name,
       });
 
+      // 3. Create user document in Firestore
+      const userRef = doc(db, "users", userCredential.user.uid);
+      await setDoc(userRef, {
+        email: values.email,
+        name: values.name,
+        schoolName: values.schoolName,
+        createdAt: serverTimestamp(),
+        roles: ["teacher"],
+        lastLogin: serverTimestamp(),
+      });
+
+      // 4. Register user in MongoDB backend
+      try {
+        await authAPI.register({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          schoolName: values.schoolName,
+          firebaseUid: userCredential.user.uid, // Link Firebase and MongoDB users
+        });
+        console.log("✅ User registered in MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend registration failed:", backendError);
+        // Don't fail the whole registration if backend fails
+        message.warning("Account created but some features may be limited");
+      }
+
       message.success("Registration successful!");
-      navigate("/app");
+      navigate("/app/", { replace: true });
     } catch (error) {
-      message.error(error.message);
+      console.error("Registration error:", error);
+      message.error(error.message || "Registration failed!");
     } finally {
       setLoading(false);
     }
   };
 
   const handleTabChange = (tab) => {
-    if (tab === "login") {
-      navigate("/login");
+    if (tab === "signup") {
+      navigate("/register");
+    } else if (tab === "login") {
+      navigate("/");
     }
   };
 
@@ -58,14 +94,13 @@ const RegisterPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/logo.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.png" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>
 
           <p className="text-muted">
-            Create, organize, and manage your lessons with ease, all in one
-            place.
+            Create your account to start planning your lessons.
           </p>
         </div>
 
@@ -73,42 +108,38 @@ const RegisterPage = () => {
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
-                className={`nav-link`}
+                className="nav-link"
                 onClick={() => handleTabChange("login")}
               >
                 Login
               </button>
             </li>
             <li className="nav-item">
-              <button
-                className={`nav-link active`}
-                onClick={() => handleTabChange("signup")}
-              >
-                Sign Up
-              </button>
+              <button className="nav-link active">Sign Up</button>
             </li>
           </ul>
         </div>
 
-        <Form
-          name="register_form"
-          className="login-form"
-          onFinish={onFinish}
-        >
+        <Form name="register_form" className="login-form" onFinish={onFinish}>
           <Form.Item
             name="name"
-            rules={[{ required: true, message: "Please input your name!" }]}
+            rules={[
+              { required: true, message: "Please input your full name!" },
+            ]}
           >
             <Input
               prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="Name"
+              placeholder="Full Name"
               size="large"
             />
           </Form.Item>
 
           <Form.Item
             name="email"
-            rules={[{ required: true, message: "Please input your email!" }]}
+            rules={[
+              { required: true, message: "Please input your email!" },
+              { type: "email", message: "Please enter a valid email!" },
+            ]}
           >
             <Input
               prefix={<MailOutlined className="site-form-item-icon" />}
@@ -118,8 +149,24 @@ const RegisterPage = () => {
           </Form.Item>
 
           <Form.Item
+            name="schoolName"
+            rules={[
+              { required: true, message: "Please input your school name!" },
+            ]}
+          >
+            <Input
+              prefix={<BankOutlined className="site-form-item-icon" />}
+              placeholder="School Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
             name="password"
-            rules={[{ required: true, message: "Please input your password!" }]}
+            rules={[
+              { required: true, message: "Please input your password!" },
+              { min: 6, message: "Password must be at least 6 characters!" },
+            ]}
           >
             <Input.Password
               prefix={<LockOutlined className="site-form-item-icon" />}
@@ -130,15 +177,14 @@ const RegisterPage = () => {
 
           <Form.Item
             name="confirmPassword"
-            dependencies={['password']}
             rules={[
-              { required: true, message: 'Please confirm your password!' },
+              { required: true, message: "Please confirm your password!" },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
+                  if (!value || getFieldValue("password") === value) {
                     return Promise.resolve();
                   }
-                  return Promise.reject(new Error('The two passwords do not match!'));
+                  return Promise.reject(new Error("Passwords do not match!"));
                 },
               }),
             ]}
@@ -161,6 +207,18 @@ const RegisterPage = () => {
             >
               Sign Up
             </Button>
+
+            <div className="text-center">
+              <span className="text-muted">Already have an account? </span>
+              <button
+                type="button"
+                className="btn btn-link p-0"
+                onClick={() => navigate("/")}
+                style={{ textDecoration: "none", color: "#1890ff" }}
+              >
+                Sign In
+              </button>
+            </div>
           </Form.Item>
         </Form>
       </div>

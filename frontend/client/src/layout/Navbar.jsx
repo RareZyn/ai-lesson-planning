@@ -1,7 +1,7 @@
-import React from 'react';
-import './Navbar.css'
-import Searchbar from '../components/Searchbar';
-import Profile from '../components/Profile';
+import React from "react";
+import "./Navbar.css";
+import Searchbar from "../components/general/Searchbar";
+import Profile from "../components/general/Profile";
 
 const Navbar = () => {
   return (
@@ -12,7 +12,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="navbar-logo">
             <img
-              src="./../logo/logo_no_bg.png"
+              src="./../logo/LessonPlanning.png"
               alt="Company Logo"
               className="logo-img"
             />

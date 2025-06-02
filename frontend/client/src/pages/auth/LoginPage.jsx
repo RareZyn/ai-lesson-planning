@@ -1,41 +1,114 @@
 // src/pages/auth/LoginPage.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Checkbox, message } from "antd";
-import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Checkbox, message, Modal } from "antd";
+import {
+  UserOutlined,
+  LockOutlined,
+  GoogleOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth, signInWithEmailAndPassword, signInWithPopup, googleProvider } from '../../firebase';
+import {
+  auth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  googleProvider,
+} from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from '../../firebase';
-import "bootstrap/dist/css/bootstrap.min.css";
+import { db } from "../../firebase";
+import { authAPI } from "../../services/api";
 import "./LoginPage.css";
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+  const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleModalSubmit = async (values) => {
+    if (!pendingGoogleUser) return;
+
+    setModalLoading(true);
+    try {
+      // 1. Create user document in Firestore
+      const userRef = doc(db, "users", pendingGoogleUser.uid);
+      await setDoc(userRef, {
+        email: pendingGoogleUser.email,
+        name: values.name,
+        schoolName: values.schoolName,
+        createdAt: serverTimestamp(),
+        roles: ["teacher"],
+        lastLogin: serverTimestamp(),
+      });
+
+      // 2. Register user in MongoDB backend via Google OAuth
+      try {
+        await authAPI.googleAuth({
+          googleId: pendingGoogleUser.uid,
+          email: pendingGoogleUser.email,
+          name: values.name,
+          schoolName: values.schoolName,
+          avatar: pendingGoogleUser.photoURL || "",
+        });
+        console.log("✅ Google user registered in MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend Google auth failed:", backendError);
+        message.warning("Account created but some features may be limited");
+      }
+
+      message.success("Google login successful!");
+      navigate(location.state?.from?.pathname || "/app/", {
+        replace: true,
+      });
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error creating user document:", error);
+      message.error("Failed to complete registration");
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
 
-      // Ensure user document exists
+      // Check if user document exists in Firestore
       const userRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          email: result.user.email,
-          name: result.user.displayName || '',
-          createdAt: serverTimestamp(),
-          roles: ['teacher'],
-          lastLogin: serverTimestamp()
+        // New user - show modal to collect additional info
+        setPendingGoogleUser(result.user);
+        form.setFieldsValue({
+          name: result.user.displayName || "",
+        });
+        setModalVisible(true);
+      } else {
+        // Existing user - sync with backend and proceed with login
+        try {
+          await authAPI.googleAuth({
+            googleId: result.user.uid,
+            email: result.user.email,
+            name: result.user.displayName || userDoc.data().name,
+            avatar: result.user.photoURL || "",
+          });
+          console.log("✅ Existing Google user synced with MongoDB backend");
+        } catch (backendError) {
+          console.error("⚠️ Backend sync failed:", backendError);
+          // Don't prevent login if backend sync fails
+        }
+
+        message.success("Google login successful!");
+        navigate(location.state?.from?.pathname || "/app/", {
+          replace: true,
         });
       }
-
-      message.success("Google login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", { replace: true });
     } catch (error) {
       console.error("Google sign-in error:", error);
       message.error(error.message || "Failed to sign in with Google");
@@ -47,9 +120,26 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
+      // 1. Sign in with Firebase
       await signInWithEmailAndPassword(auth, values.email, values.password);
+
+      // 2. Try to login to backend as well
+      try {
+        await authAPI.login({
+          email: values.email,
+          password: values.password,
+        });
+        console.log("✅ User logged in to MongoDB backend");
+      } catch (backendError) {
+        console.error("⚠️ Backend login failed:", backendError);
+        // Don't prevent Firebase login if backend fails
+        message.warning("Logged in but some features may be limited");
+      }
+
       message.success("Login successful!");
-      navigate(location.state?.from?.pathname || "/app/home", { replace: true });
+      navigate(location.state?.from?.pathname || "/app/", {
+        replace: true,
+      });
     } catch (error) {
       message.error(error.message);
     } finally {
@@ -57,10 +147,11 @@ const LoginPage = () => {
     }
   };
 
-
   const handleTabChange = (tab) => {
     if (tab === "signup") {
       navigate("/register");
+    } else if (tab === "login") {
+      navigate("/");
     }
   };
 
@@ -70,14 +161,13 @@ const LoginPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/logo.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.png" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>
 
           <p className="text-muted">
-            Create, organize, and manage your lessons with ease, all in one
-            place.
+            Welcome back! Sign in to continue planning your lessons.
           </p>
         </div>
 
@@ -85,7 +175,7 @@ const LoginPage = () => {
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
-                className={`nav-link active`}
+                className="nav-link active"
                 onClick={() => handleTabChange("login")}
               >
                 Login
@@ -93,7 +183,7 @@ const LoginPage = () => {
             </li>
             <li className="nav-item">
               <button
-                className={`nav-link`}
+                className="nav-link"
                 onClick={() => handleTabChange("signup")}
               >
                 Sign Up
@@ -114,7 +204,7 @@ const LoginPage = () => {
           >
             <Input
               prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="email"
+              placeholder="Email"
               size="large"
             />
           </Form.Item>
@@ -124,7 +214,7 @@ const LoginPage = () => {
           >
             <Input.Password
               prefix={<LockOutlined className="site-form-item-icon" />}
-              placeholder="password"
+              placeholder="Password"
               size="large"
             />
           </Form.Item>
@@ -133,8 +223,14 @@ const LoginPage = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>Remember me</Checkbox>
               </Form.Item>
-              <a className="login-form-forgot" href="#">
-                Forgot your password
+              <a
+                className="login-form-forgot"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault(); /* Add forgot password logic */
+                }}
+              >
+                Forgot your password?
               </a>
             </div>
           </Form.Item>
@@ -163,6 +259,64 @@ const LoginPage = () => {
           </Form.Item>
         </Form>
       </div>
+
+      {/* Modal for Google Sign-in Additional Info */}
+      <Modal
+        title="Complete Your Profile"
+        open={modalVisible}
+        onCancel={() => {
+          setModalVisible(false);
+          setPendingGoogleUser(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <p className="text-muted mb-4">
+          Please provide some additional information to complete your
+          registration.
+        </p>
+        <Form form={form} layout="vertical" onFinish={handleModalSubmit}>
+          <Form.Item
+            name="name"
+            label="Full Name"
+            rules={[
+              { required: true, message: "Please input your full name!" },
+            ]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="Full Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="schoolName"
+            label="School Name"
+            rules={[
+              { required: true, message: "Please input your school name!" },
+            ]}
+          >
+            <Input
+              prefix={<BankOutlined className="site-form-item-icon" />}
+              placeholder="School Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={modalLoading}
+            >
+              Complete Registration
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
