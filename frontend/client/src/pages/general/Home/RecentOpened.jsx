@@ -1,55 +1,73 @@
 import React from 'react';
-import './RecentOpened.css'; // We'll create this CSS file next
+import { useNavigate } from 'react-router-dom';
+import {
+  ChevronRight,
+  Functions,        // Math
+  Language,        // English
+  Science,         // Science
+  Translate,       // Bahasa
+  History,         // Sejarah
+  CalendarToday,   // Calendar
+  Description,     // Document
+  Assessment,      // Spreadsheet
+  Image,           // Image
+  Notes            // Note
+} from '@mui/icons-material';
+import './RecentOpened.css';
 
 const RecentOpened = () => {
-    // Sample data for recently opened items
-    /*
-    TODO:
-    - Change this to fetch from the backend
-    - Change the styling
-    - Add a loading state while fetching data
-    */
+    const navigate = useNavigate();
+
     const recentItems = [
         {
             id: 1,
-            title: 'Project Proposal.docx',
-            type: 'document',
+            title: 'Mathematics',
+            type: '5 Ibn Sina',
             lastOpened: '2 hours ago',
-            icon: '📄'
+            icon: <Functions fontSize="large" />
         },
         {
             id: 2,
-            title: 'Budget Spreadsheet.xlsx',
-            type: 'spreadsheet',
+            title: 'English',
+            type: '4 Albiruni',
             lastOpened: 'Yesterday',
-            icon: '📊'
+            icon: <Language fontSize="large" />
         },
         {
             id: 3,
-            title: 'Team Meeting Notes',
-            type: 'note',
+            title: 'Science',
+            type: '3 Al-Khwarizmi',
             lastOpened: '3 days ago',
-            icon: '📝'
+            icon: <Science fontSize="large" />
         },
         {
             id: 4,
-            title: 'Product Design',
-            type: 'image',
+            title: 'Bahasa Melayu',
+            type: '6 Tun Fatimah',
             lastOpened: '1 week ago',
-            icon: '🖼️'
+            icon: <Translate fontSize="large" />
         },
         {
             id: 5,
-            title: 'Presentation Deck.pptx',
-            type: 'presentation',
+            title: 'Sejarah',
+            type: '2 Hang Tuah',
             lastOpened: '2 weeks ago',
-            icon: '📑'
+            icon: <History fontSize="large" />
         }
     ];
 
     return (
         <div className="recent-opened-container">
-            <h2 className="recent-opened-title">Recently Opened</h2>
+            <div className="section-header">
+                <h2 className="section-title">Recently Opened</h2>
+                <button 
+                    className="view-all-button"
+                    onClick={() => navigate('/app/lessons')}
+                >
+                    View All 
+                    <ChevronRight className="chevron-icon" />
+                </button>
+            </div>
             <div className="recent-opened-grid">
                 {recentItems.map((item) => (
                     <div key={item.id} className="recent-card">

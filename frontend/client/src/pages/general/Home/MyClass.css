@@ -1,0 +1,79 @@
+/* MyClass.css - Clean Version */
+.my-class-container {
+  margin: 0 auto;
+}
+
+/* Section Header - Tight Title + Button */
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.section-title {
+  color: #333;
+  font-size: 24px;
+  margin: 0;
+  margin-right: 16px; /* Space between title and button */
+}
+
+.view-all-button {
+  background: none;
+  border: none;
+  color: #4a6bff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.view-all-button:hover {
+  background-color: #f5f7ff;
+}
+
+.view-all-button .MuiSvgIcon-root {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.view-all-button:hover .MuiSvgIcon-root {
+  transform: translateX(2px);
+}
+
+/* Rest of your existing card styles... */
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.class-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .classes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .classes-grid {
+    grid-template-columns: 1fr;
+  }
+  .section-title {
+    font-size: 20px;
+  }
+}

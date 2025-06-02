@@ -175,3 +175,123 @@
 .back-icon {
     font-size: 20px;
 }
+
+/* DisplayLesson.css */
+
+/* ... (keep all existing styles) ... */
+
+/* Additional Styles for Enhanced Content Display */
+
+.nested-content {
+    margin-top: 15px;
+    padding-left: 15px;
+    border-left: 2px solid #e0e0e0;
+}
+
+.content-section {
+    margin-bottom: 20px;
+}
+
+.content-section h4 {
+    font-size: 16px;
+    color: #3498db;
+    margin-bottom: 8px;
+}
+
+.during-lesson-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.lesson-part {
+    background: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 1rem ;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+}
+
+.lesson-part h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.examples, .steps, .activity {
+    margin-top: 15px;
+}
+
+.examples h4, .steps h4, .activity h4 {
+    font-size: 15px;
+    color: #27ae60;
+    margin-bottom: 8px;
+}
+
+.activity h5 {
+    font-size: 14px;
+    color: #e67e22;
+    margin: 10px 0 5px 0;
+}
+
+.problems {
+    background: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+.expected-answer {
+    color: #7f8c8d;
+    font-style: italic;
+    margin-left: 10px;
+}
+
+.scaffolding {
+    background: #fff8e1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .lesson-part {
+        padding: 12px;
+    }
+    
+    .lesson-part h3 {
+        font-size: 16px;
+    }
+    
+    .examples h4, .steps h4, .activity h4 {
+        font-size: 14px;
+    }
+    
+    .nested-content {
+        padding-left: 10px;
+    }
+}
+
+/* Add to DisplayLesson.css */
+.poem-excerpt {
+    font-style: italic;
+    color: #555;
+    margin: 5px 0 5px 15px;
+    padding-left: 10px;
+    border-left: 2px solid #ddd;
+}
+
+.focus-points {
+    background-color: #f0f7ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.questions li {
+    margin-bottom: 8px;
+    padding-left: 5px;
+    border-left: 2px solid #a5d8ff;
+}

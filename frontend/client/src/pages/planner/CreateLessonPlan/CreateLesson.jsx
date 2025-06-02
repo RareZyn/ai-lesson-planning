@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './CreateLesson.css';
 
 const CreateLesson = ({ isOpen, onClose }) => {
+  // All hooks must be called unconditionally at the top level
   const [activeTab, setActiveTab] = useState('ai');
   const [aiFormData, setAiFormData] = useState({
     class: '',
@@ -14,8 +15,6 @@ const CreateLesson = ({ isOpen, onClose }) => {
     topics: []
   });
   const [newTopic, setNewTopic] = useState('');
-
-  // if (!isOpen) return null;
 
   const handleAiInputChange = (e) => {
     const { name, value } = e.target;
@@ -48,13 +47,14 @@ const CreateLesson = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (activeTab === 'ai') {
       console.log('AI Form Submitted:', aiFormData);
-      // Handle AI form submission
     } else {
       console.log('Manual Form Submitted:', manualFormData);
-      // Handle manual form submission
     }
     onClose();
   };
+
+  // Early return after all hooks have been called
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
