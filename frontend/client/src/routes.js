@@ -8,7 +8,7 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import UnauthorizedPage from "./pages/general/UnauthorizedPage";
 import FileDownloadPage from "./pages/downloads/FileDownloadPage";
 import ProtectedRoute from "./components/general/ProtectedRoute";
-
+import DisplayLesson from "./pages/planner/displaylesson/DisplayLesson";
 const router = createBrowserRouter([
   {
     path: "/app",
@@ -21,6 +21,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "assessment", element: <AssessmentForm /> },
       { path: "downloads", element: <FileDownloadPage /> },
+      {path:"display",element:<DisplayLesson/>},
     ],
   },
   { path: "/", element: <LoginPage /> },
