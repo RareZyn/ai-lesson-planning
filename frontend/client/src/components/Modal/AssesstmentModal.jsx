@@ -9,6 +9,8 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     additionalRequirement: "",
   });
 
+  const [loading, setLoading] = useState(false);
+
   const questionTypes = [
     "Any type",
     "Subjective",
@@ -32,8 +34,25 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (error) {
+      console.error("Submit error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      numberOfQuestions: "10",
+      difficultyLevel: "easy",
+      questionTypes: [],
+      additionalRequirement: "",
+    });
   };
 
   if (!isOpen) return null;
@@ -41,19 +60,23 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {/* Standardized Header */}
         <div className="modal-header">
-          <div className="modal-icon" style={{ color: "#42a5f5" }}>
-            📋
+          <div className="modal-header-content">
+            <div className="modal-icon" style={{ color: "#42a5f5" }}>
+              📋
+            </div>
+            <h3 className="modal-title">Assessment</h3>
           </div>
-          <h3>Assessment</h3>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
         </div>
 
+        {/* Body */}
         <div className="modal-body">
           <div className="modal-section">
-            <h4>Number of Question</h4>
+            <h4>Number of Questions</h4>
             <input
               type="number"
               className="number-input"
@@ -61,6 +84,8 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
               onChange={(e) =>
                 handleInputChange("numberOfQuestions", e.target.value)
               }
+              min="1"
+              max="50"
             />
           </div>
 
@@ -123,15 +148,16 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           <div className="modal-section">
-            <h4>Additional Requirement:</h4>
+            <h4>Additional Requirements</h4>
             <textarea
               rows="3"
               value={formData.additionalRequirement}
               onChange={(e) =>
                 handleInputChange("additionalRequirement", e.target.value)
               }
-              placeholder="Enter your suggestion here"
+              placeholder="Enter your suggestions here"
               className="modal-textarea"
+              maxLength={100}
             />
             <div className="char-count">
               {formData.additionalRequirement.length} / 100
@@ -139,10 +165,29 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
         </div>
 
+        {/* Standardized Footer */}
         <div className="modal-footer">
-          <button className="btn-submit" onClick={handleSubmit}>
-            SUBMIT
-          </button>
+          <div className="modal-footer-left">
+            <button
+              className="btn-reset"
+              onClick={handleReset}
+              disabled={loading}
+            >
+              Reset
+            </button>
+          </div>
+          <div className="modal-footer-right">
+            <button className="btn-cancel" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button
+              className={`btn-submit ${loading ? "loading" : ""}`}
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "⏳ Submitting..." : "📝 Generate Assessment"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

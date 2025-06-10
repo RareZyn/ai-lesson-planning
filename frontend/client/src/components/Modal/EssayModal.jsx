@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { Modal, Select, Input, Button, Typography, Row, Col } from "antd";
-import { CloseOutlined } from "@ant-design/icons";
+import { Select, Input } from "antd";
+import "./ModalStyles.css";
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { Title } = Typography;
 
 const EssayModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -17,6 +16,8 @@ const EssayModal = ({ isOpen, onClose, onSubmit }) => {
     points: "",
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -24,276 +25,209 @@ const EssayModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (error) {
+      console.error("Submit error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <Modal
-      open={isOpen}
-      onCancel={onClose}
-      footer={null}
-      closable={false}
-      centered
-      width={600}
-      className="essay-modal"
-      styles={{
-        body: { padding: 0 },
-        content: { padding: 0 },
-      }}
-    >
-      {/* Custom Header */}
-      <div className="d-flex justify-content-between align-items-center p-4 border-bottom">
-        <Title level={4} className="mb-0 text-primary">
-          📝 Select Essay Details
-        </Title>
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={onClose}
-          className="d-flex align-items-center justify-content-center"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            color: "#666",
-          }}
-        />
-      </div>
+  const handleReset = () => {
+    setFormData({
+      essayType: "short_communicative",
+      format: "",
+      purpose: "",
+      theme: "",
+      extendedType: "",
+      topic: "",
+      points: "",
+    });
+  };
 
-      {/* Modal Body */}
-      <div className="p-4">
-        <Row gutter={[0, 24]}>
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {/* Standardized Header */}
+        <div className="modal-header">
+          <div className="modal-header-content">
+            <div className="modal-icon">📝</div>
+            <h3 className="modal-title">Select Essay Details</h3>
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="modal-body">
           {/* Essay Type */}
-          <Col span={24}>
-            <div>
-              <label className="d-block fw-semibold mb-2 text-dark">
-                Essay Type
-              </label>
-              <Select
-                value={formData.essayType}
-                onChange={(value) => handleInputChange("essayType", value)}
-                className="w-100"
-                size="large"
-              >
-                <Option value="short_communicative">
-                  Short Communicative Message
-                </Option>
-                <Option value="guided">Guided Writing</Option>
-                <Option value="extended">Extended Writing</Option>
-              </Select>
-            </div>
-          </Col>
+          <div className="modal-section">
+            <h4>Essay Type</h4>
+            <Select
+              value={formData.essayType}
+              onChange={(value) => handleInputChange("essayType", value)}
+              className="w-100"
+              size="large"
+              style={{ width: "100%" }}
+            >
+              <Option value="short_communicative">
+                Short Communicative Message
+              </Option>
+              <Option value="guided">Guided Writing</Option>
+              <Option value="extended">Extended Writing</Option>
+            </Select>
+          </div>
 
           {/* Short Communicative Fields */}
           {formData.essayType === "short_communicative" && (
             <>
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Format
-                  </label>
-                  <Select
-                    value={formData.format}
-                    onChange={(value) => handleInputChange("format", value)}
-                    className="w-100"
-                    size="large"
-                    placeholder="Select format..."
-                  >
-                    <Option value="note">📄 Note</Option>
-                    <Option value="email">✉️ Email</Option>
-                  </Select>
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Format</h4>
+                <Select
+                  value={formData.format}
+                  onChange={(value) => handleInputChange("format", value)}
+                  style={{ width: "100%" }}
+                  size="large"
+                  placeholder="Select format..."
+                >
+                  <Option value="note">📄 Note</Option>
+                  <Option value="email">✉️ Email</Option>
+                </Select>
+              </div>
 
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Purpose
-                  </label>
-                  <Select
-                    value={formData.purpose}
-                    onChange={(value) => handleInputChange("purpose", value)}
-                    className="w-100"
-                    size="large"
-                    placeholder="Select purpose..."
-                  >
-                    <Option value="inform">ℹ️ Inform</Option>
-                    <Option value="invite">🎉 Invite</Option>
-                    <Option value="thank">🙏 Thank</Option>
-                    <Option value="apologize">😔 Apologize</Option>
-                    <Option value="remind">⏰ Remind</Option>
-                    <Option value="ask">❓ Ask</Option>
-                    <Option value="congratulate">🎊 Congratulate</Option>
-                  </Select>
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Purpose</h4>
+                <Select
+                  value={formData.purpose}
+                  onChange={(value) => handleInputChange("purpose", value)}
+                  style={{ width: "100%" }}
+                  size="large"
+                  placeholder="Select purpose..."
+                >
+                  <Option value="inform">ℹ️ Inform</Option>
+                  <Option value="invite">🎉 Invite</Option>
+                  <Option value="thank">🙏 Thank</Option>
+                  <Option value="apologize">😔 Apologize</Option>
+                  <Option value="remind">⏰ Remind</Option>
+                  <Option value="ask">❓ Ask</Option>
+                  <Option value="congratulate">🎊 Congratulate</Option>
+                </Select>
+              </div>
             </>
           )}
 
           {/* Guided Writing Fields */}
           {formData.essayType === "guided" && (
             <>
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Theme
-                  </label>
-                  <Select
-                    value={formData.theme}
-                    onChange={(value) => handleInputChange("theme", value)}
-                    className="w-100"
-                    size="large"
-                    placeholder="Select theme..."
-                  >
-                    <Option value="personal_experience">
-                      🌟 Personal Experience
-                    </Option>
-                    <Option value="school_life">🎓 School Life</Option>
-                    <Option value="hobbies_leisure">
-                      🎨 Hobbies / Leisure
-                    </Option>
-                    <Option value="advice_tips">💡 Advice / Tips</Option>
-                  </Select>
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Theme</h4>
+                <Select
+                  value={formData.theme}
+                  onChange={(value) => handleInputChange("theme", value)}
+                  style={{ width: "100%" }}
+                  size="large"
+                  placeholder="Select theme..."
+                >
+                  <Option value="personal_experience">
+                    🌟 Personal Experience
+                  </Option>
+                  <Option value="school_life">🎓 School Life</Option>
+                  <Option value="hobbies_leisure">🎨 Hobbies / Leisure</Option>
+                  <Option value="advice_tips">💡 Advice / Tips</Option>
+                </Select>
+              </div>
 
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Key Points
-                  </label>
-                  <TextArea
-                    rows={4}
-                    placeholder="List 3–4 points here..."
-                    value={formData.points}
-                    onChange={(e) =>
-                      handleInputChange("points", e.target.value)
-                    }
-                    className="rounded"
-                  />
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Key Points</h4>
+                <TextArea
+                  rows={4}
+                  placeholder="List 3–4 points here..."
+                  value={formData.points}
+                  onChange={(e) => handleInputChange("points", e.target.value)}
+                  maxLength={200}
+                  showCount
+                />
+              </div>
             </>
           )}
 
           {/* Extended Writing Fields */}
           {formData.essayType === "extended" && (
             <>
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Extended Type
-                  </label>
-                  <Select
-                    value={formData.extendedType}
-                    onChange={(value) =>
-                      handleInputChange("extendedType", value)
-                    }
-                    className="w-100"
-                    size="large"
-                    placeholder="Select type..."
-                  >
-                    <Option value="review">⭐ Review</Option>
-                    <Option value="article">📰 Article</Option>
-                    <Option value="report">📊 Report</Option>
-                    <Option value="story">📚 Story</Option>
-                  </Select>
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Extended Type</h4>
+                <Select
+                  value={formData.extendedType}
+                  onChange={(value) => handleInputChange("extendedType", value)}
+                  style={{ width: "100%" }}
+                  size="large"
+                  placeholder="Select type..."
+                >
+                  <Option value="review">⭐ Review</Option>
+                  <Option value="article">📰 Article</Option>
+                  <Option value="report">📊 Report</Option>
+                  <Option value="story">📚 Story</Option>
+                </Select>
+              </div>
 
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Topic
-                  </label>
-                  <Input
-                    placeholder="Enter topic"
-                    value={formData.topic}
-                    onChange={(e) => handleInputChange("topic", e.target.value)}
-                    size="large"
-                    className="rounded"
-                  />
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Topic</h4>
+                <Input
+                  placeholder="Enter topic"
+                  value={formData.topic}
+                  onChange={(e) => handleInputChange("topic", e.target.value)}
+                  size="large"
+                />
+              </div>
 
-              <Col span={24}>
-                <div>
-                  <label className="d-block fw-semibold mb-2 text-dark">
-                    Key Points / Guidelines
-                  </label>
-                  <TextArea
-                    rows={4}
-                    placeholder="Add elaboration, evidence or points"
-                    value={formData.points}
-                    onChange={(e) =>
-                      handleInputChange("points", e.target.value)
-                    }
-                    className="rounded"
-                  />
-                </div>
-              </Col>
+              <div className="modal-section">
+                <h4>Key Points / Guidelines</h4>
+                <TextArea
+                  rows={4}
+                  placeholder="Add elaboration, evidence or points"
+                  value={formData.points}
+                  onChange={(e) => handleInputChange("points", e.target.value)}
+                  maxLength={300}
+                  showCount
+                />
+              </div>
             </>
           )}
-        </Row>
-      </div>
+        </div>
 
-      <div className="p-4 border-top bg-light d-flex justify-content-end">
-        <div className="d-flex gap-2">
-          <Button size="large" onClick={onClose} className="px-4">
-            Cancel
-          </Button>
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleSubmit}
-            className="px-4 fw-semibold"
-            style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              border: "none",
-              boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)",
-            }}
-          >
-            ✨ Generate Essay
-          </Button>
+        {/* Standardized Footer */}
+        <div className="modal-footer">
+          <div className="modal-footer-left">
+            <button
+              className="btn-reset"
+              onClick={handleReset}
+              disabled={loading}
+            >
+              Reset
+            </button>
+          </div>
+          <div className="modal-footer-right">
+            <button className="btn-cancel" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button
+              className={`btn-submit ${loading ? "loading" : ""}`}
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "⏳ Generating..." : "✨ Generate Essay"}
+            </button>
+          </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .essay-modal .ant-modal-content {
-          overflow: hidden;
-          border-radius: 16px !important;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .essay-modal .ant-select-selector {
-          border-radius: 8px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .essay-modal .ant-select-focused .ant-select-selector {
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-        }
-
-        .essay-modal .ant-input {
-          border-radius: 8px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .essay-modal .ant-input:focus {
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-        }
-
-        .essay-modal label {
-          color: #2c3e50 !important;
-          font-size: 14px;
-        }
-
-        .bg-light {
-          background-color: #f8f9fa !important;
-        }
-      `}</style>
-    </Modal>
+    </div>
   );
 };
 

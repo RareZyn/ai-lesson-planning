@@ -3,7 +3,6 @@ import {
   Select,
   Card,
   Typography,
-  Button,
   Input,
   Row,
   Col,
@@ -18,7 +17,7 @@ import "./ModalStyles.css";
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -122,33 +121,23 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "700px", background: "white" }}
+        style={{ maxWidth: "700px" }}
       >
-        {/* Header */}
-        <div
-          className="modal-header"
-          style={{ background: "white", borderBottom: "1px solid #f0f0f0" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <BookOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
-            <Title level={3} style={{ margin: 0, color: "#262626" }}>
-              English Textbook Activity
-            </Title>
+        {/* Standardized Header */}
+        <div className="modal-header">
+          <div className="modal-header-content">
+            <div className="modal-icon">
+              <BookOutlined />
+            </div>
+            <h3 className="modal-title">English Textbook Activity</h3>
           </div>
-          <Button
-            type="text"
-            onClick={onClose}
-            style={{ position: "absolute", right: "16px", top: "16px" }}
-          >
+          <button className="modal-close" onClick={onClose}>
             ×
-          </Button>
+          </button>
         </div>
 
         {/* Body */}
-        <div
-          className="modal-body"
-          style={{ background: "white", padding: "24px" }}
-        >
+        <div className="modal-body">
           <Row gutter={[16, 24]}>
             {/* Form Selection */}
             <Col span={24}>
@@ -166,7 +155,6 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Select Form</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Select
                   placeholder="Choose a form (Form 1 - Form 5)"
@@ -200,7 +188,6 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Select Topic</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Spin spinning={topicsLoading}>
                   <Select
@@ -263,7 +250,6 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Activity Type</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Select
                   placeholder="Choose an activity type"
@@ -311,11 +297,7 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
 
             {/* Additional Requirements */}
             <Col span={24}>
-              <Card
-                size="small"
-                title="Additional Requirements (Optional)"
-                style={{ background: "white" }}
-              >
+              <Card size="small" title="Additional Requirements (Optional)">
                 <TextArea
                   rows={3}
                   value={formData.additionalRequirement}
@@ -325,45 +307,39 @@ const TextBookModal = ({ isOpen, onClose, onSubmit }) => {
                   placeholder="Enter any specific requirements, instructions, or notes for this activity..."
                   maxLength={200}
                   showCount
-                  style={{ background: "white" }}
                 />
               </Card>
             </Col>
           </Row>
         </div>
 
-        {/* Footer */}
-        <div
-          className="modal-footer"
-          style={{
-            background: "white",
-            borderTop: "1px solid #f0f0f0",
-            padding: "16px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Button onClick={handleReset} disabled={loading}>
-            Reset
-          </Button>
-
-          <div style={{ display: "flex", gap: "12px" }}>
-            <Button onClick={onClose} disabled={loading}>
+        {/* Standardized Footer */}
+        <div className="modal-footer">
+          <div className="modal-footer-left">
+            <button
+              className="btn-reset"
+              onClick={handleReset}
+              disabled={loading}
+            >
+              Reset
+            </button>
+          </div>
+          <div className="modal-footer-right">
+            <button className="btn-cancel" onClick={onClose} disabled={loading}>
               Cancel
-            </Button>
-            <Button
-              type="primary"
+            </button>
+            <button
+              className={`btn-submit ${loading ? "loading" : ""}`}
               onClick={handleSubmit}
-              loading={loading}
               disabled={
                 !formData.selectedForm ||
                 !formData.selectedTopic ||
-                !formData.activityType
+                !formData.activityType ||
+                loading
               }
             >
-              Submit Activity
-            </Button>
+              {loading ? "⏳ Submitting..." : "📚 Submit Activity"}
+            </button>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Card,
   Radio,
-  Checkbox,
   Button,
   Input,
   Row,
@@ -36,7 +35,7 @@ import {
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
@@ -117,35 +116,23 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "800px", background: "white" }}
+        style={{ maxWidth: "800px" }}
       >
-        {/* Header */}
-        <div
-          className="modal-header"
-          style={{ background: "white", borderBottom: "1px solid #f0f0f0" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <ThunderboltOutlined
-              style={{ fontSize: "24px", color: "#ff4d4f" }}
-            />
-            <Title level={3} style={{ margin: 0, color: "#262626" }}>
-              Activity in Class
-            </Title>
+        {/* Standardized Header */}
+        <div className="modal-header">
+          <div className="modal-header-content">
+            <div className="modal-icon">
+              <ThunderboltOutlined />
+            </div>
+            <h3 className="modal-title">Activity in Class</h3>
           </div>
-          <Button
-            type="text"
-            onClick={onClose}
-            style={{ position: "absolute", right: "16px", top: "16px" }}
-          >
+          <button className="modal-close" onClick={onClose}>
             ×
-          </Button>
+          </button>
         </div>
 
         {/* Body */}
-        <div
-          className="modal-body"
-          style={{ background: "white", padding: "24px" }}
-        >
+        <div className="modal-body">
           <Row gutter={[16, 24]}>
             {/* Student Arrangement */}
             <Col span={24}>
@@ -163,7 +150,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Student Arrangement</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Radio.Group
                   value={formData.studentArrangement}
@@ -182,12 +168,11 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
-                            background: "white",
                           }}
                         >
                           <div>
                             <div
-                              style={{ fontSize: "18px", marginBottom: "4px" }}
+                              style={{ fontSize: "16px", marginBottom: "4px" }}
                             >
                               {option.icon} {option.label}
                             </div>
@@ -219,7 +204,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Resource Usage</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Radio.Group
                   value={formData.resourceUsage}
@@ -238,7 +222,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
-                            background: "white",
                           }}
                         >
                           <div>
@@ -275,7 +258,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Activity Type (Optional)</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Select
                   placeholder="Choose a specific activity type"
@@ -340,7 +322,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                         <span>Duration</span>
                       </div>
                     }
-                    style={{ background: "white" }}
                   >
                     <Select
                       placeholder="Select duration"
@@ -380,7 +361,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                         <span>Difficulty</span>
                       </div>
                     }
-                    style={{ background: "white" }}
                   >
                     <Select
                       placeholder="Select difficulty"
@@ -425,7 +405,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     <span>Bloom's Taxonomy Levels</span>
                   </div>
                 }
-                style={{ background: "white" }}
               >
                 <Row gutter={[12, 12]}>
                   {bloomTaxonomyLevels.map((bloom) => (
@@ -526,7 +505,6 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
               <Card
                 size="small"
                 title="Additional Requirements & Notes (Optional)"
-                style={{ background: "white" }}
               >
                 <TextArea
                   rows={3}
@@ -537,42 +515,34 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                   placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity..."
                   maxLength={300}
                   showCount
-                  style={{ background: "white" }}
                 />
               </Card>
             </Col>
           </Row>
         </div>
 
-        {/* Footer */}
-        <div
-          className="modal-footer"
-          style={{
-            background: "white",
-            borderTop: "1px solid #f0f0f0",
-            padding: "16px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Button onClick={handleReset} disabled={loading}>
-            Reset All
-          </Button>
-
-          <div style={{ display: "flex", gap: "12px" }}>
-            <Button onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              onClick={handleSubmit}
-              loading={loading}
-              disabled={formData.bloomTaxonomy.length === 0}
-              icon={<CheckCircleOutlined />}
+        {/* Standardized Footer */}
+        <div className="modal-footer">
+          <div className="modal-footer-left">
+            <button
+              className="btn-reset"
+              onClick={handleReset}
+              disabled={loading}
             >
-              Create Activity
-            </Button>
+              Reset All
+            </button>
+          </div>
+          <div className="modal-footer-right">
+            <button className="btn-cancel" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button
+              className={`btn-submit ${loading ? "loading" : ""}`}
+              onClick={handleSubmit}
+              disabled={formData.bloomTaxonomy.length === 0 || loading}
+            >
+              {loading ? "⏳ Creating..." : "✨ Create Activity"}
+            </button>
           </div>
         </div>
       </div>
