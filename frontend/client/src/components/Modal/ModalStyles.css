@@ -1,6 +1,6 @@
-/* src/components/Modal/ModalStyles.css */
-/* Modal Styles - Fixed for White Background */
-/* Use higher specificity to override other styles */
+/* Enhanced Modal Styles for Activity In Class Modal */
+
+/* Base modal styles */
 div.modal-overlay {
   position: fixed;
   top: 0;
@@ -20,9 +20,9 @@ div.modal-overlay .modal-content {
   background: white !important;
   background-color: #ffffff !important;
   border-radius: 16px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   animation: modalSlideIn 0.3s ease-out;
-  max-width: 600px;
+  max-width: 800px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
@@ -35,367 +35,444 @@ div.modal-overlay .modal-content {
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
+/* Header styles */
 div.modal-overlay .modal-header {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px !important;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #f0f0f0;
   position: relative;
   background: white !important;
   background-color: #ffffff !important;
   border-radius: 16px 16px 0 0 !important;
 }
 
-.modal-icon {
-  font-size: 2rem;
-  margin-right: 12px;
-}
-
-.modal-header h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.modal-close {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #999;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  background: #f5f5f5 !important;
-  color: #666;
-}
-
+/* Body styles */
 div.modal-overlay .modal-body {
   padding: 24px !important;
-  max-height: 60vh;
+  max-height: 65vh;
   overflow-y: auto;
   background: white !important;
   background-color: #ffffff !important;
 }
 
-.modal-section {
-  margin-bottom: 24px;
-}
-
-.modal-section:last-child {
-  margin-bottom: 0;
-}
-
-.modal-section h4 {
-  color: #333;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-/* Radio Group Styles */
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  background: white !important;
-}
-
-.radio-option:hover {
-  background-color: #f8f9fa !important;
-}
-
-.radio-option input[type="radio"] {
-  margin: 0;
-  cursor: pointer;
-}
-
-.radio-option span {
-  font-size: 0.9rem;
-  color: #555;
-  cursor: pointer;
-}
-
-/* Checkbox Group Styles */
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.checkbox-group.horizontal {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.checkbox-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  background: white !important;
-}
-
-.checkbox-option:hover {
-  background-color: #f8f9fa !important;
-}
-
-.checkbox-option input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
-}
-
-.checkbox-option span {
-  font-size: 0.9rem;
-  color: #555;
-  cursor: pointer;
-}
-
-/* Dropdown List Styles */
-.dropdown-list {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-  background: white !important;
-  background-color: #ffffff !important;
-}
-
-.dropdown-item {
-  padding: 12px 16px;
-  font-size: 0.9rem;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid #f0f0f0;
-  background: white !important;
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.dropdown-item:hover {
-  background-color: #f8f9fa !important;
-  color: #333;
-}
-
-.dropdown-item.selected {
-  background-color: #e3f2fd !important;
-  color: #1976d2;
-  font-weight: 500;
-}
-
-/* Bloom Taxonomy Styles */
-.bloom-taxonomy {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.bloom-level {
-  padding: 12px 16px;
-  background: #f8f9fa !important;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #495057;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.bloom-level:hover {
-  border-color: #6c757d;
-  background: #e9ecef !important;
-}
-
-.bloom-level.selected {
-  background: #e3f2fd !important;
-  border-color: #1976d2;
-  color: #1976d2;
-}
-
-/* Number Input Styles */
-.number-input {
-  width: 100%;
-  max-width: 200px;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  text-align: center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background: white !important;
-  background-color: #ffffff !important;
-}
-
-.number-input:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-  background: white !important;
-}
-
-/* Textarea Styles */
-.modal-textarea {
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  resize: vertical;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background: white !important;
-  background-color: #ffffff !important;
-  min-height: 80px;
-}
-
-.modal-textarea:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-  background: white !important;
-}
-
-.modal-textarea::placeholder {
-  color: #999;
-}
-
-/* Character Count */
-.char-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: #666;
-  margin-top: 4px;
-}
-
-/* Modal Footer */
+/* Footer styles */
 div.modal-overlay .modal-footer {
-  padding: 20px 24px !important;
-  border-top: 1px solid #e8e8e8;
+  padding: 16px 24px !important;
+  border-top: 1px solid #f0f0f0;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   background: white !important;
   background-color: #ffffff !important;
   border-radius: 0 0 16px 16px !important;
 }
 
-.btn-submit {
-  background-color: #1976d2;
-  color: white;
-  border: none;
-  padding: 12px 24px;
+/* Ant Design component overrides */
+.modal-content .ant-card {
+  background: white !important;
+  background-color: #ffffff !important;
+  border: 1px solid #f0f0f0;
   border-radius: 8px;
-  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.modal-content .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content .ant-card-head {
+  background: white !important;
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  min-height: auto;
+}
+
+.modal-content .ant-card-head-title {
+  padding: 0;
+  font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.btn-submit:hover {
-  background-color: #1565c0;
+.modal-content .ant-card-body {
+  background: white !important;
+  background-color: #ffffff !important;
+  padding: 16px;
+}
+
+/* Radio button styles */
+.modal-content .ant-radio-button-wrapper {
+  background: white !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px !important;
+  transition: all 0.3s ease;
+  height: auto !important;
+  line-height: normal !important;
+  margin-bottom: 8px;
+}
+
+.modal-content .ant-radio-button-wrapper:hover {
+  border-color: #40a9ff;
+  background: #f6ffed !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+  box-shadow: 0 2px 8px rgba(64, 169, 255, 0.15);
 }
 
-/* Responsive Design */
+.modal-content .ant-radio-button-wrapper-checked {
+  background: #e6f7ff !important;
+  border-color: #1890ff !important;
+  color: #1890ff !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.modal-content .ant-radio-button-wrapper-checked:hover {
+  background: #e6f7ff !important;
+  border-color: #40a9ff !important;
+}
+
+.modal-content .ant-radio-button-wrapper::before {
+  display: none;
+}
+
+/* Select styles */
+.modal-content .ant-select {
+  background: white !important;
+}
+
+.modal-content .ant-select-selector {
+  background: white !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.modal-content .ant-select-selector:hover {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.modal-content .ant-select-focused .ant-select-selector {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Input styles */
+.modal-content .ant-input {
+  background: white !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.modal-content .ant-input:hover {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.modal-content .ant-input:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  background: white !important;
+}
+
+/* Button styles */
+.modal-content .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  height: auto;
+  padding: 8px 16px;
+}
+
+.modal-content .ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.modal-content .ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.modal-content .ant-btn-primary:disabled {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #bfbfbf;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Typography styles */
+.modal-content .ant-typography {
+  color: #262626;
+}
+
+.modal-content .ant-typography-title {
+  color: #262626 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Tag styles */
+.modal-content .ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 8px;
+  margin: 2px;
+  transition: all 0.3s ease;
+}
+
+.modal-content .ant-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Bloom taxonomy custom styles */
+.bloom-level-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.bloom-level-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transition: left 0.5s;
+}
+
+.bloom-level-card:hover::before {
+  left: 100%;
+}
+
+.bloom-level-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.bloom-level-card.selected {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Radio group grid layout */
+.radio-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.radio-grid.two-column {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.radio-grid.three-column {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Custom scrollbar */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Select dropdown styles */
+.ant-select-dropdown {
+  background: white !important;
+  background-color: #ffffff !important;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.ant-select-item {
+  background: white !important;
+  color: #262626;
+  transition: all 0.3s ease;
+}
+
+.ant-select-item:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: #e6f7ff !important;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.ant-select-item-option-disabled {
+  background: white !important;
+  color: #1890ff !important;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Loading spinner */
+.modal-content .ant-spin-container {
+  background: white !important;
+}
+
+.modal-content .ant-spin-blur {
+  background: white !important;
+}
+
+/* Tooltip styles */
+.modal-content .ant-tooltip-inner {
+  background-color: rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
   .modal-content {
-    width: 95%;
+    width: 95% !important;
     max-height: 95vh;
-    background: white !important;
+    margin: 10px !important;
   }
 
   .modal-header,
   .modal-body,
   .modal-footer {
-    padding: 16px;
-    background: white !important;
+    padding: 16px !important;
   }
 
-  .bloom-taxonomy {
+  .modal-content .ant-card-body {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .modal-footer > div {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .radio-grid.two-column,
+  .radio-grid.three-column {
     grid-template-columns: 1fr;
   }
 
-  .radio-group,
-  .checkbox-group {
-    gap: 6px;
-  }
-
-  .dropdown-item {
-    padding: 10px 12px;
+  .bloom-level-card {
+    padding: 8px !important;
   }
 }
 
 @media (max-width: 480px) {
   .modal-content {
-    width: 98%;
-    background: white !important;
+    width: 98% !important;
+    margin: 5px !important;
   }
 
   .modal-header {
     flex-direction: column;
     gap: 8px;
     text-align: center;
-    background: white !important;
   }
 
-  .modal-close {
-    position: static;
-    transform: none;
-    margin-top: 8px;
+  .modal-header .ant-typography-title {
+    font-size: 18px !important;
   }
 
-  .modal-icon {
-    margin-right: 0;
+  .modal-content .ant-radio-button-wrapper {
     margin-bottom: 4px;
+    font-size: 12px;
   }
 }
 
-.modal-section label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 8px;
-  color: #333;
-  font-size: 0.95rem;
+/* Animation for selected items */
+@keyframes selectedPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+.bloom-level-card.selected {
+  animation: selectedPulse 0.6s ease-out;
+}
+
+/* Enhanced hover effects */
+.modal-content .ant-card:hover {
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* Form validation styles */
+.modal-content .ant-form-item-has-error .ant-select-selector {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.modal-content .ant-form-item-has-error .ant-input {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* Success state */
+.modal-content .ant-form-item-has-success .ant-select-selector {
+  border-color: #52c41a !important;
+}
+
+.modal-content .ant-form-item-has-success .ant-input {
+  border-color: #52c41a !important;
+}
+
+/* Custom space between sections */
+.modal-content .ant-row > .ant-col {
+  margin-bottom: 0;
+}
+
+/* Enhanced button group in footer */
+.modal-footer .ant-btn {
+  min-width: 80px;
+}
+
+.modal-footer .ant-btn + .ant-btn {
+  margin-left: 8px;
 }
