@@ -33,12 +33,13 @@ const authRoutes = require("./route/auth");
 const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
 const dskpRoutes = require("./route/dskp");
-
+const textbookRoutes = require("./route/textbook");
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/gpt",openAiRoutes);
 app.use("/api/assessment", assessmentRoutes);
 app.use("/api/dskp", dskpRoutes);
+app.use("/api/textbook", textbookRoutes);
 
 
 
