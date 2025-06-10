@@ -391,3 +391,11 @@ div.modal-overlay .modal-footer {
     margin-bottom: 4px;
   }
 }
+
+.modal-section label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 0.95rem;
+}

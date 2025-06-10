@@ -32,11 +32,13 @@ app.use(morgan("dev"));
 const authRoutes = require("./route/auth");
 const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
+const dskpRoutes = require("./route/dskp");
 
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/gpt",openAiRoutes);
 app.use("/api/assessment", assessmentRoutes);
+app.use("/api/dskp", dskpRoutes);
 
 
 

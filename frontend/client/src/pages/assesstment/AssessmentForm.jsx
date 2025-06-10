@@ -107,12 +107,7 @@ const AssessmentForm = () => {
   };
 
   const activityFormats = [
-    {
-      id: "activity-in-class",
-      label: "Activity in Class",
-      icon: "⚡",
-      color: "#ff4757",
-    },
+    { id: "activity-in-class",label: "Activity in Class",icon: "⚡",color: "#ff4757",},
     { id: "essay", label: "Essay", icon: "📄", color: "#ffa726" },
     { id: "textbook", label: "TextBook", icon: "📚", color: "#66bb6a" },
     { id: "assessment", label: "Assessment", icon: "📋", color: "#42a5f5" },
