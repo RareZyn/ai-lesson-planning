@@ -686,3 +686,10 @@
 .bg-light {
   background-color: #fafafa !important;
 }
+
+.form-level-col {
+  white-space: normal !important;
+  line-height: 1.4 !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
