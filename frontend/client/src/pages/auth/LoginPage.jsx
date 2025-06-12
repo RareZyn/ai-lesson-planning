@@ -77,33 +77,37 @@ const LoginPage = () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
 
       // Check if user document exists in Firestore
-      const userRef = doc(db, "users", result.user.uid);
+      const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
-        // New user - show modal to collect additional info
-        setPendingGoogleUser(result.user);
+        // New user - show modal to collect additional info. This flow works correctly.
+        setPendingGoogleUser(user);
         form.setFieldsValue({
-          name: result.user.displayName || "",
+          name: user.displayName || "",
         });
         setModalVisible(true);
       } else {
-        // Existing user - sync with backend and proceed with login
-        try {
-          await authAPI.googleAuth({
-            googleId: result.user.uid,
-            email: result.user.email,
-            name: result.user.displayName || userDoc.data().name,
-            avatar: result.user.photoURL || "",
-          });
-          console.log("✅ Existing Google user synced with MongoDB backend");
-        } catch (backendError) {
-          console.error("⚠️ Backend sync failed:", backendError);
-          // Don't prevent login if backend sync fails
-        }
+        // --- THIS IS THE CORRECTED LOGIC ---
+        // Existing Firestore user - ensure backend is synced.
+        
+        // Get the data from the Firestore document
+        const firestoreData = userDoc.data();
 
+        // Call the backend with ALL necessary data, including schoolName from Firestore.
+        await authAPI.googleAuth({
+          googleId: user.uid,
+          email: user.email,
+          name: user.displayName || firestoreData.name, // Prefer live display name, fallback to stored name
+          schoolName: firestoreData.schoolName, // **THE FIX IS HERE**
+          avatar: user.photoURL || "",
+        });
+
+        console.log("✅ Existing Google user synced with MongoDB backend");
+        
         message.success("Google login successful!");
         navigate(location.state?.from?.pathname || "/app/", {
           replace: true,
@@ -111,7 +115,12 @@ const LoginPage = () => {
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
-      message.error(error.message || "Failed to sign in with Google");
+      let errorMessage = "Failed to sign in with Google.";
+      if(error.response) {
+        // Use the specific error message from the backend if available
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      message.error(errorMessage);
     } finally {
       setGoogleLoading(false);
     }

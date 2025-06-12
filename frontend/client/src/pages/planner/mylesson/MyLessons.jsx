@@ -4,10 +4,8 @@ import CalendarView from './CalendarView'; // Import the CalendarView component
 
 const MyLessons = () => {
   const [mainTabValue, setMainTabValue] = useState(0);
-  const [calendarView, setCalendarView] = useState('week');
 
   // Sample data for lessons
-  // TODO change to prop
   const lessons = [
     { id: 1, title: 'Mathematics Basics', date: '2023-06-15', time: '10:00 AM' },
     { id: 2, title: 'Advanced Physics', date: '2023-06-16', time: '2:00 PM' },
@@ -18,26 +16,25 @@ const MyLessons = () => {
     setMainTabValue(value);
   };
 
-  const handleCalendarViewChange = (value) => {
-    setCalendarView(value);
-  };
-
   return (
     <div className="my-lessons-container">
-      <h2 style={{ textAlign: "left" }}>My Lessons</h2>
-      {/* Main Tabs */}
+      <h2 className="page-title">My Lessons</h2>
+
+      {/* Main Tabs Container */}
       <div className="tabs-container">
         <button
           className={`tab-button ${mainTabValue === 0 ? 'active' : ''}`}
           onClick={() => handleMainTabChange(0)}
         >
-          <h4>Calendar</h4>
+          {/* Removed h4 for cleaner HTML and easier styling */}
+          Calendar
         </button>
         <button
           className={`tab-button ${mainTabValue === 1 ? 'active' : ''}`}
           onClick={() => handleMainTabChange(1)}
         >
-          <h4>All Lessons</h4>
+          {/* Removed h4 for cleaner HTML and easier styling */}
+          All Lessons
         </button>
       </div>
 

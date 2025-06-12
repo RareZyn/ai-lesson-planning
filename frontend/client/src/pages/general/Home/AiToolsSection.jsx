@@ -18,7 +18,7 @@ const AiToolsSection = () => {
       id: 1,
       title: 'Lesson Plans',
       icon: <MenuBook fontSize="large" />,
-      path: '/lesson-plan-generator'
+      path: '/lesson-plan-generator' // change to create
     },
     {
       id: 2,

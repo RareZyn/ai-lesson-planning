@@ -1,0 +1,112 @@
+/* Main Container */
+.my-lessons-container {
+  width: 100%;
+}
+
+.page-title {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+/* 
+  =======================================
+  === CORRECTED TAB STYLES START HERE ===
+  =======================================
+*/
+
+/* The container for the tab buttons */
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 1.5rem; /* Space between tabs and content */
+}
+
+/* Styling for each individual tab button */
+.tab-button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative; /* Needed for the active indicator */
+  transition: color 0.3s ease;
+  border-bottom: 2px solid transparent; /* Placeholder for active state */
+  margin-bottom: -2px; /* Aligns with the container's bottom border */
+}
+
+.tab-button:hover {
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* Styling for the currently active tab button */
+.tab-button.active {
+  color: #3f51b5; /* Your primary color */
+  font-weight: 600;
+  border-bottom-color: #3f51b5;
+}
+
+/* 
+  =====================================
+  === CORRECTED TAB STYLES END HERE ===
+  =====================================
+*/
+
+
+/* Tab Content */
+.tab-content {
+  /* Padding can be removed if the container already has it */
+}
+
+/* All Lessons View */
+.all-lessons-view {
+  width: 100%;
+}
+
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.lesson-card {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.lesson-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-title {
+  color: #1976d2;
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.lesson-meta {
+  color: #666;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.lesson-description {
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .lessons-grid {
+    grid-template-columns: 1fr;
+  }
+}

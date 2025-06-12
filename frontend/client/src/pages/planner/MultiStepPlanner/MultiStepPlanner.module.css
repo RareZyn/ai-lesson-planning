@@ -1,0 +1,227 @@
+/* --- Main Page & Header --- */
+.pageContainer {
+  min-height: 100vh;
+}
+
+.plannerHeader {
+  margin: 0 auto 24px auto;
+}
+
+.plannerHeader h1 {
+  font-size: 28px;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.plannerHeader p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* --- Progress Bar --- */
+.progressBar {
+  display: flex;
+  align-items: center;
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 10%; /* Give some space on the edges */
+}
+
+.step {
+  text-align: center;
+  width: 100px;
+}
+
+.stepNumber {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: white;
+  color: #aaa;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 0 auto 8px;
+  transition: all 0.3s ease;
+}
+
+.stepLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+  transition: color 0.3s ease;
+}
+
+.step.active .stepNumber {
+  border-color: #5880f1;
+  color: #5880f1;
+}
+
+.step.active .stepLabel {
+  color: #333;
+}
+
+.connector {
+  flex-grow: 1;
+  height: 2px;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s ease;
+}
+
+.connector.active {
+  background-color: #5880f1;
+}
+
+
+/* --- Main Step Panel --- */
+.stepPanel {
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 32px 40px;
+}
+
+.stepContent {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stepContent h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 22px;
+}
+.stepContent p {
+  margin-top: 0;
+  margin-bottom: 32px;
+  color: #666;
+  font-size: 15px;
+}
+
+/* --- Form Elements --- */
+.formGroup {
+  margin-bottom: 24px;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.formGroup select:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #5880f1;
+  box-shadow: 0 0 0 3px rgba(88, 128, 241, 0.2);
+}
+
+.orDivider {
+  text-align: center;
+  color: #aaa;
+  margin: 24px 0;
+  font-weight: 500;
+  position: relative;
+}
+.orDivider::before, .orDivider::after {
+  content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #eee;
+}
+.orDivider::before { left: 0; }
+.orDivider::after { right: 0; }
+
+/* --- Navigation & Buttons --- */
+.navigation {
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #eee;
+  padding-top: 24px;
+}
+
+.primaryButton, .secondaryButton, .generateButton {
+  padding: 10px 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.primaryButton {
+  background-color: #5880f1;
+  color: white;
+}
+.primaryButton:hover:not(:disabled) {
+  background-color: #3a6bdb;
+}
+
+.secondaryButton {
+  background-color: white;
+  color: #555;
+  border-color: #ddd;
+}
+.secondaryButton:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.generateButton {
+  background-color: #27ae60;
+  color: white;
+}
+.generateButton:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.primaryButton:disabled, .secondaryButton:disabled, .generateButton:disabled {
+  background-color: #e0e0e0;
+  color: #aaa;
+  cursor: not-allowed;
+  border-color: #e0e0e0;
+}
+
+/* --- Editable Plan (Step 4) --- */
+.editablePlan {
+  background-color: #fdfdfd;
+  border: 1px solid #eee;
+  padding: 20px;
+  border-radius: 8px;
+}

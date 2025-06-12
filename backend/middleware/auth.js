@@ -18,7 +18,6 @@ exports.protect = async (req, res, next) => {
     else if (req.cookies.token) {
       token = req.cookies.token;
     }
-
     // Make sure token exists
     if (!token) {
       return res.status(401).json({

@@ -14,7 +14,6 @@ if (!process.env.MONGO_URI) {
   console.log(Object.keys(process.env).filter((key) => key.includes("MONGO")));
   process.exit(1);
 }
-
 // CORS configuration
 const corsOptions = {
   origin: ["http://localhost:3000", "http://localhost:3001"],
@@ -32,11 +31,19 @@ app.use(morgan("dev"));
 const authRoutes = require("./route/auth");
 const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
+const classRoutes = require("./route/classRoutes");
+const sowRoutes = require("./route/sowRoutes");
+const lessonRoutes = require("./route/lessonRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
-app.use("/api/gpt",openAiRoutes);
+app.use("/api/gpt", openAiRoutes);
 app.use("/api/assessment", assessmentRoutes);
+app.use("/api/classes", classRoutes);
+app.use("/api/sow", sowRoutes);
+app.use("/api/lessons", lessonRoutes);
+
+
 
 
 
@@ -79,9 +86,8 @@ app.use((err, req, res, next) => {
     const field = Object.keys(err.keyValue || {})[0];
     return res.status(400).json({
       success: false,
-      message: `${
-        field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
-      } already exists`,
+      message: `${field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
+        } already exists`,
     });
   }
 

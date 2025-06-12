@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
@@ -14,13 +14,12 @@ const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isPinned, setIsPinned] = useState(false);
 
-  // Handle window resize
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-      // Auto-collapse sidebar when switching to mobile view
-      if (window.innerWidth <= 768) {
-        setIsPinned(false);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsPinned(false); // Automatically unpin on mobile
       }
     };
 
@@ -29,68 +28,75 @@ const Sidebar = () => {
   }, []);
 
   const togglePin = () => {
-    setIsPinned(!isPinned);
+    if (!isMobile) {
+      setIsPinned(!isPinned);
+    }
   };
 
   const menuItems = [
-    { icon: <HomeIcon />, label: "Home", path: "" },
-    { icon: <FolderCopyIcon />, label: "My Lessons", path: "lessons" },
-    { icon: <LibraryBooksIcon />, label: "Materials", path: "materials" },
-    { icon: <PeopleAltIcon />, label: "Classes", path: "classes" },
+    { icon: <HomeIcon />, label: "Home", path: "/app", end: true },
+    { icon: <FolderCopyIcon />, label: "My Lessons", path: "/app/lessons" },
+    { icon: <LibraryBooksIcon />, label: "Materials", path: "/app/materials" },
+    { icon: <PeopleAltIcon />, label: "Classes", path: "/app/classes" },
   ];
 
-  return (
-    <>
-      {isMobile ? (
-        <div className="bottom-navigation">
-          <ul className="bottom-menu">
-            {menuItems.map((item) => (
-              <li key={item.label}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `bottom-menu-item ${isActive ? "active" : ""}`
-                  }
-                >
-                  <span className="bottom-menu-icon">{item.icon}</span>
-                  <span className="bottom-menu-label">{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className={`sidebar ${isPinned ? "pinned" : ""}`}>
-          <ul className="sidebar-menu">
-            {menuItems.map((item) => (
-              <li key={item.label}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `menu-item ${isActive ? "active" : ""}`
-                  }
-                  title={!isPinned ? item.label : ""}
-                >
-                  <span className="menu-icon">{item.icon}</span>
-                  <span className="menu-label">{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+  // Mobile view remains unchanged
+  if (isMobile) {
+    return (
+      <div className="bottom-navigation">
+        <ul className="bottom-menu">
+          {menuItems.map((item) => (
+            <li key={item.label}>
+              <NavLink
+                to={item.path}
+                end={item.end}
+                className={({ isActive }) =>
+                  `bottom-menu-item ${isActive ? "active" : ""}`
+                }
+              >
+                <span className="bottom-menu-icon">{item.icon}</span>
+                <span className="bottom-menu-label">{item.label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
 
-          <div className="sidebar-footer">
-            <button
-              className={`pin-btn ${isPinned ? "pinned" : ""}`}
-              onClick={togglePin}
-              title={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
-              aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
+  // Desktop view uses the `.pinned` class to control expansion
+  return (
+    <div className={`sidebar ${isPinned ? "pinned" : ""}`}>
+      <ul className="sidebar-menu">
+        {menuItems.map((item) => (
+          <li key={item.label}>
+            <NavLink
+              to={item.path}
+              end={item.end}
+              className={({ isActive }) =>
+                `menu-item ${isActive ? "active" : ""}`
+              }
+              title={!isPinned ? item.label : ""}
             >
-              {isPinned ? <ChevronLeft /> : <ChevronRight />}
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+              <span className="menu-icon">{item.icon}</span>
+              <span className="menu-label">{item.label}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+
+      <div className="sidebar-footer">
+        {/* THE ONLY CHANGE IS THE CLASSNAME ON THE BUTTON */}
+        <button
+          className="pin-btn"
+          onClick={togglePin}
+          title={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
+          aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
+        >
+          {isPinned ? <ChevronLeft /> : <ChevronRight />}
+        </button>
+      </div>
+    </div>
   );
 };
 

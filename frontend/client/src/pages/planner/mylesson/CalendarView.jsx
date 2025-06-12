@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CalendarView.css';
-import CreateLesson from '../../planner/CreateLessonPlan/CreateLesson';
 
+// Days of the week constant for headers
 const days = ['Su.', 'Mo.', 'Tu.', 'We.', 'Th.', 'Fr.', 'Sa.'];
 
 const CalendarView = () => {
   const [selectedView, setSelectedView] = useState('week');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const navigate = useNavigate();
   const today = new Date();
 
-  // Dummy lessons data
+  // Dummy lessons data for display purposes
   const lessons = [
     { title: 'Mathematics', date: '2025-05-12' },
     { title: 'Physics', date: '2025-05-13' },
     { title: 'Biology', date: '2025-05-16' },
     { title: 'Chemistry', date: '2025-05-12' },
-    { title: 'Islamic Studies', date: '2025-05-12' },
-    { title: 'PJK', date: '2025-05-12' },
     { title: 'History', date: '2025-05-14' },
   ];
+
+  const handleCreateLesson = (dateForLesson) => {
+    if (!dateForLesson) {
+      console.error("Cannot create lesson without a valid date.");
+      return;
+    }
+    navigate('/app/test', {
+      state: { selectedDate: dateForLesson.toISOString() }
+    });
+  };
 
   const getWeekDays = () => {
     const week = [];
@@ -29,7 +38,6 @@ const CalendarView = () => {
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(day.setDate(start + i));
-      // Format date to YYYY-MM-DD for comparison with lesson dates
       const dateString = formatDateToYYYYMMDD(date);
       const dayLessons = lessons.filter(lesson => lesson.date === dateString);
 
@@ -44,7 +52,6 @@ const CalendarView = () => {
     return week;
   };
 
-  // Helper function to format date as YYYY-MM-DD
   const formatDateToYYYYMMDD = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -55,11 +62,10 @@ const CalendarView = () => {
   const getMonthDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     const daysArray = [];
-    let dayCounter = 1 - firstDay;
+    let dayCounter = 1 - firstDayOfWeek;
 
     for (let i = 0; i < 6 * 7; i++) {
       const date = new Date(year, month, dayCounter);
@@ -70,19 +76,16 @@ const CalendarView = () => {
       });
       dayCounter++;
     }
-
     return daysArray;
   };
 
   const changeDate = (offset) => {
     const newDate = new Date(currentDate);
-
     if (selectedView === 'week') {
       newDate.setDate(currentDate.getDate() + offset * 7);
     } else if (selectedView === 'month') {
       newDate.setMonth(currentDate.getMonth() + offset);
     }
-
     setCurrentDate(newDate);
   };
 
@@ -91,9 +94,9 @@ const CalendarView = () => {
       <div className="calendar-header">
         <button className="today-btn" onClick={() => setCurrentDate(new Date())}>Today</button>
         <div className="calendar-nav">
-          <button onClick={() => changeDate(-1)}>&lt;</button>
+          <button onClick={() => changeDate(-1)}>{'<'}</button>
           <h2>{currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}</h2>
-          <button onClick={() => changeDate(1)}>&gt;</button>
+          <button onClick={() => changeDate(1)}>{'>'}</button>
         </div>
         <div className="view-toggle">
           <button
@@ -121,7 +124,7 @@ const CalendarView = () => {
               <div className="create-lesson">
                 <button
                   className="create-btn"
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => handleCreateLesson(d.fullDate)}
                 >
                   + Create lesson
                 </button>
@@ -147,15 +150,17 @@ const CalendarView = () => {
               </div>
             ))}
           </div>
-
           <div className="month-grid">
             {getMonthDays().map((d, i) => {
               const dayLessons = lessons.filter(l =>
                 new Date(l.date).toDateString() === d.date.toDateString()
               );
-
               return (
-                <div className="month-cell" key={i}>
+                <div
+                  className={`month-cell ${d.label ? 'active-day' : ''}`}
+                  key={i}
+                  onClick={d.label ? () => handleCreateLesson(d.date) : undefined}
+                >
                   <div className={`month-date ${d.isToday ? 'today' : ''}`}>
                     {d.label}
                   </div>
@@ -166,17 +171,13 @@ const CalendarView = () => {
                       </div>
                     ))}
                   </div>
+                  {d.label && <span className="add-lesson-indicator">+</span>}
                 </div>
               );
             })}
           </div>
         </div>
       )}
-
-      <CreateLesson
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 };

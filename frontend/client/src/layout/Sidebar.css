@@ -2,7 +2,7 @@
 .sidebar {
   width: 80px;
   height: 100%;
-  background-color: #ededed;
+  background-color: #EDEDED;
   color: #000000;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
@@ -15,12 +15,12 @@
   padding: 0 16px;
 }
 
-.sidebar.expanded {
-  width: 200px;
-}
-
-/* Hover effect - expand on hover when not pinned */
-.sidebar:not(.pinned):hover {
+/* 
+  FIX #1: Changed '.expanded' to '.pinned' to match the class name 
+  being applied by the React component. This is the main fix for the
+  expansion problem.
+*/
+.sidebar.pinned {
   width: 200px;
 }
 
@@ -55,12 +55,12 @@
 
 /* Active State - Controlled by React Router */
 .menu-item.active {
-  color: #5880f1;
+  color: #5880F1;
   background-color: rgba(88, 128, 241, 0.1);
 }
 
 .menu-item.active .menu-icon {
-  color: #5880f1;
+  color: #5880F1;
   opacity: 1;
 }
 
@@ -76,52 +76,47 @@
   color: rgba(0, 0, 0, 0.6);
 }
 
-.sidebar:not(.expanded):not(.pinned) .menu-item:hover .menu-icon {
-  transform: scale(1.1);
-}
-
 /* Labels */
 .menu-label {
   margin-left: 15px;
   opacity: 1;
   transform: translateX(0);
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
     transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
-  pointer-events: none;
+  pointer-events: none; /* Important for the transition */
 }
 
-/* Labels when sidebar is collapsed */
-.sidebar:not(.expanded):not(.pinned) {
-  .menu-icon {
-    justify-content: center;
-  }
-  .menu-label {
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.2s;
-    visibility: hidden;
-  }
+/* 
+  FIX #2: Rewrote the invalid nested SASS/SCSS syntax into valid CSS.
+  The original code had rules nested inside other rules, which browsers ignore.
+*/
+.sidebar:not(.pinned) .menu-icon {
+  /* This rule was inside .sidebar:not(.pinned) before */
+  justify-content: center;
 }
 
-/* Labels appear on hover */
-.sidebar:not(.expanded):not(.pinned):hover .menu-label,
-.sidebar.expanded .menu-label,
-.sidebar.pinned .menu-label {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(0);
-  transition-delay: 0.1s;
+.sidebar:not(.pinned) .menu-label {
+  /* This rule was also nested */
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden; /* Use visibility instead of a timed none */
 }
 
-/* Tooltip for collapsed state when NOT hovering the sidebar */
-.sidebar:not(.expanded):not(.pinned):not(:hover) .menu-item:hover .menu-label {
+/* 
+  Tooltip for collapsed state - This rule was also broken by the invalid nesting.
+  It is now a valid top-level CSS rule.
+*/
+.sidebar:not(.pinned) .menu-item:hover .menu-label {
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
   transition-delay: 0.1s;
   position: absolute;
-  left: 80px;
+  left: 80px; /* Positioned outside the collapsed sidebar */
   background: #34495e;
   color: white;
   padding: 8px 12px;
@@ -129,9 +124,9 @@
   z-index: 100;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  white-space: nowrap;
-  pointer-events: none;
+  pointer-events: none; /* The label itself shouldn't be clickable */
 }
+
 
 /* Footer Section */
 .sidebar-footer {
@@ -141,8 +136,9 @@
   border-top: 1px solid #ddd;
 }
 
-/* Pin/Expand Button */
-.expand-btn,
+/* 
+  FIX #3: Changed '.expand-btn' to '.pin-btn' to match the component's JSX.
+*/
 .pin-btn {
   background: none;
   border: none;
@@ -157,31 +153,24 @@
   margin: 0 8px 0 0;
 }
 
-.expand-btn:hover,
 .pin-btn:hover {
   transform: scale(1.1);
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-.pin-btn.pinned {
-  background-color: rgba(88, 128, 241, 0.1);
-  color: #5880f1;
-}
-
-.expand-btn svg,
 .pin-btn svg {
   width: 20px;
   height: 20px;
   transition: fill 0.3s ease;
 }
 
-/* Bottom Navigation Styles */
+/* Bottom Navigation Styles (Unchanged) */
 .bottom-navigation {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #ededed;
+  background-color: #EDEDED;
   z-index: 1000;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
@@ -206,7 +195,7 @@
 }
 
 .bottom-menu-item.active {
-  color: #5880f1;
+  color: #5880F1;
 }
 
 .bottom-menu-icon {
@@ -223,24 +212,22 @@
   text-align: center;
 }
 
-/* Responsive Adjustments */
+
+/* Responsive Adjustments (Unchanged) */
 @media (min-width: 769px) {
   .bottom-navigation {
     display: none;
   }
 }
 
+
 @media (max-width: 768px) {
   .sidebar {
     display: none;
   }
-
-  .sidebar.expanded {
-    display: none;
-  }
 }
 
-/* Material Icons Specific Adjustments */
+/* Material Icons Specific Adjustments (Unchanged) */
 .menu-icon .MuiSvgIcon-root,
 .bottom-menu-icon .MuiSvgIcon-root {
   width: 100%;
@@ -249,36 +236,8 @@
   fill: currentColor;
 }
 
-/* Remove default NavLink active styles */
+/* Remove default NavLink active styles (Unchanged) */
 a {
   text-decoration: none;
   color: inherit;
-}
-
-/* Ensure active state doesn't show multiple items */
-.menu-item:not(.active) {
-  background-color: transparent;
-}
-
-/* Smooth transitions for hover expansion */
-.sidebar:not(.pinned) .menu-label {
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Content area adjustment */
-.main-content {
-  transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.pinned ~ .main-content {
-  margin-left: 200px;
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0;
-    margin-bottom: 60px;
-  }
 }

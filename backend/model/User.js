@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     },
     schoolName: {
       type: String,
-      required: [true, "School name is required"],
+      // required: [true, "School name is required"],
       trim: true,
     },
     roles: {

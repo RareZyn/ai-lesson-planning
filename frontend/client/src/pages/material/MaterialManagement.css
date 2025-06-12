@@ -1,0 +1,697 @@
+/* MaterialManagement.css - Updated Version */
+
+/* Main Container */
+.material-management-container {
+    background-color: #f9f9f9;
+    min-height: calc(100vh - 60px);
+}
+
+/* Header Styles */
+.material-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+
+.upload-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: #5880f1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.upload-button:hover {
+    background-color: #3a6bdb;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Controls Section */
+.material-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 6px;
+    padding: 8px 12px;
+    width: 300px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    transition: border-color 0.2s;
+}
+
+.search-bar:focus-within {
+    border-color: #5880f1;
+}
+
+.search-icon {
+    color: #888;
+    margin-right: 8px;
+    font-size: 20px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    color: #333;
+}
+
+.filter-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: white;
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.filter-dropdown select {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    cursor: pointer;
+    color: #333;
+    background-color: transparent;
+}
+
+/* Materials List */
+.materials-list {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+}
+
+.empty-state {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    color: #555;
+    position: sticky;
+    top: 0;
+}
+
+/* Material Row Styles */
+.file-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.file-row:hover {
+    background-color: #f8f9fa;
+}
+
+.link-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.link-row:hover {
+    background-color: #f0f7ff;
+}
+
+.material-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+}
+
+.file-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.file-icon.pdf {
+    color: #e74c3c;
+}
+
+.file-icon.docx {
+    color: #2c3e50;
+}
+
+.file-icon.link {
+    color: #3498db;
+}
+
+.external-icon {
+    font-size: 16px;
+    margin-left: 6px;
+    color: #5880f1;
+    opacity: 0.7;
+}
+
+.link-row:hover .external-icon {
+    opacity: 1;
+}
+
+.delete-button {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-button:hover {
+    background-color: rgba(231, 76, 60, 0.1);
+    transform: scale(1.1);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Viewer Modal Styles */
+.viewer-modal {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 900px;
+    height: 90%;
+    max-height: 700px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+    background-color: #f9f9f9;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-button:hover {
+    color: #555;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.viewer-content {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+/* PDF Viewer */
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Document Placeholder */
+.doc-viewer-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #555;
+    gap: 16px;
+    padding: 20px;
+    text-align: center;
+}
+
+.doc-viewer-placeholder svg {
+    font-size: 60px;
+    color: #2c3e50;
+    opacity: 0.7;
+}
+
+/* Modal Footer */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 20px;
+    border-top: 1px solid #eee;
+    background-color: #f9f9f9;
+}
+
+.open-external {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #5880f1;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.open-external:hover {
+    background-color: rgba(88, 128, 241, 0.1);
+    text-decoration: underline;
+}
+
+/* Upload Modal Styles */
+.upload-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 95%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: modalFadeIn 0.3s ease;
+  overflow: hidden;
+}
+
+.upload-modal .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upload-modal .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+}
+
+.upload-modal .close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.upload-modal .close-button:hover {
+  color: #555;
+}
+
+/* Upload Options Tabs */
+.upload-options {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.option-button {
+  flex: 1;
+  padding: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.option-button.active {
+  color: #5880f1;
+  border-bottom-color: #5880f1;
+  background-color: rgba(88, 128, 241, 0.05);
+}
+
+.option-button:hover:not(.active) {
+  background-color: #f5f5f5;
+}
+
+/* Upload Content Area */
+.upload-content {
+  padding: 24px;
+}
+
+/* File Dropzone */
+.file-dropzone {
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  background-color: #fafafa;
+}
+
+.file-dropzone:hover {
+  border-color: #5880f1;
+  background-color: #f5f8ff;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #888;
+  margin-bottom: 12px;
+  transition: color 0.3s;
+}
+
+.file-dropzone:hover .upload-icon {
+  color: #5880f1;
+}
+
+.file-dropzone p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #444;
+}
+
+.file-input-label:hover {
+  background-color: #e0e0e0;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+.selected-file svg {
+  color: #5880f1;
+}
+
+.selected-file span {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.file-requirements {
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Link Input */
+.link-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  transition: border-color 0.3s;
+}
+
+.link-input:focus-within {
+  border-color: #5880f1;
+}
+
+.link-input svg {
+  color: #888;
+  margin-right: 10px;
+  font-size: 24px;
+}
+
+.link-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #333;
+  background: transparent;
+}
+
+.link-requirements {
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  background-color: #f9f9f9;
+}
+
+.cancel-button {
+  padding: 8px 16px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.cancel-button:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+.submit-button {
+  padding: 8px 16px;
+  background-color: #5880f1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #3a6bdb;
+  transform: translateY(-1px);
+}
+
+.submit-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .material-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .material-controls {
+        flex-direction: column;
+    }
+
+    .search-bar {
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .viewer-modal {
+        width: 95%;
+        height: 85%;
+    }
+
+    .modal-header h3 {
+        font-size: 16px;
+        max-width: 70%;
+    }
+}
+
+@media (max-width: 480px) {
+    .material-header h2 {
+        font-size: 20px;
+    }
+
+    .upload-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    th,
+    td {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .file-icon {
+        font-size: 18px;
+    }
+
+    .modal-header h3 {
+        font-size: 15px;
+    }
+
+    .upload-modal {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+    }
+
+    .upload-content {
+        padding: 16px;
+    }
+
+    .file-dropzone {
+        padding: 20px;
+    }
+
+    .selected-file span {
+        max-width: 200px;
+    }
+
+    .option-button {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+}

@@ -9,5 +9,8 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "concurrently \"cd backend && npm install\" \"cd frontend/client && npm install\"",
     "install-all": "npm install && cd backend && npm install && cd ../frontend/client && npm install"
+  },
+  "dependencies": {
+    "express-validator": "^7.2.1"
   }
 }

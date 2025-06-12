@@ -12,6 +12,7 @@ import {
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import LogoutIcon from "@mui/icons-material/Logout";
 import "./Profile.css";
+import { authAPI } from "../../services/api"; // Adjust the import path as needed
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -68,6 +69,7 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      await authAPI.logout(); // Ensure backend logout if needed
       handleProfileClose();
     } catch (error) {
       console.error("Logout error:", error);

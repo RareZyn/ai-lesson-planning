@@ -11,7 +11,7 @@ const AITools = () => {
       id: "lesson-plans",
       title: "Lesson Plans",
       icon: "/logo/lessonIcon.png",
-      path: "lesson-plans",
+      path: "lessons",
     },
     {
       id: "activities",
