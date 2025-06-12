@@ -31,7 +31,8 @@ app.use(morgan("dev"));
 const authRoutes = require("./route/auth");
 const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
-const classRoutes = require("./route/classRoutes");
+const dskpRoutes = require("./route/dskp");
+const textbookRoutes = require("./route/textbook");const classRoutes = require("./route/classRoutes");
 const sowRoutes = require("./route/sowRoutes");
 const lessonRoutes = require("./route/lessonRoutes");
 
@@ -39,6 +40,8 @@ const lessonRoutes = require("./route/lessonRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/gpt", openAiRoutes);
 app.use("/api/assessment", assessmentRoutes);
+app.use("/api/dskp", dskpRoutes);
+app.use("/api/textbook", textbookRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/sow", sowRoutes);
 app.use("/api/lessons", lessonRoutes);

@@ -1,0 +1,37 @@
+{
+  "class": "",
+  "lesson": "",
+  "lessonInSow": "",
+  "day": "",
+  "date": "",
+  "time": "",
+  "subject": "",
+  "information": {
+    "iThink": "",
+    "fourSkill": "",
+    "cce": "",
+    "hots": "",
+    "theme": "",
+    "topic": ""
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "",
+      "complemantary": ""
+    },
+    "learningStandard": {
+      "main": "",
+      "complemantary": ""
+    }
+  },
+  "preferenceActivity": {
+    "type": ""
+  },
+  "Activity": {
+    "objective": "",
+    "successCriteria": "",
+    "preActivity": "",
+    "activity": "",
+    "postActivity": ""
+  }
+}

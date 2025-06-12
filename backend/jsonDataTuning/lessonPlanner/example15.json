@@ -1,0 +1,44 @@
+{
+  "teacherId": "665dbeae4a1a6e3d9a7cfa0f",
+  "lessonPlannerId": "665dbeae4a1a6e3d9a7cfa2f",
+  "classId": "665dbeae4a1a6e3d9a7cfa4f",
+  "class": "5 Cemerlang",
+  "lesson": "2",
+  "lessonInSow": "16",
+  "day": "1",
+  "date": "15/09/2025",
+  "time": "9.00 – 11.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Flow Map",
+    "fourSkill": "Reading",
+    "cce": "Consumerism and Financial Awareness",
+    "hots": "Creating",
+    "theme": "Consumerism and Financial Awareness",
+    "topic": "A Hard Day's Work"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "3.1 - Understand a variety of texts by using a range of appropriate reading strategies to construct meaning",
+      "complemantary": "3.2 - Explore and expand ideas for personal development by reading independently and widely"
+    },
+    "learningStandard": {
+      "main": "3.1.4 - Use print and digital resources to check meaning",
+      "complemantary": "3.2.1 - Read and enjoy fiction / non-fiction and other suitable print and digital texts of interest"
+    }
+  },
+  "preferenceActivity": {
+    "type": "textbook",
+    "selectedForm": "form5",
+    "selectedTopic": "A Hard Day's Work",
+    "activityType": "Project Work",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to create comprehensive project presentations analyzing workplace dynamics and financial literacy concepts from the textbook 'A Hard Day's Work', demonstrate mastery of advanced reading strategies to construct meaning from complex texts, utilize print and digital resources for in-depth research, and synthesize textbook content with real-world career and financial planning applications while developing innovative solutions to contemporary workplace challenges.",
+    "successCriteria": "Students can design and execute original project work incorporating at least 8 key concepts from the textbook passage about work and financial responsibility, demonstrate sophisticated use of print and digital resources to verify and expand textbook information, create detailed Flow Maps showing the sequential process from education to career success to financial security, present well-researched 15-20 minute project presentations that synthesize textbook content with current workplace trends, and develop innovative proposals for addressing modern workplace and financial literacy challenges based on textbook foundations.",
+    "preActivity": "Teacher introduces the topic 'A Hard Day's Work' by presenting current statistics about Malaysian workforce trends, career satisfaction, and financial literacy among young adults. Students examine the textbook unit by analyzing complex vocabulary related to career development, workplace ethics, and financial planning (entrepreneurship, work-life balance, professional development, financial security, career trajectory, etc.). Demonstrate Flow Map structure to show the sequential progression from education through career development to financial independence. Students share their career aspirations and discuss how the textbook content relates to their future planning, identifying gaps between textbook concepts and current workplace realities.",
+    "activity": "1. Advanced Textbook Analysis and Concept Extraction (25 minutes): Students conduct intensive reading of 'A Hard Day's Work' textbook materials, focusing on:\n   - Complex workplace scenarios and ethical dilemmas presented\n   - Financial literacy concepts and their practical applications\n   - Career development strategies and professional skills\n   - Work-life balance challenges and solutions\n   Students create comprehensive Flow Maps showing sequential relationships between education, skill development, career choices, and financial outcomes\n\n2. Multi-Resource Research and Verification (30 minutes): Students use print and digital resources to:\n   - Verify textbook information against current industry reports\n   - Research Malaysian workplace trends and salary data\n   - Investigate emerging careers not covered in textbook\n   - Explore financial planning tools and investment options\n   - Compare textbook advice with contemporary career guidance\n   Students document their findings and note discrepancies or updates needed\n\n3. Project Topic Selection and Proposal Development (20 minutes): Based on textbook content and research, students choose project focuses such as:\n   - \"Bridging the Gap: Updating Career Education for Digital Economy\"\n   - \"Financial Literacy Revolution: Teaching Money Management to Malaysian Youth\"\n   - \"The Future Workplace: Preparing for Jobs That Don't Exist Yet\"\n   - \"Entrepreneurship vs Employment: A Cost-Benefit Analysis for Graduates\"\n   Students develop detailed project proposals outlining objectives, methodology, and expected outcomes\n\n4. Project Development and Creation Phase (45 minutes): Students work independently to create comprehensive projects incorporating:\n   - Textbook concepts as foundational framework\n   - Current research and statistical analysis\n   - Interactive elements (surveys, interviews, case studies)\n   - Visual presentations with charts, graphs, and infographics\n   - Practical recommendations for students, educators, or policymakers\n   - Critical evaluation of textbook relevance to current reality\n\n5. Peer Collaboration and Resource Sharing (15 minutes): Students collaborate to:\n   - Share valuable resources and research findings\n   - Provide feedback on project development\n   - Cross-reference textbook interpretations\n   - Suggest improvements and additional perspectives\n   - Coordinate complementary project elements to avoid overlap\n\n6. Project Presentation Preparation (10 minutes): Students finalize their presentations ensuring:\n   - Clear connection between textbook content and project outcomes\n   - Professional presentation skills and visual aids\n   - Time management for 15-20 minute presentations\n   - Preparation for questions and discussion\n   - Documentation of all sources used in research\n\n7. Project Presentations and Peer Evaluation (35 minutes): Students present their projects while others:\n   - Evaluate integration of textbook concepts with original research\n   - Assess quality of additional resources and verification\n   - Note innovative solutions and creative applications\n   - Provide constructive feedback on presentation skills\n   - Identify practical applications for their own career planning",
+    "postActivity": "Teacher facilitates a comprehensive synthesis session where students identify common themes across all projects and evaluate which presentations most effectively bridged textbook theory with practical application. Class creates a collaborative resource bank of career and financial planning tools discovered during the project work. Students reflect on how the project deepened their understanding of textbook concepts and their relevance to real-world career and financial decisions. Teacher highlights exceptional examples of resource utilization and innovative thinking. Students vote on projects that provided the most valuable insights for their own career planning. Final assignment involves students creating a personal career and financial plan incorporating lessons learned from both textbook content and peer projects, to be presented in a portfolio format for assessment."
+  }
+}

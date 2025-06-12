@@ -1,0 +1,52 @@
+{
+  "teacherId": "665dbeb34a1a6e3d9a7cfa13",
+  "lessonPlannerId": "665dbeb34a1a6e3d9a7cfa33",
+  "classId": "665dbeb34a1a6e3d9a7cfa53",
+  "class": "4 Integriti",
+  "lesson": "1",
+  "lessonInSow": "6",
+  "day": "2",
+  "date": "21/07/2025",
+  "time": "10.00 – 12.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Brace Map",
+    "fourSkill": "Listening",
+    "cce": "Science and Technology",
+    "hots": "Evaluating",
+    "theme": "Science and Technology",
+    "topic": "Science & Technology"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "1.1 - Understand meaning in a variety of familiar and some unfamiliar contexts",
+      "complemantary": "1.3 - Recognise features of spoken genres on familiar and some unfamiliar topics"
+    },
+    "learningStandard": {
+      "main": "1.1.2 - Understand independently specific information and details in a variety of text types on familiar and some unfamiliar topics",
+      "complemantary": "1.3.1 - Identify typical features of spoken texts such as speeches and interviews"
+    }
+  },
+  "preferenceActivity": {
+    "type": "assessment",
+    "form": "form4",
+    "assessmentType": "matching",
+    "questionTypes": ["match_column", "short_answer", "fill_blank"],
+    "skills": ["listening", "vocabulary", "reading"],
+    "difficultyLevel": "advanced",
+    "numberOfQuestions": "35",
+    "timeAllocation": "90",
+    "includeInstructions": true,
+    "includeAnswerKey": true,
+    "literatureComponent": "drama",
+    "specificTopic": "",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to evaluate scientific and technological concepts through advanced listening assessment, demonstrate independent understanding of specific information from speeches and interviews about scientific innovations, analyze dramatic presentations about technology's impact on society, and systematically organize complex technological information using Brace Map structure while showing mastery of advanced vocabulary and listening comprehension skills.",
+    "successCriteria": "Students can achieve at least 85% accuracy on the 35-question advanced assessment covering listening, vocabulary, and reading skills related to science and technology themes, successfully identify specific details from audio speeches and interviews about scientific innovations, demonstrate understanding of dramatic dialogue about technology's societal impact, complete complex matching exercises connecting scientific concepts with their applications, and organize technological information systematically using Brace Map analysis within the allocated 90-minute assessment period.",
+    "preActivity": "Teacher reviews the topic 'Science & Technology' by presenting current scientific breakthroughs and technological innovations that are transforming society (artificial intelligence, biotechnology, renewable energy, space exploration, etc.). Students review advanced scientific and technological vocabulary (innovation, biotechnology, nanotechnology, sustainability, automation, quantum computing, etc.) that will be assessed. Demonstrate Brace Map structure to systematically break down complex technological systems into components, functions, and applications. Teacher explains the advanced matching assessment format including audio components, dramatic excerpts, and complex vocabulary matching. Students practice listening to scientific speeches and interviews to prepare for the assessment format.",
+    "activity": "1. Assessment Instructions and Technology Setup (12 minutes): Teacher distributes assessment materials and sets up audio equipment while explaining:\n   - Assessment format: 35 questions (12 match-column, 15 short answer, 8 fill-blank)\n   - Time allocation: 90 minutes with specific timing for each section\n   - Procedures for listening components with scientific speeches and interviews\n   - Instructions for analyzing dramatic excerpts about technology themes\n   - Guidelines for systematic organization using Brace Map thinking\n\n2. Section A: Audio Listening - Scientific Speeches and Interviews (30 minutes - Questions 1-12): Students complete matching exercises while listening to:\n   - **Audio 1 (8 minutes):** Scientific conference speech about emerging technologies\n   - **Audio 2 (7 minutes):** Interview with technology innovator about AI development\n   - **Audio 3 (6 minutes):** Panel discussion on sustainable technology solutions\n   Students match speakers with their main arguments, technological concepts with definitions, and scientific processes with their applications\n   \n3. Section B: Short Answer - Technology Analysis and Evaluation (35 minutes - Questions 13-27): Students provide detailed written responses requiring:\n   - **Questions 13-16:** Evaluating advantages and disadvantages of specific technologies from audio materials\n   - **Questions 17-20:** Analyzing dramatic dialogue excerpts about technology's impact on human relationships\n   - **Questions 21-24:** Explaining complex scientific processes and their real-world applications\n   - **Questions 25-27:** Predicting future technological developments based on current trends\n   Students use Brace Map thinking to systematically organize technological components and relationships\n\n4. Section C: Scientific Vocabulary and Context (25 minutes - Questions 28-35): Students complete fill-in-the-blank exercises featuring:\n   - Advanced scientific terminology in context of technological innovation\n   - Technical vocabulary from dramatic presentations about science ethics\n   - Complex cause-and-effect relationships in technological development\n   - Specialized language from speeches about scientific research methods\n   Students demonstrate understanding of sophisticated scientific vocabulary and concepts\n\n5. Assessment Review and Technical Accuracy Check (10 minutes): Students review completed assessment for:\n   - Accuracy of scientific terminology and technical vocabulary\n   - Completeness of detailed analysis in short answer responses\n   - Logical organization using Brace Map systematic thinking\n   - Proper understanding of audio content and dramatic themes\n\n6. Self-Evaluation and Reflection (8 minutes): Students complete self-assessment focusing on:\n   - Effectiveness of listening strategies for scientific content\n   - Understanding of complex technological concepts and vocabulary\n   - Ability to analyze and evaluate scientific information\n   - Use of systematic thinking for organizing technological knowledge\n\n7. Answer Key Review and Scientific Discussion (30 minutes): Teacher conducts comprehensive review:\n   - **Audio Section:** Replays key segments and explains correct matching rationale\n   - **Short Answer:** Shares model responses demonstrating scientific analysis and evaluation\n   - **Vocabulary Section:** Clarifies technical terminology and contextual usage\n   - **Drama Component:** Discusses technology themes and ethical implications\n   - Facilitates class discussion on future technological developments and societal impact\n\n8. Performance Analysis and Advanced Feedback (20 minutes): Teacher provides sophisticated feedback covering:\n   - Listening comprehension accuracy for scientific speeches and interviews\n   - Quality of analytical thinking and evaluation skills\n   - Mastery of advanced scientific and technological vocabulary\n   - Effectiveness of systematic organization and Brace Map application\n   - Readiness for advanced scientific and technological discourse\n\n9. Individual Goal Setting and Extension Planning (5 minutes): Students identify:\n   - Specific scientific areas requiring additional study\n   - Listening strategies needing improvement for technical content\n   - Vocabulary development goals for advanced scientific discourse\n   - Plans for exploring emerging technologies and innovations",
+    "postActivity": "Teacher schedules individual consultations with students scoring below 85% to provide targeted support in scientific listening comprehension and vocabulary development. Students create personal technology portfolios based on assessment insights, selecting emerging technologies to research and analyze using Brace Map systematic thinking. Class organizes a 'Future Technology Forum' where students present their predictions about technological developments discussed in the assessment. Teacher assigns differentiated extension activities: advanced scientific research projects for high achievers and remedial listening comprehension exercises for students needing additional support. Students reflect on how systematic Brace Map thinking enhanced their understanding of complex technological concepts during assessment and plan to apply this strategy in future scientific studies. Assessment results inform curriculum planning for advanced scientific discourse and technology literacy development."
+  }
+}

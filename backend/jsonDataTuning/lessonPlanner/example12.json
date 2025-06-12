@@ -1,0 +1,44 @@
+{
+  "teacherId": "665dbeab4a1a6e3d9a7cfa0c",
+  "lessonPlannerId": "665dbeab4a1a6e3d9a7cfa2c",
+  "classId": "665dbeab4a1a6e3d9a7cfa4c",
+  "class": "2 Harmoni",
+  "lesson": "1",
+  "lessonInSow": "4",
+  "day": "2",
+  "date": "07/05/2025",
+  "time": "10.30 – 12.30",
+  "subject": "English",
+  "information": {
+    "iThink": "Bubble Map",
+    "fourSkill": "Speaking",
+    "cce": "Patriotism",
+    "hots": "Applying",
+    "theme": "People and Culture",
+    "topic": "Colours of Malaysia"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "2.1 - Communicate information, ideas, opinions and feelings intelligibly on familiar topics",
+      "complemantary": "2.4 - Communicate appropriately to a small or large group on familiar topics"
+    },
+    "learningStandard": {
+      "main": "2.1.1 - Ask about and give detailed information about themselves and others",
+      "complemantary": "2.4.1 - Narrate short stories, events and experiences"
+    }
+  },
+  "preferenceActivity": {
+    "type": "textbook",
+    "selectedForm": "form2",
+    "selectedTopic": "Colours of Malaysia",
+    "activityType": "Role Play",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to apply information from the textbook 'Colours of Malaysia' to create and perform role plays showcasing Malaysian cultural diversity, give detailed information about different ethnic groups and traditions, and narrate cultural experiences while demonstrating patriotic values and appreciation for multicultural harmony.",
+    "successCriteria": "Students can extract and apply at least 6 specific cultural details from the textbook passage about Malaysian diversity, create authentic role play scenarios representing different ethnic communities with accurate cultural information, perform 4-5 minute role plays using appropriate vocabulary and expressions from the textbook, and demonstrate clear narration skills when sharing cultural stories and experiences to both small groups and the whole class.",
+    "preActivity": "Teacher introduces the topic 'Colours of Malaysia' by displaying the Malaysian flag and discussing what the colors represent, then showing images of Malaysia's diverse ethnic communities (Malay, Chinese, Indian, and indigenous groups). Students preview the textbook unit by examining pictures, headings, and key vocabulary related to Malaysian culture (tradition, festival, heritage, harmony, unity, diversity, etc.). Demonstrate Bubble Map structure to organize information about different aspects of Malaysian culture: festivals, food, clothing, languages, customs, and values. Students share their own cultural backgrounds and family traditions as warm-up for the textbook content.",
+    "activity": "1. Textbook Reading and Information Extraction (20 minutes): Students read the 'Colours of Malaysia' textbook passage in pairs, taking turns reading aloud. They use Bubble Maps to organize information about:\n   - Malaysian ethnic groups and their characteristics\n   - Traditional festivals and celebrations\n   - Cultural foods and customs\n   - Languages and communication styles\n   - Values of unity and harmony\n\n2. Cultural Detail Analysis (15 minutes): Students work with textbook content to identify specific details about:\n   - How different communities celebrate festivals\n   - Traditional clothing and cultural symbols\n   - Food traditions and family customs\n   - Ways communities work together in Malaysia\n   Students highlight key phrases and expressions from the textbook for use in role plays\n\n3. Role Play Scenario Planning (15 minutes): Using textbook information, student pairs choose scenarios such as:\n   - A Malaysian family preparing for a multicultural celebration\n   - Tourists learning about Malaysian diversity from local guides\n   - Students from different ethnic backgrounds sharing their traditions\n   - Community members organizing a unity celebration\n   Students plan their characters using textbook vocabulary and cultural details\n\n4. Textbook Language and Expression Practice (10 minutes): Students practice key phrases and expressions from the textbook such as:\n   - Describing cultural traditions: \"In our culture, we...\"\n   - Asking about customs: \"How do you celebrate...?\"\n   - Sharing experiences: \"During festivals, my family...\"\n   - Expressing unity: \"What makes Malaysia special is...\"\n\n5. Role Play Rehearsal and Refinement (15 minutes): Student pairs rehearse their role plays, incorporating:\n   - Accurate cultural information from the textbook\n   - Natural dialogue using textbook vocabulary\n   - Clear narration of cultural experiences\n   - Respectful representation of different communities\n\n6. Role Play Performances (30 minutes): Pairs perform their role plays for the class while others:\n   - Listen for accurate use of textbook information\n   - Identify cultural details and traditions mentioned\n   - Note effective use of textbook vocabulary and expressions\n   - Appreciate the diversity of Malaysian culture presented\n\n7. Cultural Reflection and Discussion (15 minutes): After performances, students discuss:\n   - Which cultural traditions they found most interesting\n   - How the textbook helped them understand Malaysian diversity\n   - Personal connections to the cultural information shared\n   - Ways they can promote unity in their own community",
+    "postActivity": "Teacher leads a whole-class celebration of Malaysian diversity by having students share one new thing they learned about Malaysian culture from the textbook and role plays. Students reflect on how the activity helped them appreciate their country's multicultural heritage and discuss ways they can apply this knowledge in their daily lives. Teacher highlights excellent use of textbook vocabulary and cultural accuracy observed during the role plays. Students create a class display featuring quotes and cultural facts from the textbook unit. For homework, students interview a family member or community elder about a Malaysian cultural tradition and prepare to share their findings using vocabulary from the textbook in the next lesson."
+  }
+}

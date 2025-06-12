@@ -1,0 +1,361 @@
+[
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Understand"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "5_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Understand"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "15_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "individual",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Apply",
+      "Evaluate",
+      "Create"
+    ],
+    "activityType": "Presentation",
+    "duration": "15_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "individual",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Evaluate",
+      "Create",
+      "Analyze"
+    ],
+    "activityType": "Group Discussion",
+    "duration": "10_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "individual",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Create"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "5_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Analyze",
+      "Apply"
+    ],
+    "activityType": "Group Discussion",
+    "duration": "5_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Remember"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "5_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Analyze"
+    ],
+    "activityType": "Presentation",
+    "duration": "10_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Evaluate",
+      "Create",
+      "Understand"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "10_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Create",
+      "Apply"
+    ],
+    "activityType": "Group Discussion",
+    "duration": "30_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Apply",
+      "Create"
+    ],
+    "activityType": "Presentation",
+    "duration": "15_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "small_group",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Create",
+      "Evaluate"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "30_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "individual",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Analyze",
+      "Remember"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "10_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "small_group",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Evaluate"
+    ],
+    "activityType": "Role Play",
+    "duration": "15_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "individual",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Create",
+      "Evaluate",
+      "Understand"
+    ],
+    "activityType": "Presentation",
+    "duration": "30_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "small_group",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Remember",
+      "Understand",
+      "Apply"
+    ],
+    "activityType": "Role Play",
+    "duration": "30_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Analyze"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "5_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Apply",
+      "Evaluate",
+      "Remember"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "45_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Create",
+      "Analyze"
+    ],
+    "activityType": "Presentation",
+    "duration": "45_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Remember",
+      "Analyze",
+      "Create"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "45_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Analyze"
+    ],
+    "activityType": "Group Discussion",
+    "duration": "10_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Understand"
+    ],
+    "activityType": "Presentation",
+    "duration": "30_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "whole_class",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Understand",
+      "Analyze"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "30_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Remember",
+      "Create",
+      "Analyze"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "30_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Analyze",
+      "Understand",
+      "Apply"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "5_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "classroom_only",
+    "bloomTaxonomy": [
+      "Evaluate",
+      "Apply"
+    ],
+    "activityType": "Role Play",
+    "duration": "10_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "small_group",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Evaluate"
+    ],
+    "activityType": "Group Discussion",
+    "duration": "15_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "small_group",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Understand"
+    ],
+    "activityType": "Think-Pair-Share",
+    "duration": "15_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "online_resources",
+    "bloomTaxonomy": [
+      "Create",
+      "Apply",
+      "Analyze"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "30_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  {
+    "studentArrangement": "pairs",
+    "resourceUsage": "lab_equipment",
+    "bloomTaxonomy": [
+      "Evaluate",
+      "Analyze"
+    ],
+    "activityType": "Problem Solving",
+    "duration": "15_min",
+    "difficultyLevel": "easy",
+    "additionalRequirement": ""
+  }
+]

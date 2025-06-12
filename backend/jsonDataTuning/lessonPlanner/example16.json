@@ -1,0 +1,52 @@
+{
+  "teacherId": "665dbeb04a1a6e3d9a7cfa10",
+  "lessonPlannerId": "665dbeb04a1a6e3d9a7cfa30",
+  "classId": "665dbeb04a1a6e3d9a7cfa50",
+  "class": "1 Berjaya",
+  "lesson": "5",
+  "lessonInSow": "25",
+  "day": "1",
+  "date": "02/05/2025",
+  "time": "11.00 – 13.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Circle Map",
+    "fourSkill": "Reading",
+    "cce": "Language",
+    "hots": "Remembering",
+    "theme": "People and Culture",
+    "topic": "My Brother's Keeper"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "3.1 - Understand a variety of texts by using a range of appropriate reading strategies to construct meaning",
+      "complemantary": "3.2 - Explore and expand ideas for personal development by reading independently and widely"
+    },
+    "learningStandard": {
+      "main": "3.1.1 - Understand the main points in simple longer texts",
+      "complemantary": "3.2.1 - Read and enjoy fiction / non-fiction and other suitable print and digital texts of interest"
+    }
+  },
+  "preferenceActivity": {
+    "type": "assessment",
+    "form": "form1",
+    "assessmentType": "comprehension",
+    "questionTypes": ["multiple_choice", "true_false"],
+    "skills": ["reading", "vocabulary"],
+    "difficultyLevel": "beginner",
+    "numberOfQuestions": "15",
+    "timeAllocation": "45",
+    "includeInstructions": true,
+    "includeAnswerKey": true,
+    "literatureComponent": "short_story",
+    "specificTopic": "",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to demonstrate their understanding of reading comprehension skills through a structured assessment focusing on the theme 'My Brother's Keeper', identify main points in simple texts about family relationships, and recall specific vocabulary and details from short story passages while organizing information using Circle Map structure.",
+    "successCriteria": "Students can achieve at least 70% accuracy on the 15-question assessment covering reading comprehension and vocabulary, successfully identify main points from the short story passage about family relationships, demonstrate understanding of family-related vocabulary through multiple choice and true/false questions, and complete the assessment within the allocated 45-minute time frame while following proper assessment procedures.",
+    "preActivity": "Teacher explains the assessment format and reviews the topic 'My Brother's Keeper' by discussing family relationships, sibling bonds, and responsibilities within families. Students review key vocabulary related to family themes (sibling, responsibility, caring, support, loyalty, protection, etc.) that will appear in the assessment. Demonstrate Circle Map structure to help students organize information about family relationships and roles. Teacher provides clear assessment instructions including time management, question formats, and proper procedures for answering multiple choice and true/false questions. Students practice reading short passages and identifying main points as warm-up for the assessment.",
+    "activity": "1. Assessment Instructions and Preparation (5 minutes): Teacher distributes assessment materials and reviews:\n   - Assessment format: 15 questions (10 multiple choice, 5 true/false)\n   - Time allocation: 45 minutes total\n   - Proper procedures for marking answers\n   - Instructions for reading the passage carefully\n   - Guidelines for managing time effectively\n\n2. Reading Passage Introduction (5 minutes): Students receive the short story passage about family relationships related to 'My Brother's Keeper' theme. Teacher provides initial guidance:\n   - Read the passage completely before answering questions\n   - Use Circle Map mentally to organize family relationships mentioned\n   - Pay attention to main ideas and important details\n   - Note key vocabulary and character relationships\n\n3. Individual Assessment Completion (45 minutes): Students independently complete the assessment which includes:\n   \n   **Reading Comprehension Questions (Questions 1-10 - Multiple Choice):**\n   - Identifying main themes about family responsibility\n   - Understanding character motivations and relationships\n   - Recognizing cause and effect in family situations\n   - Interpreting emotions and feelings between siblings\n   - Identifying important events in the story sequence\n   \n   **Vocabulary and Detail Questions (Questions 11-15 - True/False):**\n   - Understanding family-related vocabulary in context\n   - Recognizing specific details about characters\n   - Identifying correct information about story settings\n   - Understanding simple figurative language about family bonds\n   - Recalling specific actions and dialogue from the passage\n\n4. Assessment Review and Collection (5 minutes): Students review their answers for:\n   - Completeness of all questions answered\n   - Clarity of marked responses\n   - Time management and final checks\n   Teacher collects completed assessments and provides immediate feedback about the process\n\n5. Self-Reflection on Assessment Experience (10 minutes): Students reflect on:\n   - Which types of questions they found most challenging\n   - How well they understood the family themes in the passage\n   - Effectiveness of their reading strategies during the assessment\n   - Areas where they felt confident or needed improvement\n\n6. Answer Key Review and Learning Discussion (15 minutes): Teacher reviews correct answers with the class:\n   - Explains reasoning behind each correct answer\n   - Discusses main themes and vocabulary from the passage\n   - Addresses common misconceptions or difficulties\n   - Connects assessment content back to family relationship themes\n   - Provides strategies for improving reading comprehension\n\n7. Assessment Analysis and Feedback (10 minutes): Teacher provides general feedback about:\n   - Overall class performance patterns\n   - Strengths demonstrated in reading comprehension\n   - Areas needing additional practice and support\n   - Next steps for continued learning about family themes",
+    "postActivity": "Teacher conducts individual conferences with students who need additional support based on assessment results. Students create personal learning goals based on their assessment performance, identifying specific reading skills they want to improve. Class discusses the importance of family relationships highlighted in the assessment passage and connects themes to their own family experiences. Teacher assigns remedial activities for students who scored below 70% and extension activities for high achievers. Students reflect on how the Circle Map thinking strategy helped them organize information during reading, and plan to use similar strategies in future reading tasks. Assessment results are recorded for progress monitoring and parent communication."
+  }
+}

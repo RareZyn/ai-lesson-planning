@@ -1,0 +1,52 @@
+{
+  "teacherId": "665dbeb44a1a6e3d9a7cfa14",
+  "lessonPlannerId": "665dbeb44a1a6e3d9a7cfa34",
+  "classId": "665dbeb44a1a6e3d9a7cfa54",
+  "class": "5 Eminence",
+  "lesson": "3",
+  "lessonInSow": "21",
+  "day": "1",
+  "date": "08/09/2025",
+  "time": "8.00 – 11.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Multi-Flow Map",
+    "fourSkill": "Reading",
+    "cce": "Patriotism",
+    "hots": "Creating",
+    "theme": "People and Culture",
+    "topic": "Happy to Help!"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "3.1 - Understand a variety of texts by using a range of appropriate reading strategies to construct meaning",
+      "complemantary": "3.2 - Explore and expand ideas for personal development by reading independently and widely"
+    },
+    "learningStandard": {
+      "main": "3.1.4 - Use print and digital resources to check meaning",
+      "complemantary": "3.2.1 - Read and enjoy fiction / non-fiction and other suitable print and digital texts of interest"
+    }
+  },
+  "preferenceActivity": {
+    "type": "assessment",
+    "form": "form5",
+    "assessmentType": "essay",
+    "questionTypes": ["short_answer", "fill_blank", "multiple_choice"],
+    "skills": ["reading", "writing", "vocabulary"],
+    "difficultyLevel": "advanced",
+    "numberOfQuestions": "40",
+    "timeAllocation": "90",
+    "includeInstructions": true,
+    "includeAnswerKey": true,
+    "literatureComponent": "novel",
+    "specificTopic": "",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to create sophisticated analytical responses through comprehensive essay-format assessment on community service and patriotic values, demonstrate mastery of advanced reading strategies to construct meaning from complex literary and non-fiction texts, utilize print and digital resources effectively for meaning verification, and synthesize multiple perspectives on volunteerism and national service using Multi-Flow Map analysis while showing exceptional proficiency in reading, writing, and vocabulary skills.",
+    "successCriteria": "Students can achieve at least 90% accuracy on the 40-question advanced assessment covering reading comprehension, analytical writing, and sophisticated vocabulary related to community service and patriotism, successfully construct meaning from complex novel excerpts and non-fiction passages about volunteerism, demonstrate independent use of print and digital resources for vocabulary verification and concept clarification, create original analytical responses showing multiple cause-and-effect relationships in community service contexts, and complete extended essay responses that synthesize literary analysis with personal insights within the allocated 90-minute assessment period.",
+    "preActivity": "Teacher reviews the topic 'Happy to Help!' by examining exemplary community service initiatives, volunteerism movements, and patriotic service contributions in Malaysian society. Students review sophisticated vocabulary related to civic duty, volunteerism, and patriotism (altruism, civic responsibility, philanthropy, social consciousness, national unity, etc.) that will be assessed. Demonstrate Multi-Flow Map structure to analyze multiple causes that motivate community service and multiple effects that result from volunteerism on individuals and society. Teacher explains the comprehensive essay-format assessment including novel analysis, non-fiction interpretation, and extended analytical writing components. Students practice using print and digital resources for meaning verification and concept exploration.",
+    "activity": "1. Assessment Overview and Resource Setup (15 minutes): Teacher distributes comprehensive assessment materials and explains:\n   - Assessment format: 40 questions (8 MCQ, 12 fill-blank, 20 short answer/essay responses)\n   - Time allocation: 90 minutes with strategic pacing for complex responses\n   - Access to approved print dictionaries and digital resources for meaning verification\n   - Instructions for analyzing novel excerpts and non-fiction passages\n   - Guidelines for creating original analytical responses using Multi-Flow Map thinking\n\n2. Section A: Literary Analysis - Novel Excerpts (25 minutes - Questions 1-8): Students complete multiple choice analysis of:\n   - Character motivations for community service in novel excerpts\n   - Themes of patriotism and social responsibility in literature\n   - Symbolic representations of national unity and volunteerism\n   - Author techniques for portraying civic duty and community bonds\n   Students apply advanced literary analysis skills and use resources for meaning verification\n\n3. Section B: Vocabulary and Context Mastery (20 minutes - Questions 9-20): Students complete sophisticated fill-in-the-blank exercises featuring:\n   - Advanced vocabulary in contexts of patriotic service and community engagement\n   - Complex terminology from non-fiction passages about volunteerism\n   - Nuanced language describing civic responsibility and social consciousness\n   - Technical vocabulary related to community development and national service\n   Students demonstrate mastery of sophisticated vocabulary and contextual understanding\n\n4. Section C: Extended Analytical Responses (45 minutes - Questions 21-40): Students create comprehensive written responses requiring:\n   - **Questions 21-25:** Analyzing multiple causes that motivate individuals to volunteer and serve their community\n   - **Questions 26-30:** Evaluating multiple effects of community service on personal development and national unity\n   - **Questions 31-35:** Synthesizing novel themes with real-world examples of patriotic service\n   - **Questions 36-40:** Creating original proposals for community service initiatives that promote national unity\n   Students use Multi-Flow Map thinking to organize complex cause-and-effect relationships and demonstrate sophisticated analytical writing\n\n5. Resource Utilization and Meaning Verification (15 minutes): Throughout assessment, students:\n   - Use print dictionaries and approved digital resources to verify meanings\n   - Cross-reference complex vocabulary and concepts\n   - Validate understanding of sophisticated terminology\n   - Enhance analytical responses with precise language choices\n\n6. Assessment Review and Quality Assurance (10 minutes): Students conduct comprehensive review focusing on:\n   - Sophistication and accuracy of analytical responses\n   - Appropriate use of advanced vocabulary and terminology\n   - Logical organization using Multi-Flow Map systematic thinking\n   - Integration of literary analysis with contemporary applications\n   - Overall coherence and academic quality of responses\n\n7. Self-Evaluation and Metacognitive Reflection (8 minutes): Students complete advanced self-assessment covering:\n   - Effectiveness of reading strategies for complex literary and non-fiction texts\n   - Quality of analytical thinking and synthesis in extended responses\n   - Successful integration of Multi-Flow Map analysis in written responses\n   - Appropriate utilization of print and digital resources for meaning enhancement\n\n8. Comprehensive Answer Review and Academic Discussion (35 minutes): Teacher facilitates sophisticated review session:\n   - **Literary Analysis:** Discusses complex themes and advanced analytical approaches\n   - **Vocabulary Mastery:** Explores nuanced meanings and sophisticated usage patterns\n   - **Extended Responses:** Shares exemplary analytical writing demonstrating synthesis and creativity\n   - **Resource Integration:** Highlights effective use of verification tools and meaning enhancement\n   - Facilitates academic discussion on community service, patriotism, and civic responsibility\n\n9. Performance Analysis and Academic Preparation Feedback (22 minutes): Teacher provides comprehensive evaluation covering:\n   - Mastery of advanced reading comprehension and literary analysis skills\n   - Quality of sophisticated vocabulary usage and meaning construction\n   - Effectiveness of analytical writing and synthesis capabilities\n   - Readiness for post-secondary academic discourse and civic engagement\n   - Recommendations for continued development in advanced English proficiency\n\n10. Academic Goal Setting and University Preparation Planning (10 minutes): Students establish:\n   - Specific areas for continued advanced English development\n   - Academic writing goals for university preparation\n   - Plans for community service engagement and civic participation\n   - Strategies for maintaining sophisticated vocabulary and analytical skills",
+    "postActivity": "Teacher conducts individual academic consultations with students to discuss university preparation, advanced English development, and civic engagement opportunities. Students create comprehensive portfolios showcasing their analytical writing skills and community service proposals developed during assessment. Class organizes a 'Civic Leadership Forum' where students present their community service initiatives and discuss patriotic values in contemporary Malaysian society. Teacher assigns advanced extension projects: independent research on community development for high achievers and targeted academic writing support for students needing refinement. Students reflect on how Multi-Flow Map systematic analysis enhanced their understanding of complex social relationships and civic responsibility, planning to apply these skills in university studies and civic engagement. Assessment results inform final-year academic preparation and provide documentation for university applications and scholarship considerations."
+  }
+}

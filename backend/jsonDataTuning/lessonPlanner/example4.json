@@ -1,0 +1,46 @@
+{
+  "teacherId": "665dbea34a1a6e3d9a7cfa04",
+  "lessonPlannerId": "665dbea34a1a6e3d9a7cfa24",
+  "classId": "665dbea34a1a6e3d9a7cfa44",
+  "class": "4 Bijaksana",
+  "lesson": "1",
+  "lessonInSow": "5",
+  "day": "2",
+  "date": "12/07/2025",
+  "time": "8.30 – 10.30",
+  "subject": "English",
+  "information": {
+    "iThink": "Double Bubble Map",
+    "fourSkill": "Writing",
+    "cce": "Consumerism and Financial Awareness",
+    "hots": "Evaluating",
+    "theme": "Consumerism and Financial Awareness",
+    "topic": "You're in Charge"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "4.1 - Communicate intelligibly through print and digital media on familiar and some unfamiliar topics",
+      "complemantary": "4.2 - Communicate with appropriate language, form and style"
+    },
+    "learningStandard": {
+      "main": "4.1.4 - Describe personal experiences in detail",
+      "complemantary": "4.2.1 - Use correct grammar, punctuation and spelling at discourse level"
+    }
+  },
+  "preferenceActivity": {
+    "type": "activityInClass",
+    "studentArrangement": "individual",
+    "resourceUsage": "classroom_only",
+    "activityType": "Group Discussion",
+    "duration": "45_min",
+    "difficultyLevel": "medium",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to evaluate and compare different financial decisions, write detailed accounts of personal spending experiences, and critically assess the advantages and disadvantages of various consumer choices using appropriate financial vocabulary.",
+    "successCriteria": "Students can create comprehensive Double Bubble Maps comparing at least 4 aspects of different financial options, write a detailed 250-word personal reflection on a significant purchase decision with proper grammar and spelling, and participate effectively in group discussions using financial terminology to justify their viewpoints.",
+    "preActivity": "Teacher introduces the topic 'You're in Charge' by presenting real-life financial scenarios that teenagers face (buying a smartphone, choosing between brand vs generic products, saving vs spending, etc.). Introduce advanced financial vocabulary (budget, investment, impulse buying, value for money, financial responsibility, credit, debt, etc.). Demonstrate how to use Double Bubble Map to compare and contrast different options, showing shared characteristics in the middle and unique features on either side. Distribute scenario cards with different consumer dilemmas.",
+    "activity": "1. Individual Reflection and Planning (10 minutes): Students individually select one significant purchase they made recently or plan to make. They create a preliminary Double Bubble Map comparing two options (e.g., expensive vs budget version, online vs in-store purchase, new vs second-hand)\n\n2. Detailed Writing Task (20 minutes): Students write a detailed personal account describing their purchase experience or decision-making process, including factors they considered, challenges faced, and lessons learned. They must incorporate financial vocabulary and demonstrate proper grammar usage\n\n3. Pair Formation for Peer Review (5 minutes): Students pair up to share and review each other's writing, checking for grammar, spelling, and clarity of financial reasoning\n\n4. Group Discussion Formation (5 minutes): Pairs join to form groups of 6-8 students to discuss various financial scenarios\n\n5. Facilitated Group Discussion (15 minutes): Groups discuss different consumer scenarios, with each student presenting their Double Bubble Map analysis and personal writing insights. Students evaluate each other's financial reasoning and debate the merits of different approaches\n\n6. Group Consensus Building (5 minutes): Each group reaches consensus on the most important factors to consider when making significant purchases",
+    "postActivity": "Teacher facilitates a whole-class sharing session where each group presents their key insights about responsible consumer behavior. Students reflect on how the discussion changed or reinforced their views on financial decision-making. Teacher highlights excellent use of financial vocabulary and writing techniques observed during the activity. Students are assigned to interview a family member about a major financial decision and write a 300-word report for the next lesson."
+  }
+}

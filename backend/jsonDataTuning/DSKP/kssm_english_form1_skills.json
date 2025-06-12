@@ -1,0 +1,251 @@
+{
+  "skills": [
+    {
+      "skill": "Listening",
+      "content_standards": [
+        {
+          "code": "1.1",
+          "description": "Understand meaning in a variety of familiar contexts",
+          "learning_standards": [
+            {
+              "code": "1.1.1",
+              "description": "Understand with little or no support the main ideas in simple longer texts on a range of familiar topics"
+            },
+            {
+              "code": "1.1.2",
+              "description": "Understand with little or no support specific information and details in simple longer texts on a range of familiar topics"
+            },
+            {
+              "code": "1.1.3",
+              "description": "No learning standard (will be taught in subsequent years)"
+            },
+            {
+              "code": "1.1.4",
+              "description": "Understand longer sequences of supported classroom instructions"
+            },
+            {
+              "code": "1.1.5",
+              "description": "Understand more complex supported questions"
+            },
+            {
+              "code": "1.1.6",
+              "description": "Understand with support longer simple narratives on a wide range of familiar topics"
+            }
+          ]
+        },
+        {
+          "code": "1.2",
+          "description": "Use appropriate listening strategies in a variety of contexts",
+          "learning_standards": [
+            {
+              "code": "1.2.1",
+              "description": "Guess the meaning of unfamiliar words from clues provided by other known words and by context on a range of familiar topics"
+            }
+          ]
+        },
+        {
+          "code": "1.3",
+          "description": "Recognise features of spoken genres on familiar topics",
+          "learning_standards": [
+            {
+              "code": "1.3.1",
+              "description": "No learning standard (will be taught in subsequent years)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Speaking",
+      "content_standards": [
+        {
+          "code": "2.1",
+          "description": "Communicate information, ideas, opinions and feelings intelligibly on familiar topics",
+          "learning_standards": [
+            {
+              "code": "2.1.1",
+              "description": "Ask about and give detailed information about themselves and others"
+            },
+            {
+              "code": "2.1.2",
+              "description": "Ask about and express rules and obligations"
+            },
+            {
+              "code": "2.1.3",
+              "description": "Ask about and describe future plans or events"
+            },
+            {
+              "code": "2.1.4",
+              "description": "Explain and give reasons for simple advice"
+            },
+            {
+              "code": "2.1.5",
+              "description": "Ask about and describe personality"
+            }
+          ]
+        },
+        {
+          "code": "2.2",
+          "description": "Use register appropriately",
+          "learning_standards": [
+            {
+              "code": "2.2.1",
+              "description": "No learning standard (will be taught in subsequent years)"
+            }
+          ]
+        },
+        {
+          "code": "2.3",
+          "description": "Use appropriate communication strategies",
+          "learning_standards": [
+            {
+              "code": "2.3.1",
+              "description": "Keep interaction going in short exchanges by checking understanding of what a speaker is saying"
+            },
+            {
+              "code": "2.3.2",
+              "description": "Agree on a set of basic steps needed to complete extended classroom tasks"
+            }
+          ]
+        },
+        {
+          "code": "2.4",
+          "description": "Communicate appropriately to a small or large group on familiar topics",
+          "learning_standards": [
+            {
+              "code": "2.4.1",
+              "description": "Narrate short stories, events and experiences"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Reading",
+      "content_standards": [
+        {
+          "code": "3.1",
+          "description": "Understand a variety of texts by using a range of appropriate reading strategies to construct meaning",
+          "learning_standards": [
+            {
+              "code": "3.1.1",
+              "description": "Understand the main points in simple longer texts"
+            },
+            {
+              "code": "3.1.2",
+              "description": "Understand specific details and information in simple longer texts"
+            },
+            {
+              "code": "3.1.3",
+              "description": "Guess the meaning of unfamiliar words from clues provided by other known words and by context"
+            },
+            {
+              "code": "3.1.4",
+              "description": "Use with some support familiar print and digital resources to check meaning"
+            },
+            {
+              "code": "3.1.5",
+              "description": "No learning standard (will be taught in subsequent years)"
+            },
+            {
+              "code": "3.1.6",
+              "description": "No learning standard (will be taught in subsequent years)"
+            }
+          ]
+        },
+        {
+          "code": "3.2",
+          "description": "Explore and expand ideas for personal development by reading independently and widely",
+          "learning_standards": [
+            {
+              "code": "3.2.1",
+              "description": "Read and enjoy fiction / non-fiction and other suitable print and digital texts of interest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Writing",
+      "content_standards": [
+        {
+          "code": "4.1",
+          "description": "Communicate intelligibly through print and digital media on familiar topics",
+          "learning_standards": [
+            {
+              "code": "4.1.1",
+              "description": "Give detailed information about themselves and others"
+            },
+            {
+              "code": "4.1.2",
+              "description": "Describe future plans or events"
+            },
+            {
+              "code": "4.1.3",
+              "description": "Narrate factual and imagined events and experiences"
+            },
+            {
+              "code": "4.1.4",
+              "description": "Describe personality"
+            },
+            {
+              "code": "4.1.5",
+              "description": "Connect sentences into two coherent paragraphs or more using basic coordinating conjunctions and reference pronouns"
+            }
+          ]
+        },
+        {
+          "code": "4.2",
+          "description": "Communicate with appropriate language, form and style",
+          "learning_standards": [
+            {
+              "code": "4.2.1",
+              "description": "Use capitals, full stops, commas in lists, question marks, and speech marks appropriately at discourse level"
+            },
+            {
+              "code": "4.2.2",
+              "description": "Spell most high frequency words accurately in independent writing"
+            },
+            {
+              "code": "4.2.3",
+              "description": "Produce a plan or draft of two paragraphs or more and modify this appropriately in response to feedback"
+            },
+            {
+              "code": "4.2.4",
+              "description": "No learning standard (will be taught in subsequent years)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "Literature in Action",
+      "content_standards": [
+        {
+          "code": "5.1",
+          "description": "Engage with, respond to and interpret a variety of literary texts of interest with support",
+          "learning_standards": [
+            {
+              "code": "5.1.1",
+              "description": "Explain in simple language connections between characters, places or events in texts and own lives"
+            }
+          ]
+        },
+        {
+          "code": "5.2",
+          "description": "Express imaginative and creative ideas through performance, response and design with guidance",
+          "learning_standards": [
+            {
+              "code": "5.2.1",
+              "description": "Describe characters and plot, and share personal responses to texts"
+            },
+            {
+              "code": "5.2.2",
+              "description": "Plan and participate in a performance based on literary texts"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
