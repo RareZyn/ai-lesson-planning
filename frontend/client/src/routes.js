@@ -13,6 +13,7 @@ import DisplayLesson from "./pages/planner/displaylesson/DisplayLesson";
 import MaterialManagement from "./pages/material/MaterialManagement";
 import ClassManagement from "./pages/class/ClassManagement";
 import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner";
+import Community from "./pages/community/Community";
 const router = createBrowserRouter([
   {
     path: "/app",
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       { path: "materials", element: <MaterialManagement /> },
       { path: "classes", element: <ClassManagement /> },
       { path: "test", element: <MultiStepPlanner /> },
+      {path:"community",element:<Community/>},
     ],
   },
   { path: "/", element: <LoginPage /> },
