@@ -1,0 +1,52 @@
+{
+  "teacherId": "665dbeb24a1a6e3d9a7cfa12",
+  "lessonPlannerId": "665dbeb24a1a6e3d9a7cfa32",
+  "classId": "665dbeb24a1a6e3d9a7cfa52",
+  "class": "3 Tekun",
+  "lesson": "4",
+  "lessonInSow": "26",
+  "day": "1",
+  "date": "30/06/2025",
+  "time": "7.30 – 9.30",
+  "subject": "English",
+  "information": {
+    "iThink": "Double Bubble Map",
+    "fourSkill": "Speaking",
+    "cce": "Thinking Skills",
+    "hots": "Analyzing",
+    "theme": "People and Culture",
+    "topic": "Lessons to Learn"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "2.1 - Communicate information, ideas, opinions and feelings intelligibly on familiar topics",
+      "complemantary": "2.3 - Use appropriate communication strategies"
+    },
+    "learningStandard": {
+      "main": "2.1.4 - Explain and give reasons for simple advice",
+      "complemantary": "2.3.1 - Keep interaction going in short exchanges by checking understanding of what a speaker is saying"
+    }
+  },
+  "preferenceActivity": {
+    "type": "assessment",
+    "form": "form3",
+    "assessmentType": "mcq",
+    "questionTypes": ["multiple_choice", "short_answer", "true_false"],
+    "skills": ["speaking", "listening", "grammar"],
+    "difficultyLevel": "intermediate",
+    "numberOfQuestions": "30",
+    "timeAllocation": "90",
+    "includeInstructions": true,
+    "includeAnswerKey": true,
+    "literatureComponent": "poetry",
+    "specificTopic": "",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to demonstrate analytical thinking skills through a comprehensive assessment on life lessons and moral values, explain and justify advice based on literary scenarios from poetry, analyze communication strategies in various social contexts, and compare different perspectives on life lessons using Double Bubble Map thinking while showing mastery of speaking and listening skills.",
+    "successCriteria": "Students can achieve at least 80% accuracy on the 30-question assessment covering speaking, listening, and grammar skills related to giving advice and life lessons, successfully analyze poetry excerpts to extract moral messages and life lessons, demonstrate understanding of communication strategies through multiple choice and short answer responses, and complete oral assessment components that show ability to explain and justify advice within the allocated 90-minute assessment period.",
+    "preActivity": "Teacher reviews the topic 'Lessons to Learn' by discussing various life experiences that teach important lessons (overcoming challenges, learning from mistakes, developing character, etc.). Students review key vocabulary related to advice-giving, moral values, and life lessons (wisdom, experience, guidance, perseverance, resilience, etc.) that will appear in the assessment. Demonstrate Double Bubble Map structure to compare different approaches to learning life lessons and giving advice. Teacher explains the mixed-format assessment including multiple choice questions, short answers, true/false items, and oral components. Students practice analyzing poetry for moral messages and practice giving advice using appropriate language structures.",
+    "activity": "1. Assessment Instructions and Format Overview (10 minutes): Teacher distributes assessment materials and explains:\n   - Assessment format: 30 questions (15 MCQ, 8 short answer, 4 true/false, 3 oral tasks)\n   - Time allocation: 90 minutes with specific timing for each section\n   - Procedures for written and oral assessment components\n   - Instructions for analyzing poetry excerpts and moral scenarios\n   - Guidelines for giving advice and justifying reasoning\n\n2. Section A: Multiple Choice - Life Lessons Analysis (25 minutes - Questions 1-15): Students complete MCQ items focusing on:\n   - Analyzing moral messages in poetry excerpts about life lessons\n   - Identifying appropriate advice for various life situations\n   - Understanding communication strategies in advice-giving contexts\n   - Recognizing cause-and-effect relationships in moral scenarios\n   - Interpreting figurative language related to wisdom and experience\n   Students use Double Bubble Map thinking to compare different perspectives before selecting answers\n\n3. Section B: Short Answer - Advice and Reasoning (30 minutes - Questions 16-23): Students provide written responses requiring:\n   - **Questions 16-18:** Explaining advice for specific moral dilemmas with clear reasoning\n   - **Questions 19-21:** Analyzing poetry lines for life lessons and moral themes\n   - **Questions 22-23:** Describing communication strategies for difficult conversations\n   Students must demonstrate grammar accuracy and logical thinking in their explanations\n\n4. Section C: True/False - Communication Strategies (10 minutes - Questions 24-27): Students evaluate statements about:\n   - Effective ways to give advice and maintain relationships\n   - Appropriate communication strategies in different cultural contexts\n   - Grammar rules for advice-giving language structures\n   - Poetry interpretation techniques and moral analysis methods\n\n5. Section D: Oral Assessment - Speaking Tasks (20 minutes - Questions 28-30): Students complete individual oral tasks:\n   - **Task 28 (7 minutes):** Role-play giving advice to a friend facing a moral dilemma\n   - **Task 29 (6 minutes):** Explain lessons learned from a provided poetry excerpt\n   - **Task 30 (7 minutes):** Compare two different approaches to solving a life challenge\n   Students demonstrate speaking fluency, advice-giving skills, and analytical thinking\n\n6. Written Assessment Review and Self-Check (10 minutes): Students review written portions for:\n   - Completeness of all written responses\n   - Grammar accuracy in advice-giving language\n   - Logical reasoning in short answer explanations\n   - Appropriate analysis of poetry and moral scenarios\n\n7. Oral Assessment Reflection (5 minutes): After completing speaking tasks, students reflect on:\n   - Clarity and effectiveness of their advice-giving\n   - Use of appropriate communication strategies\n   - Analysis of poetry and moral themes\n   - Areas of strength and improvement in oral communication\n\n8. Answer Key Review and Learning Discussion (25 minutes): Teacher conducts comprehensive review:\n   - **MCQ Section:** Explains reasoning behind correct answers and common misconceptions\n   - **Short Answer:** Shares model responses showing effective advice-giving and analysis\n   - **True/False:** Clarifies communication strategies and grammar rules\n   - **Oral Tasks:** Provides general feedback on speaking performance and advice quality\n   - Discusses moral themes and life lessons from poetry components\n\n9. Assessment Analysis and Comprehensive Feedback (15 minutes): Teacher provides detailed feedback covering:\n   - Performance patterns across written and oral components\n   - Strengths in analytical thinking and advice-giving skills\n   - Areas needing improvement in grammar and communication strategies\n   - Effectiveness of poetry analysis and moral reasoning\n   - Recommendations for developing speaking confidence and analytical abilities",
+    "postActivity": "Teacher conducts individual feedback sessions with students needing additional support in speaking skills or analytical thinking, providing specific strategies for improvement. Students create personal development plans based on assessment results, setting goals for speaking confidence and analytical reasoning skills. Class engages in moral discussion circle where students share life lessons they've learned and advice they would give to younger students. Teacher assigns differentiated activities: speaking practice sessions for students needing oral skill development, and advanced poetry analysis projects for high achievers. Students reflect on how Double Bubble Map thinking helped them compare different perspectives during the assessment and plan to use this strategy for future moral reasoning tasks. Assessment results inform future lesson planning focused on speaking skills development and character education integration."
+  }
+}

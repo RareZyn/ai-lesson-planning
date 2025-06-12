@@ -1,5 +1,6 @@
 [
   {
+    "class": "2 IK",
     "lesson": "1",
     "lessonInSow": "19",
     "day": "Monday",
@@ -11,7 +12,7 @@
     "contentStandard": {
       "main": "4.2 Communicate with appropriate language, form and style",
       "component": "1.1 Understand meaning in a variety of familiar contexts"
-    },
+    }, 
     "learningStandard": {
       "main": "4.2.3 Produce a plan or draft of two paragraphs or more and modify this appropriately independently",
       "component": "1.1.4 Understand independently longer sequences of classroom instructions"
@@ -32,6 +33,7 @@
     "successCriteria": "Students demonstrate correct structure, appropriate vocabulary, and active participation in discussions."
   },
   {
+    "class": "3 IK",
     "lesson": "3",
     "lessonInSow": "15",
     "day": "Wednesday",
@@ -62,6 +64,7 @@
     "materials": "Textbook: English Download"
   },
   {
+    "class": "3 IS",
     "lesson": "2",
     "lessonInSow": "18",
     "day": "Wednesday",
@@ -92,6 +95,7 @@
     "materials": "Close Up"
   },
   {
+    "class": "4 IS",
     "lesson": "2",
     "lessonInSow": "8",
     "day": "Tuesday",
@@ -122,6 +126,7 @@
     "materials": "Printable Worksheet: Acrostic Poem"
   },
   {
+    "class": "5 IS",
     "lesson": "2",
     "lessonInSow": "16",
     "day": "Monday",
@@ -152,6 +157,7 @@
     "materials": "Textbook: English Download"
   },
   {
+    "class": "5 IK",
     "lesson": "5",
     "lessonInSow": "3",
     "day": "Thursday",
@@ -182,8 +188,8 @@
     "materials": "Examination Paper"
   },
   {
-    "lesson": "6",
     "class": "2 IK",
+    "lesson": "6",
     "lessonInSow": "1",
     "day": "Thursday",
     "subject": "English",
@@ -219,8 +225,8 @@
     "materials": "PPT Environmental Sustainability"
   },
   {
-    "lesson": "6",
     "class": "5 IK",
+    "lesson": "6",
     "lessonInSow": "9",
     "day": "Not specified",
     "subject": "English",
@@ -256,8 +262,8 @@
     "materials": "Praktis Topikal Form 5"
   },
   {
-    "lesson": "1",
     "class": "4 IS",
+    "lesson": "1",
     "lessonInSow": "14",
     "day": "Not specified",
     "subject": "English",
@@ -293,8 +299,8 @@
     "materials": "Full Blast Plus 4"
   },
   {
-    "lesson": "4",
     "class": "3 IK",
+    "lesson": "4",
     "lessonInSow": "14",
     "day": "Not specified",
     "subject": "English",

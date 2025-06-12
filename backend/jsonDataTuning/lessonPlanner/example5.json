@@ -1,0 +1,46 @@
+{
+  "teacherId": "665dbea44a1a6e3d9a7cfa05",
+  "lessonPlannerId": "665dbea44a1a6e3d9a7cfa25",
+  "classId": "665dbea44a1a6e3d9a7cfa45",
+  "class": "5 Unggul",
+  "lesson": "5",
+  "lessonInSow": "35",
+  "day": "1",
+  "date": "25/08/2025",
+  "time": "13.30 – 15.30",
+  "subject": "English",
+  "information": {
+    "iThink": "Bridge Map",
+    "fourSkill": "Speaking",
+    "cce": "Thinking Skills",
+    "hots": "Creating",
+    "theme": "Science and Technology",
+    "topic": "The Media"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "2.1 - Communicate information, ideas, opinions and feelings intelligibly on familiar and some unfamiliar topics",
+      "complemantary": "2.2 - Use register appropriately"
+    },
+    "learningStandard": {
+      "main": "2.1.4 - Express opinions and justify them with reasons",
+      "complemantary": "2.2.1 - Use appropriate register for various situations"
+    }
+  },
+  "preferenceActivity": {
+    "type": "activityInClass",
+    "studentArrangement": "pairs",
+    "resourceUsage": "online_resources",
+    "activityType": "Role Play",
+    "duration": "30_min",
+    "difficultyLevel": "hard",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to create and perform sophisticated role-play scenarios exploring media ethics and influence, express complex opinions about digital media's impact on society, and demonstrate mastery of formal and informal registers appropriate to different media contexts.",
+    "successCriteria": "Students can develop original role-play scenarios that demonstrate deep understanding of media issues, articulate well-reasoned opinions about media influence using advanced vocabulary and appropriate register, perform convincing 5-minute role plays that showcase different perspectives on media ethics, and provide constructive critical analysis of peers' performances using media-specific terminology.",
+    "preActivity": "Teacher introduces 'The Media' topic by presenting current controversies in digital media (fake news, social media influence, privacy concerns, media bias, citizen journalism, etc.). Introduce sophisticated media vocabulary (misinformation, algorithm, digital footprint, media literacy, editorial bias, sensationalism, etc.). Demonstrate Bridge Map technique to show analogical relationships between traditional and digital media concepts. Provide access to online resources including recent news articles, social media case studies, and media ethics guidelines for research.",
+    "activity": "1. Research and Scenario Development (15 minutes): Pairs use online resources to research a specific media ethics dilemma (e.g., journalist vs blogger credibility, social media privacy vs transparency, news accuracy vs speed, influencer responsibility, etc.). They create Bridge Maps showing analogies between traditional and digital media challenges\n\n2. Role Assignment and Character Development (10 minutes): Each pair develops two contrasting characters representing different stakeholders in their chosen media scenario (journalist/social media influencer, news editor/content creator, privacy advocate/transparency activist, etc.). Students plan their arguments and appropriate register for each character\n\n3. Role-Play Performance Preparation (10 minutes): Pairs rehearse their scenarios, ensuring they can switch between formal and informal registers appropriately, present compelling arguments from both perspectives, and demonstrate the complexity of modern media issues\n\n4. Performance and Recording (30 minutes): Each pair performs their 5-minute role play while others observe and take notes. Performances are recorded for later analysis. Audience members use evaluation rubrics focusing on argument quality, register appropriateness, and media vocabulary usage\n\n5. Immediate Peer Feedback (10 minutes): After each performance, audience provides structured feedback on the effectiveness of arguments, register usage, and portrayal of media issues\n\n6. Critical Analysis Discussion (5 minutes): Pairs reflect on the complexity of their chosen media issue and discuss whether their role play revealed new perspectives or solutions",
+    "postActivity": "Teacher facilitates a synthesis discussion analyzing common themes across all role plays and evaluating the most compelling arguments presented. Students vote on which scenario best demonstrated the complexity of modern media challenges and which performance most effectively used appropriate register. Class creates a collaborative mind map of media literacy principles based on insights from all performances. Teacher assigns students to create a digital presentation analyzing a current media controversy for next lesson, incorporating perspectives explored during today's role plays."
+  }
+}

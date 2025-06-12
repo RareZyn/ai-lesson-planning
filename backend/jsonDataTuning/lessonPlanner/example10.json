@@ -1,0 +1,47 @@
+{
+  "teacherId": "665dbea94a1a6e3d9a7cfa0a",
+  "lessonPlannerId": "665dbea94a1a6e3d9a7cfa2a",
+  "classId": "665dbea94a1a6e3d9a7cfa4a",
+  "class": "5 Prestij",
+  "lesson": "4",
+  "lessonInSow": "28",
+  "day": "1",
+  "date": "03/09/2025",
+  "time": "8.00 – 10.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Double Bubble Map",
+    "fourSkill": "Writing",
+    "cce": "Corruption Prevention",
+    "hots": "Creating",
+    "theme": "People and Culture",
+    "topic": "Crime"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "4.1 - Communicate intelligibly through print and digital media on familiar and some unfamiliar topics",
+      "complemantary": "4.2 - Communicate with appropriate language, form and style"
+    },
+    "learningStandard": {
+      "main": "4.1.5 - Connect sentences and paragraphs using appropriate cohesive devices",
+      "complemantary": "4.2.1 - Use correct grammar, punctuation and spelling at discourse level"
+    }
+  },
+  "preferenceActivity": {
+    "type": "essay",
+    "essayType": "extended",
+    "format": "",
+    "purpose": "",
+    "theme": "",
+    "extendedType": "report",
+    "topic": "A Trip to Remember",
+    "points": "Key Point A, B, and C"
+  },
+  "Activity": {
+    "objective": "Students will be able to create an extended investigative report examining crime prevention strategies, demonstrate sophisticated use of cohesive devices to connect complex ideas across multiple paragraphs, and synthesize information from multiple sources to present comprehensive analysis with proper academic formatting and advanced language structures.",
+    "successCriteria": "Students can produce a 300-400 word investigative report following proper academic report structure (executive summary, methodology, findings, recommendations), demonstrate mastery of advanced cohesive devices (however, furthermore, consequently, in contrast, meanwhile, etc.) to create seamless paragraph transitions, organize complex information using Key Points A, B, and C framework with supporting evidence and analysis, and achieve discourse-level accuracy in grammar, punctuation, and spelling throughout the extended composition.",
+    "preActivity": "Teacher introduces the topic 'Crime' by presenting case studies of successful crime prevention initiatives from different countries and communities. Students analyze current crime prevention strategies and discuss their effectiveness. Introduce sophisticated vocabulary related to criminal justice, law enforcement, and social policy (deterrent, rehabilitation, recidivism, community policing, restorative justice, crime statistics, etc.). Demonstrate Double Bubble Map to compare and contrast different approaches to crime prevention, showing shared elements and unique characteristics. Present examples of investigative reports and highlight academic writing features: objective tone, evidence-based conclusions, logical organization, and professional formatting.",
+    "activity": "1. Topic Refinement and Research Planning (20 minutes): Students refine the topic 'A Trip to Remember' to focus on 'A Journey Through Crime Prevention: Memorable Lessons from Successful Initiatives.' They use Double Bubble Map to compare:\n   - Traditional vs. Modern crime prevention approaches\n   - Punitive vs. Rehabilitative justice systems\n   - Individual vs. Community-based solutions\n   Students plan their three key points:\n   - Key Point A: Effective prevention strategies\n   - Key Point B: Community involvement impact\n   - Key Point C: Long-term societal benefits\n\n2. Report Structure and Outline Development (15 minutes): Students create detailed outlines following academic report format:\n   - Executive Summary: Brief overview of findings\n   - Introduction: Context and methodology\n   - Findings: Analysis of Key Points A, B, and C\n   - Recommendations: Evidence-based solutions\n   - Conclusion: Summary and future implications\n\n3. Advanced Cohesive Device Planning (10 minutes): Students identify and plan strategic use of sophisticated cohesive devices:\n   - Additive: furthermore, moreover, in addition\n   - Adversative: however, nevertheless, on the contrary\n   - Causal: consequently, as a result, therefore\n   - Temporal: meanwhile, subsequently, simultaneously\n\n4. Extended Writing Phase 1 - Structure and Content (45 minutes): Students write their investigative reports, focusing on:\n   - Professional academic tone and objective analysis\n   - Complex sentence structures with varied syntax\n   - Integration of evidence and examples from multiple sources\n   - Logical progression through all three key points\n   - Sophisticated vocabulary and terminology\n\n5. Cohesive Device Review and Enhancement (15 minutes): Students review their drafts specifically for:\n   - Effective paragraph transitions using cohesive devices\n   - Logical flow between ideas and sections\n   - Variety in connecting language to avoid repetition\n   - Clarity of relationships between concepts\n\n6. Peer Review and Academic Feedback (20 minutes): Students exchange reports with partners who evaluate using academic criteria:\n   - Strength of evidence and analysis for each key point\n   - Effectiveness of cohesive devices and paragraph flow\n   - Grammar, punctuation, and spelling accuracy\n   - Overall professional presentation and formatting\n   - Clarity and persuasiveness of recommendations\n\n7. Final Revision and Polishing (15 minutes): Students make final revisions based on peer feedback, focusing on:\n   - Strengthening weak arguments with additional evidence\n   - Improving cohesive device usage for better flow\n   - Correcting any discourse-level language errors\n   - Enhancing professional presentation and formatting",
+    "postActivity": "Teacher organizes a 'Policy Briefing Session' where students present executive summaries of their investigative reports to simulate presenting findings to government officials or community leaders. Class evaluates which reports provided the most compelling evidence and practical recommendations for crime prevention. Students reflect on the research and writing process, identifying which aspects of academic report writing they found most challenging and most valuable. Teacher highlights exceptional examples of cohesive device usage and academic language mastery. Students are assigned to follow up on one of their recommendations by researching a real community implementing similar strategies and writing a brief case study analysis for the next lesson."
+  }
+}

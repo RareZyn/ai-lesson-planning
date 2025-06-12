@@ -1,0 +1,44 @@
+{
+  "teacherId": "665dbeac4a1a6e3d9a7cfa0d",
+  "lessonPlannerId": "665dbeac4a1a6e3d9a7cfa2d",
+  "classId": "665dbeac4a1a6e3d9a7cfa4d",
+  "class": "3 Inovasi",
+  "lesson": "2",
+  "lessonInSow": "14",
+  "day": "1",
+  "date": "16/06/2025",
+  "time": "14.00 – 16.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Multi-Flow Map",
+    "fourSkill": "Writing",
+    "cce": "Science and Technology",
+    "hots": "Analyzing",
+    "theme": "Science and Technology",
+    "topic": "High-Tech World"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "4.1 - Communicate intelligibly through print and digital media on familiar topics",
+      "complemantary": "4.2 - Communicate with appropriate language, form and style"
+    },
+    "learningStandard": {
+      "main": "4.1.5 - Connect sentences into two coherent paragraphs or more using basic coordinating conjunctions and reference pronouns",
+      "complemantary": "4.2.3 - Produce a plan or draft of two paragraphs or more and modify this appropriately in response to feedback"
+    }
+  },
+  "preferenceActivity": {
+    "type": "textbook",
+    "selectedForm": "form3",
+    "selectedTopic": "High-Tech World",
+    "activityType": "Creative Writing",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to analyze technological developments from the textbook 'High-Tech World' and create original creative writing pieces exploring the causes and effects of technology in modern life, while demonstrating proper paragraph coherence using coordinating conjunctions and reference pronouns based on textbook themes and vocabulary.",
+    "successCriteria": "Students can identify and analyze at least 4 technological developments from the textbook passage, create Multi-Flow Maps showing multiple causes leading to technological advancement and multiple effects on society, write coherent creative pieces of 200-250 words with proper paragraph connections using coordinating conjunctions (and, but, or, so) and reference pronouns (it, they, this, these), and successfully revise their creative writing based on feedback while maintaining the technological themes from the textbook.",
+    "preActivity": "Teacher introduces the topic 'High-Tech World' by displaying cutting-edge technology images and asking students to predict how these innovations might change their lives. Students preview the textbook unit by examining technological vocabulary (artificial intelligence, robotics, automation, innovation, digital transformation, etc.) and discussing their current relationship with technology. Demonstrate Multi-Flow Map structure to show multiple causes that drive technological development and multiple effects technology has on society, education, work, and relationships. Students share their favorite technological devices and explain how these tools impact their daily routines.",
+    "activity": "1. Textbook Reading and Technology Analysis (25 minutes): Students read the 'High-Tech World' textbook passage independently, focusing on:\n   - Identifying specific technological innovations mentioned\n   - Understanding how technology solves human problems\n   - Recognizing the impact of technology on different aspects of life\n   Students create Multi-Flow Maps showing:\n   - Multiple causes → Technological advancement\n   - Technological changes → Multiple societal effects\n\n2. Textbook Vocabulary and Theme Extraction (15 minutes): Students work with textbook content to extract:\n   - Key technological terminology and concepts\n   - Examples of how technology changes human behavior\n   - Predictions about future technological developments\n   - Challenges and benefits of living in a high-tech world\n   Students organize this information to use in their creative writing\n\n3. Creative Writing Genre Selection and Planning (12 minutes): Using textbook themes, students choose their creative writing format:\n   - Short science fiction story about future technology\n   - Diary entries from someone experiencing technological change\n   - News report about a breakthrough technological innovation\n   - Personal narrative about life before and after a technology\n   Students plan their writing using textbook vocabulary and concepts\n\n4. Creative Writing Composition - First Draft (35 minutes): Students write their creative pieces incorporating:\n   - Technological themes and vocabulary from the textbook\n   - Multi-Flow cause and effect relationships\n   - Proper paragraph structure with topic sentences\n   - Coordinating conjunctions to connect ideas (and, but, or, so)\n   - Reference pronouns to avoid repetition (it, they, this, these)\n   - Creative elements while staying true to textbook concepts\n\n5. Paragraph Coherence Review (10 minutes): Students review their drafts specifically for:\n   - Clear connections between sentences using coordinating conjunctions\n   - Appropriate use of reference pronouns for smooth flow\n   - Logical organization of technological ideas\n   - Proper paragraph breaks for different aspects of technology\n\n6. Peer Feedback and Textbook Accuracy Check (15 minutes): Students exchange creative writing with partners who evaluate:\n   - Accuracy of technological concepts from the textbook\n   - Effectiveness of Multi-Flow cause and effect relationships\n   - Proper use of coordinating conjunctions and reference pronouns\n   - Creativity while maintaining textbook theme integrity\n   - Clarity and coherence of technological explanations\n\n7. Revision and Enhancement (8 minutes): Students revise their creative writing based on peer feedback, focusing on:\n   - Strengthening technological accuracy using textbook information\n   - Improving paragraph connections and pronoun usage\n   - Adding more specific details from the textbook content\n   - Enhancing creative elements while maintaining educational value",
+    "postActivity": "Teacher organizes a 'Technology Showcase' where students share excerpts from their creative writing pieces, highlighting how they incorporated textbook themes and technological concepts. Class votes on the most creative use of textbook technology themes and the most effective cause-and-effect analysis. Students reflect on how creative writing helped them understand and remember technological concepts from the textbook better than traditional comprehension exercises. Teacher highlights excellent examples of paragraph coherence and proper use of coordinating conjunctions and reference pronouns. Students are assigned to research one emerging technology not mentioned in the textbook and write a short report using similar writing techniques for the next lesson."
+  }
+}

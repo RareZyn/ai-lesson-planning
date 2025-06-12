@@ -1,0 +1,44 @@
+{
+  "teacherId": "665dbead4a1a6e3d9a7cfa0e",
+  "lessonPlannerId": "665dbead4a1a6e3d9a7cfa2e",
+  "classId": "665dbead4a1a6e3d9a7cfa4e",
+  "class": "4 Visioner",
+  "lesson": "5",
+  "lessonInSow": "32",
+  "day": "2",
+  "date": "28/07/2025",
+  "time": "8.00 – 10.00",
+  "subject": "English",
+  "information": {
+    "iThink": "Bridge Map",
+    "fourSkill": "Listening",
+    "cce": "Leadership",
+    "hots": "Evaluating",
+    "theme": "People and Culture",
+    "topic": "Being a Teenager"
+  },
+  "dskp": {
+    "contentStandard": {
+      "main": "1.1 - Understand meaning in a variety of familiar and some unfamiliar contexts",
+      "complemantary": "1.2 - Use appropriate listening strategies in a variety of contexts"
+    },
+    "learningStandard": {
+      "main": "1.1.1 - Understand independently the main ideas in a variety of text types on familiar and some unfamiliar topics",
+      "complemantary": "1.2.1 - Deduce the meaning of unfamiliar words from clues provided by other known words and by context on a range of familiar and some unfamiliar topics"
+    }
+  },
+  "preferenceActivity": {
+    "type": "textbook",
+    "selectedForm": "form4",
+    "selectedTopic": "Being a Teenager",
+    "activityType": "Debate",
+    "additionalRequirement": ""
+  },
+  "Activity": {
+    "objective": "Students will be able to evaluate teenage challenges and opportunities presented in the textbook 'Being a Teenager', understand main ideas from listening materials related to adolescent experiences, deduce meaning of unfamiliar vocabulary through context clues, and participate in structured debates demonstrating leadership skills while analyzing the complexities of teenage life using analogical thinking.",
+    "successCriteria": "Students can independently identify at least 6 main ideas from textbook listening materials about teenage experiences, successfully deduce the meaning of 8-10 unfamiliar words using context clues and prior knowledge, create comprehensive Bridge Maps showing analogical relationships between teenage challenges in different contexts, participate effectively in formal debates using evidence from textbook content, and demonstrate leadership skills by presenting well-reasoned arguments and responding thoughtfully to opposing viewpoints.",
+    "preActivity": "Teacher introduces the topic 'Being a Teenager' by playing audio excerpts from the textbook listening materials featuring different teenage voices discussing their experiences, challenges, and aspirations. Students preview textbook vocabulary related to adolescence (identity, peer pressure, independence, responsibility, self-esteem, maturity, etc.) and discuss their own teenage experiences. Demonstrate Bridge Map structure to show analogical relationships between teenage experiences across different cultures, time periods, or situations (e.g., teenage challenges today vs. parents' generation, teenage life in Malaysia vs. other countries). Students examine textbook images and headings to predict listening content and identify potential debate topics.",
+    "activity": "1. Textbook Listening Comprehension - Phase 1 (20 minutes): Students listen to textbook audio materials featuring teenage interviews, discussions, or narratives while:\n   - Identifying main ideas about teenage challenges and opportunities\n   - Taking notes on different perspectives presented\n   - Noting unfamiliar vocabulary for context analysis\n   - Creating initial Bridge Maps comparing different teenage experiences mentioned\n\n2. Vocabulary Deduction and Context Analysis (15 minutes): Using textbook listening transcripts, students:\n   - Identify unfamiliar words related to teenage life and development\n   - Use context clues, word parts, and surrounding information to deduce meanings\n   - Compare their deductions with textbook glossary or dictionary definitions\n   - Practice using new vocabulary in sentences related to teenage experiences\n\n3. Bridge Map Development and Analogical Thinking (18 minutes): Students create detailed Bridge Maps showing analogical relationships from textbook content:\n   - Teenage peer pressure : Adult workplace pressure\n   - Choosing subjects : Making career decisions\n   - Family expectations : Societal expectations\n   - Teenage friendships : Professional networks\n   Students analyze how teenage experiences prepare them for adult responsibilities\n\n4. Debate Topic Selection and Team Formation (12 minutes): Using controversial issues from textbook content, students choose debate topics such as:\n   - \"Teenagers should have more freedom to make their own decisions\"\n   - \"Social media has more negative than positive effects on teenagers\"\n   - \"Academic pressure on teenagers in Malaysia is necessary for success\"\n   - \"Teenagers today face more challenges than previous generations\"\n   Students form debate teams and assign roles (main speakers, researchers, rebuttal specialists)\n\n5. Textbook Evidence Gathering and Argument Preparation (25 minutes): Teams use textbook listening materials and related content to:\n   - Gather supporting evidence for their assigned position\n   - Anticipate opposing arguments using textbook examples\n   - Prepare opening statements, main arguments, and rebuttals\n   - Practice using vocabulary and concepts from listening materials\n   - Develop leadership strategies for effective team coordination\n\n6. Formal Debate Execution (35 minutes): Teams engage in structured debates following format:\n   - Opening statements (2 minutes per team)\n   - Main arguments with textbook evidence (3 minutes per speaker)\n   - Cross-examination and clarification (2 minutes)\n   - Rebuttal rounds using listening material insights (2 minutes per team)\n   - Closing statements summarizing key points (2 minutes per team)\n   Audience evaluates arguments and use of textbook content\n\n7. Post-Debate Analysis and Reflection (15 minutes): Students evaluate:\n   - Strongest arguments presented from both sides\n   - Most effective use of textbook listening content as evidence\n   - Leadership qualities demonstrated during debates\n   - New perspectives gained about teenage experiences\n   - How Bridge Map analogies enhanced their understanding",
+    "postActivity": "Teacher facilitates a synthesis discussion where students reflect on how the textbook listening materials and debate experience deepened their understanding of teenage complexity and diversity. Students vote on the most compelling arguments and identify which team best demonstrated leadership and use of textbook evidence. Class creates a collaborative mind map of teenage challenges and solutions based on insights from textbook content and debate discussions. Teacher highlights excellent examples of vocabulary deduction and analogical thinking observed during the activity. Students are assigned to interview adults about their teenage experiences and compare findings with textbook perspectives, preparing a brief presentation on generational similarities and differences for the next lesson."
+  }
+}
