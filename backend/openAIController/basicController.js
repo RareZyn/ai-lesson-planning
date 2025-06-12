@@ -12,9 +12,9 @@ const receiveArray = async (req, res) => {
         {
           role: "system",
           content:
-            "Reply only with an array in valid JSON format, no explanation.",
+            "",
         },
-        { role: "user", content: "What is the best programming language?" },
+        { role: "user", content: "How many days are there in a week?" },
       ],
     });
 
