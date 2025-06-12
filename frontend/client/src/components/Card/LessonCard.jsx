@@ -1,4 +1,4 @@
-// src/pages/community/components/Card/LessonCard.jsx
+// src/components/Card/LessonCard.jsx
 import React, { useState } from "react";
 import { Card, Tag, Button, Avatar, Tooltip, Modal } from "antd";
 import {
@@ -9,6 +9,9 @@ import {
   MessageOutlined,
   StarOutlined,
   StarFilled,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import "./LessonCard.css";
 
@@ -24,7 +27,7 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
   const handleLike = (e) => {
     e.stopPropagation();
     setIsLiked(!isLiked);
-    onLike(lesson.id);
+    onLike(lesson._id);
   };
 
   const handleBookmark = (e) => {
@@ -34,25 +37,14 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
 
   const handleDownload = (e) => {
     e.stopPropagation();
-    onDownload(lesson.id);
+    onDownload(lesson._id);
   };
 
   const handleCardClick = () => {
     setIsModalVisible(true);
   };
 
-  const getSubjectColor = (subject) => {
-    const colors = {
-      English: "#1890ff",
-      Mathematics: "#52c41a",
-      Science: "#fa8c16",
-      History: "#722ed1",
-      Geography: "#13c2c2",
-    };
-    return colors[subject] || "#8c8c8c";
-  };
-
-  const getLevelColor = (level) => {
+  const getGradeColor = (grade) => {
     const colors = {
       "Form 1": "#87d068",
       "Form 2": "#108ee9",
@@ -60,7 +52,43 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
       "Form 4": "#2db7f5",
       "Form 5": "#faad14",
     };
+    return colors[grade] || "#8c8c8c";
+  };
+
+  const getProficiencyColor = (level) => {
+    const colors = {
+      A1: "#52c41a",
+      "A2 Low": "#73d13d",
+      "A2 High": "#95de64",
+      "B1 Low": "#fadb14",
+      "B1 Mid": "#ffc53d",
+      "B1 High": "#ffec3d",
+      B2: "#ff9c6e",
+      C1: "#ff7875",
+    };
     return colors[level] || "#8c8c8c";
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "No date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getHOTSColor = (hots) => {
+    const colors = {
+      remember: "#ff4d4f",
+      understand: "#fa8c16",
+      apply: "#fadb14",
+      analyze: "#52c41a",
+      evaluate: "#1890ff",
+      create: "#722ed1",
+    };
+    return colors[hots?.toLowerCase()] || "#8c8c8c";
   };
 
   return (
@@ -73,13 +101,16 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
           <div className="card-cover">
             <div
               className="subject-banner"
-              style={{ backgroundColor: getSubjectColor(lesson.subject) }}
+              style={{ backgroundColor: "#1890ff" }}
             >
-              {lesson.subject}
+              {lesson.parameters?.grade || "Form 4"}
             </div>
             <div className="lesson-preview">
-              <h3>{lesson.title}</h3>
-              <p>{lesson.description}</p>
+              <h3>{lesson.parameters?.Sow?.topic || "English Lesson"}</h3>
+              <p>
+                {lesson.plan?.learningObjective ||
+                  "Learning objectives for this lesson"}
+              </p>
             </div>
           </div>
         }
@@ -97,7 +128,7 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
               onClick={handleLike}
               className="action-btn"
             >
-              {lesson.likes + (isLiked ? 1 : 0)}
+              {lesson.likes || 0}
             </Button>
           </Tooltip>,
           <Tooltip title="Download">
@@ -107,7 +138,7 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
               onClick={handleDownload}
               className="action-btn"
             >
-              {lesson.downloads}
+              {lesson.downloads || 0}
             </Button>
           </Tooltip>,
           <Tooltip
@@ -132,29 +163,54 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
       >
         <div className="card-content">
           <div className="tags-section">
-            <Tag color={getLevelColor(lesson.level)} className="level-tag">
-              {lesson.level}
+            <Tag
+              color={getGradeColor(lesson.parameters?.grade)}
+              className="level-tag"
+            >
+              {lesson.parameters?.grade || "Form 4"}
             </Tag>
-            {lesson.tags.slice(0, 2).map((tag) => (
-              <Tag key={tag} className="topic-tag">
-                {tag}
+            {lesson.parameters?.proficiencyLevel && (
+              <Tag
+                color={getProficiencyColor(lesson.parameters.proficiencyLevel)}
+                className="level-tag"
+              >
+                {lesson.parameters.proficiencyLevel}
               </Tag>
-            ))}
-            {lesson.tags.length > 2 && (
-              <Tag className="more-tags">+{lesson.tags.length - 2}</Tag>
+            )}
+            {lesson.parameters?.hotsFocus && (
+              <Tag
+                color={getHOTSColor(lesson.parameters.hotsFocus)}
+                className="topic-tag"
+              >
+                {lesson.parameters.hotsFocus.toUpperCase()}
+              </Tag>
+            )}
+            {lesson.parameters?.Sow?.focus && (
+              <Tag className="topic-tag">{lesson.parameters.Sow.focus}</Tag>
             )}
           </div>
 
           <Meta
             avatar={
-              <Avatar src={lesson.authorAvatar} size="small">
-                {lesson.author[0]}
+              <Avatar size="small" style={{ backgroundColor: "#1890ff" }}>
+                T
               </Avatar>
             }
-            title={lesson.author}
+            title="Teacher" // Will be fetched from backend
             description={
               <div className="card-meta">
-                <span className="upload-date">{lesson.uploadDate}</span>
+                <div className="lesson-details">
+                  <div className="detail-item">
+                    <CalendarOutlined />
+                    <span>{formatDate(lesson.lessonDate)}</span>
+                  </div>
+                  {lesson.parameters?.Sow?.theme && (
+                    <div className="detail-item">
+                      <BookOutlined />
+                      <span>{lesson.parameters.Sow.theme}</span>
+                    </div>
+                  )}
+                </div>
                 <div className="engagement-stats">
                   <span>
                     <EyeOutlined /> {lesson.views || 0}
@@ -171,7 +227,7 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
 
       {/* Lesson Detail Modal */}
       <Modal
-        title={lesson.title}
+        title={lesson.parameters?.Sow?.topic || "English Lesson"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
@@ -195,65 +251,110 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
         className="lesson-detail-modal"
       >
         <div className="modal-content">
+          {/* Lesson Parameters */}
           <div className="lesson-info">
             <div className="info-row">
-              <span className="info-label">Subject:</span>
-              <Tag color={getSubjectColor(lesson.subject)}>
-                {lesson.subject}
+              <span className="info-label">Grade:</span>
+              <Tag color={getGradeColor(lesson.parameters?.grade)}>
+                {lesson.parameters?.grade || "Form 4"}
               </Tag>
             </div>
             <div className="info-row">
-              <span className="info-label">Level:</span>
-              <Tag color={getLevelColor(lesson.level)}>{lesson.level}</Tag>
+              <span className="info-label">Proficiency Level:</span>
+              <Tag
+                color={getProficiencyColor(lesson.parameters?.proficiencyLevel)}
+              >
+                {lesson.parameters?.proficiencyLevel || "B1 Mid"}
+              </Tag>
             </div>
             <div className="info-row">
-              <span className="info-label">Duration:</span>
-              <span>{lesson.duration || "60 minutes"}</span>
+              <span className="info-label">HOTS Focus:</span>
+              <Tag color={getHOTSColor(lesson.parameters?.hotsFocus)}>
+                {lesson.parameters?.hotsFocus?.toUpperCase() || "APPLY"}
+              </Tag>
             </div>
             <div className="info-row">
-              <span className="info-label">Author:</span>
-              <span>{lesson.author}</span>
+              <span className="info-label">Lesson Date:</span>
+              <span>{formatDate(lesson.lessonDate)}</span>
             </div>
           </div>
 
-          <div className="lesson-description">
-            <h4>Description</h4>
-            <p>{lesson.fullDescription || lesson.description}</p>
-          </div>
+          {/* Scheme of Work Info */}
+          {lesson.parameters?.Sow && (
+            <div className="lesson-description">
+              <h4>Scheme of Work</h4>
+              <div className="sow-details">
+                <p>
+                  <strong>Theme:</strong> {lesson.parameters.Sow.theme}
+                </p>
+                <p>
+                  <strong>Topic:</strong> {lesson.parameters.Sow.topic}
+                </p>
+                <p>
+                  <strong>Focus:</strong> {lesson.parameters.Sow.focus}
+                </p>
+                <p>
+                  <strong>Lesson No:</strong> {lesson.parameters.Sow.lessonNo}
+                </p>
+              </div>
+            </div>
+          )}
 
+          {/* Learning Objective */}
           <div className="lesson-objectives">
-            <h4>Learning Objectives</h4>
-            <ul>
-              {lesson.objectives?.map((objective, index) => (
-                <li key={index}>{objective}</li>
-              )) || (
-                <li>
-                  Students will understand the key concepts covered in this
-                  lesson.
-                </li>
-              )}
-            </ul>
+            <h4>Learning Objective</h4>
+            <p>
+              {lesson.plan?.learningObjective ||
+                "No learning objective specified"}
+            </p>
           </div>
 
-          <div className="lesson-tags">
-            <h4>Topics Covered</h4>
-            <div className="tags-list">
-              {lesson.tags.map((tag) => (
-                <Tag key={tag} className="detail-tag">
-                  {tag}
-                </Tag>
-              ))}
+          {/* Success Criteria */}
+          {lesson.plan?.successCriteria &&
+            lesson.plan.successCriteria.length > 0 && (
+              <div className="lesson-objectives">
+                <h4>Success Criteria</h4>
+                <ul>
+                  {lesson.plan.successCriteria.map((criteria, index) => (
+                    <li key={index}>{criteria}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {/* Specific Topic */}
+          {lesson.parameters?.specificTopic && (
+            <div className="lesson-description">
+              <h4>Specific Topic</h4>
+              <p>{lesson.parameters.specificTopic}</p>
             </div>
-          </div>
+          )}
 
+          {/* Community Description (for shared lessons) */}
+          {lesson.description && (
+            <div className="lesson-description">
+              <h4>Teacher's Experience</h4>
+              <p>{lesson.description}</p>
+            </div>
+          )}
+
+          {/* Additional Notes */}
+          {lesson.parameters?.additionalNotes && (
+            <div className="lesson-description">
+              <h4>Additional Notes</h4>
+              <p>{lesson.parameters.additionalNotes}</p>
+            </div>
+          )}
+
+          {/* Lesson Statistics */}
           <div className="lesson-stats">
             <div className="stat-item">
               <HeartFilled style={{ color: "#ff4d4f" }} />
-              <span>{lesson.likes + (isLiked ? 1 : 0)} likes</span>
+              <span>{(lesson.likes || 0) + (isLiked ? 1 : 0)} likes</span>
             </div>
             <div className="stat-item">
               <DownloadOutlined />
-              <span>{lesson.downloads} downloads</span>
+              <span>{lesson.downloads || 0} downloads</span>
             </div>
             <div className="stat-item">
               <EyeOutlined />
@@ -267,3 +368,4 @@ const LessonCard = ({ lesson, onLike, onDownload }) => {
 };
 
 export default LessonCard;
+

@@ -1,65 +1,120 @@
-// src/pages/community/components/UploadLessonModal.jsx
-import React, { useState } from "react";
+// src/components/Modal/UploadLessonModal.jsx - Restructured for sharing existing lesson plans
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
-  Input,
   Select,
   Upload,
   Button,
   message,
-  Tag,
-  Space,
-  Divider,
   Row,
   Col,
+  Card,
+  Typography,
+  Tag,
+  Spin,
+  Alert,
+  Input,
 } from "antd";
 import {
   UploadOutlined,
   InboxOutlined,
-  FileTextOutlined,
-  PlusOutlined,
-  CloseOutlined,
+  ShareAltOutlined,
+  BookOutlined,
+  TeamOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
+import {
+  dummyClasses,
+  getLessonPlansByClassId,
+} from "../../data/LessonPlanData";
 import "./UploadLessonModal.css";
 
 const { Option } = Select;
 const { TextArea } = Input;
 const { Dragger } = Upload;
+const { Text } = Typography;
 
 const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [fileList, setFileList] = useState([]);
-  const [tags, setTags] = useState([]);
-  const [inputTag, setInputTag] = useState("");
-  const [objectives, setObjectives] = useState([""]);
+  const [classes, setClasses] = useState([]);
+  const [lessonPlans, setLessonPlans] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedLessonPlan, setSelectedLessonPlan] = useState(null);
+  const [classesLoading, setClassesLoading] = useState(false);
+  const [lessonPlansLoading, setLessonPlansLoading] = useState(false);
+  const [imageFileList, setImageFileList] = useState([]);
+
+  // Fetch classes on modal open
+  useEffect(() => {
+    if (isOpen) {
+      fetchClasses();
+    }
+  }, [isOpen]);
+
+  // Fetch lesson plans when class is selected
+  useEffect(() => {
+    if (selectedClass) {
+      fetchLessonPlans(selectedClass);
+    }
+  }, [selectedClass]);
+
+  const fetchClasses = async () => {
+    setClassesLoading(true);
+    try {
+      // Using dummy data instead of API call
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate loading
+      setClasses(dummyClasses);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      message.error("Failed to fetch classes");
+      setClasses([]);
+    } finally {
+      setClassesLoading(false);
+    }
+  };
+
+  const fetchLessonPlans = async (classId) => {
+    setLessonPlansLoading(true);
+    try {
+      // Using dummy data instead of API call
+      await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate loading
+      const plans = getLessonPlansByClassId(classId);
+      setLessonPlans(plans);
+    } catch (error) {
+      console.error("Error fetching lesson plans:", error);
+      message.error("Failed to fetch lesson plans");
+      setLessonPlans([]);
+    } finally {
+      setLessonPlansLoading(false);
+    }
+  };
 
   const handleSubmit = async (values) => {
-    if (fileList.length === 0) {
-      message.error("Please upload at least one file");
-      return;
-    }
-
-    if (tags.length === 0) {
-      message.error("Please add at least one tag");
+    if (!selectedClass || !selectedLessonPlan) {
+      message.error("Please select both class and lesson plan");
       return;
     }
 
     setLoading(true);
     try {
-      const lessonData = {
-        ...values,
-        tags,
-        objectives: objectives.filter((obj) => obj.trim() !== ""),
-        files: fileList,
-        fileCount: fileList.length,
+      const shareData = {
+        classId: selectedClass,
+        lessonPlanId: selectedLessonPlan,
+        description: values.description,
+        images: imageFileList.map((file) => file.originFileObj || file),
+        sharedAt: new Date().toISOString(),
+        isPublic: true,
       };
 
-      await onSubmit(lessonData);
+      await onSubmit(shareData);
+      message.success("Lesson plan shared successfully!");
       handleReset();
+      onClose();
     } catch (error) {
-      message.error("Failed to upload lesson plan");
+      console.error("Share error:", error);
+      message.error("Failed to share lesson plan");
     } finally {
       setLoading(false);
     }
@@ -67,10 +122,10 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleReset = () => {
     form.resetFields();
-    setFileList([]);
-    setTags([]);
-    setInputTag("");
-    setObjectives([""]);
+    setSelectedClass(null);
+    setSelectedLessonPlan(null);
+    setImageFileList([]);
+    setLessonPlans([]);
   };
 
   const handleClose = () => {
@@ -80,318 +135,420 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  // File upload props
-  const uploadProps = {
-    name: "file",
-    multiple: true,
-    fileList,
-    beforeUpload: (file) => {
-      const isValidType =
-        file.type === "application/pdf" ||
-        file.type === "application/msword" ||
-        file.type ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        file.type === "application/vnd.ms-powerpoint" ||
-        file.type ===
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  const handleClassChange = (classId) => {
+    setSelectedClass(classId);
+    setSelectedLessonPlan(null);
+    form.setFieldsValue({ lessonPlan: undefined });
+  };
 
+  const handleLessonPlanChange = (lessonPlanId) => {
+    setSelectedLessonPlan(lessonPlanId);
+  };
+
+  // Image upload props
+  const imageUploadProps = {
+    name: "images",
+    multiple: true,
+    fileList: imageFileList,
+    beforeUpload: (file) => {
+      const isValidType = file.type.startsWith("image/");
       if (!isValidType) {
-        message.error("You can only upload PDF, Word, or PowerPoint files!");
+        message.error("You can only upload image files!");
         return false;
       }
 
-      const isLt50M = file.size / 1024 / 1024 < 50;
-      if (!isLt50M) {
-        message.error("File must be smaller than 50MB!");
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error("Image must be smaller than 10MB!");
         return false;
       }
 
       return false; // Prevent auto upload
     },
     onChange: (info) => {
-      setFileList(info.fileList);
+      setImageFileList(info.fileList);
     },
     onRemove: (file) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
+      const index = imageFileList.indexOf(file);
+      const newFileList = imageFileList.slice();
       newFileList.splice(index, 1);
-      setFileList(newFileList);
+      setImageFileList(newFileList);
     },
   };
 
-  // Tag management
-  const handleAddTag = () => {
-    if (inputTag && !tags.includes(inputTag) && tags.length < 8) {
-      setTags([...tags, inputTag]);
-      setInputTag("");
-    }
+  const getSelectedClassDetails = () => {
+    return classes.find((cls) => cls._id === selectedClass);
   };
 
-  const handleRemoveTag = (removedTag) => {
-    setTags(tags.filter((tag) => tag !== removedTag));
+  const getSelectedLessonPlanDetails = () => {
+    return lessonPlans.find((plan) => plan._id === selectedLessonPlan);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
+  const formatLessonPlanOption = (plan) => {
+    const theme = plan.parameters?.Sow?.theme || "No Theme";
+    const topic = plan.parameters?.Sow?.topic || "No Topic";
+    const grade = plan.parameters?.grade || "Unknown Grade";
+    const date = plan.lessonDate
+      ? new Date(plan.lessonDate).toLocaleDateString()
+      : "No Date";
 
-  // Objectives management
-  const handleObjectiveChange = (index, value) => {
-    const newObjectives = [...objectives];
-    newObjectives[index] = value;
-    setObjectives(newObjectives);
-  };
-
-  const addObjective = () => {
-    if (objectives.length < 5) {
-      setObjectives([...objectives, ""]);
-    }
-  };
-
-  const removeObjective = (index) => {
-    if (objectives.length > 1) {
-      const newObjectives = objectives.filter((_, i) => i !== index);
-      setObjectives(newObjectives);
-    }
+    return {
+      label: `${theme} - ${topic}`,
+      details: `${grade} | ${date}`,
+      hots: plan.parameters?.hotsFocus || null,
+      proficiency: plan.parameters?.proficiencyLevel || null,
+    };
   };
 
   return (
     <Modal
       title={
         <div className="modal-title">
-          <FileTextOutlined />
-          <span>Upload Lesson Plan</span>
+          <ShareAltOutlined />
+          <span>Share Lesson Plan</span>
         </div>
       }
       open={isOpen}
       onCancel={handleClose}
       footer={null}
-      width={800}
+      width={900}
       className="upload-lesson-modal"
       destroyOnClose
     >
+      <Alert
+        message="Share Your Teaching Experience"
+        description="Select an existing lesson plan from your classes to share with the community. Other teachers can learn from your successful lessons."
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
+
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         className="upload-form"
       >
-        <Row gutter={[16, 0]}>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Lesson Title"
-              name="title"
-              rules={[{ required: true, message: "Please enter lesson title" }]}
-            >
-              <Input placeholder="Enter a descriptive title for your lesson" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Subject"
-              name="subject"
-              rules={[{ required: true, message: "Please select subject" }]}
-            >
-              <Select placeholder="Select subject">
-                <Option value="English">English</Option>
-                <Option value="Mathematics">Mathematics</Option>
-                <Option value="Science">Science</Option>
-                <Option value="History">History</Option>
-                <Option value="Geography">Geography</Option>
-                <Option value="Bahasa Melayu">Bahasa Melayu</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={[16, 0]}>
-          <Col xs={24} sm={8}>
-            <Form.Item
-              label="Level"
-              name="level"
-              rules={[{ required: true, message: "Please select level" }]}
-            >
-              <Select placeholder="Select level">
-                <Option value="Form 1">Form 1</Option>
-                <Option value="Form 2">Form 2</Option>
-                <Option value="Form 3">Form 3</Option>
-                <Option value="Form 4">Form 4</Option>
-                <Option value="Form 5">Form 5</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item
-              label="Duration"
-              name="duration"
-              rules={[{ required: true, message: "Please enter duration" }]}
-            >
-              <Select placeholder="Select duration">
-                <Option value="30 minutes">30 minutes</Option>
-                <Option value="45 minutes">45 minutes</Option>
-                <Option value="60 minutes">60 minutes</Option>
-                <Option value="90 minutes">90 minutes</Option>
-                <Option value="120 minutes">120 minutes</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item
-              label="Difficulty"
-              name="difficulty"
-              rules={[{ required: true, message: "Please select difficulty" }]}
-            >
-              <Select placeholder="Select difficulty">
-                <Option value="Beginner">Beginner</Option>
-                <Option value="Intermediate">Intermediate</Option>
-                <Option value="Advanced">Advanced</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: "Please enter description" }]}
-        >
-          <TextArea
-            rows={3}
-            placeholder="Provide a brief description of your lesson plan..."
-            maxLength={500}
-            showCount
-          />
-        </Form.Item>
-
-        {/* Learning Objectives */}
-        <Form.Item label="Learning Objectives">
-          <div className="objectives-section">
-            {objectives.map((objective, index) => (
-              <div key={index} className="objective-item">
-                <Input
-                  placeholder={`Learning objective ${index + 1}`}
-                  value={objective}
-                  onChange={(e) => handleObjectiveChange(index, e.target.value)}
-                  suffix={
-                    objectives.length > 1 && (
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<CloseOutlined />}
-                        onClick={() => removeObjective(index)}
-                        className="remove-objective-btn"
-                      />
-                    )
-                  }
-                />
-              </div>
-            ))}
-            {objectives.length < 5 && (
-              <Button
-                type="dashed"
-                onClick={addObjective}
-                icon={<PlusOutlined />}
-                className="add-objective-btn"
-              >
-                Add Learning Objective
-              </Button>
-            )}
-          </div>
-        </Form.Item>
-
-        {/* Tags */}
-        <Form.Item label="Tags (Topics Covered)">
-          <div className="tags-section">
-            <div className="tags-input">
-              <Input
-                placeholder="Enter a tag and press Enter"
-                value={inputTag}
-                onChange={(e) => setInputTag(e.target.value)}
-                onKeyPress={handleKeyPress}
-                suffix={
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddTag}
-                    disabled={!inputTag || tags.length >= 8}
-                  />
-                }
-              />
-            </div>
-            <div className="tags-display">
-              {tags.map((tag) => (
-                <Tag
-                  key={tag}
-                  closable
-                  onClose={() => handleRemoveTag(tag)}
-                  className="lesson-tag"
-                >
-                  {tag}
-                </Tag>
-              ))}
-            </div>
-            <div className="tags-hint">
-              Add up to 8 tags to help others find your lesson plan
-            </div>
-          </div>
-        </Form.Item>
-
-        <Divider />
-
-        {/* File Upload */}
-        <Form.Item label="Upload Files" required>
-          <Dragger {...uploadProps} className="file-dragger">
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              Click or drag files to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for PDF, Word documents, PowerPoint presentations. Maximum
-              file size: 50MB per file.
-            </p>
-          </Dragger>
-          {fileList.length > 0 && (
-            <div className="file-list">
-              <div className="file-list-header">
-                Uploaded Files ({fileList.length})
-              </div>
-              {fileList.map((file, index) => (
-                <div key={index} className="file-item">
-                  <FileTextOutlined />
-                  <span className="file-name">{file.name}</span>
-                  <span className="file-size">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </span>
+        <Row gutter={[24, 16]}>
+          {/* Class Selection - Full Width */}
+          <Col span={24}>
+            <Card
+              size="small"
+              title={
+                <div className="card-title">
+                  <TeamOutlined style={{ color: "#1890ff" }} />
+                  <span>Select Class</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </Form.Item>
+              }
+              className="selection-card"
+            >
+              <Form.Item
+                name="class"
+                rules={[{ required: true, message: "Please select a class" }]}
+              >
+                <Spin spinning={classesLoading}>
+                  <Select
+                    placeholder="Choose a class"
+                    value={selectedClass}
+                    onChange={handleClassChange}
+                    size="large"
+                    style={{ width: "100%" }}
+                    loading={classesLoading}
+                  >
+                    {classes.map((classItem) => (
+                      <Option key={classItem._id} value={classItem._id}>
+                        {classItem.className}
+                      </Option>
+                    ))}
+                  </Select>
+                </Spin>
+              </Form.Item>
 
-        {/* Footer */}
+              {selectedClass && getSelectedClassDetails() && (
+                <div className="selected-preview">
+                  <Text strong>Selected Class:</Text>
+                  <div className="preview-content">
+                    <Tag color="blue">
+                      {getSelectedClassDetails().className}
+                    </Tag>
+                    <Text type="secondary">
+                      {getSelectedClassDetails().grade} •{" "}
+                      {getSelectedClassDetails().subject} •{" "}
+                      {getSelectedClassDetails().year}
+                    </Text>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </Col>
+
+          {/* Lesson Plan Selection - Full Width */}
+          <Col span={24}>
+            <Card
+              size="small"
+              title={
+                <div className="card-title">
+                  <BookOutlined style={{ color: "#52c41a" }} />
+                  <span>Select Lesson Plan</span>
+                </div>
+              }
+              className="selection-card"
+            >
+              <Form.Item
+                name="lessonPlan"
+                rules={[
+                  { required: true, message: "Please select a lesson plan" },
+                ]}
+              >
+                <Spin spinning={lessonPlansLoading}>
+                  <Select
+                    placeholder={
+                      selectedClass
+                        ? "Choose a lesson plan"
+                        : "Please select a class first"
+                    }
+                    value={selectedLessonPlan}
+                    onChange={handleLessonPlanChange}
+                    size="large"
+                    style={{ width: "100%" }}
+                    disabled={!selectedClass}
+                    loading={lessonPlansLoading}
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .indexOf(input.toLowerCase()) >= 0
+                    }
+                  >
+                    {lessonPlans.map((plan) => {
+                      const formatted = formatLessonPlanOption(plan);
+                      return (
+                        <Option key={plan._id} value={plan._id}>
+                          {formatted.label}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Spin>
+              </Form.Item>
+
+              {selectedLessonPlan && getSelectedLessonPlanDetails() && (
+                <div className="selected-preview">
+                  <Text strong>Selected Lesson:</Text>
+                  <div className="preview-content">
+                    <div className="lesson-preview">
+                      <div className="lesson-title">
+                        {getSelectedLessonPlanDetails().parameters?.Sow
+                          ?.topic || "English Lesson"}
+                      </div>
+                      <div className="lesson-meta">
+                        <Tag color="green">
+                          {
+                            getSelectedLessonPlanDetails().parameters?.Sow
+                              ?.theme
+                          }
+                        </Tag>
+                        {getSelectedLessonPlanDetails().parameters
+                          ?.hotsFocus && (
+                          <Tag color="purple">
+                            {getSelectedLessonPlanDetails().parameters.hotsFocus.toUpperCase()}
+                          </Tag>
+                        )}
+                        {getSelectedLessonPlanDetails().parameters
+                          ?.proficiencyLevel && (
+                          <Tag color="orange">
+                            {
+                              getSelectedLessonPlanDetails().parameters
+                                .proficiencyLevel
+                            }
+                          </Tag>
+                        )}
+                      </div>
+                      <Text type="secondary" className="lesson-objective">
+                        {getSelectedLessonPlanDetails().plan?.learningObjective}
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {lessonPlans.length === 0 &&
+                selectedClass &&
+                !lessonPlansLoading && (
+                  <div className="empty-state">
+                    <Text type="secondary">
+                      No lesson plans found for this class. Create some lesson
+                      plans first.
+                    </Text>
+                  </div>
+                )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Description */}
+        <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
+          <Col span={24}>
+            <Card
+              size="small"
+              title="Share Description"
+              className="selection-card"
+            >
+              <Form.Item
+                name="description"
+                rules={[
+                  { required: true, message: "Please provide a description" },
+                  {
+                    min: 10,
+                    message: "Description must be at least 10 characters",
+                  },
+                ]}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="Describe your lesson experience, what worked well, tips for other teachers, student reactions, etc..."
+                  maxLength={500}
+                  showCount
+                />
+              </Form.Item>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Share your insights and experience with this lesson to help
+                other teachers.
+              </Text>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Image Upload */}
+        <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
+          <Col span={24}>
+            <Card
+              size="small"
+              title={
+                <div className="card-title">
+                  <PictureOutlined style={{ color: "#fa8c16" }} />
+                  <span>Add Images (Optional)</span>
+                </div>
+              }
+              className="selection-card"
+            >
+              <div className="image-upload-container">
+                <Dragger {...imageUploadProps} className="image-dragger">
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">
+                    Click or drag images to upload
+                  </p>
+                  <p className="ant-upload-hint">
+                    Support for JPG, PNG, GIF images. Maximum 10MB per image.
+                    Add photos of student work, classroom activities, or
+                    materials used.
+                  </p>
+                </Dragger>
+              </div>
+
+              {imageFileList.length > 0 && (
+                <div className="image-preview-list">
+                  <div className="preview-header">
+                    <Text strong>Uploaded Images ({imageFileList.length})</Text>
+                  </div>
+                  <div className="preview-grid">
+                    {imageFileList.map((file, index) => (
+                      <div key={index} className="image-preview-item">
+                        <div className="image-name">{file.name}</div>
+                        <div className="image-size">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Summary Card */}
+        {selectedClass && selectedLessonPlan && (
+          <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
+            <Col span={24}>
+              <Card
+                size="small"
+                title="Share Summary"
+                className="summary-card"
+                style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
+              >
+                <Row gutter={[16, 8]}>
+                  <Col xs={24} sm={12}>
+                    <div className="summary-item">
+                      <Text strong>Class:</Text>
+                      <div>
+                        {getSelectedClassDetails()?.className} (
+                        {getSelectedClassDetails()?.grade})
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div className="summary-item">
+                      <Text strong>Subject:</Text>
+                      <div>{getSelectedClassDetails()?.subject}</div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div className="summary-item">
+                      <Text strong>Lesson Topic:</Text>
+                      <div>
+                        {getSelectedLessonPlanDetails()?.parameters?.Sow?.topic}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div className="summary-item">
+                      <Text strong>Theme:</Text>
+                      <div>
+                        {getSelectedLessonPlanDetails()?.parameters?.Sow?.theme}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col span={24}>
+                    <div className="summary-item">
+                      <Text strong>Learning Objective:</Text>
+                      <div style={{ marginTop: "4px" }}>
+                        {
+                          getSelectedLessonPlanDetails()?.plan
+                            ?.learningObjective
+                        }
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          </Row>
+        )}
+
+        {/* Footer Actions */}
         <div className="modal-footer">
-          <Space>
-            <Button onClick={handleClose} disabled={loading}>
-              Cancel
-            </Button>
+          <div className="footer-left">
             <Button onClick={handleReset} disabled={loading}>
               Reset
+            </Button>
+          </div>
+          <div className="footer-right">
+            <Button onClick={handleClose} disabled={loading}>
+              Cancel
             </Button>
             <Button
               type="primary"
               htmlType="submit"
               loading={loading}
-              icon={<UploadOutlined />}
+              icon={<ShareAltOutlined />}
+              disabled={!selectedClass || !selectedLessonPlan}
             >
-              Upload Lesson Plan
+              Share Lesson Plan
             </Button>
-          </Space>
+          </div>
         </div>
       </Form>
     </Modal>

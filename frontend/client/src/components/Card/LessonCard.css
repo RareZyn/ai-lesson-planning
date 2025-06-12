@@ -1,4 +1,4 @@
-/* src/pages/community/components/Card/LessonCard.css */
+/* src/components/Card/LessonCard.css - Updated for lesson plan data */
 
 .lesson-card {
   border-radius: 12px;
@@ -128,18 +128,35 @@
 .card-meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-top: 4px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.upload-date {
+.lesson-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: #8c8c8c;
+}
+
+.detail-item .anticon {
+  font-size: 12px;
 }
 
 .engagement-stats {
   display: flex;
   gap: 12px;
+  align-self: flex-end;
 }
 
 .engagement-stats span {
@@ -167,46 +184,112 @@
   background: rgba(24, 144, 255, 0.06);
 }
 
-/* Modal Styles */
-.lesson-detail-modal .modal-content {
+/* Modal Styles - Override Ant Design defaults */
+.lesson-detail-modal.ant-modal .ant-modal-content {
   padding: 0;
+  border-radius: 12px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-header {
+  padding: 24px 32px 20px 32px !important;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-body {
+  padding: 24px 32px !important;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-footer {
+  padding: 16px 32px 24px 32px !important;
+  border-top: 1px solid #f0f0f0;
+  border-radius: 0 0 12px 12px;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-title {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #262626 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-close {
+  top: 20px !important;
+  right: 24px !important;
+}
+
+.lesson-detail-modal .modal-content {
+  padding: 20px;
+
+}
+
+/* Ensure modal doesn't exceed viewport */
+.lesson-detail-modal.ant-modal {
+  top: 50px;
+  padding-bottom: 50px;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-wrap {
+  overflow: hidden;
 }
 
 .lesson-info {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   gap: 12px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
 }
 
 .info-label {
   font-weight: 600;
   color: #595959;
-  min-width: 80px;
+  min-width: 120px;
 }
 
 .lesson-description,
-.lesson-objectives,
-.lesson-tags {
-  margin-bottom: 24px;
+.lesson-objectives {
+  margin-bottom: 32px;
 }
 
 .lesson-description h4,
-.lesson-objectives h4,
-.lesson-tags h4 {
-  margin-bottom: 12px;
+.lesson-objectives h4 {
+  margin-bottom: 16px;
   color: #262626;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .lesson-description p {
   color: #595959;
   line-height: 1.6;
+  font-size: 15px;
+  margin-bottom: 0;
 }
 
 .lesson-objectives ul {
@@ -215,30 +298,60 @@
 }
 
 .lesson-objectives li {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   color: #595959;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.lesson-objectives li:last-child {
+  margin-bottom: 0;
+}
+
+.sow-details {
+  background: #f6f8fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  margin-top: 16px;
+}
+
+.sow-details p {
+  margin-bottom: 12px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.detail-tag {
-  background: #f6f6f6;
-  color: #666;
-  border: 1px solid #e8e8e8;
-  padding: 4px 12px;
-  border-radius: 6px;
+.sow-details p:last-child {
+  margin-bottom: 0;
 }
 
 .lesson-stats {
   display: flex;
   gap: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  padding: 20px;
+  margin-top: 24px;
+  border-top: 2px solid #f0f0f0;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-footer .ant-btn {
+  margin-left: 12px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  height: 36px !important;
+  padding: 0 20px !important;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-footer .ant-btn:first-child {
+  margin-left: 0 !important;
+}
+
+.lesson-detail-modal.ant-modal .ant-modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2) !important;
 }
 
 .stat-item {
@@ -270,16 +383,64 @@
   .lesson-stats {
     flex-direction: column;
     gap: 12px;
+    padding: 16px;
   }
 
   .engagement-stats {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
+    align-self: flex-start;
   }
 
   .tags-section {
     margin-bottom: 12px;
+  }
+
+  .info-label {
+    min-width: 100px;
+  }
+
+  /* Modal responsive styles */
+  .lesson-detail-modal.ant-modal {
+    top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-content {
+    max-height: 95vh;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-header {
+    padding: 20px 24px 16px 24px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-body {
+    padding: 20px 24px !important;
+    overflow: hidden;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-footer {
+    padding: 16px 24px 20px 24px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-close {
+    top: 16px !important;
+    right: 20px !important;
+  }
+
+  .lesson-info {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .lesson-description h4,
+  .lesson-objectives h4 {
+    font-size: 16px;
+  }
+
+  .sow-details {
+    padding: 16px;
   }
 }
 
@@ -315,4 +476,86 @@
     font-size: 11px;
     padding: 2px 6px;
   }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .info-label {
+    min-width: auto;
+    margin-bottom: 4px;
+  }
+
+  /* Modal mobile styles */
+  .lesson-detail-modal.ant-modal {
+    top: 10px;
+    padding-bottom: 10px;
+    margin: 0 10px;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-content {
+    max-height: 98vh;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-header {
+    padding: 16px 20px 12px 20px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-body {
+    padding: 16px 20px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-footer {
+    padding: 12px 20px 16px 20px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-close {
+    top: 12px !important;
+    right: 16px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-title {
+    font-size: 18px !important;
+  }
+
+  .lesson-info {
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+
+  .lesson-description,
+  .lesson-objectives {
+    margin-bottom: 24px;
+  }
+
+  .lesson-description h4,
+  .lesson-objectives h4 {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .lesson-description p,
+  .lesson-objectives li {
+    font-size: 14px;
+  }
+
+  .sow-details {
+    padding: 12px;
+  }
+
+  .sow-details p {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .lesson-stats {
+    padding: 16px;
+    gap: 16px;
+  }
+}
+
+.ant-modal-body{
+  overflow: hidden;
 }

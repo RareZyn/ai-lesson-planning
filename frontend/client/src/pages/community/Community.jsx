@@ -1,4 +1,4 @@
-// src/pages/community/Community.jsx
+// src/pages/community/Community.jsx - Updated to use new lesson plan data structure
 import React, { useState, useEffect } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message } from "antd";
 import {
@@ -8,7 +8,10 @@ import {
 } from "@ant-design/icons";
 import LessonCard from "../../components/Card/LessonCard";
 import UploadLessonModal from "../../components/Modal/UploadLessonModal";
-import { lessonData } from "../../data/lessonData";
+import {
+  dummySharedLessonPlans,
+  getSharedLessonPlans,
+} from "../../data/LessonPlanData";
 import "./Community.css";
 
 const { Search } = Input;
@@ -27,9 +30,30 @@ const Community = () => {
   });
 
   useEffect(() => {
-    // Load initial data
-    setLessons(lessonData);
-    setFilteredLessons(lessonData);
+    // Load initial data - transform shared lesson plans to match expected structure
+    const transformedLessons = dummySharedLessonPlans.map((shared) => ({
+      _id: shared._id,
+      // Map the shared lesson plan data to match LessonCard expectations
+      ...shared.originalLessonPlan,
+      // Add community-specific fields
+      author: shared.sharedBy.name,
+      authorAvatar: shared.sharedBy.avatar,
+      schoolName: shared.sharedBy.schoolName,
+      uploadDate: shared.sharedAt,
+      likes: shared.likes,
+      downloads: shared.downloads,
+      views: shared.views,
+      comments: shared.comments,
+      description: shared.description,
+      className: shared.className,
+      isShared: true,
+      // Add fields for bookmarking (user-specific, would come from backend)
+      isLiked: false,
+      isBookmarked: false,
+    }));
+
+    setLessons(transformedLessons);
+    setFilteredLessons(transformedLessons);
   }, []);
 
   useEffect(() => {
@@ -39,24 +63,33 @@ const Community = () => {
     if (filters.search) {
       filtered = filtered.filter(
         (lesson) =>
-          lesson.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-          lesson.description
-            .toLowerCase()
+          lesson.parameters?.Sow?.topic
+            ?.toLowerCase()
             .includes(filters.search.toLowerCase()) ||
-          lesson.tags.some((tag) =>
-            tag.toLowerCase().includes(filters.search.toLowerCase())
-          )
+          lesson.parameters?.Sow?.theme
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
+          lesson.description
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
+          lesson.plan?.learningObjective
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase())
       );
     }
 
     if (filters.subject !== "all") {
-      filtered = filtered.filter(
-        (lesson) => lesson.subject === filters.subject
+      filtered = filtered.filter((lesson) =>
+        lesson.parameters?.Sow?.theme
+          ?.toLowerCase()
+          .includes(filters.subject.toLowerCase())
       );
     }
 
     if (filters.level !== "all") {
-      filtered = filtered.filter((lesson) => lesson.level === filters.level);
+      filtered = filtered.filter(
+        (lesson) => lesson.parameters?.grade === filters.level
+      );
     }
 
     setFilteredLessons(filtered);
@@ -76,35 +109,43 @@ const Community = () => {
     }));
   };
 
-  const handleLessonUpload = (lessonData) => {
-    const newLesson = {
-      id: lessons.length + 1,
-      ...lessonData,
-      author: "Ahmad Hafiz", // Current user
-      uploadDate: new Date().toISOString().split("T")[0],
-      likes: 0,
-      downloads: 0,
-      comments: [],
-    };
+  const handleLessonShare = async (shareData) => {
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    setLessons((prev) => [newLesson, ...prev]);
-    message.success("Lesson plan uploaded successfully!");
-    setIsUploadModalOpen(false);
+      // In real implementation, this would create a new shared lesson plan
+      console.log("Sharing lesson plan:", shareData);
+
+      message.success("Lesson plan shared successfully to the community!");
+      setIsUploadModalOpen(false);
+
+      // Optionally refresh the lessons list here
+    } catch (error) {
+      console.error("Share error:", error);
+      message.error("Failed to share lesson plan");
+    }
   };
 
   const handleLike = (lessonId) => {
     setLessons((prev) =>
       prev.map((lesson) =>
-        lesson.id === lessonId ? { ...lesson, likes: lesson.likes + 1 } : lesson
+        lesson._id === lessonId
+          ? {
+              ...lesson,
+              likes: lesson.likes + (lesson.isLiked ? -1 : 1),
+              isLiked: !lesson.isLiked,
+            }
+          : lesson
       )
     );
-    message.success("Lesson liked!");
+    message.success("Lesson updated!");
   };
 
   const handleDownload = (lessonId) => {
     setLessons((prev) =>
       prev.map((lesson) =>
-        lesson.id === lessonId
+        lesson._id === lessonId
           ? { ...lesson, downloads: lesson.downloads + 1 }
           : lesson
       )
@@ -119,8 +160,9 @@ const Community = () => {
       case "myCollection":
         return filteredLessons.filter((lesson) => lesson.isBookmarked);
       case "myShared":
+        // In real app, this would filter by current user's shared lessons
         return filteredLessons.filter(
-          (lesson) => lesson.author === "Ahmad Hafiz"
+          (lesson) => lesson.author === "Ahmad Albab" // Current user mock
         );
       default:
         return filteredLessons;
@@ -144,7 +186,7 @@ const Community = () => {
     return (
       <Row gutter={[24, 24]}>
         {tabLessons.map((lesson) => (
-          <Col xs={24} sm={12} lg={8} xl={6} key={lesson.id}>
+          <Col xs={24} sm={12} lg={8} xl={6} key={lesson._id}>
             <LessonCard
               lesson={lesson}
               onLike={handleLike}
@@ -174,7 +216,7 @@ const Community = () => {
           onClick={() => setIsUploadModalOpen(true)}
           className="upload-btn"
         >
-          Upload Lesson Plan
+          Share Lesson Plan
         </Button>
       </div>
 
@@ -199,11 +241,11 @@ const Community = () => {
               placeholder="Subject"
             >
               <Option value="all">All Subjects</Option>
-              <Option value="English">English</Option>
-              <Option value="Mathematics">Mathematics</Option>
-              <Option value="Science">Science</Option>
-              <Option value="History">History</Option>
-              <Option value="Geography">Geography</Option>
+              <Option value="people">People and Culture</Option>
+              <Option value="science">Science and Technology</Option>
+              <Option value="consumer">Consumer Awareness</Option>
+              <Option value="health">Health and Environment</Option>
+              <Option value="values">Values and Citizenship</Option>
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4}>
@@ -252,7 +294,7 @@ const Community = () => {
       <UploadLessonModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onSubmit={handleLessonUpload}
+        onSubmit={handleLessonShare}
       />
     </div>
   );

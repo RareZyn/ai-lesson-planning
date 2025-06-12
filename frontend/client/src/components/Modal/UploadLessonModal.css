@@ -1,17 +1,19 @@
-/* src/pages/community/components/Modal/UploadLessonModal.css */
+/* src/components/Modal/UploadLessonModal.css - Updated for sharing lesson plans */
 
 .upload-lesson-modal .ant-modal-content {
   padding: 0;
+  border-radius: 12px;
 }
 
 .upload-lesson-modal .ant-modal-header {
   padding: 20px 24px 16px;
   border-bottom: 1px solid #f0f0f0;
+  border-radius: 12px 12px 0 0;
 }
 
 .upload-lesson-modal .ant-modal-body {
   padding: 24px;
-  max-height: 70vh;
+  max-height: 75vh;
   overflow-y: auto;
 }
 
@@ -33,135 +35,180 @@
   margin: 0;
 }
 
-.upload-form .ant-form-item-label > label {
+/* Card Styles */
+.selection-card {
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  margin-bottom: 0; /* Remove default margin */
+}
+
+.selection-card:hover {
+  border-color: #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.selection-card .ant-card-head {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  min-height: auto;
+  border-radius: 8px 8px 0 0;
+}
+
+.selection-card .ant-card-body {
+  padding: 20px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 600;
   color: #262626;
 }
 
-/* Objectives Section */
-.objectives-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.objective-item {
-  display: flex;
-  align-items: center;
-}
-
-.objective-item .ant-input {
-  border-radius: 6px;
-}
-
-.remove-objective-btn {
-  color: #ff4d4f;
-  padding: 0;
-  height: auto;
-  width: auto;
-  min-width: auto;
-}
-
-.remove-objective-btn:hover {
-  color: #ff7875;
-  background: none;
-}
-
-.add-objective-btn {
-  align-self: flex-start;
-  border-color: #d9d9d9;
-  color: #666;
-  border-radius: 6px;
-}
-
-.add-objective-btn:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
-/* Tags Section */
-.tags-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.tags-input {
-  width: 100%;
-}
-
-.tags-input .ant-input {
-  border-radius: 6px;
-}
-
-.tags-display {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 32px;
-  padding: 8px 12px;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  background: #fafafa;
-}
-
-.lesson-tag {
-  margin: 0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #e6f7ff;
-  border: 1px solid #91d5ff;
-  color: #0050b3;
-}
-
-.tags-hint {
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-top: -8px;
-}
-
-/* File Upload */
-.file-dragger {
+/* Remove unused complex option styles */
+/* Simplified dropdown options */
+.upload-form .ant-select-dropdown {
   border-radius: 8px;
-  border: 2px dashed #d9d9d9;
-  background: #fafafa;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
-.file-dragger:hover {
-  border-color: #40a9ff;
-}
-
-.file-dragger .ant-upload-drag-icon {
-  margin-bottom: 16px;
-}
-
-.file-dragger .ant-upload-drag-icon .anticon {
-  font-size: 48px;
-  color: #1890ff;
-}
-
-.file-dragger .ant-upload-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #262626;
-  margin-bottom: 8px;
-}
-
-.file-dragger .ant-upload-hint {
+.upload-form .ant-select-item {
+  padding: 12px 16px;
   font-size: 14px;
-  color: #8c8c8c;
-  line-height: 1.5;
 }
 
-/* File List */
-.file-list {
+.upload-form .ant-select-item-option-selected {
+  background-color: #e6f7ff;
+  font-weight: 500;
+}
+
+/* Selected Preview */
+.selected-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+}
+
+.preview-content {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lesson-title {
+  font-weight: 600;
+  color: #262626;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.lesson-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lesson-objective {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #595959;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px dashed #d9d9d9;
+}
+
+/* Image Upload Container - Fix weird lines */
+.image-upload-container {
+  margin: 0;
+  padding: 0;
+}
+
+.image-upload-container .ant-upload-drag {
+  border: 2px dashed #d9d9d9 !important;
+  background: #fafafa !important;
+  border-radius: 8px !important;
+  padding: 24px !important;
+  margin: 0 !important;
+  position: relative;
+}
+
+.image-upload-container .ant-upload-drag:hover {
+  border-color: #40a9ff !important;
+}
+
+.image-upload-container .ant-upload-drag:before,
+.image-upload-container .ant-upload-drag:after {
+  display: none !important;
+}
+
+/* Remove any pseudo elements that might cause lines */
+.image-upload-container .ant-upload-drag-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Fix Ant Design Upload component styling */
+.image-upload-container .ant-upload {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.image-upload-container .ant-upload-drag-icon {
+  margin-bottom: 16px !important;
+}
+
+.image-upload-container .ant-upload-drag-icon .anticon {
+  font-size: 48px !important;
+  color: #fa8c16 !important;
+}
+
+.image-upload-container .ant-upload-text {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #262626 !important;
+  margin-bottom: 8px !important;
+}
+
+.image-upload-container .ant-upload-hint {
+  font-size: 14px !important;
+  color: #8c8c8c !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+/* Image Preview */
+.image-preview-list {
   margin-top: 16px;
   border: 1px solid #f0f0f0;
   border-radius: 6px;
   background: #fafafa;
 }
 
-.file-list-header {
+.preview-header {
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
   font-weight: 600;
@@ -170,35 +217,63 @@
   border-radius: 6px 6px 0 0;
 }
 
-.file-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.preview-grid {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
 }
 
-.file-item:last-child {
-  border-bottom: none;
+.image-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
 }
 
-.file-item .anticon {
-  color: #1890ff;
-  font-size: 16px;
-}
-
-.file-name {
-  flex: 1;
-  font-size: 14px;
+.image-name {
+  font-size: 12px;
   color: #262626;
   word-break: break-all;
+  flex: 1;
+  margin-right: 8px;
 }
 
-.file-size {
-  font-size: 12px;
+.image-size {
+  font-size: 11px;
   color: #8c8c8c;
-  min-width: 60px;
-  text-align: right;
+  white-space: nowrap;
+}
+
+/* Summary Card */
+.summary-card {
+  border-radius: 8px;
+}
+
+.summary-card .ant-card-head {
+  background: #f6ffed;
+  border-bottom: 1px solid #b7eb8f;
+}
+
+.summary-card .ant-card-body {
+  background: #f6ffed;
+}
+
+.summary-item {
+  margin-bottom: 8px;
+}
+
+.summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.summary-item div {
+  margin-top: 2px;
+  color: #262626;
+  font-size: 14px;
 }
 
 /* Modal Footer */
@@ -207,12 +282,21 @@
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  gap: 8px;
 }
 
 .modal-footer .ant-btn {
   border-radius: 6px;
   font-weight: 500;
+  height: 36px;
+  padding: 0 16px;
 }
 
 .modal-footer .ant-btn-primary {
@@ -221,7 +305,7 @@
   box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
 }
 
-.modal-footer .ant-btn-primary:hover {
+.modal-footer .ant-btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
@@ -241,6 +325,25 @@
 .upload-form .ant-form-item-has-error .ant-select-focused .ant-select-selector {
   border-color: #ff4d4f;
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* Loading States */
+.ant-spin-nested-loading {
+  border-radius: 6px;
+}
+
+/* Select Options */
+.upload-form .ant-select-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.upload-form .ant-select-item {
+  padding: 8px 12px;
+}
+
+.upload-form .ant-select-item-option-selected {
+  background-color: #e6f7ff;
 }
 
 /* Responsive Design */
@@ -263,29 +366,35 @@
     font-size: 16px;
   }
 
-  .tags-display {
-    padding: 6px 8px;
-  }
-
-  .file-item {
-    padding: 8px 12px;
-  }
-
-  .file-name {
-    font-size: 13px;
+  .preview-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .modal-footer {
     margin-top: 24px;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .modal-footer .ant-space {
+  .footer-left,
+  .footer-right {
     width: 100%;
     justify-content: space-between;
   }
 
   .modal-footer .ant-btn {
     flex: 1;
+  }
+
+  .plan-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .plan-tags {
+    align-self: flex-start;
   }
 }
 
@@ -302,37 +411,58 @@
     font-size: 15px;
   }
 
-  .file-dragger .ant-upload-drag-icon .anticon {
+  .image-dragger .ant-upload-drag-icon .anticon {
     font-size: 36px;
   }
 
-  .file-dragger .ant-upload-text {
+  .image-dragger .ant-upload-text {
     font-size: 14px;
   }
 
-  .file-dragger .ant-upload-hint {
+  .image-dragger .ant-upload-hint {
     font-size: 12px;
   }
 
-  .objectives-section {
-    gap: 8px;
-  }
-
-  .tags-section {
-    gap: 8px;
+  .selection-card .ant-card-body {
+    padding: 12px;
   }
 
   .modal-footer {
     margin-top: 16px;
-    flex-direction: column;
   }
 
-  .modal-footer .ant-space {
+  .footer-left,
+  .footer-right {
     flex-direction: column;
-    width: 100%;
   }
 
   .modal-footer .ant-btn {
     width: 100%;
   }
+}
+
+/* Alert Styles */
+.ant-alert {
+  border-radius: 8px;
+}
+
+.ant-alert-info {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+}
+
+/* Tag Customizations */
+.ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+/* Typography */
+.ant-typography {
+  color: #262626;
+}
+
+.ant-typography.ant-typography-secondary {
+  color: #8c8c8c;
 }
