@@ -1,0 +1,169 @@
+/* src/pages/community/Community.css */
+
+.community-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Header Section */
+.community-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.header-content h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #262626;
+}
+
+.header-content p {
+  margin: 0;
+  color: #8c8c8c;
+  font-size: 1rem;
+}
+
+.upload-btn {
+  height: 48px;
+  padding: 0 24px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* Filters Section */
+.filters-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.filter-results {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #595959;
+  font-weight: 500;
+  justify-content: flex-end;
+}
+
+/* Tabs */
+.community-tabs {
+  margin-bottom: 2rem;
+}
+
+.community-tabs .ant-tabs-nav {
+  margin-bottom: 2rem;
+}
+
+.community-tabs .ant-tabs-tab {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.community-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.community-tabs .ant-tabs-ink-bar {
+  height: 3px;
+  background: #1890ff;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 2px dashed #d9d9d9;
+}
+
+.empty-content {
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.empty-content h3 {
+  margin-bottom: 0.5rem;
+  color: #595959;
+}
+
+.empty-content p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .community-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .upload-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-results {
+    justify-content: flex-start;
+    margin-top: 1rem;
+  }
+
+  .filters-section {
+    padding: 1rem;
+  }
+
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .community-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .community-container {
+    padding: 0;
+  }
+
+  .filters-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .community-header {
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+  }
+
+  .header-content h1 {
+    font-size: 1.25rem;
+  }
+
+  .header-content p {
+    font-size: 0.875rem;
+  }
+}

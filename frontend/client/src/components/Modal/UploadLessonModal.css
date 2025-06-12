@@ -1,0 +1,338 @@
+/* src/pages/community/components/Modal/UploadLessonModal.css */
+
+.upload-lesson-modal .ant-modal-content {
+  padding: 0;
+}
+
+.upload-lesson-modal .ant-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.upload-lesson-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.modal-title .anticon {
+  color: #1890ff;
+  font-size: 20px;
+}
+
+.upload-form {
+  margin: 0;
+}
+
+.upload-form .ant-form-item-label > label {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Objectives Section */
+.objectives-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.objective-item {
+  display: flex;
+  align-items: center;
+}
+
+.objective-item .ant-input {
+  border-radius: 6px;
+}
+
+.remove-objective-btn {
+  color: #ff4d4f;
+  padding: 0;
+  height: auto;
+  width: auto;
+  min-width: auto;
+}
+
+.remove-objective-btn:hover {
+  color: #ff7875;
+  background: none;
+}
+
+.add-objective-btn {
+  align-self: flex-start;
+  border-color: #d9d9d9;
+  color: #666;
+  border-radius: 6px;
+}
+
+.add-objective-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* Tags Section */
+.tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tags-input {
+  width: 100%;
+}
+
+.tags-input .ant-input {
+  border-radius: 6px;
+}
+
+.tags-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+  padding: 8px 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.lesson-tag {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #0050b3;
+}
+
+.tags-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: -8px;
+}
+
+/* File Upload */
+.file-dragger {
+  border-radius: 8px;
+  border: 2px dashed #d9d9d9;
+  background: #fafafa;
+}
+
+.file-dragger:hover {
+  border-color: #40a9ff;
+}
+
+.file-dragger .ant-upload-drag-icon {
+  margin-bottom: 16px;
+}
+
+.file-dragger .ant-upload-drag-icon .anticon {
+  font-size: 48px;
+  color: #1890ff;
+}
+
+.file-dragger .ant-upload-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.file-dragger .ant-upload-hint {
+  font-size: 14px;
+  color: #8c8c8c;
+  line-height: 1.5;
+}
+
+/* File List */
+.file-list {
+  margin-top: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.file-list-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #262626;
+  background: #f5f5f5;
+  border-radius: 6px 6px 0 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-item .anticon {
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 14px;
+  color: #262626;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #8c8c8c;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Modal Footer */
+.modal-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-footer .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
+}
+
+.modal-footer .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* Form Validation */
+.upload-form .ant-form-item-explain-error {
+  font-size: 12px;
+}
+
+.upload-form .ant-form-item-has-error .ant-input,
+.upload-form .ant-form-item-has-error .ant-select-selector {
+  border-color: #ff4d4f;
+}
+
+.upload-form .ant-form-item-has-error .ant-input:focus,
+.upload-form .ant-form-item-has-error .ant-select-focused .ant-select-selector {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .upload-lesson-modal {
+    margin: 0;
+    max-width: 100vw;
+  }
+
+  .upload-lesson-modal .ant-modal-content {
+    border-radius: 0;
+  }
+
+  .upload-lesson-modal .ant-modal-body {
+    padding: 16px;
+    max-height: 80vh;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .tags-display {
+    padding: 6px 8px;
+  }
+
+  .file-item {
+    padding: 8px 12px;
+  }
+
+  .file-name {
+    font-size: 13px;
+  }
+
+  .modal-footer {
+    margin-top: 24px;
+  }
+
+  .modal-footer .ant-space {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modal-footer .ant-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-lesson-modal .ant-modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .upload-lesson-modal .ant-modal-body {
+    padding: 12px;
+  }
+
+  .modal-title {
+    font-size: 15px;
+  }
+
+  .file-dragger .ant-upload-drag-icon .anticon {
+    font-size: 36px;
+  }
+
+  .file-dragger .ant-upload-text {
+    font-size: 14px;
+  }
+
+  .file-dragger .ant-upload-hint {
+    font-size: 12px;
+  }
+
+  .objectives-section {
+    gap: 8px;
+  }
+
+  .tags-section {
+    gap: 8px;
+  }
+
+  .modal-footer {
+    margin-top: 16px;
+    flex-direction: column;
+  }
+
+  .modal-footer .ant-space {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .modal-footer .ant-btn {
+    width: 100%;
+  }
+}
