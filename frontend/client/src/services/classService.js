@@ -50,3 +50,18 @@ export const deleteClass = async (id) => {
   const response = await axios.delete(`${API_URL}/${id}`, getAuthConfig());
   return response.data;
 };
+
+/**
+ * Fetches a single class by its ID.
+ * @param {string} classId - The ID of the class to fetch.
+ * @returns {Promise<object>}
+ */
+export const getClassById = async (classId) => {
+    try {
+        const response = await axios.get(`${API_URL}/${classId}`, getAuthConfig());
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching class by ID:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not fetch class details.');
+    }
+};

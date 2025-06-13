@@ -28,7 +28,7 @@ const RecentOpened = () => {
   }, []); // The empty dependency array means this runs once on mount
 
   const handleViewAll = () => {
-    navigate("/app/my-lessons");
+    navigate("/app/lessons");
   };
 
   const handleCardClick = (lessonId) => {

@@ -7,9 +7,9 @@ const { lessonPlanValidationSchema } = require('../utils/validationSchema'); // 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 exports.createLesson = async (req, res, next) => {
     try {
-        const { classId, Sow, proficiencyLevel, hotsFocus, specificTopic, grade, additionalNotes } = req.body;
+        const { classId, sow, proficiencyLevel, hotsFocus, specificTopic, grade, additionalNotes } = req.body;
 
-        if (!classId || !Sow || !proficiencyLevel || !hotsFocus || !specificTopic || !grade) {
+        if (!classId || !sow || !proficiencyLevel || !hotsFocus || !specificTopic || !grade) {
             return res.status(400).json({
                 success: false,
                 message: "Missing required fields for lesson plan generation.",
@@ -21,7 +21,7 @@ exports.createLesson = async (req, res, next) => {
       You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class.
 
       Here is the official SoW data to base the plan on:
-      ${JSON.stringify(Sow, null, 2)}
+      ${JSON.stringify(sow, null, 2)}
 
       Use this specific context provided by the teacher:
       - Class Proficiency Level: ${proficiencyLevel}
@@ -237,29 +237,41 @@ exports.updateLesson = async (req, res) => {
     }
 };
 
-// @desc    Delete lesson
-// @access  Private (Admin/Teacher)
-exports.deleteLesson = async (req, res) => {
+/**
+ * @desc    Delete a lesson plan by its ID
+ * @route   DELETE /api/lessons/:id
+ * @access  Private
+ */
+exports.deleteLessonPlan = async (req, res, next) => {
     try {
-        const lesson = await LessonPlan.findByIdAndRemove(req.params.id);
-        if (!lesson) {
+        const lessonPlan = await LessonPlan.findById(req.params.id);
+
+        if (!lessonPlan) {
             return res.status(404).json({
                 success: false,
-                error: 'Lesson not found'
+                message: `Lesson plan not found with id of ${req.params.id}`
             });
         }
 
-        return res.status(200).json({
+        // Make sure user is the lesson plan owner
+        if (lessonPlan.createdBy.toString() !== req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Not authorized to delete this lesson plan'
+            });
+        }
+
+        // In Mongoose 6+, 'remove()' is deprecated. Use 'deleteOne()'.
+        await lessonPlan.deleteOne();
+
+        res.status(200).json({
             success: true,
-            data: {}
+            data: {} // Return an empty object on successful deletion
         });
 
-    } catch (err) {
-        console.error('Error deleting lesson:', err);
-        return res.status(500).json({
-            success: false,
-            error: 'Server error'
-        });
+    } catch (error) {
+        console.error("Error in deleteLessonPlan:", error);
+        next(error);
     }
 };
 
@@ -316,5 +328,43 @@ exports.getRecentLessonPlans = async (req, res, next) => {
     } catch (error) {
         console.error("Error fetching recent lesson plans:", error);
         next(error);
+    }
+};
+
+
+// ... (your other controller functions like saveLessonPlan, etc.) ...
+
+/**
+ * @desc    Get all lesson plans for a specific class
+ * @route   GET /api/lessons/by-class/:classId
+ * @access  Private
+ */
+exports.getLessonPlansByClass = async (req, res, next) => {
+    try {
+        const { classId } = req.params;
+
+        // Ensure user can only fetch their own lessons for that class
+        const lessonPlans = await LessonPlan.find({
+            createdBy: req.user.id,
+            classId: classId
+        })
+            .populate({
+                path: 'classId',
+                select: 'className subject'
+            })
+            .sort({ lessonDate: -1 });
+
+        // Note: It's okay if this returns an empty array, so no 404 check is needed here.
+        // The frontend will handle the "no lessons found" case.
+
+        res.status(200).json({
+            success: true,
+            count: lessonPlans.length,
+            data: lessonPlans
+        });
+
+    } catch (error) {
+        console.error("Error fetching lesson plans by class:", error);
+        next(error); // Pass to global error handler
     }
 };

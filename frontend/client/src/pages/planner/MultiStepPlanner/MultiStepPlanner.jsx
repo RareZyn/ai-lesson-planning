@@ -9,9 +9,9 @@ import Step1_ChooseClass from './Step1_ChooseClass';
 import Step2_LessonDetails from './Step2_LessonDetails';
 import Step3_AdditionalInfo from './Step3_AdditionalInfo';
 import Step4_ConfirmPlan from './Step4_ConfirmPlan';
-import { 
+import {
   generateLesson,
-  saveLessonPlan, 
+  saveLessonPlan,
 } from '../../../services/lessonService';
 
 const MultiStepPlanner = () => {
@@ -23,10 +23,9 @@ const MultiStepPlanner = () => {
   // --- FIX: Removed redundant 'lessonNumber' field ---
   const [formData, setFormData] = useState({
     classId: '',
-    Sow: {}, // The entire selected lesson object will be stored here
+    sow: {}, // The entire selected lesson object will be stored here
     proficiencyLevel: '',
     hotsFocus: '',
-    iThink: '',
     additionalNotes: '',
     grade: "",
   });
@@ -41,6 +40,7 @@ const MultiStepPlanner = () => {
   const [plannerDate, setPlannerDate] = useState(getInitialDate());
 
   useEffect(() => {
+    console.log(formData)
   }, [plannerDate]);
 
   const handleDataChange = (field, value) => {
@@ -72,33 +72,31 @@ const MultiStepPlanner = () => {
   };
 
   const handleSave = async () => {
-        // Add a saving state for better UX
-        console.log(formData)
-        setIsLoading(true); 
-        const finalLessonPlan = {
-            parameters: { ...formData },
-            plan: generatedPlan,
-            date: plannerDate.toISOString(), // Include the date
-        };
-        
-        try {
-            // Call the service to save the plan
-            const response = await saveLessonPlan(finalLessonPlan);
-
-            if (response.success) {
-                // Extract the new ID from the response data
-                const newPlanId = response.data._id;
-                alert('Lesson Plan Saved Successfully!');
-                // Redirect to the new display page
-                navigate(`/app/lesson/${newPlanId}`);
-            }
-        } catch (error) {
-            console.error('Failed to save lesson plan:', error);
-            alert(`Error: ${error.message}`);
-        } finally {
-            setIsLoading(false);
-        }
+    setIsLoading(true);
+    const finalLessonPlan = {
+      parameters: formData,
+      plan: generatedPlan,
+      date: plannerDate.toISOString(), // Include the date
     };
+    console.log('Final Lesson Plan:', finalLessonPlan);
+    try {
+      // Call the service to save the plan
+      const response = await saveLessonPlan(finalLessonPlan);
+
+      if (response.success) {
+        // Extract the new ID from the response data
+        const newPlanId = response.data._id;
+        alert('Lesson Plan Saved Successfully!');
+        // Redirect to the new display page
+        navigate(`/app/lesson/${newPlanId}`);
+      }
+    } catch (error) {
+      console.error('Failed to save lesson plan:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   return (

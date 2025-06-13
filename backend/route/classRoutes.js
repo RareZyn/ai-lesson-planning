@@ -13,10 +13,10 @@ const {
 // Middleware to protect routes (if needed)
 const { protect } = require('../middleware/auth');
 
-
+router.use(protect)
 // @desc    Get all classes with filtering
 // @route   GET /api/classes
-router.get('/',protect, getClasses);
+router.get('/', getClasses);
 
 // @desc    Get single class by ID
 // @route   GET /api/classes/:id
@@ -24,7 +24,7 @@ router.get('/:id', getClassById);
 
 // @desc    Create new class
 // @route   POST /api/classes
-router.post('/', protect, createClass);
+router.post('/', createClass);
 
 // @desc    Update class
 // @route   PUT /api/classes/:id
