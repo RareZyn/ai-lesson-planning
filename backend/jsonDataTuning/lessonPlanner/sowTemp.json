@@ -1,0 +1,117 @@
+{
+  "form": "Form 5",
+  "lessons": [
+    {
+      "lessonNo": 1,
+      "focus": "reading",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": "Reading 3.1", "comp": "Speaking 2.1" },
+      "learningStandard": { "main": "Reading 3.1.1", "comp": "Speaking 2.1.5" },
+      "learningOutline": {
+        "pre": "Activate pupils’ prior knowledge in this lesson by writing on the whiteboard: adoptive family, blended family, extended family, single-parent family and traditional family. Ask pupils to discuss in pairs what they think these terms mean. When ready, share pupils’ ideas as a class. Complete Activity 1, p5.",
+        "during": "This lesson focuses on Activities 1–3. Activities 1–2 focus on developing the complementary skill. Activity 3 with additional questions focuses on developing the main skill. To achieve the main skill, begin Activity 3 by giving pupils at least three open-ended questions (i.e. Wh questions) that focus on the main points in the text. In order to focus on the complementary skill, extend the speaking activity by asking pupils to explain how they feel about doing household chores.",
+        "post": "Put pupils in small groups to discuss the topic in the extension activity on the bottom of p10 in the Teacher’s Book. Monitor and help with vocabulary if necessary, but do not interrupt fluency. Make a note of any mistakes to go over with the class after the discussion."
+      },
+      "materials": ["English Download Student’s Book, p5–6", "Teacher’s Book, p8–10"],
+      "differentiationStrategy": "Support can be given to less proficient pupils by providing vocabulary to use in the speaking activity, or sentence starters. Challenge more proficient pupils by asking them to come up with a summary sentence/phrase for each of the four paragraphs.",
+      "cce": ["Values"]
+    },
+    {
+      "lessonNo": 2,
+      "focus": "reading",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": "Reading 3.1", "comp": "Speaking 2.1" },
+      "learningStandard": { "main": "Reading 3.1.2", "comp": "Speaking 2.1.3" },
+      "learningOutline": {
+        "pre": "Activate pupils’ prior knowledge in this lesson by asking them to express their opinions about helping their parents with household chores.",
+        "during": "This lesson focuses on Activities 4–6. Activity 4 focuses on developing the main skill, and Activity 5 provides further practice. See the Teacher’s Book for detailed guidance. In order to focus on the complementary skill, extend the speaking activity in Activity 6 by having pupils plan for a celebration in a shared flat.",
+        "post": "Ask pupils to review their learning in the lesson by getting them to identify with their talk partner(s) at least one new word or expression that they have learned. When pupils are ready, collect and share words/expressions as a whole class."
+      },
+      "materials": ["English Download Student’s Book, p6–7", "Teacher’s Book, p9–10"],
+      "differentiationStrategy": "Support can be given to less proficient pupils by providing them with a simple definition of each of the expressions in Activity 5. For the speaking activity, provide relevant vocabulary and sentence starters.",
+      "cce": ["Values"]
+    },
+    {
+      "lessonNo": 3,
+      "focus": "language awareness",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": null, "comp": null },
+      "learningStandard": { "main": null, "comp": null },
+      "learningOutline": {
+        "pre": "Activate pupils’ prior knowledge by asking questions to elicit responses using either the present simple or present continuous. Ask pupils to explain the difference in usage.",
+        "during": "This lesson focuses on present simple vs present continuous and relative clauses. Use activities from Student's Book p9 and p11, allowing for pair and group discussions before collecting responses.",
+        "post": "Ask pupils to review their learning by working in pairs and making their own sentences using relative clauses. Put a list of relative clauses on the board and ask pupils to share their ideas with the class."
+      },
+      "materials": ["English Download Student’s Book, p9 and p11", "Teacher’s Book, p11–13"],
+      "differentiationStrategy": "Organise talk partners or grouping so that a more proficient pupil can help a less proficient pupil. Challenge more proficient pupils by asking them to write their own paragraph using multiple relative pronouns, including more challenging ones with prepositions.",
+      "cce": ["Language"]
+    },
+    {
+      "lessonNo": 4,
+      "focus": "listening",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": "Listening 1.1", "comp": "Speaking 2.1" },
+      "learningStandard": { "main": "Listening 1.1.3", "comp": "Speaking 2.1.4" },
+      "learningOutline": {
+        "pre": "Activate pupils’ prior knowledge by having them work on Activity 1, first alone and then in pairs. Put pupils in new pairs to create sentences with phrases from the activity.",
+        "during": "This lesson focuses on Activities 2 and 3. Activity 3 focuses on developing the main skill. An extension of Activity 2 focuses on the complementary skill, where pupils explain their answers and their partner's admirable qualities to new partners.",
+        "post": "Have a class discussion. Ask pupils which of the listed qualities they find most admirable and why? Discuss other admirable qualities and what they admire most in their friends."
+      },
+      "materials": ["English Download Student’s Book, p12", "Teacher’s Book, p13–14"],
+      "differentiationStrategy": "Make a note to follow up with less proficient pupils. To support confident pupils, pause the listening track at selected intervals. Challenge more proficient pupils by asking them to create a list of abstract nouns and decide if they describe good or bad qualities.",
+      "cce": ["Values"]
+    },
+    {
+      "lessonNo": 5,
+      "focus": "speaking",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": "Speaking 2.1", "comp": "Speaking 2.1" },
+      "learningStandard": { "main": "Speaking 2.1.2", "comp": "Speaking 2.1.4" },
+      "learningOutline": {
+        "pre": "Activate pupils’ prior knowledge in this lesson by asking them to look at Activity 1.",
+        "during": "This lesson focuses on Activities 2–4. Activity 2 provides phrases for use. Activities 3–4 focus on the main skill. An extension to Activity 4 focuses on the complementary skill, where students must explain and justify another student's viewpoint.",
+        "post": "Get pupils to review their learning by asking them to complete Activity 5."
+      },
+      "materials": ["English Download Student’s Book, p13, p188, and p191", "Teacher’s Book, p14-15"],
+      "differentiationStrategy": "Support less proficient pupils with cards containing polite sentence openers. Challenge more proficient pupils to devise a completely different scenario with two possible solutions, both having advantages and disadvantages.",
+      "cce": ["Values"]
+    },
+    {
+      "lessonNo": 6,
+      "focus": "speaking",
+      "theme": "People and Culture",
+      "topic": "Using formal register",
+      "contentStandard": { "main": "Speaking 2.2", "comp": "Speaking 2.1" },
+      "learningStandard": { "main": "Speaking 2.2.1", "comp": "Speaking 2.1.5" },
+      "learningOutline": {
+        "pre": "Choose an appropriate pre-lesson activity that suits pupils’ needs/interests and that will review language and/or vocabulary.",
+        "during": "This lesson focuses on speaking activities, emphasizing the use of appropriate register. Pupils discuss the correct register for a speaking test, then role-play as examiner and candidate. At the end of the role play, pupils discuss their feelings about past speaking tests.",
+        "post": "Ask pupils to review their learning by completing an exit card about the speaking activities: ‘what they were able to do well?’ and ‘what they found particularly challenging?’."
+      },
+      "materials": ["List of questions about likes, dislikes, and special occasions from Cambridge English sample papers or other sources."],
+      "differentiationStrategy": "Give new rounds of questions to proficient pairs and provide feedback to pairs that need support, then ask them to repeat their role play. Plan additional speaking activities in case of extra time.",
+      "cce": ["Values"]
+    },
+    {
+      "lessonNo": 7,
+      "focus": "writing",
+      "theme": "People and Culture",
+      "topic": "It’s Personal!",
+      "contentStandard": { "main": "Writing 4.2", "comp": "Reading 3.1" },
+      "learningStandard": { "main": "Writing 4.2.3", "comp": "Reading 3.1.6" },
+      "learningOutline": {
+        "pre": "Get pupils to review their learning in the unit so far by asking them to explain which famous person they most admire. Allow pupils time to discuss their ideas in small groups before sharing.",
+        "during": "This lesson focuses on Activities 1–4. First complete Activity 1, identifying features of formal/informal emails. Extend Activity 2 by asking pupils to make a plan of an informal email they would write in reply. After completing Activities 3 and 4, ask pupils to modify their rough draft.",
+        "post": "Ask pupils to work in groups and discuss the easiest and most challenging part of creating a plan. Monitor and make a note of their feedback for future planning."
+      },
+      "materials": ["English Download Student’s Book, p14–15", "Teacher’s Book, p15"],
+      "differentiationStrategy": "Allow more proficient pupils to work independently. Support less proficient pupils during Activities 1 and 2 by making them teacher-led. Help with ideas by creating a mind map. Challenge proficient pupils to write a more detailed draft of up to 250 words.",
+      "cce": ["Values"]
+    }
+  ]
+}

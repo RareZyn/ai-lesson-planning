@@ -2,75 +2,77 @@ const mongoose = require('mongoose');
 
 // This is the main schema for the entire lesson plan document
 const LessonPlanSchema = new mongoose.Schema({
-    // --- Link to other collections ---
-    user: {
+    // --- Core Relationships and Metadata ---
+
+    // FIX 1: Renamed 'user' to 'createdBy' for clarity.
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // References your 'User' model
+        ref: 'User', // Link to the user who created the plan
         required: true,
     },
-    class: {
+    classId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Class', // References your 'Class' model
-        required: true
+        ref: 'Class', // Link to the class this plan is for
+        required: true,
     },
     lessonDate: {
         type: Date,
-        required: [true, 'Lesson date is required.']
+        required: [true, 'Lesson date is required.'],
+        default: Date.now
     },
-    
-    // --- 1. Storing the parameters used for generation ---
-    // This is your 'formData'
+
+    // --- Parameters used to generate the plan ---
     parameters: {
         grade: { type: String, required: true },
         proficiencyLevel: { type: String, required: true },
         hotsFocus: { type: String, required: true },
         specificTopic: { type: String, required: true },
+        iThink: { type: String },
         additionalNotes: { type: String },
+
+        // FIX 2: The 'sow' object now stores a much more detailed snapshot.
         sow: {
-            // Storing a copy of the SOW lesson details
-            lessonNo: { type: Number },
-            focus: { type: String }
+            lessonNo: { type: Number},
+            focus: { type: String},
+            theme: { type: String},
+            topic: { type: String },
+            contentStandard: {
+                main: { type: String },
+                comp: { type: String }
+            },
+            learningStandard: {
+                main: { type: String },
+                comp: { type: String }
+            },
+            learningOutline: {
+                pre: { type: String },
+                during: { type: String },
+                post: { type: String }
+            },
+            materials: [String],
+            differentiationStrategy: { type: String },
+            cce: [String] // Using 'cce' from your example
         }
     },
-
-    // --- 2. Storing the AI-generated plan ---
-    // This structure matches your example JSON exactly.
-    generatedPlan: {
+    plan: {
         learningObjective: {
             type: String,
             required: [true, 'A learning objective is required.'],
             trim: true
         },
         successCriteria: {
-            type: [String], // An array of strings
+            type: [String],
             required: [true, 'Success criteria are required.']
         },
         activities: {
-            // An object containing arrays of strings for each lesson stage
-            preLesson: {
-                type: [String],
-                required: true
-            },
-            duringLesson: {
-                type: [String],
-                required: true
-            },
-            postLesson: {
-                type: [String],
-                required: true
-            }
-        },
-        materials: {
-            type: [String], // An array of strings
-            required: true
-        },
-
+            preLesson: { type: [String], required: true },
+            duringLesson: { type: [String], required: true },
+            postLesson: { type: [String], required: true }
+        }
     },
 }, { 
-    // Mongoose options
-    timestamps: true // Automatically adds createdAt and updatedAt fields
+    timestamps: true 
 });
-
 
 // Create the model from the schema and export it
 module.exports = mongoose.model('LessonPlan', LessonPlanSchema);
