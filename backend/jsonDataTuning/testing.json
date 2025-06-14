@@ -1,37 +1,96 @@
 {
-  "class": "",
-  "lesson": "",
-  "lessonInSow": "",
-  "day": "",
-  "date": "",
-  "time": "",
-  "subject": "",
-  "information": {
-    "iThink": "",
-    "fourSkill": "",
-    "cce": "",
-    "hots": "",
-    "theme": "",
-    "topic": ""
-  },
-  "dskp": {
-    "contentStandard": {
-      "main": "",
-      "complemantary": ""
-    },
-    "learningStandard": {
-      "main": "",
-      "complemantary": ""
+  "success": true,
+  "count": 1,
+  "total": 1,
+  "totalPages": 1,
+  "currentPage": 1,
+  "data": [
+    {
+      "communityData": {
+        "tags": [],
+        "likes": 0,
+        "downloads": 0,
+        "averageRating": 0,
+        "downloadedBy": [],
+        "reviews": [],
+        "likedByCount": 0,
+        "reviewCount": 0
+      },
+      "parameters": {
+        "sow": {
+          "contentStandard": { "main": "Reading 3.1", "comp": "Speaking 2.1" },
+          "learningStandard": {
+            "main": "Reading 3.1.1",
+            "comp": "Speaking 2.1.5"
+          },
+          "learningOutline": {
+            "pre": "Activate pupils’ prior knowledge in this lesson by writing on the whiteboard: adoptive family, blended family, extended family, single-parent family and traditional family. Ask pupils to discuss in pairs what they think these terms mean. When ready, share pupils’ ideas as a class. Complete Activity 1, p5.",
+            "during": "This lesson focuses on Activities 1–3. Activities 1–2 focus on developing the complementary skill. Activity 3 with additional questions focuses on developing the main skill. To achieve the main skill, begin Activity 3 by giving pupils at least three open-ended questions (i.e. Wh questions) that focus on the main points in the text. In order to focus on the complementary skill, extend the speaking activity by asking pupils to explain how they feel about doing household chores.",
+            "post": "Put pupils in small groups to discuss the topic in the extension activity on the bottom of p10 in the Teacher’s Book. Monitor and help with vocabulary if necessary, but do not interrupt fluency. Make a note of any mistakes to go over with the class after the discussion."
+          },
+          "lessonNo": 1,
+          "focus": "reading",
+          "theme": "People and Culture",
+          "topic": "It’s Personal!",
+          "differentiationStrategy": "Support can be given to less proficient pupils by providing vocabulary to use in the speaking activity, or sentence starters. Challenge more proficient pupils by asking them to come up with a summary sentence/phrase for each of the four paragraphs.",
+          "cce": ["Values"],
+          "materials": []
+        },
+        "grade": "Form 5",
+        "proficiencyLevel": "B1 High",
+        "hotsFocus": "create",
+        "specificTopic": "It’s Personal!",
+        "activityType": "textbook",
+        "additionalNotes": ""
+      },
+      "plan": {
+        "activities": {
+          "preLesson": [
+            "The teacher will write the following terms on the whiteboard: adoptive family, blended family, extended family, single-parent family, and traditional family.",
+            "Students will discuss in pairs what they think these terms mean and share their ideas with the class.",
+            "Students will complete Activity 1 on page 5 of their textbook."
+          ],
+          "duringLesson": [
+            "Students will read Activities 1-3 to understand the text and prepare for a speaking task.",
+            "The teacher will ask open-ended questions about the text (e.g., What challenges might blended families face? How can chores be divided fairly in a single-parent family?).",
+            "Students will discuss their feelings about doing household chores in pairs, focusing on fairness and responsibility.",
+            "Students will brainstorm ideas for a short narrative about a family, considering different family structures and personal experiences."
+          ],
+          "postLesson": [
+            "Students will form small groups to discuss the prompt: 'Imagine you are writing a story about a family. What kind of family would it be? What challenges would they face? What would make them unique?' (based on the extension activity on page 10 of the Teacher's Book).",
+            "Each student will individually create a short narrative (approximately 150-200 words) about the family they discussed, focusing on their unique challenges and personal connections.",
+            "Students will share their narratives with their small groups, focusing on the creative aspects of their story."
+          ]
+        },
+        "learningObjective": "By the end of the lesson, students will be able to create a short narrative about a family (real or fictional) that reflects an understanding of diverse family structures and personal experiences.",
+        "successCriteria": [
+          "I can identify and describe different types of family structures (adoptive, blended, extended, single-parent, traditional).",
+          "I can express my opinions about household chores and relate them to family dynamics.",
+          "I can brainstorm ideas for a narrative that includes realistic characters and settings.",
+          "I can write a short narrative reflecting on the theme of 'It's Personal!' with creative flair."
+        ]
+      },
+      "_id": "684da7f4b96de6d12b6b124e",
+      "createdBy": {
+        "_id": "684aeee48cdce75d30a8af11",
+        "name": "Razin Nazarudin",
+        "schoolName": "SAM BESTARI"
+      },
+      "classId": {
+        "_id": "684c432862c64505054979c1",
+        "className": "Amanah",
+        "grade": "Form 5",
+        "subject": "English",
+        "id": "684c432862c64505054979c1"
+      },
+      "lessonDate": "2025-06-03T16:00:00.000Z",
+      "isSharedToCommunity": false,
+      "status": "completed",
+      "version": 1,
+      "createdAt": "2025-06-14T16:48:52.107Z",
+      "updatedAt": "2025-06-14T16:48:52.107Z",
+      "__v": 0,
+      "id": "684da7f4b96de6d12b6b124e"
     }
-  },
-  "preferenceActivity": {
-    "type": ""
-  },
-  "Activity": {
-    "objective": "",
-    "successCriteria": "",
-    "preActivity": "",
-    "activity": "",
-    "postActivity": ""
-  }
+  ]
 }

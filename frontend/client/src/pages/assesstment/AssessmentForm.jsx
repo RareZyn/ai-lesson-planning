@@ -107,7 +107,12 @@ const AssessmentForm = () => {
   };
 
   const activityFormats = [
-    { id: "activity-in-class",label: "Activity in Class",icon: "⚡",color: "#ff4757",},
+    {
+      id: "activity-in-class",
+      label: "Activity in Class",
+      icon: "⚡",
+      color: "#ff4757",
+    },
     { id: "essay", label: "Essay", icon: "📄", color: "#ffa726" },
     { id: "textbook", label: "TextBook", icon: "📚", color: "#66bb6a" },
     { id: "assessment", label: "Assessment", icon: "📋", color: "#42a5f5" },
@@ -273,29 +278,6 @@ const AssessmentForm = () => {
         </div>
       </div>
 
-      {/* Section 2: Format Picker */}
-      <div className="assessment-section generator-section">
-        <h3 className="section-title">AI-powered Assessment Generator</h3>
-        <div className="format-preferences">
-          <h4>Activity Format Preferences</h4>
-          <p>Please select your preferred option for each category:</p>
-          <div className="format-grid">
-            {activityFormats.map((format) => (
-              <div
-                key={format.id}
-                className="format-card"
-                onClick={() => openModal(format.id)}
-              >
-                <div className="format-icon" style={{ color: format.color }}>
-                  {format.icon}
-                </div>
-                <span className="format-label">{format.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Section 3: Generated Output */}
       <div className="assessment-section activity-section">
         <h3 className="section-title">Generated Activity Details</h3>
@@ -311,6 +293,29 @@ const AssessmentForm = () => {
             <div className="generated-content">{formData[key]}</div>
           </div>
         ))}
+
+        {/* Section 2: Format Picker */}
+        <div className="assessment-section generator-section">
+          <h3 className="section-title">AI-powered Assessment Generator</h3>
+          <div className="format-preferences">
+            <h4>Activity Format Preferences</h4>
+            <p>Please select your preferred option for each category:</p>
+            <div className="format-grid">
+              {activityFormats.map((format) => (
+                <div
+                  key={format.id}
+                  className="format-card"
+                  onClick={() => openModal(format.id)}
+                >
+                  <div className="format-icon" style={{ color: format.color }}>
+                    {format.icon}
+                  </div>
+                  <span className="format-label">{format.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Buttons */}
         <div className="action-buttons">
