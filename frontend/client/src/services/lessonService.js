@@ -85,3 +85,34 @@ export const getRecentLessonPlans = async () => {
         throw new Error(error.response?.data?.message || 'Could not fetch recent lessons.');
     }
 };
+
+/**
+ * Deletes a lesson plan by its unique ID.
+ * @param {string} id - The _id of the lesson plan to delete.
+ * @returns {Promise<object>}
+ */
+export const deleteLessonPlan = async (id) => {
+    try {
+        // For DELETE requests, the config is also the second argument
+        const response = await axios.delete(`/api/lessons/${id}`, getAuthConfig());
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting lesson plan:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not delete the lesson plan.');
+    }
+};
+
+/**
+ * Fetches all lesson plans for a specific class ID.
+ * @param {string} classId - The ID of the class.
+ * @returns {Promise<Array>}
+ */
+export const getLessonPlansByClass = async (classId) => {
+    try {
+        const response = await axios.get(`/api/lessons/by-class/${classId}`, getAuthConfig());
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching lesson plans by class:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not fetch lesson plans.');
+    }
+};

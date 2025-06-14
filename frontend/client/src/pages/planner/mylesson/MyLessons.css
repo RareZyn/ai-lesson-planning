@@ -1,16 +1,8 @@
 /* Main Container and Page Layout */
 .my-lessons-container {
   width: 100%;
-  padding: 1.5rem 2rem;
   background-color: #f8f9fa; /* A light background for the page */
   min-height: calc(100vh - 60px); /* Adjust based on your header height */
-}
-
-.page-title {
-  text-align: left;
-  margin-bottom: 1.5rem;
-  font-size: 1.8rem;
-  color: #343a40;
 }
 
 /* Tabs */

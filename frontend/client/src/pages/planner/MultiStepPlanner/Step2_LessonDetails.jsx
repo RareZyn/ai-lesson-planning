@@ -40,7 +40,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // --- FIX: Validate using the Sow object directly ---
-    if (!data.Sow?.lessonNo || !data.proficiencyLevel || !data.hotsFocus || !data.specificTopic) {
+    if (!data.sow?.lessonNo || !data.proficiencyLevel || !data.hotsFocus || !data.specificTopic) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -59,7 +59,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             id="lessonNumber"
             name="lessonNumber"
             // --- FIX: The value is now derived from the Sow object ---
-            value={data.Sow?.lessonNo || ''}
+            value={data.sow?.lessonNo || ''}
             onChange={(e) => {
               const selectedValue = e.target.value;
               // Find the full lesson object from the fetched data
@@ -67,7 +67,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                 lesson => lesson.lessonNo.toString() === selectedValue
               );
               // --- FIX: Update only the Sow object in the parent state ---
-              updateData('Sow', selectedLesson || {});
+              updateData('sow', selectedLesson || {});
             }}
             disabled={isLoading}
             required

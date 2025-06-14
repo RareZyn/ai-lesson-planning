@@ -1,0 +1,73 @@
+.status {
+    text-align: center;
+    padding: 4rem;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.backButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #495057;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    font-weight: 500;
+}
+.backButton:hover {
+    color: #000;
+}
+
+.header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+.header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #343a40;
+    margin-bottom: 0.25rem;
+}
+.header p {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+.lessonsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.empty {
+    text-align: center;
+    background-color: #f8f9fa;
+    padding: 3rem;
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+.empty h2 {
+    color: #495057;
+}
+.empty p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+.createButton {
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.createButton:hover {
+    background-color: #36459b;
+}

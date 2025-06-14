@@ -60,7 +60,7 @@ const MyLessons = () => {
 
   return (
     <div className="my-lessons-container">
-      <h2 className="page-title">My Lessons</h2>
+      <h2>My Lessons</h2>
       <div className="tabs-container">
         <button
           className={`tab-button ${mainTabValue === 0 ? 'active' : ''}`}
