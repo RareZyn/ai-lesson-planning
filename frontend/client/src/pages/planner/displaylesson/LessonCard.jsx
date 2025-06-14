@@ -16,7 +16,7 @@ const LessonCard = ({ lesson, isRecent = false }) => {
     const navigate = useNavigate();
 
     const handleCardClick = () => {
-        navigate(`/app/lesson/${lesson._id}`);
+        navigate(`/app/lessons/${lesson._id}`);
     };
 
     // Formats a date into a human-readable relative time string

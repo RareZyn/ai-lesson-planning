@@ -88,7 +88,7 @@ const MultiStepPlanner = () => {
         const newPlanId = response.data._id;
         alert('Lesson Plan Saved Successfully!');
         // Redirect to the new display page
-        navigate(`/app/lesson/${newPlanId}`);
+        navigate(`/app/lessons/${newPlanId}`);
       }
     } catch (error) {
       console.error('Failed to save lesson plan:', error);

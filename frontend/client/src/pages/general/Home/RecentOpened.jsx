@@ -32,7 +32,7 @@ const RecentOpened = () => {
   };
 
   const handleCardClick = (lessonId) => {
-    navigate(`/app/lesson/${lessonId}`);
+    navigate(`/app/lessons/${lessonId}`);
   };
 
   // Helper to format the relative time

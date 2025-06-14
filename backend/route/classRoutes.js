@@ -7,7 +7,8 @@ const {
   updateClass,
   deleteClass,
   getClassesByYear,
-  getClassesBySubject
+  getClassesBySubject,
+  getRecentClasses
 } = require('../controller/classController');
 
 // Middleware to protect routes (if needed)
@@ -18,6 +19,8 @@ router.use(protect)
 // @route   GET /api/classes
 router.get('/', getClasses);
 
+router.get('/recent', getRecentClasses);  
+
 // @desc    Get single class by ID
 // @route   GET /api/classes/:id
 router.get('/:id', getClassById);
@@ -25,6 +28,7 @@ router.get('/:id', getClassById);
 // @desc    Create new class
 // @route   POST /api/classes
 router.post('/', createClass);
+
 
 // @desc    Update class
 // @route   PUT /api/classes/:id

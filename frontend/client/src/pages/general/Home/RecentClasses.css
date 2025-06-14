@@ -3,22 +3,18 @@
   padding: 1rem;
 }
 
-.recent-classes-header {
+.recent-header {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
-  width: 100%;
 }
 
-.recent-classes-title {
+.recent-title {
   color: #333;
   font-size: 1.6rem;
   font-weight: 300;
-  margin-bottom: 1.5rem;
-  padding: 0;
   margin: 0;
-  text-align:left;
 }
 
 .view-all-btn {
@@ -31,16 +27,11 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.5rem 0.8rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
+  padding: 0.5rem 0;
 }
 
 .view-all-btn:hover {
-  background-color: rgba(24, 144, 255, 0.1);
-  transform: translateX(2px);
+  color: #096dd9;
 }
 
 .arrow {
@@ -52,106 +43,82 @@
   transform: translateX(2px);
 }
 
-.recent-classes-grid {
+.recent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
+  justify-content: start; /* Prevents single item from stretching */
 }
 
-.class-card {
+.recent-card {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1.2rem;
-  cursor: pointer;
+  overflow: hidden;
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
-}
-
-.class-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  border-color: var(--blue, #1890ff);
-}
-
-.class-name {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 1rem 0;
-  line-height: 1.3;
-}
-
-.class-details {
+  cursor: pointer;
+  height: 160px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
-.class-subject,
-.class-time {
-  margin: 0;
+.recent-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.subject-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.subject-badge {
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.card-content {
+  padding: 0.8rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  margin: 0 0 0.3rem 0;
   font-size: 0.9rem;
-  color: #666;
-  line-height: 1.4;
-}
-
-.label {
   font-weight: 600;
   color: #333;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .recent-classes-container {
-    padding: 0.5rem;
-  }
-
-  .recent-classes-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
-
-  .class-card {
-    padding: 1rem;
-  }
-
-  .class-name {
-    font-size: 1.1rem;
-  }
-
-  .class-subject,
-  .class-time {
-    font-size: 0.85rem;
-  }
+.card-grade {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  color: #666;
 }
 
-@media (max-width: 480px) {
-  .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.8rem;
-  }
-
-  .class-card {
-    padding: 0.8rem;
-  }
-
-  .class-name {
-    font-size: 1rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .class-details {
-    gap: 0.4rem;
-  }
-
-  .class-subject,
-  .class-time {
-    font-size: 0.8rem;
-  }
+.card-meta {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: auto;
 }

@@ -31,7 +31,7 @@ const router = createBrowserRouter([
       { path: "materials", element: <MaterialManagement /> },
       { path: "classes", element: <ClassManagement /> },
       { path: "planner", element: <MultiStepPlanner /> },
-      { path: "lesson/:id", element: <DisplayLessonPage />},
+      { path: "lessons/:id", element: <DisplayLessonPage />},
       { path: "classes/:classId", element: <ClassLessonsPage />}
     ],
   },

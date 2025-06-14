@@ -39,7 +39,7 @@ const CalendarView = () => {
   };
 
   const handleNavigateLesson = (lessonId) => {
-    navigate(`/app/lesson/${lessonId}`);
+    navigate(`/app/lessons/${lessonId}`);
   };
 
   const changeDate = (offset) => {
