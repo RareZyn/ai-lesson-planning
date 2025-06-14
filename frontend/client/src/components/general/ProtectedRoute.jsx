@@ -1,10 +1,23 @@
-import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import './ProtectedRoute.css';
+// src/components/general/ProtectedRoute.jsx - Updated to work with both contexts
+import { useEffect, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useUser } from "../../context/UserContext";
+import "./ProtectedRoute.css";
 
 const ProtectedRoute = ({ children, roles }) => {
-  const { currentUser, loading } = useAuth();
+  // Try to use UserContext first, fallback to AuthContext
+  const {
+    user: contextUser,
+    loading: userLoading,
+    isAuthenticated,
+  } = useUser();
+  const { currentUser, loading: authLoading } = useAuth();
+
+  // Use whichever context has user data
+  const user = contextUser || currentUser;
+  const loading = userLoading || authLoading;
+
   const location = useLocation();
   const [showContent, setShowContent] = useState(false);
   const [countdown, setCountdown] = useState(5);
@@ -12,14 +25,14 @@ const ProtectedRoute = ({ children, roles }) => {
   useEffect(() => {
     // Only proceed when auth check is complete
     if (!loading) {
-      if (!currentUser) {
+      if (!user) {
         const timer = setInterval(() => {
-          setCountdown(prev => (prev > 0 ? prev - 1 : 0));
+          setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(timer);
-      } else if (roles && !roles.some(role => currentUser.roles?.includes(role))) {
+      } else if (roles && !roles.some((role) => user.roles?.includes(role))) {
         const timer = setInterval(() => {
-          setCountdown(prev => (prev > 0 ? prev - 1 : 0));
+          setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(timer);
       } else {
@@ -27,13 +40,16 @@ const ProtectedRoute = ({ children, roles }) => {
         setShowContent(true);
       }
     }
-  }, [loading, currentUser, roles]);
+  }, [loading, user, roles]);
 
   useEffect(() => {
-    if (countdown === 0 && (!currentUser || (roles && !roles.some(role => currentUser.roles?.includes(role))))) {
+    if (
+      countdown === 0 &&
+      (!user || (roles && !roles.some((role) => user.roles?.includes(role))))
+    ) {
       setShowContent(false);
     }
-  }, [countdown, currentUser, roles]);
+  }, [countdown, user, roles]);
 
   if (loading) {
     return (
@@ -44,15 +60,19 @@ const ProtectedRoute = ({ children, roles }) => {
     );
   }
 
-  if (!currentUser && countdown === 0) {
+  if (!user && countdown === 0) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  if (roles && !roles.some(role => currentUser.roles?.includes(role)) && countdown === 0) {
+  if (
+    roles &&
+    !roles.some((role) => user.roles?.includes(role)) &&
+    countdown === 0
+  ) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="auth-redirect">
         <div className="spinner"></div>
@@ -61,7 +81,7 @@ const ProtectedRoute = ({ children, roles }) => {
     );
   }
 
-  if (roles && !roles.some(role => currentUser.roles?.includes(role))) {
+  if (roles && !roles.some((role) => user.roles?.includes(role))) {
     return (
       <div className="auth-unauthorized">
         <h2>Access Denied</h2>

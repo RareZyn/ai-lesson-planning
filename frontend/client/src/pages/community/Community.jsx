@@ -1,6 +1,6 @@
-// src/pages/community/Community.jsx - Updated to use new lesson plan data structure
+// src/pages/community/Community.jsx - Updated with User Context
 import React, { useState, useEffect } from "react";
-import { Input, Select, Button, Row, Col, Tabs, message } from "antd";
+import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
   SearchOutlined,
   FilterOutlined,
@@ -8,10 +8,8 @@ import {
 } from "@ant-design/icons";
 import LessonCard from "../../components/Card/LessonCard";
 import UploadLessonModal from "../../components/Modal/UploadLessonModal";
-import {
-  dummySharedLessonPlans,
-  getSharedLessonPlans,
-} from "../../data/LessonPlanData";
+import { communityAPI } from "../../services/communityService";
+import { useUser } from "../../context/UserContext"; // Import the user context
 import "./Community.css";
 
 const { Search } = Input;
@@ -19,81 +17,148 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 
 const Community = () => {
+  const { user, userId, isAuthenticated } = useUser(); // Get user data from context
   const [lessons, setLessons] = useState([]);
+  const [userLessons, setUserLessons] = useState([]);
   const [filteredLessons, setFilteredLessons] = useState([]);
   const [activeTab, setActiveTab] = useState("discover");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    subject: "all",
-    level: "all",
+    grade: "",
+    subject: "",
     search: "",
+    sortBy: "recent",
   });
 
   useEffect(() => {
-    // Load initial data - transform shared lesson plans to match expected structure
-    const transformedLessons = dummySharedLessonPlans.map((shared) => ({
-      _id: shared._id,
-      // Map the shared lesson plan data to match LessonCard expectations
-      ...shared.originalLessonPlan,
-      // Add community-specific fields
-      author: shared.sharedBy.name,
-      authorAvatar: shared.sharedBy.avatar,
-      schoolName: shared.sharedBy.schoolName,
-      uploadDate: shared.sharedAt,
-      likes: shared.likes,
-      downloads: shared.downloads,
-      views: shared.views,
-      comments: shared.comments,
-      description: shared.description,
-      className: shared.className,
-      isShared: true,
-      // Add fields for bookmarking (user-specific, would come from backend)
-      isLiked: false,
-      isBookmarked: false,
-    }));
-
-    setLessons(transformedLessons);
-    setFilteredLessons(transformedLessons);
-  }, []);
+    if (isAuthenticated && userId) {
+      loadCommunityData();
+    } else {
+      // If not authenticated, just load community lessons
+      loadCommunityLessonsOnly();
+    }
+  }, [isAuthenticated, userId]);
 
   useEffect(() => {
-    // Apply filters when filters change
-    let filtered = lessons;
+    applyFilters();
+  }, [lessons, filters, activeTab]);
 
+  const loadCommunityData = async () => {
+    setLoading(true);
+    try {
+      // Load community lessons and user's lessons in parallel
+      const [communityResponse, userResponse] = await Promise.all([
+        communityAPI.getCommunityLessons({
+          page: 1,
+          limit: 50,
+          sortBy: filters.sortBy,
+        }),
+        communityAPI.getUserLessonPlans(userId, {
+          page: 1,
+          limit: 50,
+        }),
+      ]);
+
+      if (communityResponse.success) {
+        setLessons(communityResponse.data || []);
+      }
+
+      if (userResponse.success) {
+        setUserLessons(userResponse.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading community data:", error);
+      if (error.response?.status === 401) {
+        message.error("Please log in to access community features");
+      } else {
+        message.error("Failed to load community lessons");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCommunityLessonsOnly = async () => {
+    setLoading(true);
+    try {
+      const communityResponse = await communityAPI.getCommunityLessons({
+        page: 1,
+        limit: 50,
+        sortBy: filters.sortBy,
+      });
+
+      if (communityResponse.success) {
+        setLessons(communityResponse.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading community lessons:", error);
+      message.error("Failed to load community lessons");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let dataToFilter = [];
+
+    // Choose data source based on active tab
+    switch (activeTab) {
+      case "discover":
+        dataToFilter = lessons;
+        break;
+      case "myCollection":
+        // Filter user's bookmarked lessons (you'll need to track this in your backend)
+        dataToFilter = lessons.filter((lesson) => lesson.isBookmarked);
+        break;
+      case "myShared":
+        // Filter lessons created by current user
+        if (!userId) {
+          dataToFilter = [];
+        } else {
+          dataToFilter = lessons.filter(
+            (lesson) => lesson.createdBy && lesson.createdBy._id === userId
+          );
+        }
+        break;
+      default:
+        dataToFilter = lessons;
+    }
+
+    let filtered = [...dataToFilter];
+
+    // Apply search filter
     if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
       filtered = filtered.filter(
         (lesson) =>
-          lesson.parameters?.Sow?.topic
+          lesson.parameters?.specificTopic
             ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          lesson.parameters?.Sow?.theme
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          lesson.description
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          lesson.plan?.learningObjective
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase())
+            .includes(searchTerm) ||
+          lesson.plan?.learningObjective?.toLowerCase().includes(searchTerm) ||
+          lesson.communityData?.title?.toLowerCase().includes(searchTerm) ||
+          lesson.communityData?.description?.toLowerCase().includes(searchTerm)
       );
     }
 
-    if (filters.subject !== "all") {
+    // Apply grade filter
+    if (filters.grade) {
+      filtered = filtered.filter(
+        (lesson) => lesson.parameters?.grade === filters.grade
+      );
+    }
+
+    // Apply subject filter (based on class subject)
+    if (filters.subject) {
       filtered = filtered.filter((lesson) =>
-        lesson.parameters?.Sow?.theme
+        lesson.classId?.subject
           ?.toLowerCase()
           .includes(filters.subject.toLowerCase())
       );
     }
 
-    if (filters.level !== "all") {
-      filtered = filtered.filter(
-        (lesson) => lesson.parameters?.grade === filters.level
-      );
-    }
-
     setFilteredLessons(filtered);
-  }, [lessons, filters]);
+  };
 
   const handleFilterChange = (type, value) => {
     setFilters((prev) => ({
@@ -110,74 +175,133 @@ const Community = () => {
   };
 
   const handleLessonShare = async (shareData) => {
+    if (!isAuthenticated) {
+      message.error("Please log in to share lesson plans");
+      return;
+    }
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await communityAPI.shareLessonPlan(
+        shareData.lessonPlanId,
+        {
+          userId: userId,
+          title: shareData.title,
+          description: shareData.description,
+          tags: shareData.tags,
+        }
+      );
 
-      // In real implementation, this would create a new shared lesson plan
-      console.log("Sharing lesson plan:", shareData);
-
-      message.success("Lesson plan shared successfully to the community!");
-      setIsUploadModalOpen(false);
-
-      // Optionally refresh the lessons list here
+      if (response.success) {
+        message.success("Lesson plan shared successfully to the community!");
+        setIsUploadModalOpen(false);
+        // Reload community data to show the newly shared lesson
+        loadCommunityData();
+      }
     } catch (error) {
       console.error("Share error:", error);
-      message.error("Failed to share lesson plan");
+      message.error(
+        error.response?.data?.message || "Failed to share lesson plan"
+      );
     }
   };
 
-  const handleLike = (lessonId) => {
-    setLessons((prev) =>
-      prev.map((lesson) =>
-        lesson._id === lessonId
-          ? {
-              ...lesson,
-              likes: lesson.likes + (lesson.isLiked ? -1 : 1),
-              isLiked: !lesson.isLiked,
-            }
-          : lesson
-      )
-    );
-    message.success("Lesson updated!");
-  };
+  const handleLike = async (lessonId) => {
+    if (!isAuthenticated) {
+      message.error("Please log in to like lesson plans");
+      return;
+    }
 
-  const handleDownload = (lessonId) => {
-    setLessons((prev) =>
-      prev.map((lesson) =>
-        lesson._id === lessonId
-          ? { ...lesson, downloads: lesson.downloads + 1 }
-          : lesson
-      )
-    );
-    message.success("Lesson plan downloaded!");
-  };
+    try {
+      const response = await communityAPI.toggleLike(lessonId, userId);
 
-  const getTabLessons = () => {
-    switch (activeTab) {
-      case "discover":
-        return filteredLessons;
-      case "myCollection":
-        return filteredLessons.filter((lesson) => lesson.isBookmarked);
-      case "myShared":
-        // In real app, this would filter by current user's shared lessons
-        return filteredLessons.filter(
-          (lesson) => lesson.author === "Ahmad Albab" // Current user mock
+      if (response.success) {
+        // Update local state to reflect the like change
+        setLessons((prev) =>
+          prev.map((lesson) =>
+            lesson._id === lessonId
+              ? {
+                  ...lesson,
+                  communityData: {
+                    ...lesson.communityData,
+                    likes: response.data.likes,
+                    hasUserLiked: response.data.hasLiked,
+                  },
+                }
+              : lesson
+          )
         );
-      default:
-        return filteredLessons;
+        message.success(response.message);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      message.error(error.response?.data?.message || "Failed to update like");
+    }
+  };
+
+  const handleDownload = async (lessonId) => {
+    try {
+      const response = await communityAPI.downloadLessonPlan(lessonId, userId);
+
+      if (response.success) {
+        // Update local state to reflect the download count
+        setLessons((prev) =>
+          prev.map((lesson) =>
+            lesson._id === lessonId
+              ? {
+                  ...lesson,
+                  communityData: {
+                    ...lesson.communityData,
+                    downloads: (lesson.communityData?.downloads || 0) + 1,
+                  },
+                }
+              : lesson
+          )
+        );
+        message.success("Lesson plan downloaded successfully!");
+
+        // You can also trigger an actual file download here if needed
+        // For example, generate a PDF or export the lesson plan data
+      }
+    } catch (error) {
+      console.error("Error downloading lesson plan:", error);
+      message.error(
+        error.response?.data?.message || "Failed to download lesson plan"
+      );
     }
   };
 
   const renderLessons = () => {
-    const tabLessons = getTabLessons();
+    if (loading) {
+      return (
+        <div style={{ textAlign: "center", padding: "50px" }}>
+          <Spin size="large" />
+          <p style={{ marginTop: "16px" }}>Loading lessons...</p>
+        </div>
+      );
+    }
 
-    if (tabLessons.length === 0) {
+    if (filteredLessons.length === 0) {
       return (
         <div className="empty-state">
           <div className="empty-content">
             <h3>No lessons found</h3>
-            <p>Try adjusting your filters or search terms</p>
+            <p>
+              {activeTab === "myShared"
+                ? isAuthenticated
+                  ? "You haven't shared any lessons yet. Share your first lesson plan!"
+                  : "Please log in to view your shared lessons."
+                : "Try adjusting your filters or search terms"}
+            </p>
+            {activeTab === "myShared" && isAuthenticated && (
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={() => setIsUploadModalOpen(true)}
+                style={{ marginTop: "16px" }}
+              >
+                Share Your First Lesson
+              </Button>
+            )}
           </div>
         </div>
       );
@@ -185,12 +309,13 @@ const Community = () => {
 
     return (
       <Row gutter={[24, 24]}>
-        {tabLessons.map((lesson) => (
+        {filteredLessons.map((lesson) => (
           <Col xs={24} sm={12} lg={8} xl={6} key={lesson._id}>
             <LessonCard
               lesson={lesson}
               onLike={handleLike}
               onDownload={handleDownload}
+              currentUserId={userId}
             />
           </Col>
         ))}
@@ -213,7 +338,13 @@ const Community = () => {
           type="primary"
           icon={<UploadOutlined />}
           size="large"
-          onClick={() => setIsUploadModalOpen(true)}
+          onClick={() => {
+            if (!isAuthenticated) {
+              message.error("Please log in to share lesson plans");
+              return;
+            }
+            setIsUploadModalOpen(true);
+          }}
           className="upload-btn"
         >
           Share Lesson Plan
@@ -234,34 +365,34 @@ const Community = () => {
           </Col>
           <Col xs={12} sm={6} md={4}>
             <Select
-              value={filters.subject}
-              onChange={(value) => handleFilterChange("subject", value)}
+              value={filters.grade}
+              onChange={(value) => handleFilterChange("grade", value)}
               size="large"
               style={{ width: "100%" }}
-              placeholder="Subject"
+              placeholder="Grade"
+              allowClear
             >
-              <Option value="all">All Subjects</Option>
-              <Option value="people">People and Culture</Option>
-              <Option value="science">Science and Technology</Option>
-              <Option value="consumer">Consumer Awareness</Option>
-              <Option value="health">Health and Environment</Option>
-              <Option value="values">Values and Citizenship</Option>
-            </Select>
-          </Col>
-          <Col xs={12} sm={6} md={4}>
-            <Select
-              value={filters.level}
-              onChange={(value) => handleFilterChange("level", value)}
-              size="large"
-              style={{ width: "100%" }}
-              placeholder="Level"
-            >
-              <Option value="all">All Levels</Option>
               <Option value="Form 1">Form 1</Option>
               <Option value="Form 2">Form 2</Option>
               <Option value="Form 3">Form 3</Option>
               <Option value="Form 4">Form 4</Option>
               <Option value="Form 5">Form 5</Option>
+            </Select>
+          </Col>
+          <Col xs={12} sm={6} md={4}>
+            <Select
+              value={filters.subject}
+              onChange={(value) => handleFilterChange("subject", value)}
+              size="large"
+              style={{ width: "100%" }}
+              placeholder="Subject"
+              allowClear
+            >
+              <Option value="English">English</Option>
+              <Option value="Mathematics">Mathematics</Option>
+              <Option value="Science">Science</Option>
+              <Option value="History">History</Option>
+              <Option value="Geography">Geography</Option>
             </Select>
           </Col>
           <Col xs={24} sm={24} md={8}>
@@ -271,6 +402,18 @@ const Community = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Authentication Notice */}
+      {!isAuthenticated && (
+        <div style={{ marginBottom: "16px" }}>
+          <message.info>
+            <span>
+              Log in to share lesson plans, like lessons, and access your
+              collection.
+            </span>
+          </message.info>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs
@@ -282,10 +425,18 @@ const Community = () => {
         <TabPane tab="Discover Lessons" key="discover">
           {renderLessons()}
         </TabPane>
-        <TabPane tab="My Collection" key="myCollection">
+        <TabPane
+          tab="My Collection"
+          key="myCollection"
+          disabled={!isAuthenticated}
+        >
           {renderLessons()}
         </TabPane>
-        <TabPane tab="My Shared Lessons" key="myShared">
+        <TabPane
+          tab="My Shared Lessons"
+          key="myShared"
+          disabled={!isAuthenticated}
+        >
           {renderLessons()}
         </TabPane>
       </Tabs>
@@ -295,6 +446,7 @@ const Community = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSubmit={handleLessonShare}
+        currentUserId={userId}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-// middleware/auth.js
+// middleware/auth.js - Fixed version
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
 
@@ -14,15 +14,16 @@ exports.protect = async (req, res, next) => {
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
-    // Check for token in cookies
-    else if (req.cookies.token) {
+    // Check for token in cookies (with null check)
+    else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
+
     // Make sure token exists
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized to access this route",
+        message: "Not authorized to access this route - No token provided",
       });
     }
 
@@ -51,9 +52,10 @@ exports.protect = async (req, res, next) => {
       req.user = user;
       next();
     } catch (error) {
+      console.error("Token verification error:", error.message);
       return res.status(401).json({
         success: false,
-        message: "Not authorized to access this route",
+        message: "Not authorized to access this route - Invalid token",
       });
     }
   } catch (error) {
@@ -103,8 +105,8 @@ exports.optionalAuth = async (req, res, next) => {
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
-    // Check for token in cookies
-    else if (req.cookies.token) {
+    // Check for token in cookies (with null check)
+    else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
 

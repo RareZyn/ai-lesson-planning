@@ -1,10 +1,9 @@
-// src/components/Modal/UploadLessonModal.jsx - Restructured for sharing existing lesson plans
+// src/components/Modal/UploadLessonModal.jsx - Updated with backend integration
 import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
   Select,
-  Upload,
   Button,
   message,
   Row,
@@ -17,25 +16,19 @@ import {
   Input,
 } from "antd";
 import {
-  UploadOutlined,
-  InboxOutlined,
   ShareAltOutlined,
   BookOutlined,
   TeamOutlined,
-  PictureOutlined,
 } from "@ant-design/icons";
-import {
-  dummyClasses,
-  getLessonPlansByClassId,
-} from "../../data/LessonPlanData";
+import { getAllClasses } from "../../services/classService";
+import { communityAPI } from "../../services/communityService";
 import "./UploadLessonModal.css";
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { Dragger } = Upload;
 const { Text } = Typography;
 
-const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
+const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState([]);
@@ -44,7 +37,6 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
   const [selectedLessonPlan, setSelectedLessonPlan] = useState(null);
   const [classesLoading, setClassesLoading] = useState(false);
   const [lessonPlansLoading, setLessonPlansLoading] = useState(false);
-  const [imageFileList, setImageFileList] = useState([]);
 
   // Fetch classes on modal open
   useEffect(() => {
@@ -56,16 +48,15 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
   // Fetch lesson plans when class is selected
   useEffect(() => {
     if (selectedClass) {
-      fetchLessonPlans(selectedClass);
+      fetchUserLessonPlans();
     }
   }, [selectedClass]);
 
   const fetchClasses = async () => {
     setClassesLoading(true);
     try {
-      // Using dummy data instead of API call
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate loading
-      setClasses(dummyClasses);
+      const classesData = await getAllClasses();
+      setClasses(Array.isArray(classesData) ? classesData : []);
     } catch (error) {
       console.error("Error fetching classes:", error);
       message.error("Failed to fetch classes");
@@ -75,13 +66,21 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  const fetchLessonPlans = async (classId) => {
+  const fetchUserLessonPlans = async () => {
     setLessonPlansLoading(true);
     try {
-      // Using dummy data instead of API call
-      await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate loading
-      const plans = getLessonPlansByClassId(classId);
-      setLessonPlans(plans);
+      const response = await communityAPI.getUserLessonPlans(currentUserId, {
+        shared: false, // Only get unshared lessons
+      });
+
+      if (response.success) {
+        // Filter lessons by selected class if needed
+        let plans = response.data || [];
+        if (selectedClass) {
+          plans = plans.filter((plan) => plan.classId?._id === selectedClass);
+        }
+        setLessonPlans(plans);
+      }
     } catch (error) {
       console.error("Error fetching lesson plans:", error);
       message.error("Failed to fetch lesson plans");
@@ -92,29 +91,27 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const handleSubmit = async (values) => {
-    if (!selectedClass || !selectedLessonPlan) {
-      message.error("Please select both class and lesson plan");
+    if (!selectedLessonPlan) {
+      message.error("Please select a lesson plan to share");
       return;
     }
 
     setLoading(true);
     try {
       const shareData = {
-        classId: selectedClass,
         lessonPlanId: selectedLessonPlan,
+        title: values.title,
         description: values.description,
-        images: imageFileList.map((file) => file.originFileObj || file),
-        sharedAt: new Date().toISOString(),
-        isPublic: true,
+        tags: values.tags
+          ? values.tags.split(",").map((tag) => tag.trim())
+          : [],
       };
 
       await onSubmit(shareData);
-      message.success("Lesson plan shared successfully!");
       handleReset();
-      onClose();
     } catch (error) {
       console.error("Share error:", error);
-      message.error("Failed to share lesson plan");
+      // Error handling is done in parent component
     } finally {
       setLoading(false);
     }
@@ -124,7 +121,6 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
     form.resetFields();
     setSelectedClass(null);
     setSelectedLessonPlan(null);
-    setImageFileList([]);
     setLessonPlans([]);
   };
 
@@ -143,37 +139,18 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleLessonPlanChange = (lessonPlanId) => {
     setSelectedLessonPlan(lessonPlanId);
-  };
 
-  // Image upload props
-  const imageUploadProps = {
-    name: "images",
-    multiple: true,
-    fileList: imageFileList,
-    beforeUpload: (file) => {
-      const isValidType = file.type.startsWith("image/");
-      if (!isValidType) {
-        message.error("You can only upload image files!");
-        return false;
-      }
-
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isLt10M) {
-        message.error("Image must be smaller than 10MB!");
-        return false;
-      }
-
-      return false; // Prevent auto upload
-    },
-    onChange: (info) => {
-      setImageFileList(info.fileList);
-    },
-    onRemove: (file) => {
-      const index = imageFileList.indexOf(file);
-      const newFileList = imageFileList.slice();
-      newFileList.splice(index, 1);
-      setImageFileList(newFileList);
-    },
+    // Auto-fill title and description if not already filled
+    const selectedPlan = getSelectedLessonPlanDetails();
+    if (selectedPlan && !form.getFieldValue("title")) {
+      const autoTitle = `${
+        selectedPlan.parameters?.specificTopic || "Lesson Plan"
+      } - ${selectedPlan.parameters?.grade || "Form 4"}`;
+      form.setFieldsValue({
+        title: autoTitle,
+        description: selectedPlan.plan?.learningObjective || "",
+      });
+    }
   };
 
   const getSelectedClassDetails = () => {
@@ -185,19 +162,35 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const formatLessonPlanOption = (plan) => {
-    const theme = plan.parameters?.Sow?.theme || "No Theme";
-    const topic = plan.parameters?.Sow?.topic || "No Topic";
+    const topic = plan.parameters?.specificTopic || "No Topic";
     const grade = plan.parameters?.grade || "Unknown Grade";
     const date = plan.lessonDate
       ? new Date(plan.lessonDate).toLocaleDateString()
       : "No Date";
 
     return {
-      label: `${theme} - ${topic}`,
+      label: `${topic}`,
       details: `${grade} | ${date}`,
       hots: plan.parameters?.hotsFocus || null,
       proficiency: plan.parameters?.proficiencyLevel || null,
     };
+  };
+
+  const renderLessonPlanOptions = () => {
+    return lessonPlans.map((plan) => {
+      const formatted = formatLessonPlanOption(plan);
+      return (
+        <Option key={plan._id} value={plan._id}>
+          <div>
+            <div style={{ fontWeight: 500 }}>{formatted.label}</div>
+            <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
+              {formatted.details}
+              {formatted.hots && ` • ${formatted.hots}`}
+            </div>
+          </div>
+        </Option>
+      );
+    });
   };
 
   return (
@@ -205,7 +198,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
       title={
         <div className="modal-title">
           <ShareAltOutlined />
-          <span>Share Lesson Plan</span>
+          <span>Share Lesson Plan to Community</span>
         </div>
       }
       open={isOpen}
@@ -217,7 +210,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
     >
       <Alert
         message="Share Your Teaching Experience"
-        description="Select an existing lesson plan from your classes to share with the community. Other teachers can learn from your successful lessons."
+        description="Select an existing lesson plan from your collection to share with the teaching community. Help other educators by sharing your successful lessons."
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
@@ -230,34 +223,33 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
         className="upload-form"
       >
         <Row gutter={[24, 16]}>
-          {/* Class Selection - Full Width */}
+          {/* Class Selection */}
           <Col span={24}>
             <Card
               size="small"
               title={
                 <div className="card-title">
                   <TeamOutlined style={{ color: "#1890ff" }} />
-                  <span>Select Class</span>
+                  <span>Select Class (Optional)</span>
                 </div>
               }
               className="selection-card"
             >
-              <Form.Item
-                name="class"
-                rules={[{ required: true, message: "Please select a class" }]}
-              >
+              <Form.Item name="class">
                 <Spin spinning={classesLoading}>
                   <Select
-                    placeholder="Choose a class"
+                    placeholder="Choose a class to filter lessons"
                     value={selectedClass}
                     onChange={handleClassChange}
                     size="large"
                     style={{ width: "100%" }}
                     loading={classesLoading}
+                    allowClear
                   >
                     {classes.map((classItem) => (
                       <Option key={classItem._id} value={classItem._id}>
-                        {classItem.className}
+                        {classItem.className} - {classItem.grade}{" "}
+                        {classItem.subject}
                       </Option>
                     ))}
                   </Select>
@@ -282,7 +274,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
             </Card>
           </Col>
 
-          {/* Lesson Plan Selection - Full Width */}
+          {/* Lesson Plan Selection */}
           <Col span={24}>
             <Card
               size="small"
@@ -302,32 +294,20 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
               >
                 <Spin spinning={lessonPlansLoading}>
                   <Select
-                    placeholder={
-                      selectedClass
-                        ? "Choose a lesson plan"
-                        : "Please select a class first"
-                    }
+                    placeholder="Choose a lesson plan to share"
                     value={selectedLessonPlan}
                     onChange={handleLessonPlanChange}
                     size="large"
                     style={{ width: "100%" }}
-                    disabled={!selectedClass}
                     loading={lessonPlansLoading}
                     showSearch
                     filterOption={(input, option) =>
-                      option.children
+                      option.children.props.children[0].props.children
                         .toLowerCase()
                         .indexOf(input.toLowerCase()) >= 0
                     }
                   >
-                    {lessonPlans.map((plan) => {
-                      const formatted = formatLessonPlanOption(plan);
-                      return (
-                        <Option key={plan._id} value={plan._id}>
-                          {formatted.label}
-                        </Option>
-                      );
-                    })}
+                    {renderLessonPlanOptions()}
                   </Select>
                 </Spin>
               </Form.Item>
@@ -338,15 +318,12 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
                   <div className="preview-content">
                     <div className="lesson-preview">
                       <div className="lesson-title">
-                        {getSelectedLessonPlanDetails().parameters?.Sow
-                          ?.topic || "English Lesson"}
+                        {getSelectedLessonPlanDetails().parameters
+                          ?.specificTopic || "Lesson Plan"}
                       </div>
                       <div className="lesson-meta">
                         <Tag color="green">
-                          {
-                            getSelectedLessonPlanDetails().parameters?.Sow
-                              ?.theme
-                          }
+                          {getSelectedLessonPlanDetails().parameters?.grade}
                         </Tag>
                         {getSelectedLessonPlanDetails().parameters
                           ?.hotsFocus && (
@@ -372,35 +349,52 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
                 </div>
               )}
 
-              {lessonPlans.length === 0 &&
-                selectedClass &&
-                !lessonPlansLoading && (
-                  <div className="empty-state">
-                    <Text type="secondary">
-                      No lesson plans found for this class. Create some lesson
-                      plans first.
-                    </Text>
-                  </div>
-                )}
+              {lessonPlans.length === 0 && !lessonPlansLoading && (
+                <div className="empty-state">
+                  <Text type="secondary">
+                    {selectedClass
+                      ? "No unshared lesson plans found for this class."
+                      : "No unshared lesson plans found. Create some lesson plans first."}
+                  </Text>
+                </div>
+              )}
             </Card>
           </Col>
         </Row>
 
-        {/* Description */}
+        {/* Sharing Details */}
         <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
           <Col span={24}>
             <Card
               size="small"
-              title="Share Description"
+              title="Sharing Details"
               className="selection-card"
             >
+              {/* Title */}
+              <Form.Item
+                name="title"
+                label="Community Title"
+                rules={[
+                  { required: true, message: "Please provide a title" },
+                  { min: 5, message: "Title must be at least 5 characters" },
+                ]}
+              >
+                <Input
+                  placeholder="Give your lesson plan a catchy title for the community"
+                  maxLength={100}
+                  showCount
+                />
+              </Form.Item>
+
+              {/* Description */}
               <Form.Item
                 name="description"
+                label="Description & Teaching Tips"
                 rules={[
                   { required: true, message: "Please provide a description" },
                   {
-                    min: 10,
-                    message: "Description must be at least 10 characters",
+                    min: 20,
+                    message: "Description must be at least 20 characters",
                   },
                 ]}
               >
@@ -411,66 +405,24 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
                   showCount
                 />
               </Form.Item>
-              <Text type="secondary" style={{ fontSize: "12px" }}>
-                Share your insights and experience with this lesson to help
-                other teachers.
-              </Text>
-            </Card>
-          </Col>
-        </Row>
 
-        {/* Image Upload */}
-        <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
-          <Col span={24}>
-            <Card
-              size="small"
-              title={
-                <div className="card-title">
-                  <PictureOutlined style={{ color: "#fa8c16" }} />
-                  <span>Add Images (Optional)</span>
-                </div>
-              }
-              className="selection-card"
-            >
-              <div className="image-upload-container">
-                <Dragger {...imageUploadProps} className="image-dragger">
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined />
-                  </p>
-                  <p className="ant-upload-text">
-                    Click or drag images to upload
-                  </p>
-                  <p className="ant-upload-hint">
-                    Support for JPG, PNG, GIF images. Maximum 10MB per image.
-                    Add photos of student work, classroom activities, or
-                    materials used.
-                  </p>
-                </Dragger>
-              </div>
-
-              {imageFileList.length > 0 && (
-                <div className="image-preview-list">
-                  <div className="preview-header">
-                    <Text strong>Uploaded Images ({imageFileList.length})</Text>
-                  </div>
-                  <div className="preview-grid">
-                    {imageFileList.map((file, index) => (
-                      <div key={index} className="image-preview-item">
-                        <div className="image-name">{file.name}</div>
-                        <div className="image-size">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Tags */}
+              <Form.Item
+                name="tags"
+                label="Tags (Optional)"
+                extra="Separate tags with commas (e.g., creative writing, group work, assessment)"
+              >
+                <Input
+                  placeholder="Add tags to help other teachers find your lesson"
+                  maxLength={200}
+                />
+              </Form.Item>
             </Card>
           </Col>
         </Row>
 
         {/* Summary Card */}
-        {selectedClass && selectedLessonPlan && (
+        {selectedLessonPlan && (
           <Row gutter={[24, 16]} style={{ marginTop: "24px" }}>
             <Col span={24}>
               <Card
@@ -484,30 +436,36 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
                     <div className="summary-item">
                       <Text strong>Class:</Text>
                       <div>
-                        {getSelectedClassDetails()?.className} (
-                        {getSelectedClassDetails()?.grade})
+                        {getSelectedClassDetails()?.className || "Any Class"}
+                        {getSelectedClassDetails() &&
+                          ` (${getSelectedClassDetails().grade})`}
                       </div>
                     </div>
                   </Col>
                   <Col xs={24} sm={12}>
                     <div className="summary-item">
                       <Text strong>Subject:</Text>
-                      <div>{getSelectedClassDetails()?.subject}</div>
-                    </div>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <div className="summary-item">
-                      <Text strong>Lesson Topic:</Text>
                       <div>
-                        {getSelectedLessonPlanDetails()?.parameters?.Sow?.topic}
+                        {getSelectedClassDetails()?.subject || "General"}
                       </div>
                     </div>
                   </Col>
                   <Col xs={24} sm={12}>
                     <div className="summary-item">
-                      <Text strong>Theme:</Text>
+                      <Text strong>Topic:</Text>
                       <div>
-                        {getSelectedLessonPlanDetails()?.parameters?.Sow?.theme}
+                        {
+                          getSelectedLessonPlanDetails()?.parameters
+                            ?.specificTopic
+                        }
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div className="summary-item">
+                      <Text strong>Grade Level:</Text>
+                      <div>
+                        {getSelectedLessonPlanDetails()?.parameters?.grade}
                       </div>
                     </div>
                   </Col>
@@ -544,9 +502,9 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit }) => {
               htmlType="submit"
               loading={loading}
               icon={<ShareAltOutlined />}
-              disabled={!selectedClass || !selectedLessonPlan}
+              disabled={!selectedLessonPlan}
             >
-              Share Lesson Plan
+              Share to Community
             </Button>
           </div>
         </div>

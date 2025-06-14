@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser"); // Add this
 require("dotenv").config();
 
 const app = express();
@@ -14,6 +15,7 @@ if (!process.env.MONGO_URI) {
   console.log(Object.keys(process.env).filter((key) => key.includes("MONGO")));
   process.exit(1);
 }
+
 // CORS configuration
 const corsOptions = {
   origin: ["http://localhost:3000", "http://localhost:3001"],
@@ -25,6 +27,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Add this line - IMPORTANT for cookie handling
 app.use(morgan("dev"));
 
 // Import routes

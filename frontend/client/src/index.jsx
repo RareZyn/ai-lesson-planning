@@ -1,8 +1,9 @@
-// src/index.jsx
+// src/index.jsx - Final version with proper context order
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
+import { AuthProvider } from "./context/AuthContext"; // Firebase auth context
+import { UserProvider } from "./context/UserContext"; // Backend user context
 import router from "./routes";
 import "./index.css";
 
@@ -13,8 +14,12 @@ import "antd/dist/reset.css";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
+    {/* AuthProvider provides Firebase authentication */}
     <AuthProvider>
-      <RouterProvider router={router} />
+      {/* UserProvider provides backend user data and depends on AuthProvider */}
+      <UserProvider>
+        <RouterProvider router={router} />
+      </UserProvider>
     </AuthProvider>
   </React.StrictMode>
 );
