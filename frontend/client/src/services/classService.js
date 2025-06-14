@@ -65,3 +65,17 @@ export const getClassById = async (classId) => {
         throw new Error(error.response?.data?.message || 'Could not fetch class details.');
     }
 };
+
+/**
+ * Fetches the 5 most recently updated classes for the user.
+ * @returns {Promise<Array>} A promise that resolves to an array of up to 5 classes.
+ */
+export const getRecentClasses = async () => {
+    try {
+        const response = await axios.get('/api/classes/recent', getAuthConfig());
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching recent classes:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not fetch recent classes.');
+    }
+};

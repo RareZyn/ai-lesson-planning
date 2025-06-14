@@ -23,8 +23,9 @@ const MultiStepPlanner = () => {
   // --- FIX: Removed redundant 'lessonNumber' field ---
   const [formData, setFormData] = useState({
     classId: '',
-    sow: {}, // The entire selected lesson object will be stored here
+    sow: {},
     proficiencyLevel: '',
+    activityType: '',
     hotsFocus: '',
     additionalNotes: '',
     grade: "",
@@ -88,7 +89,7 @@ const MultiStepPlanner = () => {
         const newPlanId = response.data._id;
         alert('Lesson Plan Saved Successfully!');
         // Redirect to the new display page
-        navigate(`/app/lesson/${newPlanId}`);
+        navigate(`/app/lessons/${newPlanId}`);
       }
     } catch (error) {
       console.error('Failed to save lesson plan:', error);

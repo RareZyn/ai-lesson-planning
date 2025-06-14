@@ -139,7 +139,7 @@ if (mongoose.models.LessonPlan) {
           trim: true,
           maxlength: [100, "Specific topic cannot exceed 100 characters"],
         },
-        iThink: {
+        activityType: {
           type: String,
           trim: true,
         },

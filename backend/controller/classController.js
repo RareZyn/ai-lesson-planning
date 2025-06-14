@@ -1,16 +1,14 @@
 const Class = require('../model/Class');
 
-// @desc    Get all classes with optional filtering
-// @access  Private
 const getClasses = async (req, res) => {
+    const { year, subject } = req.query;
+    const userId = req.user.id;
+    const query = { createdBy: userId };
+
+    if (year) query.year = year;
+    if (subject) query.subject = subject;
+
     try {
-        const { year, subject } = req.query;
-        const userId = req.user.id;
-        const query = { createdBy: userId };
-
-        if (year) query.year = year;
-        if (subject) query.subject = subject;
-
         const classes = await Class.find(query).sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -27,8 +25,6 @@ const getClasses = async (req, res) => {
     }
 };
 
-// @desc    Get single class by ID
-// @access  Public
 const getClassById = async (req, res) => {
     try {
         const cls = await Class.findById(req.params.id);
@@ -52,35 +48,17 @@ const getClassById = async (req, res) => {
     }
 };
 
-// @desc    Create new class
-// @access  Private (Admin/Teacher)
 const createClass = async (req, res) => {
+    const { className, grade, subject, year } = req.body;
+    const userId = req.user.id;
+
     try {
-        const { className, grade, subject, year } = req.body;
-
-        // Validate required fields
-        if (!className || !grade || !subject || !year) {
-            return res.status(400).json({
-                success: false,
-                error: 'Please provide className, grade, subject, and year'
-            });
-        }
-
-        // Ensure user is authenticated
-        if (!req.user || !req.user._id) {
-            return res.status(401).json({
-                success: false,
-                error: 'Not authorized'
-            });
-        }
-
-        // Create the new class
         const newClass = await Class.create({
             className,
             grade,
             subject,
             year,
-            createdBy: req.user._id
+            createdBy: userId
         });
 
         return res.status(201).json({
@@ -115,9 +93,6 @@ const createClass = async (req, res) => {
     }
 };
 
-
-// @desc    Update class
-// @access  Private (Admin/Teacher)
 const updateClass = async (req, res) => {
     try {
         const cls = await Class.findByIdAndUpdate(req.params.id, req.body, {
@@ -152,8 +127,6 @@ const updateClass = async (req, res) => {
     }
 };
 
-// @desc    Delete class
-// @access  Private (Admin)
 const deleteClass = async (req, res) => {
     try {
         const cls = await Class.findByIdAndDelete(req.params.id);
@@ -177,8 +150,6 @@ const deleteClass = async (req, res) => {
     }
 };
 
-// @desc    Get classes by year
-// @access  Public
 const getClassesByYear = async (req, res) => {
     try {
         const classes = await Class.find({ year: req.params.year });
@@ -196,8 +167,6 @@ const getClassesByYear = async (req, res) => {
     }
 };
 
-// @desc    Get classes by subject
-// @access  Public
 const getClassesBySubject = async (req, res) => {
     try {
         const classes = await Class.find({ subject: req.params.subject });
@@ -215,6 +184,27 @@ const getClassesBySubject = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Get the 5 most recently updated classes for the logged-in user
+ * @route   GET /api/classes/recent
+ * @access  Private
+ */
+const getRecentClasses = async (req, res, next) => {
+    try {
+        const recentClasses = await Class.find({ createdBy: req.user.id })
+            .sort({ updatedAt: -1 })
+            .limit(5);
+
+        res.status(200).json({
+            success: true,
+            data: recentClasses
+        });
+    } catch (error) {
+        console.error("Error fetching recent classes:", error);
+        next(error);
+    }
+};
+
 module.exports = {
     getClasses,
     getClassById,
@@ -222,5 +212,6 @@ module.exports = {
     updateClass,
     deleteClass,
     getClassesByYear,
-    getClassesBySubject
+    getClassesBySubject,
+    getRecentClasses
 };

@@ -1,157 +1,127 @@
+/* --- Container and Header Styles (Largely Unchanged) --- */
 .recent-classes-container {
   width: 100%;
-  padding: 1rem;
+  margin-top: 1rem;
 }
 
-.recent-classes-header {
+.recent-header {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 1.5rem;
-  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
-.recent-classes-title {
+.recent-title {
   color: #333;
   font-size: 1.6rem;
   font-weight: 300;
-  margin-bottom: 1.5rem;
-  padding: 0;
   margin: 0;
-  text-align:left;
 }
 
 .view-all-btn {
   background: none;
   border: none;
-  color: var(--blue, #1890ff);
+  color: #1890ff;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.5rem 0.8rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.view-all-btn:hover {
-  background-color: rgba(24, 144, 255, 0.1);
-  transform: translateX(2px);
 }
 
 .arrow {
   font-size: 1.2rem;
-  transition: transform 0.2s ease;
 }
 
-.view-all-btn:hover .arrow {
-  transform: translateX(2px);
-}
-
-.recent-classes-grid {
+/* --- Grid Layout --- */
+.recent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
+  justify-content: start;
 }
 
+/* 
+  =============================================
+  === NEW CARD STYLES (No Thumbnail) ===
+  =============================================
+*/
 .class-card {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1.2rem;
-  cursor: pointer;
+  overflow: hidden;
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  cursor: pointer;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
 }
 
 .class-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  border-color: var(--blue, #1890ff);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #495057;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f3f5;
+  margin-bottom: 1rem;
+}
+
+.icon-wrapper {
+  background-color: #f1f3f5;
+  color: #495057;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .class-name {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 600;
-  color: #333;
-  margin: 0 0 1rem 0;
+  color: #343a40;
+  margin: 0;
   line-height: 1.3;
 }
 
-.class-details {
+.card-body {
   display: flex;
   flex-direction: column;
+  gap: 0.6rem;
+}
+
+.class-detail-item {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
-}
-
-.class-subject,
-.class-time {
   margin: 0;
+  color: #6c757d;
   font-size: 0.9rem;
-  color: #666;
-  line-height: 1.4;
 }
 
-.label {
-  font-weight: 600;
-  color: #333;
+.class-detail-item svg {
+  font-size: 1rem;
+  /* Smaller icon size */
+  color: #adb5bd;
 }
 
-/* Responsive Design */
+/* --- Responsive Design --- */
 @media (max-width: 768px) {
-  .recent-classes-container {
-    padding: 0.5rem;
-  }
-
-  .recent-classes-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  .recent-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 
   .class-card {
-    padding: 1rem;
-  }
-
-  .class-name {
-    font-size: 1.1rem;
-  }
-
-  .class-subject,
-  .class-time {
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.8rem;
-  }
-
-  .class-card {
-    padding: 0.8rem;
-  }
-
-  .class-name {
-    font-size: 1rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .class-details {
-    gap: 0.4rem;
-  }
-
-  .class-subject,
-  .class-time {
-    font-size: 0.8rem;
+    padding: 1.25rem;
   }
 }
