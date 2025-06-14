@@ -32,9 +32,11 @@ const authRoutes = require("./route/auth");
 const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
 const dskpRoutes = require("./route/dskp");
-const textbookRoutes = require("./route/textbook");const classRoutes = require("./route/classRoutes");
+const textbookRoutes = require("./route/textbook");
+const classRoutes = require("./route/classRoutes");
 const sowRoutes = require("./route/sowRoutes");
 const lessonRoutes = require("./route/lessonRoutes");
+const communityRoutes = require("./route/communityRoute");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -45,23 +47,7 @@ app.use("/api/textbook", textbookRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/sow", sowRoutes);
 app.use("/api/lessons", lessonRoutes);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.use("/api/community", communityRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {
@@ -89,8 +75,9 @@ app.use((err, req, res, next) => {
     const field = Object.keys(err.keyValue || {})[0];
     return res.status(400).json({
       success: false,
-      message: `${field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
-        } already exists`,
+      message: `${
+        field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
+      } already exists`,
     });
   }
 
