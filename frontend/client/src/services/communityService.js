@@ -1,7 +1,9 @@
-// src/services/communityService.js - Fixed version with proper auth
+// src/services/communityService.js - Debug version with extensive logging
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL ;
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ;
+
 
 // Create axios instance with interceptors
 const apiClient = axios.create({
@@ -22,19 +24,27 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
+    console.error("API Error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem("authToken");
-      // Don't redirect here - let the component handle it
-      console.log("Authentication error - token may be expired");
     }
     return Promise.reject(error);
   }
@@ -60,6 +70,11 @@ export const communityAPI = {
   // Get user's lesson plans (requires userId as query param)
   getUserLessonPlans: async (userId, params = {}) => {
     try {
+
+      if (!userId) {
+        throw new Error("userId is required for getUserLessonPlans");
+      }
+
       const response = await apiClient.get("/community/my-lessons", {
         params: { userId, ...params },
       });
@@ -83,16 +98,24 @@ export const communityAPI = {
     }
   },
 
-  // Share a lesson plan to community
+  // Share a lesson plan to community - FIXED to match backend
   shareLessonPlan: async (lessonPlanId, shareData) => {
     try {
+
+      if (!lessonPlanId) {
+        throw new Error("lessonPlanId is required for shareLessonPlan");
+      }
+
+      if (!shareData.userId) {
+        throw new Error("userId is required in shareData for shareLessonPlan");
+      }
+
       const response = await apiClient.put(
         `/community/share/${lessonPlanId}`,
-        shareData
+        shareData // This should contain { userId, title, description, tags }
       );
       return response.data;
     } catch (error) {
-      console.error("Error sharing lesson plan:", error);
       throw error;
     }
   },
@@ -114,10 +137,9 @@ export const communityAPI = {
   // Like/Unlike a lesson plan
   toggleLike: async (lessonPlanId, userId) => {
     try {
-      const response = await apiClient.put(
-        `/community/like/${lessonPlanId}`,
-        { userId }
-      );
+      const response = await apiClient.put(`/community/like/${lessonPlanId}`, {
+        userId,
+      });
       return response.data;
     } catch (error) {
       console.error("Error toggling like:", error);

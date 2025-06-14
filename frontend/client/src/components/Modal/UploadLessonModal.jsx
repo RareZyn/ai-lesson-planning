@@ -1,4 +1,4 @@
-// src/components/Modal/UploadLessonModal.jsx - Updated with backend integration
+// src/components/Modal/UploadLessonModal.jsx - Fixed with direct button handler
 import React, { useState, useEffect } from "react";
 import {
   Modal,
@@ -38,19 +38,16 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   const [classesLoading, setClassesLoading] = useState(false);
   const [lessonPlansLoading, setLessonPlansLoading] = useState(false);
 
-  // Fetch classes on modal open
+  // Load data when modal opens
   useEffect(() => {
-    if (isOpen) {
-      fetchClasses();
+    if (isOpen && currentUserId) {
+      loadInitialData();
     }
-  }, [isOpen]);
+  }, [isOpen, currentUserId]);
 
-  // Fetch lesson plans when class is selected
-  useEffect(() => {
-    if (selectedClass) {
-      fetchUserLessonPlans();
-    }
-  }, [selectedClass]);
+  const loadInitialData = async () => {
+    await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
+  };
 
   const fetchClasses = async () => {
     setClassesLoading(true);
@@ -67,19 +64,30 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   };
 
   const fetchUserLessonPlans = async () => {
+    if (!currentUserId) {
+      console.error("No currentUserId provided");
+      return;
+    }
+
     setLessonPlansLoading(true);
     try {
+      console.log("Fetching lesson plans for user:", currentUserId);
+
       const response = await communityAPI.getUserLessonPlans(currentUserId, {
-        shared: false, // Only get unshared lessons
+        shared: "false", // Only get unshared lessons
+        page: 1,
+        limit: 100,
       });
 
+      console.log("Lesson plans response:", response);
+
       if (response.success) {
-        // Filter lessons by selected class if needed
-        let plans = response.data || [];
-        if (selectedClass) {
-          plans = plans.filter((plan) => plan.classId?._id === selectedClass);
-        }
+        const plans = response.data || [];
         setLessonPlans(plans);
+        console.log("Set lesson plans:", plans);
+      } else {
+        console.error("API returned success: false", response);
+        setLessonPlans([]);
       }
     } catch (error) {
       console.error("Error fetching lesson plans:", error);
@@ -90,16 +98,34 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
     }
   };
 
-  const handleSubmit = async (values) => {
-    if (!selectedLessonPlan) {
-      message.error("Please select a lesson plan to share");
-      return;
-    }
+  // Direct button click handler instead of form submission
+  const handleShareButtonClick = async () => {
+    console.log("Share button clicked!");
+    console.log("Current selectedLessonPlan state:", selectedLessonPlan);
+    console.log("Current form values:", form.getFieldsValue());
 
-    setLoading(true);
+    // Validate form first
     try {
+      const values = await form.validateFields();
+      console.log("Form validation passed. Values:", values);
+
+      // Use the form value as the source of truth
+      const lessonPlanId = values.lessonPlan || selectedLessonPlan;
+
+      if (!lessonPlanId) {
+        message.error("Please select a lesson plan to share");
+        return;
+      }
+
+      if (!currentUserId) {
+        message.error("User ID is required to share lesson plans");
+        return;
+      }
+
+      setLoading(true);
+
       const shareData = {
-        lessonPlanId: selectedLessonPlan,
+        userId: currentUserId,
         title: values.title,
         description: values.description,
         tags: values.tags
@@ -107,21 +133,62 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
           : [],
       };
 
-      await onSubmit(shareData);
-      handleReset();
+      console.log("Sharing lesson plan:", {
+        lessonPlanId: lessonPlanId,
+        shareData: shareData,
+      });
+
+      // Call the backend API directly
+      const response = await communityAPI.shareLessonPlan(
+        lessonPlanId,
+        shareData
+      );
+
+      console.log("Share response:", response);
+
+      if (response.success) {
+        message.success("Lesson plan shared successfully to the community!");
+        handleReset();
+        onClose();
+        // Call the parent's callback to refresh the data
+        if (onSubmit) {
+          onSubmit();
+        }
+      } else {
+        message.error(response.message || "Failed to share lesson plan");
+      }
     } catch (error) {
-      console.error("Share error:", error);
-      // Error handling is done in parent component
+      if (error.errorFields) {
+        // Form validation error
+        console.log("Form validation failed:", error.errorFields);
+        message.error("Please fill in all required fields");
+      } else {
+        // API error
+        console.error("Share error:", error);
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to share lesson plan";
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
+    console.log("Resetting form");
     form.resetFields();
     setSelectedClass(null);
     setSelectedLessonPlan(null);
-    setLessonPlans([]);
+    // Explicitly clear the form values
+    form.setFieldsValue({
+      class: undefined,
+      lessonPlan: undefined,
+      title: undefined,
+      description: undefined,
+      tags: undefined,
+    });
   };
 
   const handleClose = () => {
@@ -132,16 +199,25 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   };
 
   const handleClassChange = (classId) => {
+    console.log("Class selected:", classId);
     setSelectedClass(classId);
     setSelectedLessonPlan(null);
-    form.setFieldsValue({ lessonPlan: undefined });
+    // Clear both the state and the form field
+    form.setFieldsValue({
+      lessonPlan: undefined,
+      class: classId,
+    });
   };
 
   const handleLessonPlanChange = (lessonPlanId) => {
+    console.log("Lesson plan selected:", lessonPlanId);
     setSelectedLessonPlan(lessonPlanId);
 
+    // IMPORTANT: Update the form field value
+    form.setFieldsValue({ lessonPlan: lessonPlanId });
+
     // Auto-fill title and description if not already filled
-    const selectedPlan = getSelectedLessonPlanDetails();
+    const selectedPlan = lessonPlans.find((plan) => plan._id === lessonPlanId);
     if (selectedPlan && !form.getFieldValue("title")) {
       const autoTitle = `${
         selectedPlan.parameters?.specificTopic || "Lesson Plan"
@@ -149,6 +225,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
       form.setFieldsValue({
         title: autoTitle,
         description: selectedPlan.plan?.learningObjective || "",
+        lessonPlan: lessonPlanId, // Make sure this is set
       });
     }
   };
@@ -177,7 +254,11 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   };
 
   const renderLessonPlanOptions = () => {
-    return lessonPlans.map((plan) => {
+    const plansToShow = selectedClass
+      ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
+      : lessonPlans;
+
+    return plansToShow.map((plan) => {
       const formatted = formatLessonPlanOption(plan);
       return (
         <Option key={plan._id} value={plan._id}>
@@ -192,6 +273,10 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
       );
     });
   };
+
+  const availablePlans = selectedClass
+    ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
+    : lessonPlans;
 
   return (
     <Modal
@@ -219,8 +304,8 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
       <Form
         form={form}
         layout="vertical"
-        onFinish={handleSubmit}
         className="upload-form"
+        // Remove onFinish since we're handling the button click directly
       >
         <Row gutter={[24, 16]}>
           {/* Class Selection */}
@@ -295,7 +380,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
                 <Spin spinning={lessonPlansLoading}>
                   <Select
                     placeholder="Choose a lesson plan to share"
-                    value={selectedLessonPlan}
+                    value={selectedLessonPlan} // Keep the controlled component behavior
                     onChange={handleLessonPlanChange}
                     size="large"
                     style={{ width: "100%" }}
@@ -349,13 +434,21 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
                 </div>
               )}
 
-              {lessonPlans.length === 0 && !lessonPlansLoading && (
+              {availablePlans.length === 0 && !lessonPlansLoading && (
                 <div className="empty-state">
                   <Text type="secondary">
                     {selectedClass
                       ? "No unshared lesson plans found for this class."
-                      : "No unshared lesson plans found. Create some lesson plans first."}
+                      : "No unshared lesson plans found. Create some lesson plans first, or all your plans may already be shared."}
                   </Text>
+                  {!selectedClass && (
+                    <div style={{ marginTop: "8px" }}>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Only lesson plans that haven't been shared to the
+                        community yet will appear here.
+                      </Text>
+                    </div>
+                  )}
                 </div>
               )}
             </Card>
@@ -499,10 +592,11 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
             </Button>
             <Button
               type="primary"
-              htmlType="submit"
               loading={loading}
               icon={<ShareAltOutlined />}
               disabled={!selectedLessonPlan}
+              onClick={handleShareButtonClick}
+              // Removed htmlType="submit" - now using direct onClick
             >
               Share to Community
             </Button>

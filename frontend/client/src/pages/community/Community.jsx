@@ -1,4 +1,4 @@
-// src/pages/community/Community.jsx - Updated with User Context
+// src/pages/community/Community.jsx - Updated with simplified callback
 import React, { useState, useEffect } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
@@ -174,34 +174,13 @@ const Community = () => {
     }));
   };
 
-  const handleLessonShare = async (shareData) => {
-    if (!isAuthenticated) {
-      message.error("Please log in to share lesson plans");
-      return;
-    }
-
-    try {
-      const response = await communityAPI.shareLessonPlan(
-        shareData.lessonPlanId,
-        {
-          userId: userId,
-          title: shareData.title,
-          description: shareData.description,
-          tags: shareData.tags,
-        }
-      );
-
-      if (response.success) {
-        message.success("Lesson plan shared successfully to the community!");
-        setIsUploadModalOpen(false);
-        // Reload community data to show the newly shared lesson
-        loadCommunityData();
-      }
-    } catch (error) {
-      console.error("Share error:", error);
-      message.error(
-        error.response?.data?.message || "Failed to share lesson plan"
-      );
+  // Simplified callback - just reload data after sharing
+  const handleLessonShareSuccess = () => {
+    // Reload community data to show the newly shared lesson
+    if (isAuthenticated && userId) {
+      loadCommunityData();
+    } else {
+      loadCommunityLessonsOnly();
     }
   };
 
@@ -445,7 +424,7 @@ const Community = () => {
       <UploadLessonModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onSubmit={handleLessonShare}
+        onSubmit={handleLessonShareSuccess}
         currentUserId={userId}
       />
     </div>

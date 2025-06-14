@@ -1,8 +1,7 @@
-// src/pages/planner/MultiStepPlanner/Step2_LessonDetails.jsx
-
-import React, { useState, useEffect } from 'react';
-import styles from './MultiStepPlanner.module.css';
-import { getSow } from '../../../services/sowService';
+// src/pages/planner/MultiStepPlanner/Step2_LessonDetails.jsx - Fixed version
+import React, { useState, useEffect } from "react";
+import styles from "./MultiStepPlanner.module.css";
+import { getSow } from "../../../services/sowService";
 
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [sowLessons, setSowLessons] = useState([]);
@@ -14,33 +13,57 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       setSowLessons([]);
       return;
     }
+
     const fetchSowLessons = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
+        console.log(`Fetching SOW for grade: "${data.grade}"`);
         const response = await getSow(data.grade);
+        console.log("SOW Response:", response);
+
         const lessons = response?.lessons || [];
         if (lessons.length > 0) {
           setSowLessons(lessons);
+          console.log(`Found ${lessons.length} lessons for ${data.grade}`);
         } else {
-          setError(`No lessons found for ${data.grade}.`);
+          setError(
+            `No lessons found for ${data.grade}. Please check if SOW data exists.`
+          );
           setSowLessons([]);
         }
       } catch (err) {
         console.error("Failed to fetch SOW:", err);
-        setError('Failed to load lessons. Please try again.');
+
+        // More detailed error handling
+        if (err.response?.status === 404) {
+          setError(
+            `No scheme of work found for ${data.grade}. Please contact your administrator to add SOW data.`
+          );
+        } else if (err.response?.status === 401) {
+          setError("Authentication failed. Please log in again.");
+        } else {
+          setError(`Failed to load lessons: ${err.message}`);
+        }
         setSowLessons([]);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchSowLessons();
   }, [data.grade]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // --- FIX: Validate using the Sow object directly ---
-    if (!data.sow?.lessonNo || !data.proficiencyLevel || !data.hotsFocus || !data.specificTopic) {
+    if (
+      !data.sow?.lessonNo ||
+      !data.proficiencyLevel ||
+      !data.hotsFocus ||
+      !data.specificTopic
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -59,35 +82,68 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             id="lessonNumber"
             name="lessonNumber"
             // --- FIX: The value is now derived from the Sow object ---
-            value={data.sow?.lessonNo || ''}
+            value={data.sow?.lessonNo || ""}
             onChange={(e) => {
               const selectedValue = e.target.value;
               // Find the full lesson object from the fetched data
               const selectedLesson = sowLessons.find(
-                lesson => lesson.lessonNo.toString() === selectedValue
+                (lesson) => lesson.lessonNo.toString() === selectedValue
               );
               // --- FIX: Update only the Sow object in the parent state ---
-              updateData('sow', selectedLesson || {});
+              updateData("sow", selectedLesson || {});
             }}
             disabled={isLoading}
             required
           >
-            <option value="" disabled>-- Select Lesson --</option>
-            {isLoading && <option disabled>Loading lessons...</option>}
-            {error && <option disabled>Error: {error}</option>}
-            {!isLoading && !error && sowLessons.length === 0 && <option disabled>No lessons available for {data.grade}</option>}
-            {!isLoading && !error && sowLessons.map(lesson => (
-              <option key={lesson.lessonNo} value={lesson.lessonNo}>
-                Lesson {lesson.lessonNo} ({lesson.focus})
+            <option value="" disabled>
+              {isLoading
+                ? `Loading lessons for ${data.grade}...`
+                : error
+                ? "Error loading lessons"
+                : "-- Select Lesson --"}
+            </option>
+
+            {error && (
+              <option disabled style={{ color: "red" }}>
+                {error}
               </option>
-            ))}
+            )}
+
+            {!isLoading && !error && sowLessons.length === 0 && (
+              <option disabled>No lessons available for {data.grade}</option>
+            )}
+
+            {!isLoading &&
+              !error &&
+              sowLessons.map((lesson) => (
+                <option key={lesson.lessonNo} value={lesson.lessonNo}>
+                  Lesson {lesson.lessonNo} - {lesson.focus} (
+                  {lesson.topic || "No topic"})
+                </option>
+              ))}
           </select>
+
+          {/* Show additional info about current grade and loading state */}
+          <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
+            {data.grade
+              ? `Looking for lessons in ${data.grade}`
+              : "Please select a class first"}
+            {isLoading && " - Loading..."}
+          </small>
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="proficiencyLevel">Class Proficiency Level</label>
-          <select id="proficiencyLevel" name="proficiencyLevel" value={data.proficiencyLevel || ''} onChange={(e) => updateData('proficiencyLevel', e.target.value)} required>
-            <option value="" disabled>-- Select Proficiency Level --</option>
+          <select
+            id="proficiencyLevel"
+            name="proficiencyLevel"
+            value={data.proficiencyLevel || ""}
+            onChange={(e) => updateData("proficiencyLevel", e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              -- Select Proficiency Level --
+            </option>
             <option value="A1 Low">A1 Low</option>
             <option value="A1 Mid">A1 Mid</option>
             <option value="A1 High">A1 High</option>
@@ -102,12 +158,20 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
         <div className={styles.formGroup}>
           <label htmlFor="hotsFocus">HOTS Focus</label>
-          <select id="hotsFocus" name="hotsFocus" value={data.hotsFocus || ''} onChange={(e) => updateData('hotsFocus', e.target.value)} required>
-            <option value="" disabled>-- Select HOTS Focus --</option>
+          <select
+            id="hotsFocus"
+            name="hotsFocus"
+            value={data.hotsFocus || ""}
+            onChange={(e) => updateData("hotsFocus", e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              -- Select HOTS Focus --
+            </option>
             <option value="apply">Applying</option>
             <option value="analyse">Analysing</option>
             <option value="evaluate">Evaluating</option>
-            <option value="creating">Creating</option>
+            <option value="create">Creating</option>
           </select>
         </div>
 
@@ -117,16 +181,49 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             type="text"
             id="specificTopic"
             name="specificTopic"
-            value={data.specificTopic || ''}
-            onChange={(e) => updateData('specificTopic', e.target.value)}
+            value={data.specificTopic || ""}
+            onChange={(e) => updateData("specificTopic", e.target.value)}
             placeholder="e.g., 'The life of Nicol David'"
             required
           />
         </div>
 
+        {/* Debug info (remove in production) */}
+        {process.env.NODE_ENV === "development" && (
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "10px",
+              backgroundColor: "#f8f9fa",
+              borderRadius: "4px",
+              fontSize: "12px",
+            }}
+          >
+            <strong>Debug Info:</strong>
+            <br />
+            Grade: {data.grade || "Not selected"}
+            <br />
+            SOW Lessons: {sowLessons.length} found
+            <br />
+            Selected Lesson: {data.sow?.lessonNo || "None"}
+            <br />
+            Loading: {isLoading.toString()}
+            <br />
+            Error: {error || "None"}
+          </div>
+        )}
+
         <div className={styles.navigation}>
-          <button type="button" onClick={onPrev} className={styles.secondaryButton}>Previous</button>
-          <button type="submit" className={styles.primaryButton}>Next Step</button>
+          <button
+            type="button"
+            onClick={onPrev}
+            className={styles.secondaryButton}
+          >
+            Previous
+          </button>
+          <button type="submit" className={styles.primaryButton}>
+            Next Step
+          </button>
         </div>
       </form>
     </div>
