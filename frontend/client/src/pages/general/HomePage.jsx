@@ -8,7 +8,6 @@ const HomePage = () => {
   // Remove customBreadcrumbs - let MainLayout handle it
   return (
     <div className="HomePage">
-      <h2 style={{ textAlign: "left" }}>HomePage</h2>
       <div className="home-container" style={{ width: "100%" }}>
         <AITools />
         <RecentOpened />

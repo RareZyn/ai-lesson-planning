@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './RecentClasses.css'; // We will create a dedicated CSS file
-import { getRecentClasses } from '../../../services/classService'; // Import the new class service
+import './RecentClasses.css'; // This CSS file will be updated
+import { getRecentClasses } from '../../../services/classService';
+
+// Icons can make the cards more visually appealing
+import { School, Subject, CalendarToday } from '@mui/icons-material';
+import Loader from '../../../components/Loader';
 
 const RecentClasses = () => {
   const navigate = useNavigate();
@@ -25,21 +29,11 @@ const RecentClasses = () => {
   }, []);
 
   const handleViewAll = () => {
-    navigate("/app/classes"); // Navigate to the main classes page
+    navigate("/app/classes");
   };
 
   const handleCardClick = (classId) => {
-    // Navigate to the page that displays lessons for this class
-    navigate(`/app/classes/${classId}`); 
-  };
-
-  // A mapping for subject images
-  const subjectThumbnails = {
-    'English': '/Class/english.png',
-    'Mathematics': '/images/subjects/math.png',
-    'Science': '/images/subjects/science.png',
-    'History': '/images/subjects/history.png',
-    'Default': '/images/subjects/default.png'
+    navigate(`/app/classes/${classId}`);
   };
 
   return (
@@ -56,31 +50,31 @@ const RecentClasses = () => {
         <p>Loading recent classes...</p>
       ) : (
         <div className="recent-grid">
-          {recentClasses.map((classItem) => {
-            const thumbnail = subjectThumbnails[classItem.subject] || subjectThumbnails['Default'];
-            
-            return (
-              <div
-                key={classItem._id}
-                className="recent-card"
-                onClick={() => handleCardClick(classItem._id)}
-              >
-                <div className="card-header">
-                  <img
-                    src={thumbnail}
-                    alt={classItem.subject}
-                    className="subject-image"
-                  />
-                  <div className="subject-badge">{classItem.subject}</div>
+          {recentClasses.map((classItem) => (
+            // --- The JSX for the card is now simpler, without the image header ---
+            <div
+              key={classItem._id}
+              className="class-card" // We will style this class
+              onClick={() => handleCardClick(classItem._id)}
+            >
+              <div className="card-header">
+                <div className="icon-wrapper">
+                    <School />
                 </div>
-                <div className="card-content">
-                  <h3 className="card-title">{classItem.className}</h3>
-                  <p className="card-grade">{classItem.grade}</p>
-                  <p className="card-meta">Year {classItem.year}</p>
-                </div>
+                <h3 className="class-name">{classItem.className}</h3>
               </div>
-            );
-          })}
+              <div className="card-body">
+                <p className="class-detail-item">
+                    <Subject fontSize="small" />
+                    <span>{classItem.subject}</span>
+                </p>
+                <p className="class-detail-item">
+                    <CalendarToday fontSize="small" />
+                    <span>Year: {classItem.year}</span>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

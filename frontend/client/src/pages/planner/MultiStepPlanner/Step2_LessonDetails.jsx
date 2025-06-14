@@ -1,5 +1,3 @@
-// src/pages/planner/MultiStepPlanner/Step2_LessonDetails.jsx
-
 import React, { useState, useEffect } from 'react';
 import styles from './MultiStepPlanner.module.css';
 import { getSow } from '../../../services/sowService';
@@ -22,6 +20,10 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         const lessons = response?.lessons || [];
         if (lessons.length > 0) {
           setSowLessons(lessons);
+          // Auto-fill topic from SOW if a lesson is already selected and topic is empty
+          if (data.sow?.topic && !data.specificTopic) {
+            updateData('specificTopic', data.sow.topic);
+          }
         } else {
           setError(`No lessons found for ${data.grade}.`);
           setSowLessons([]);
@@ -39,8 +41,8 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // --- FIX: Validate using the Sow object directly ---
-    if (!data.sow?.lessonNo || !data.proficiencyLevel || !data.hotsFocus || !data.specificTopic) {
+    // --- UPDATED VALIDATION ---
+    if (!data.sow?.lessonNo || !data.specificTopic || !data.activityType || !data.proficiencyLevel || !data.hotsFocus) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -53,21 +55,23 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       <p>Fill in the core details based on the KSSM Scheme of Work.</p>
 
       <form onSubmit={handleSubmit}>
+        {/* --- FIELD 1: Lesson from SOW --- */}
         <div className={styles.formGroup}>
           <label htmlFor="lessonNumber">Lesson from Scheme of Work</label>
           <select
             id="lessonNumber"
             name="lessonNumber"
-            // --- FIX: The value is now derived from the Sow object ---
             value={data.sow?.lessonNo || ''}
             onChange={(e) => {
               const selectedValue = e.target.value;
-              // Find the full lesson object from the fetched data
               const selectedLesson = sowLessons.find(
                 lesson => lesson.lessonNo.toString() === selectedValue
               );
-              // --- FIX: Update only the Sow object in the parent state ---
               updateData('sow', selectedLesson || {});
+              // Also update the topic field with the SOW topic when a lesson is selected
+              if (selectedLesson) {
+                updateData('specificTopic', selectedLesson.topic);
+              }
             }}
             disabled={isLoading}
             required
@@ -78,12 +82,45 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             {!isLoading && !error && sowLessons.length === 0 && <option disabled>No lessons available for {data.grade}</option>}
             {!isLoading && !error && sowLessons.map(lesson => (
               <option key={lesson.lessonNo} value={lesson.lessonNo}>
-                Lesson {lesson.lessonNo} ({lesson.focus})
+                Lesson {lesson.lessonNo} - {lesson.topic} ({lesson.focus})
               </option>
             ))}
           </select>
         </div>
+        
+        {/* --- FIELD 2 (NEW ORDER): Specific Topic / Lesson Title --- */}
+        <div className={styles.formGroup}>
+          <label htmlFor="specificTopic">Lesson Title (Specific Topic or Context)</label>
+          <input
+            type="text"
+            id="specificTopic"
+            name="specificTopic"
+            value={data.specificTopic || ''}
+            onChange={(e) => updateData('specificTopic', e.target.value)}
+            placeholder="e.g., 'The life of Nicol David'"
+            required
+          />
+        </div>
 
+        {/* --- FIELD 3 (NEW): Activity Format --- */}
+        <div className={styles.formGroup}>
+          <label htmlFor="activityType">Primary Activity Format</label>
+          <select 
+            id="activityType" 
+            name="activityType" 
+            value={data.activityType || ''} 
+            onChange={(e) => updateData('activityType', e.target.value)} 
+            required
+          >
+            <option value="" disabled>-- Select a format --</option>
+            <option value="textbook">Textbook-based Activity</option>
+            <option value="essay">Essay Writing</option>
+            <option value="activityInClass">In-class Activity (e.g., group work, presentation)</option>
+            <option value="assessment">Assessment / Test</option>
+          </select>
+        </div>
+
+        {/* --- FIELD 4: Proficiency Level --- */}
         <div className={styles.formGroup}>
           <label htmlFor="proficiencyLevel">Class Proficiency Level</label>
           <select id="proficiencyLevel" name="proficiencyLevel" value={data.proficiencyLevel || ''} onChange={(e) => updateData('proficiencyLevel', e.target.value)} required>
@@ -100,6 +137,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </select>
         </div>
 
+        {/* --- FIELD 5: HOTS Focus --- */}
         <div className={styles.formGroup}>
           <label htmlFor="hotsFocus">HOTS Focus</label>
           <select id="hotsFocus" name="hotsFocus" value={data.hotsFocus || ''} onChange={(e) => updateData('hotsFocus', e.target.value)} required>
@@ -109,19 +147,6 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             <option value="evaluate">Evaluating</option>
             <option value="creating">Creating</option>
           </select>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="specificTopic">Specific Topic or Context</label>
-          <input
-            type="text"
-            id="specificTopic"
-            name="specificTopic"
-            value={data.specificTopic || ''}
-            onChange={(e) => updateData('specificTopic', e.target.value)}
-            placeholder="e.g., 'The life of Nicol David'"
-            required
-          />
         </div>
 
         <div className={styles.navigation}>

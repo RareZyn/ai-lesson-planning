@@ -23,8 +23,9 @@ const MultiStepPlanner = () => {
   // --- FIX: Removed redundant 'lessonNumber' field ---
   const [formData, setFormData] = useState({
     classId: '',
-    sow: {}, // The entire selected lesson object will be stored here
+    sow: {},
     proficiencyLevel: '',
+    activityType: '',
     hotsFocus: '',
     additionalNotes: '',
     grade: "",

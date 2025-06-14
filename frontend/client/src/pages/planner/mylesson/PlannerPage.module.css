@@ -1,0 +1,92 @@
+/* --- Main Page Container --- */
+.container {
+  background-color: #f8f9fa; /* Light background for the whole page */
+  min-height: calc(100vh - 60px); /* Adjust based on your main app header height */
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #343a40;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Modern Tab Design --- */
+.tabsContainer {
+  display: flex;
+  gap: 0.25rem; /* Small gap between tabs */
+  border-bottom: 1px solid #dee2e6;
+}
+
+.tabButton {
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6c757d; /* Muted color for inactive tabs */
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-bottom: 3px solid transparent; /* Placeholder for the active indicator */
+  margin-bottom: -1px; /* Aligns with the container's bottom border */
+  border-radius: 8px 8px 0 0; /* Rounded top corners */
+}
+
+.tabButton:hover {
+  color: #343a40;
+  background-color: #e9ecef; /* Subtle hover effect */
+}
+
+.tabButton.active {
+  color: #3f51b5; /* Your primary color */
+  background-color: #f1f1f1; /* Active tab blends with the content area */
+  font-weight: 600;
+  border-bottom-color: #3f51b5;
+}
+
+/* --- Content Area --- */
+.tabContent {
+  margin-top: 1rem;
+}
+
+.lessonsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+/* --- Status Messages --- */
+.statusMessage, 
+.statusMessage_error, 
+.statusMessage_empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6c757d;
+  background-color: #fff;
+  border-radius: 8px;
+}
+.statusMessage_error {
+  color: #d9534f;
+  background-color: #fdf2f2;
+}
+.statusMessage_empty h3 {
+  margin-top: 0;
+  color: #495057;
+}
+.statusMessage_empty p {
+  margin-bottom: 1.5rem;
+}
+.createButton {
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.createButton:hover {
+  background-color: #36459b;
+}

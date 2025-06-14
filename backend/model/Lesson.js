@@ -27,7 +27,7 @@ const LessonPlanSchema = new mongoose.Schema({
         proficiencyLevel: { type: String, required: true },
         hotsFocus: { type: String, required: true },
         specificTopic: { type: String, required: true },
-        iThink: { type: String },
+        activityType: { type: String },
         additionalNotes: { type: String },
 
         // FIX 2: The 'sow' object now stores a much more detailed snapshot.

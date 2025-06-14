@@ -7,9 +7,10 @@
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   width: 100%;
-  justify-content: space-between; /* Ensures title and button are on opposite ends */
+  justify-content: space-between;
+  /* Ensures title and button are on opposite ends */
 }
 
 .recent-opened-title {
@@ -56,7 +57,8 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
   /* --- THIS IS THE FIX --- */
-  justify-content: start; /* Prevents a single item from stretching */
+  justify-content: start;
+  /* Prevents a single item from stretching */
 }
 
 .recent-card {
@@ -72,8 +74,9 @@
 }
 
 .recent-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #495057;
 }
 
 .card-header {
@@ -123,6 +126,7 @@
   color: #333;
   line-height: 1.3;
 }
+
 .card-title:empty::before {
   content: '-';
 }
@@ -139,4 +143,73 @@
   font-size: 0.7rem;
   color: #999;
   margin-top: auto;
+}
+
+/* Add these new styles to your existing RecentOpened.css file */
+
+/* --- Add Card Styles --- */
+.add-lesson-card {
+  /* Use the same height as a normal card for alignment */
+  height: 160px; 
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  
+  background-color: #f8f9fa; /* A light, neutral background */
+  border: 2px dashed #e0e0e0; /* Dashed border to indicate it's an action */
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  
+  color: #868e96; /* Muted text color */
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.add-lesson-card:hover {
+  background-color: #f1f3f5;
+  border-color: #6d88f7; /* Use your primary color on hover */
+  color: #3f51b5;
+}
+
+.add-icon-wrapper {
+  background-color: #e9ecef;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.add-lesson-card:hover .add-icon-wrapper {
+  background-color: #e6e9fa;
+  transform: scale(1.1);
+}
+
+.add-icon-wrapper svg {
+  font-size: 2rem; /* Make the plus icon larger */
+}
+
+
+/* --- Skeleton Loader for a better initial loading experience --- */
+.recent-card-skeleton {
+  height: 160px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

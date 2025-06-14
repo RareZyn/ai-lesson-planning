@@ -1,0 +1,69 @@
+/* --- Main Loader Container --- */
+.loaderContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  width: 100%;
+}
+
+/* --- The Loader Itself (Pulsing Dots) --- */
+.loader {
+  display: flex;
+  gap: 0.5rem; /* Space between dots */
+}
+
+.dot {
+  background-color: #3f51b5; /* Your primary color */
+  border-radius: 50%;
+  animation: pulse 1.4s infinite ease-in-out both;
+}
+
+/* --- Sizing --- */
+.small .dot { width: 8px; height: 8px; }
+.medium .dot { width: 12px; height: 12px; }
+.large .dot { width: 16px; height: 16px; }
+
+/* --- Animation --- */
+@keyframes pulse {
+  0%, 80%, 100% {
+    transform: scale(0);
+  } 40% {
+    transform: scale(1.0);
+  }
+}
+
+/* Stagger the animation for each dot */
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* --- Loader Text --- */
+.loaderText {
+  color: #6c757d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* --- Full Page Overlay Style --- */
+.fullPageOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
