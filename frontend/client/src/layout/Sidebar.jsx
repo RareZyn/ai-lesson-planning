@@ -37,7 +37,7 @@ const Sidebar = () => {
     { icon: <HomeIcon />, label: "Home", path: "/app", end: true },
     { icon: <FolderCopyIcon />, label: "My Lessons", path: "/app/lessons" },
     { icon: <LibraryBooksIcon />, label: "Materials", path: "/app/materials" },
-    { icon: <PeopleAltIcon />, label: "Classes", path: "/app/classes" },
+    { icon: <PeopleAltIcon />, label: "Community", path: "/app/community" },
   ];
 
   // Mobile view remains unchanged

@@ -1,0 +1,468 @@
+/* src/components/Modal/UploadLessonModal.css - Updated for sharing lesson plans */
+
+.upload-lesson-modal .ant-modal-content {
+  padding: 0;
+  border-radius: 12px;
+}
+
+.upload-lesson-modal .ant-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 12px 12px 0 0;
+}
+
+.upload-lesson-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.modal-title .anticon {
+  color: #1890ff;
+  font-size: 20px;
+}
+
+.upload-form {
+  margin: 0;
+}
+
+/* Card Styles */
+.selection-card {
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  margin-bottom: 0; /* Remove default margin */
+}
+
+.selection-card:hover {
+  border-color: #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.selection-card .ant-card-head {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  min-height: auto;
+  border-radius: 8px 8px 0 0;
+}
+
+.selection-card .ant-card-body {
+  padding: 20px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Remove unused complex option styles */
+/* Simplified dropdown options */
+.upload-form .ant-select-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.upload-form .ant-select-item {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.upload-form .ant-select-item-option-selected {
+  background-color: #e6f7ff;
+  font-weight: 500;
+}
+
+/* Selected Preview */
+.selected-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+}
+
+.preview-content {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lesson-title {
+  font-weight: 600;
+  color: #262626;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.lesson-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lesson-objective {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #595959;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px dashed #d9d9d9;
+}
+
+/* Image Upload Container - Fix weird lines */
+.image-upload-container {
+  margin: 0;
+  padding: 0;
+}
+
+.image-upload-container .ant-upload-drag {
+  border: 2px dashed #d9d9d9 !important;
+  background: #fafafa !important;
+  border-radius: 8px !important;
+  padding: 24px !important;
+  margin: 0 !important;
+  position: relative;
+}
+
+.image-upload-container .ant-upload-drag:hover {
+  border-color: #40a9ff !important;
+}
+
+.image-upload-container .ant-upload-drag:before,
+.image-upload-container .ant-upload-drag:after {
+  display: none !important;
+}
+
+/* Remove any pseudo elements that might cause lines */
+.image-upload-container .ant-upload-drag-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Fix Ant Design Upload component styling */
+.image-upload-container .ant-upload {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.image-upload-container .ant-upload-drag-icon {
+  margin-bottom: 16px !important;
+}
+
+.image-upload-container .ant-upload-drag-icon .anticon {
+  font-size: 48px !important;
+  color: #fa8c16 !important;
+}
+
+.image-upload-container .ant-upload-text {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #262626 !important;
+  margin-bottom: 8px !important;
+}
+
+.image-upload-container .ant-upload-hint {
+  font-size: 14px !important;
+  color: #8c8c8c !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+/* Image Preview */
+.image-preview-list {
+  margin-top: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.preview-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #262626;
+  background: #f5f5f5;
+  border-radius: 6px 6px 0 0;
+}
+
+.preview-grid {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.image-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+.image-name {
+  font-size: 12px;
+  color: #262626;
+  word-break: break-all;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.image-size {
+  font-size: 11px;
+  color: #8c8c8c;
+  white-space: nowrap;
+}
+
+/* Summary Card */
+.summary-card {
+  border-radius: 8px;
+}
+
+.summary-card .ant-card-head {
+  background: #f6ffed;
+  border-bottom: 1px solid #b7eb8f;
+}
+
+.summary-card .ant-card-body {
+  background: #f6ffed;
+}
+
+.summary-item {
+  margin-bottom: 8px;
+}
+
+.summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.summary-item div {
+  margin-top: 2px;
+  color: #262626;
+  font-size: 14px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-footer .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 16px;
+}
+
+.modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
+}
+
+.modal-footer .ant-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* Form Validation */
+.upload-form .ant-form-item-explain-error {
+  font-size: 12px;
+}
+
+.upload-form .ant-form-item-has-error .ant-input,
+.upload-form .ant-form-item-has-error .ant-select-selector {
+  border-color: #ff4d4f;
+}
+
+.upload-form .ant-form-item-has-error .ant-input:focus,
+.upload-form .ant-form-item-has-error .ant-select-focused .ant-select-selector {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* Loading States */
+.ant-spin-nested-loading {
+  border-radius: 6px;
+}
+
+/* Select Options */
+.upload-form .ant-select-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.upload-form .ant-select-item {
+  padding: 8px 12px;
+}
+
+.upload-form .ant-select-item-option-selected {
+  background-color: #e6f7ff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .upload-lesson-modal {
+    margin: 0;
+    max-width: 100vw;
+  }
+
+  .upload-lesson-modal .ant-modal-content {
+    border-radius: 0;
+  }
+
+  .upload-lesson-modal .ant-modal-body {
+    padding: 16px;
+    max-height: 80vh;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .preview-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .modal-footer {
+    margin-top: 24px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .footer-left,
+  .footer-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modal-footer .ant-btn {
+    flex: 1;
+  }
+
+  .plan-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .plan-tags {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-lesson-modal .ant-modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .upload-lesson-modal .ant-modal-body {
+    padding: 12px;
+  }
+
+  .modal-title {
+    font-size: 15px;
+  }
+
+  .image-dragger .ant-upload-drag-icon .anticon {
+    font-size: 36px;
+  }
+
+  .image-dragger .ant-upload-text {
+    font-size: 14px;
+  }
+
+  .image-dragger .ant-upload-hint {
+    font-size: 12px;
+  }
+
+  .selection-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    margin-top: 16px;
+  }
+
+  .footer-left,
+  .footer-right {
+    flex-direction: column;
+  }
+
+  .modal-footer .ant-btn {
+    width: 100%;
+  }
+}
+
+/* Alert Styles */
+.ant-alert {
+  border-radius: 8px;
+}
+
+.ant-alert-info {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+}
+
+/* Tag Customizations */
+.ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+/* Typography */
+.ant-typography {
+  color: #262626;
+}
+
+.ant-typography.ant-typography-secondary {
+  color: #8c8c8c;
+}
