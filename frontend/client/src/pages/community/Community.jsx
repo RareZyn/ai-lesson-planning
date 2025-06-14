@@ -1,4 +1,4 @@
-// src/pages/community/Community.jsx - Updated with simplified callback
+// src/pages/community/Community.jsx - Updated with bookmark functionality
 import React, { useState, useEffect } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
@@ -9,7 +9,7 @@ import {
 import LessonCard from "../../components/Card/LessonCard";
 import UploadLessonModal from "../../components/Modal/UploadLessonModal";
 import { communityAPI } from "../../services/communityService";
-import { useUser } from "../../context/UserContext"; // Import the user context
+import { useUser } from "../../context/UserContext";
 import "./Community.css";
 
 const { Search } = Input;
@@ -17,9 +17,10 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 
 const Community = () => {
-  const { user, userId, isAuthenticated } = useUser(); // Get user data from context
+  const { user, userId, isAuthenticated } = useUser();
   const [lessons, setLessons] = useState([]);
   const [userLessons, setUserLessons] = useState([]);
+  const [bookmarkedLessons, setBookmarkedLessons] = useState([]);
   const [filteredLessons, setFilteredLessons] = useState([]);
   const [activeTab, setActiveTab] = useState("discover");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -42,23 +43,29 @@ const Community = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [lessons, filters, activeTab]);
+  }, [lessons, userLessons, bookmarkedLessons, filters, activeTab]);
 
   const loadCommunityData = async () => {
     setLoading(true);
     try {
-      // Load community lessons and user's lessons in parallel
-      const [communityResponse, userResponse] = await Promise.all([
-        communityAPI.getCommunityLessons({
-          page: 1,
-          limit: 50,
-          sortBy: filters.sortBy,
-        }),
-        communityAPI.getUserLessonPlans(userId, {
-          page: 1,
-          limit: 50,
-        }),
-      ]);
+      // Load community lessons, user's lessons, and bookmarks in parallel
+      const [communityResponse, userResponse, bookmarksResponse] =
+        await Promise.all([
+          communityAPI.getCommunityLessons({
+            page: 1,
+            limit: 50,
+            sortBy: filters.sortBy,
+            userId: userId, // Include userId to get bookmark status
+          }),
+          communityAPI.getUserLessonPlans(userId, {
+            page: 1,
+            limit: 50,
+          }),
+          communityAPI.getUserBookmarks(userId, {
+            page: 1,
+            limit: 50,
+          }),
+        ]);
 
       if (communityResponse.success) {
         setLessons(communityResponse.data || []);
@@ -66,6 +73,10 @@ const Community = () => {
 
       if (userResponse.success) {
         setUserLessons(userResponse.data || []);
+      }
+
+      if (bookmarksResponse.success) {
+        setBookmarkedLessons(bookmarksResponse.data || []);
       }
     } catch (error) {
       console.error("Error loading community data:", error);
@@ -108,11 +119,10 @@ const Community = () => {
         dataToFilter = lessons;
         break;
       case "myCollection":
-        // Filter user's bookmarked lessons (you'll need to track this in your backend)
-        dataToFilter = lessons.filter((lesson) => lesson.isBookmarked);
+        dataToFilter = bookmarkedLessons;
         break;
       case "myShared":
-        // Filter lessons created by current user
+        // Filter lessons created by current user that are shared
         if (!userId) {
           dataToFilter = [];
         } else {
@@ -195,8 +205,8 @@ const Community = () => {
 
       if (response.success) {
         // Update local state to reflect the like change
-        setLessons((prev) =>
-          prev.map((lesson) =>
+        const updateLessonInArray = (lessonArray) =>
+          lessonArray.map((lesson) =>
             lesson._id === lessonId
               ? {
                   ...lesson,
@@ -207,13 +217,62 @@ const Community = () => {
                   },
                 }
               : lesson
-          )
-        );
+          );
+
+        setLessons(updateLessonInArray);
+        setBookmarkedLessons(updateLessonInArray);
         message.success(response.message);
       }
     } catch (error) {
       console.error("Error toggling like:", error);
       message.error(error.response?.data?.message || "Failed to update like");
+    }
+  };
+
+  const handleBookmark = async (lessonId) => {
+    if (!isAuthenticated) {
+      message.error("Please log in to bookmark lesson plans");
+      return;
+    }
+
+    try {
+      const response = await communityAPI.toggleBookmark(lessonId, userId);
+
+      if (response.success) {
+        // Update local state to reflect the bookmark change
+        const updateBookmarkStatus = (lessonArray) =>
+          lessonArray.map((lesson) =>
+            lesson._id === lessonId
+              ? {
+                  ...lesson,
+                  isBookmarked: response.data.isBookmarked,
+                }
+              : lesson
+          );
+
+        setLessons(updateBookmarkStatus);
+
+        // If bookmarking, we need to reload bookmarks to show the new addition
+        // If unbookmarking, we might need to remove it from the current view
+        if (response.data.isBookmarked) {
+          // Lesson was bookmarked - reload bookmarks if we're on that tab
+          if (activeTab === "myCollection") {
+            loadCommunityData();
+          }
+        } else {
+          // Lesson was unbookmarked - remove from bookmarks list
+          setBookmarkedLessons((prev) =>
+            prev.filter((lesson) => lesson._id !== lessonId)
+          );
+        }
+
+        message.success(response.message);
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      message.error(
+        error.response?.data?.message || "Failed to update bookmark"
+      );
     }
   };
 
@@ -223,8 +282,8 @@ const Community = () => {
 
       if (response.success) {
         // Update local state to reflect the download count
-        setLessons((prev) =>
-          prev.map((lesson) =>
+        const updateDownloadCount = (lessonArray) =>
+          lessonArray.map((lesson) =>
             lesson._id === lessonId
               ? {
                   ...lesson,
@@ -234,8 +293,10 @@ const Community = () => {
                   },
                 }
               : lesson
-          )
-        );
+          );
+
+        setLessons(updateDownloadCount);
+        setBookmarkedLessons(updateDownloadCount);
         message.success("Lesson plan downloaded successfully!");
 
         // You can also trigger an actual file download here if needed
@@ -265,20 +326,33 @@ const Community = () => {
           <div className="empty-content">
             <h3>No lessons found</h3>
             <p>
-              {activeTab === "myShared"
+              {activeTab === "myCollection"
+                ? isAuthenticated
+                  ? "You haven't bookmarked any lessons yet. Browse the community and bookmark lessons you like!"
+                  : "Please log in to view your bookmarked lessons."
+                : activeTab === "myShared"
                 ? isAuthenticated
                   ? "You haven't shared any lessons yet. Share your first lesson plan!"
                   : "Please log in to view your shared lessons."
                 : "Try adjusting your filters or search terms"}
             </p>
-            {activeTab === "myShared" && isAuthenticated && (
+            {((activeTab === "myShared" && isAuthenticated) ||
+              (activeTab === "myCollection" && isAuthenticated)) && (
               <Button
                 type="primary"
                 icon={<UploadOutlined />}
-                onClick={() => setIsUploadModalOpen(true)}
+                onClick={() => {
+                  if (activeTab === "myShared") {
+                    setIsUploadModalOpen(true);
+                  } else {
+                    setActiveTab("discover");
+                  }
+                }}
                 style={{ marginTop: "16px" }}
               >
-                Share Your First Lesson
+                {activeTab === "myShared"
+                  ? "Share Your First Lesson"
+                  : "Browse Community Lessons"}
               </Button>
             )}
           </div>
@@ -294,6 +368,7 @@ const Community = () => {
               lesson={lesson}
               onLike={handleLike}
               onDownload={handleDownload}
+              onBookmark={handleBookmark}
               currentUserId={userId}
             />
           </Col>
@@ -405,7 +480,9 @@ const Community = () => {
           {renderLessons()}
         </TabPane>
         <TabPane
-          tab="My Collection"
+          tab={`My Collection ${
+            bookmarkedLessons.length > 0 ? `(${bookmarkedLessons.length})` : ""
+          }`}
           key="myCollection"
           disabled={!isAuthenticated}
         >

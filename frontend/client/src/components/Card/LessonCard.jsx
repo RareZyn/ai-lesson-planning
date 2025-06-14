@@ -1,5 +1,5 @@
-// src/components/Card/LessonCard.jsx - Updated with backend integration
-import React, { useState } from "react";
+// src/components/Card/LessonCard.jsx - Updated with working bookmark functionality
+import React, { useState, useEffect } from "react";
 import { Card, Tag, Button, Avatar, Tooltip, Modal } from "antd";
 import {
   HeartOutlined,
@@ -18,7 +18,13 @@ import "./LessonCard.css";
 
 const { Meta } = Card;
 
-const LessonCard = ({ lesson, onLike, onDownload, currentUserId }) => {
+const LessonCard = ({
+  lesson,
+  onLike,
+  onDownload,
+  onBookmark,
+  currentUserId,
+}) => {
   const [isLiked, setIsLiked] = useState(
     lesson.communityData?.hasUserLiked || false
   );
@@ -27,21 +33,31 @@ const LessonCard = ({ lesson, onLike, onDownload, currentUserId }) => {
   );
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // Update local state when lesson prop changes
+  useEffect(() => {
+    setIsLiked(lesson.communityData?.hasUserLiked || false);
+    setIsBookmarked(lesson.isBookmarked || false);
+  }, [lesson.communityData?.hasUserLiked, lesson.isBookmarked]);
+
   const handleLike = (e) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
-    onLike(lesson._id);
+    if (onLike) {
+      onLike(lesson._id);
+    }
   };
 
   const handleBookmark = (e) => {
     e.stopPropagation();
-    setIsBookmarked(!isBookmarked);
-    // TODO: Implement bookmark functionality with backend
+    if (onBookmark) {
+      onBookmark(lesson._id);
+    }
   };
 
   const handleDownload = (e) => {
     e.stopPropagation();
-    onDownload(lesson._id);
+    if (onDownload) {
+      onDownload(lesson._id);
+    }
   };
 
   const handleCardClick = () => {
@@ -193,6 +209,7 @@ const LessonCard = ({ lesson, onLike, onDownload, currentUserId }) => {
               }
               onClick={handleBookmark}
               className="action-btn"
+              disabled={isOwnLesson}
             />
           </Tooltip>,
         ]}
@@ -323,6 +340,7 @@ const LessonCard = ({ lesson, onLike, onDownload, currentUserId }) => {
             key="bookmark"
             icon={isBookmarked ? <StarFilled /> : <StarOutlined />}
             onClick={handleBookmark}
+            disabled={isOwnLesson}
           >
             {isBookmarked ? "Saved" : "Save"}
           </Button>,

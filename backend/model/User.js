@@ -1,4 +1,4 @@
-// models/User.js
+// models/User.js - Updated with bookmarks field
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // NEW: Bookmarks field for storing user's bookmarked lesson plans
+    bookmarks: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LessonPlan",
+      },
+    ],
   },
   {
     timestamps: true,
@@ -87,6 +94,27 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     throw new Error("User does not have a password set");
   }
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Instance method to add bookmark
+userSchema.methods.addBookmark = function (lessonPlanId) {
+  if (!this.bookmarks.includes(lessonPlanId)) {
+    this.bookmarks.push(lessonPlanId);
+  }
+  return this.save();
+};
+
+// Instance method to remove bookmark
+userSchema.methods.removeBookmark = function (lessonPlanId) {
+  this.bookmarks = this.bookmarks.filter(
+    (id) => id.toString() !== lessonPlanId.toString()
+  );
+  return this.save();
+};
+
+// Instance method to check if lesson is bookmarked
+userSchema.methods.hasBookmarked = function (lessonPlanId) {
+  return this.bookmarks.some((id) => id.toString() === lessonPlanId.toString());
 };
 
 // Instance method to transform user object (remove sensitive data)

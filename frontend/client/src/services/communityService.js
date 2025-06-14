@@ -1,9 +1,7 @@
-// src/services/communityService.js - Debug version with extensive logging
+// src/services/communityService.js - Updated with bookmark functionality
 import axios from "axios";
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL ;
-
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // Create axios instance with interceptors
 const apiClient = axios.create({
@@ -70,7 +68,6 @@ export const communityAPI = {
   // Get user's lesson plans (requires userId as query param)
   getUserLessonPlans: async (userId, params = {}) => {
     try {
-
       if (!userId) {
         throw new Error("userId is required for getUserLessonPlans");
       }
@@ -85,7 +82,46 @@ export const communityAPI = {
     }
   },
 
-  // Get community shared lessons
+  // NEW: Get user's bookmarked lesson plans
+  getUserBookmarks: async (userId, params = {}) => {
+    try {
+      if (!userId) {
+        throw new Error("userId is required for getUserBookmarks");
+      }
+
+      const response = await apiClient.get("/community/bookmarks", {
+        params: { userId, ...params },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user bookmarks:", error);
+      throw error;
+    }
+  },
+
+  // NEW: Toggle bookmark status for a lesson plan
+  toggleBookmark: async (lessonPlanId, userId) => {
+    try {
+      if (!lessonPlanId) {
+        throw new Error("lessonPlanId is required for toggleBookmark");
+      }
+
+      if (!userId) {
+        throw new Error("userId is required for toggleBookmark");
+      }
+
+      const response = await apiClient.put(
+        `/community/bookmark/${lessonPlanId}`,
+        { userId }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      throw error;
+    }
+  },
+
+  // Get community shared lessons - Updated to include bookmark status
   getCommunityLessons: async (params = {}) => {
     try {
       const response = await apiClient.get("/community/shared-lessons", {
@@ -98,10 +134,9 @@ export const communityAPI = {
     }
   },
 
-  // Share a lesson plan to community - FIXED to match backend
+  // Share a lesson plan to community
   shareLessonPlan: async (lessonPlanId, shareData) => {
     try {
-
       if (!lessonPlanId) {
         throw new Error("lessonPlanId is required for shareLessonPlan");
       }

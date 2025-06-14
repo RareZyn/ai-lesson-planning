@@ -1,4 +1,4 @@
-// backend/controller/communityController.js - Quick fix for ID handling
+// backend/controller/communityController.js - Updated with bookmark functionality
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
 const mongoose = require("mongoose");
@@ -183,6 +183,195 @@ exports.getUserLessonPlans = async (req, res, next) => {
 };
 
 /**
+ * @desc    Get user's bookmarked lesson plans
+ * @route   GET /api/community/bookmarks?userId=USER_ID
+ * @access  Public
+ */
+exports.getUserBookmarks = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, grade, subject, userId } = req.query;
+
+    // Check if userId is provided as query parameter
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required as query parameter",
+      });
+    }
+
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
+    // Find user to get their bookmarks
+    const user = await User.findById(resolvedUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Get bookmarked lesson plan IDs
+    const bookmarkedIds = user.bookmarks || [];
+
+    if (bookmarkedIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        total: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        data: [],
+        message: "No bookmarked lesson plans found",
+      });
+    }
+
+    // Build query for bookmarked lessons
+    const query = {
+      _id: { $in: bookmarkedIds },
+      isSharedToCommunity: true, // Only show shared lessons in bookmarks
+    };
+
+    if (grade) query["parameters.grade"] = grade;
+
+    const lessonPlans = await LessonPlan.find(query)
+      .populate({
+        path: "createdBy",
+        select: "name schoolName",
+      })
+      .populate({
+        path: "classId",
+        select: "className subject grade",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await LessonPlan.countDocuments(query);
+
+    // Filter by subject if provided (after population)
+    let filteredLessonPlans = lessonPlans;
+    if (subject) {
+      filteredLessonPlans = lessonPlans.filter(
+        (plan) =>
+          plan.classId &&
+          plan.classId.subject &&
+          plan.classId.subject.toLowerCase() === subject.toLowerCase()
+      );
+    }
+
+    // Add isBookmarked flag to each lesson
+    const lessonPlansWithBookmarkFlag = filteredLessonPlans.map((plan) => ({
+      ...plan.toObject(),
+      isBookmarked: true,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: lessonPlansWithBookmarkFlag.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: lessonPlansWithBookmarkFlag,
+    });
+  } catch (error) {
+    console.error("Error fetching user bookmarks:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching bookmarks",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Toggle bookmark status for a lesson plan
+ * @route   PUT /api/community/bookmark/:id
+ * @access  Public
+ */
+exports.toggleBookmark = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    // Check if userId is provided in request body
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required in request body",
+      });
+    }
+
+    const lessonPlan = await LessonPlan.findById(id);
+
+    if (!lessonPlan) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson plan not found",
+      });
+    }
+
+    if (!lessonPlan.isSharedToCommunity) {
+      return res.status(400).json({
+        success: false,
+        message: "Lesson plan is not shared to community",
+      });
+    }
+
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
+    // Find the user
+    const user = await User.findById(resolvedUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Initialize bookmarks array if it doesn't exist
+    if (!user.bookmarks) {
+      user.bookmarks = [];
+    }
+
+    // Check if lesson is already bookmarked
+    const bookmarkIndex = user.bookmarks.findIndex(
+      (bookmarkId) => bookmarkId.toString() === lessonPlan._id.toString()
+    );
+
+    let isBookmarked;
+    if (bookmarkIndex > -1) {
+      // Remove bookmark
+      user.bookmarks.splice(bookmarkIndex, 1);
+      isBookmarked = false;
+    } else {
+      // Add bookmark
+      user.bookmarks.push(lessonPlan._id);
+      isBookmarked = true;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: isBookmarked ? "Lesson plan bookmarked" : "Bookmark removed",
+      data: {
+        isBookmarked,
+        bookmarkCount: user.bookmarks.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error toggling bookmark:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while toggling bookmark",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
  * @desc    Add/Share lesson plan to community
  * @route   PUT /api/community/share/:id?userId=USER_ID
  * @access  Public
@@ -341,6 +530,7 @@ exports.getCommunityLessonPlans = async (req, res, next) => {
       tags,
       search,
       sortBy = "recent", // recent, popular, downloads
+      userId, // Optional: to check bookmark status
     } = req.query;
 
     // Build query object
@@ -398,6 +588,25 @@ exports.getCommunityLessonPlans = async (req, res, next) => {
           plan.classId.subject &&
           plan.classId.subject.toLowerCase() === subject.toLowerCase()
       );
+    }
+
+    // Add bookmark status if userId is provided
+    if (userId) {
+      try {
+        const resolvedUserId = await resolveUserId(userId);
+        const user = await User.findById(resolvedUserId).select("bookmarks");
+        const userBookmarks = user?.bookmarks || [];
+
+        filteredLessonPlans = filteredLessonPlans.map((plan) => ({
+          ...plan.toObject(),
+          isBookmarked: userBookmarks.some(
+            (bookmarkId) => bookmarkId.toString() === plan._id.toString()
+          ),
+        }));
+      } catch (error) {
+        console.error("Error checking bookmark status:", error);
+        // Continue without bookmark status if there's an error
+      }
     }
 
     res.status(200).json({
