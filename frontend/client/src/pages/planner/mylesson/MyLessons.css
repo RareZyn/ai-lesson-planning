@@ -1,112 +1,76 @@
-/* Main Container */
+/* Main Container and Page Layout */
 .my-lessons-container {
   width: 100%;
+  padding: 1.5rem 2rem;
+  background-color: #f8f9fa; /* A light background for the page */
+  min-height: calc(100vh - 60px); /* Adjust based on your header height */
 }
 
 .page-title {
   text-align: left;
   margin-bottom: 1.5rem;
   font-size: 1.8rem;
-  color: #333;
+  color: #343a40;
 }
 
-/* 
-  =======================================
-  === CORRECTED TAB STYLES START HERE ===
-  =======================================
-*/
-
-/* The container for the tab buttons */
+/* Tabs */
 .tabs-container {
   display: flex;
-  border-bottom: 2px solid #e0e0e0;
-  margin-bottom: 1.5rem; /* Space between tabs and content */
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 2rem;
 }
 
-/* Styling for each individual tab button */
 .tab-button {
   padding: 12px 24px;
   font-size: 1rem;
   font-weight: 500;
-  color: #666;
+  color: #6c757d;
   background: none;
   border: none;
   cursor: pointer;
-  position: relative; /* Needed for the active indicator */
+  position: relative;
   transition: color 0.3s ease;
-  border-bottom: 2px solid transparent; /* Placeholder for active state */
-  margin-bottom: -2px; /* Aligns with the container's bottom border */
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
 }
 
 .tab-button:hover {
-  color: #333;
-  background-color: #f5f5f5;
+  color: #343a40;
 }
 
-/* Styling for the currently active tab button */
 .tab-button.active {
-  color: #3f51b5; /* Your primary color */
+  color: #495057;
   font-weight: 600;
-  border-bottom-color: #3f51b5;
+  border-bottom-color: #495057;
 }
 
-/* 
-  =====================================
-  === CORRECTED TAB STYLES END HERE ===
-  =====================================
-*/
-
-
-/* Tab Content */
-.tab-content {
-  /* Padding can be removed if the container already has it */
+/* Status Messages (Loading, Error, Empty) */
+.status-message {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6c757d;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+.status-message.error {
+  color: #d9534f;
+  background-color: #fdf2f2;
+  border-color: #f5c6cb;
+}
+.status-message.empty h3 {
+  margin-top: 0;
+  color: #495057;
 }
 
-/* All Lessons View */
+/* Grid Layout for the Cards */
 .all-lessons-view {
   width: 100%;
 }
 
 .lessons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
-}
-
-.lesson-card {
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-.lesson-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.lesson-title {
-  color: #1976d2;
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1.2rem;
-}
-
-.lesson-meta {
-  color: #666;
-  margin-bottom: 12px;
-  font-size: 0.875rem;
-}
-
-.lesson-description {
-  color: #444;
-  line-height: 1.5;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .lessons-grid {
-    grid-template-columns: 1fr;
-  }
+  /* Adjust minmax for desired card size */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
 }

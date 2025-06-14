@@ -1,5 +1,5 @@
 .recent-opened-container {
-  width: 100%; /* Remove max-width and centering */
+  width: 100%;
   padding: 1rem;
 }
 
@@ -9,14 +9,13 @@
   gap: 0.8rem;
   margin-bottom: 1.5rem;
   width: 100%;
+  justify-content: space-between; /* Ensures title and button are on opposite ends */
 }
 
 .recent-opened-title {
   color: #333;
   font-size: 1.6rem;
   font-weight: 300;
-  margin-bottom: 1.5rem;
-  padding: 0;
   margin: 0;
   text-align: left;
 }
@@ -56,6 +55,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
+  /* --- THIS IS THE FIX --- */
+  justify-content: start; /* Prevents a single item from stretching */
 }
 
 .recent-card {
@@ -122,6 +123,9 @@
   color: #333;
   line-height: 1.3;
 }
+.card-title:empty::before {
+  content: '-';
+}
 
 .card-grade {
   margin: 0 0 0.3rem 0;
@@ -135,44 +139,4 @@
   font-size: 0.7rem;
   color: #999;
   margin-top: auto;
-}
-
-/* Remove subject-specific color overrides since we're using images */
-
-@media (max-width: 768px) {
-  .recent-opened-container {
-    padding: 0.5rem;
-  }
-
-  .recent-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .recent-opened-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-
-  .recent-card {
-    height: 140px;
-  }
-
-  .card-header {
-    height: 70px;
-  }
-
-  .card-content {
-    padding: 0.6rem;
-  }
-
-  .card-title {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .recent-opened-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }

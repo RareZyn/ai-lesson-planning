@@ -1,7 +1,7 @@
 // src/pages/planner/MultiStepPlanner/MultiStepPlanner.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './MultiStepPlanner.module.css';
 
 import ProgressBar from './ProgressBar';
@@ -9,12 +9,16 @@ import Step1_ChooseClass from './Step1_ChooseClass';
 import Step2_LessonDetails from './Step2_LessonDetails';
 import Step3_AdditionalInfo from './Step3_AdditionalInfo';
 import Step4_ConfirmPlan from './Step4_ConfirmPlan';
-import { generateLesson } from '../../../services/lessonService';
+import { 
+  generateLesson,
+  saveLessonPlan, 
+} from '../../../services/lessonService';
 
 const MultiStepPlanner = () => {
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate(); // Initialize navigate hook
 
   // --- FIX: Removed redundant 'lessonNumber' field ---
   const [formData, setFormData] = useState({
@@ -22,6 +26,7 @@ const MultiStepPlanner = () => {
     Sow: {}, // The entire selected lesson object will be stored here
     proficiencyLevel: '',
     hotsFocus: '',
+    iThink: '',
     additionalNotes: '',
     grade: "",
   });
@@ -51,22 +56,50 @@ const MultiStepPlanner = () => {
 
   const handleGenerate = async () => {
     setIsLoading(true);
-    // const planObject = await generateAiLessonPlan(formData);
-    const planObject = await generateLesson(formData);
-    setGeneratedPlan(planObject);
-    setIsLoading(false);
-    handleNext();
+    setGeneratedPlan(null); // Clear previous plans
+
+    try {
+      const planObject = await generateLesson(formData);
+      setGeneratedPlan(planObject);
+      handleNext(); // Only go to the next step on success
+    } catch (error) {
+      // Catch the error from the service and show it to the user
+      alert(`Generation Failed: ${error.message}`);
+    } finally {
+      // This will run whether the try or catch block executes
+      setIsLoading(false);
+    }
   };
 
-  const handleSave = () => {
-    const finalLessonPlan = {
-      parameter: { ...formData },
-      plan: generatedPlan,
-      savedAt: new Date().toISOString(),
+  const handleSave = async () => {
+        // Add a saving state for better UX
+        console.log(formData)
+        setIsLoading(true); 
+        const finalLessonPlan = {
+            parameters: { ...formData },
+            plan: generatedPlan,
+            date: plannerDate.toISOString(), // Include the date
+        };
+        
+        try {
+            // Call the service to save the plan
+            const response = await saveLessonPlan(finalLessonPlan);
+
+            if (response.success) {
+                // Extract the new ID from the response data
+                const newPlanId = response.data._id;
+                alert('Lesson Plan Saved Successfully!');
+                // Redirect to the new display page
+                navigate(`/app/lesson/${newPlanId}`);
+            }
+        } catch (error) {
+            console.error('Failed to save lesson plan:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
-    console.log('SAVING FINAL LESSON PLAN:', finalLessonPlan);
-    alert('Lesson Plan Saved! Check the console for the final data object.');
-  };
+
 
   return (
     <div className={styles.plannerContainer}>

@@ -9,11 +9,11 @@ import UnauthorizedPage from "./pages/general/UnauthorizedPage";
 import FileDownloadPage from "./pages/downloads/FileDownloadPage";
 import ProtectedRoute from "./components/general/ProtectedRoute";
 import MyLessons from "./pages/planner/mylesson/MyLessons";
-import DisplayLesson from "./pages/planner/displaylesson/DisplayLesson";
 import MaterialManagement from "./pages/material/MaterialManagement";
 import ClassManagement from "./pages/class/ClassManagement";
 import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner";
 import Community from "./pages/community/Community";
+import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 const router = createBrowserRouter([
   {
     path: "/app",
@@ -28,11 +28,11 @@ const router = createBrowserRouter([
       { path: "assessment", element: <AssessmentForm /> },
       { path: "downloads", element: <FileDownloadPage /> },
       { path: "lessons", element: <MyLessons /> },
-      { path: "display", element: <DisplayLesson /> },
       { path: "materials", element: <MaterialManagement /> },
       { path: "classes", element: <ClassManagement /> },
-      { path: "test", element: <MultiStepPlanner /> },
-      {path:"community",element:<Community/>},
+      { path: "planner", element: <MultiStepPlanner /> },
+      { path: "lesson/:id", element: <DisplayLessonPage />},
+      {path:"community",element:<Community/>}
     ],
   },
   { path: "/", element: <LoginPage /> },
