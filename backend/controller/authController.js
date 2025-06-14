@@ -333,3 +333,76 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    Find or create MongoDB user from Firebase user data
+ * @route   POST /api/auth/firebase-user
+ * @access  Public
+ */
+exports.findOrCreateFirebaseUser = async (req, res) => {
+  try {
+    const { firebaseUid, email, name, displayName, photoURL } = req.body;
+
+    if (!firebaseUid || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Firebase UID and email are required",
+      });
+    }
+
+    // Try to find existing user by Firebase UID
+    let user = await User.findOne({ firebaseUid });
+
+    if (!user) {
+      // Try to find by email (in case user exists but doesn't have firebaseUid set)
+      user = await User.findOne({ email: email.toLowerCase() });
+
+      if (user) {
+        // Update existing user with Firebase UID
+        user.firebaseUid = firebaseUid;
+        user.lastLogin = new Date();
+        if (photoURL) user.avatar = photoURL;
+        if (displayName && !user.name) user.name = displayName;
+        await user.save();
+      } else {
+        // Create new user
+        user = await User.create({
+          firebaseUid,
+          email: email.toLowerCase(),
+          name: name || displayName || email,
+          roles: ["teacher"],
+          isEmailVerified: true, // Assume Firebase users are verified
+          lastLogin: new Date(),
+          avatar: photoURL || "",
+        });
+      }
+    } else {
+      // Update last login
+      user.lastLogin = new Date();
+      if (photoURL) user.avatar = photoURL;
+      await user.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        roles: user.roles,
+        firebaseUid: user.firebaseUid,
+        schoolName: user.schoolName,
+        lastLogin: user.lastLogin,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error("Error in findOrCreateFirebaseUser:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while processing Firebase user",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};

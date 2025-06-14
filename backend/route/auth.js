@@ -1,4 +1,4 @@
-// routes/auth.js
+// routes/auth.js - Fixed route order
 const express = require("express");
 const { body } = require("express-validator");
 const {
@@ -9,6 +9,7 @@ const {
   updateProfile,
   logout,
   changePassword,
+  findOrCreateFirebaseUser,
 } = require("../controller/authController");
 const { protect } = require("../middleware/auth");
 
@@ -71,12 +72,13 @@ const changePasswordValidation = [
     ),
 ];
 
-// Public routes
+// Public routes (NO authentication required)
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
 router.post("/google", googleAuth);
+router.post("/firebase-user", findOrCreateFirebaseUser); 
 
-// Protected routes
+// Protected routes (authentication required)
 router.use(protect); // Apply protection middleware to all routes below
 
 router.get("/me", getMe);

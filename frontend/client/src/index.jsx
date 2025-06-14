@@ -14,9 +14,7 @@ import "antd/dist/reset.css";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    {/* AuthProvider provides Firebase authentication */}
     <AuthProvider>
-      {/* UserProvider provides backend user data and depends on AuthProvider */}
       <UserProvider>
         <RouterProvider router={router} />
       </UserProvider>

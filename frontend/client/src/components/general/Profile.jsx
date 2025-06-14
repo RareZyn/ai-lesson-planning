@@ -1,4 +1,6 @@
+// src/components/general/Profile.jsx - Fixed with proper context integration
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
@@ -12,30 +14,28 @@ import {
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import LogoutIcon from "@mui/icons-material/Logout";
 import "./Profile.css";
-import { authAPI } from "../../services/api"; // Adjust the import path as needed
+import { useUser } from "../../context/UserContext"; // Use your context
+import { useAuth } from "../../context/AuthContext"; // Use your context
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  // Use your context providers instead of direct Firebase auth
+  const { user: contextUser, logout: contextLogout } = useUser();
+  const { currentUser: firebaseUser } = useAuth();
+
+  // Use whichever user data is available
+  const user = contextUser || firebaseUser;
+
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const notifOpen = Boolean(notifAnchorEl);
   const profileOpen = Boolean(profileAnchorEl);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser({
-          displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL,
-          email: currentUser.email,
-        });
-      } else {
-        setUser(null);
-      }
-    });
-
     // Mock notifications data
     setNotifications([
       { id: 1, text: "New lesson available", read: false, time: "2 hours ago" },
@@ -46,8 +46,6 @@ const Profile = () => {
         time: "1 day ago",
       },
     ]);
-
-    return () => unsubscribe();
   }, []);
 
   const handleNotifOpen = (event) => {
@@ -67,18 +65,41 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent multiple logout attempts
+
     try {
-      await signOut(auth);
-      await authAPI.logout(); // Ensure backend logout if needed
-      handleProfileClose();
+      setIsLoggingOut(true);
+      handleProfileClose(); // Close the menu immediately
+
+      // Call both Firebase and context logout
+      await Promise.all([
+        signOut(auth), // Firebase logout
+        contextLogout(), // Context logout (which also calls backend)
+      ]);
+
+      // Clear any remaining local storage
+      localStorage.removeItem("authToken");
+
+      // Navigate to login page immediately
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
+      // Even if there's an error, try to navigate to login
+      navigate("/", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  if (!user) return null;
+  // Don't render if no user or if logging out
+  if (!user || isLoggingOut) return null;
+
+  // Get user display data with fallbacks
+  const displayName = user.name || user.displayName || user.email || "User";
+  const photoURL = user.avatar || user.photoURL;
+  const email = user.email;
 
   return (
     <div className="profile-container">
@@ -87,6 +108,7 @@ const Profile = () => {
         aria-label="notifications"
         onClick={handleNotifOpen}
         className="notification-icon"
+        disabled={isLoggingOut}
       >
         <Badge badgeContent={unreadCount} color="error">
           <NotificationsIcon />
@@ -135,11 +157,10 @@ const Profile = () => {
 
       {/* Profile Dropdown */}
       <div className="profile-avatar" onClick={handleProfileOpen}>
-        <Avatar
-          src={user.photoURL}
-          alt={user.displayName}
-          sx={{ width: 36, height: 36 }}
-        />
+        <Avatar src={photoURL} alt={displayName} sx={{ width: 36, height: 36 }}>
+          {/* Fallback to first letter if no photo */}
+          {!photoURL && displayName.charAt(0).toUpperCase()}
+        </Avatar>
       </div>
 
       <Menu
@@ -150,18 +171,24 @@ const Profile = () => {
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         <div className="profile-menu-header">
-          <Avatar src={user.photoURL} sx={{ width: 40, height: 40 }} />
+          <Avatar src={photoURL} sx={{ width: 40, height: 40 }}>
+            {!photoURL && displayName.charAt(0).toUpperCase()}
+          </Avatar>
           <div className="profile-menu-user-info">
-            <div className="profile-menu-name">{user.displayName}</div>
-            <div className="profile-menu-email">{user.email}</div>
+            <div className="profile-menu-name">{displayName}</div>
+            <div className="profile-menu-email">{email}</div>
           </div>
         </div>
 
         <Divider />
 
-        <MenuItem onClick={handleLogout} className="logout-item">
+        <MenuItem
+          onClick={handleLogout}
+          className="logout-item"
+          disabled={isLoggingOut}
+        >
           <LogoutIcon fontSize="small" className="menu-icon" />
-          <span>Sign Out</span>
+          <span>{isLoggingOut ? "Signing out..." : "Sign Out"}</span>
         </MenuItem>
       </Menu>
     </div>

@@ -1,8 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // Create axios instance
 const api = axios.create({
@@ -57,6 +56,10 @@ export const authAPI = {
     if (response.data.token) {
       localStorage.setItem("authToken", response.data.token);
     }
+    return response.data;
+  },
+  findOrCreateFirebaseUser: async (firebaseUserData) => {
+    const response = await api.post("/auth/firebase-user", firebaseUserData);
     return response.data;
   },
 

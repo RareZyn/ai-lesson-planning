@@ -1,4 +1,4 @@
-// src/context/AuthContext.js - Updated to work with UserContext
+// src/context/AuthContext.js - Fixed with better logout handling
 import { createContext, useContext, useState, useEffect } from "react";
 import { auth, onAuthStateChanged } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -31,8 +31,8 @@ export function AuthProvider({ children }) {
 
       // If no valid token, check Firebase auth
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          try {
+        try {
+          if (user) {
             const userRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userRef);
 
@@ -40,12 +40,16 @@ export function AuthProvider({ children }) {
               setCurrentUser({
                 uid: user.uid,
                 email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
                 ...userDoc.data(),
               });
             } else {
               // Create new user document if it doesn't exist
               await setDoc(userRef, {
                 email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
                 createdAt: serverTimestamp(),
                 roles: ["teacher"], // Default role
                 lastLogin: serverTimestamp(),
@@ -54,21 +58,31 @@ export function AuthProvider({ children }) {
               setCurrentUser({
                 uid: user.uid,
                 email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
                 roles: ["teacher"],
               });
             }
-          } catch (error) {
-            console.error("Error handling user document:", error);
-            // Fallback to basic user info
+          } else {
+            // User is signed out
+            setCurrentUser(null);
+          }
+        } catch (error) {
+          console.error("Error handling user document:", error);
+          // Fallback to basic user info if Firestore fails
+          if (user) {
             setCurrentUser({
               uid: user.uid,
               email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
             });
+          } else {
+            setCurrentUser(null);
           }
-        } else {
-          setCurrentUser(null);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       });
 
       return unsubscribe;

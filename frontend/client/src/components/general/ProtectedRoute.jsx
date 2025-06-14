@@ -1,4 +1,4 @@
-// src/components/general/ProtectedRoute.jsx - Updated to work with both contexts
+// src/components/general/ProtectedRoute.jsx - Fixed with better logout handling
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -20,19 +20,31 @@ const ProtectedRoute = ({ children, roles }) => {
 
   const location = useLocation();
   const [showContent, setShowContent] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(3); // Reduced countdown for better UX
 
   useEffect(() => {
     // Only proceed when auth check is complete
     if (!loading) {
       if (!user) {
         const timer = setInterval(() => {
-          setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
         }, 1000);
         return () => clearInterval(timer);
       } else if (roles && !roles.some((role) => user.roles?.includes(role))) {
         const timer = setInterval(() => {
-          setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
         }, 1000);
         return () => clearInterval(timer);
       } else {
@@ -42,37 +54,11 @@ const ProtectedRoute = ({ children, roles }) => {
     }
   }, [loading, user, roles]);
 
-  useEffect(() => {
-    if (
-      countdown === 0 &&
-      (!user || (roles && !roles.some((role) => user.roles?.includes(role))))
-    ) {
-      setShowContent(false);
+  // Immediate redirect when not authenticated (after loading is complete)
+  if (!loading && !user) {
+    if (countdown <= 0) {
+      return <Navigate to="/" state={{ from: location }} replace />;
     }
-  }, [countdown, user, roles]);
-
-  if (loading) {
-    return (
-      <div className="auth-loading">
-        <div className="spinner"></div>
-        <p>Verifying your session...</p>
-      </div>
-    );
-  }
-
-  if (!user && countdown === 0) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  if (
-    roles &&
-    !roles.some((role) => user.roles?.includes(role)) &&
-    countdown === 0
-  ) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  if (!user) {
     return (
       <div className="auth-redirect">
         <div className="spinner"></div>
@@ -81,12 +67,31 @@ const ProtectedRoute = ({ children, roles }) => {
     );
   }
 
-  if (roles && !roles.some((role) => user.roles?.includes(role))) {
+  // Role-based access control
+  if (
+    !loading &&
+    user &&
+    roles &&
+    !roles.some((role) => user.roles?.includes(role))
+  ) {
+    if (countdown <= 0) {
+      return <Navigate to="/unauthorized" replace />;
+    }
     return (
       <div className="auth-unauthorized">
         <h2>Access Denied</h2>
         <p>You don't have permission to view this page.</p>
         <p>Redirecting in {countdown} seconds...</p>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="auth-loading">
+        <div className="spinner"></div>
+        <p>Verifying your session...</p>
       </div>
     );
   }

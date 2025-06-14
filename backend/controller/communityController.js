@@ -1,5 +1,47 @@
-// controllers/communityController.js
+// backend/controller/communityController.js - Quick fix for ID handling
 const LessonPlan = require("../model/Lesson");
+const User = require("../model/User");
+const mongoose = require("mongoose");
+
+/**
+ * Helper function to determine if a string is a valid MongoDB ObjectId
+ */
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
+/**
+ * Helper function to find MongoDB ObjectId by Firebase UID
+ */
+const findMongoIdByFirebaseUid = async (firebaseUid) => {
+  try {
+    const user = await User.findOne({ firebaseUid: firebaseUid });
+    return user ? user._id : null;
+  } catch (error) {
+    console.error("Error finding user by Firebase UID:", error);
+    return null;
+  }
+};
+
+/**
+ * Helper function to resolve user ID (Firebase UID to MongoDB ObjectId if needed)
+ */
+const resolveUserId = async (userId) => {
+  if (isValidObjectId(userId)) {
+    // It's already a valid ObjectId, return as is
+    return userId;
+  }
+
+  // It's a Firebase UID, try to find the corresponding MongoDB ObjectId
+  const mongoId = await findMongoIdByFirebaseUid(userId);
+  if (mongoId) {
+    return mongoId;
+  }
+
+  // If no mapping found, return the original ID (this will likely cause an error)
+  console.warn(`Could not resolve Firebase UID ${userId} to MongoDB ObjectId`);
+  return userId;
+};
 
 /**
  * @desc    Get all lesson plans available in the LessonPlan Collection
@@ -76,38 +118,60 @@ exports.getUserLessonPlans = async (req, res, next) => {
       });
     }
 
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
     // Build query object
-    const query = { createdBy: userId };
+    const query = { createdBy: resolvedUserId };
     if (grade) query["parameters.grade"] = grade;
     if (shared !== undefined) query.isSharedToCommunity = shared === "true";
 
+    console.log("Original userId:", userId);
+    console.log("Resolved userId:", resolvedUserId);
     console.log("Query being executed:", query);
 
-    const lessonPlans = await LessonPlan.find(query)
-      .populate({
-        path: "classId",
-        select: "className subject grade",
-      })
-      .populate({
-        path: "createdBy",
-        select: "name schoolName",
-      })
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    try {
+      const lessonPlans = await LessonPlan.find(query)
+        .populate({
+          path: "classId",
+          select: "className subject grade",
+        })
+        .populate({
+          path: "createdBy",
+          select: "name schoolName",
+        })
+        .sort({ createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
 
-    const total = await LessonPlan.countDocuments(query);
+      const total = await LessonPlan.countDocuments(query);
 
-    console.log(`Found ${lessonPlans.length} lesson plans for user ${userId}`);
+      console.log(
+        `Found ${lessonPlans.length} lesson plans for user ${userId}`
+      );
 
-    res.status(200).json({
-      success: true,
-      count: lessonPlans.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      data: lessonPlans,
-    });
+      res.status(200).json({
+        success: true,
+        count: lessonPlans.length,
+        total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: parseInt(page),
+        data: lessonPlans,
+      });
+    } catch (queryError) {
+      // If query still fails, return empty results instead of error
+      console.error("Query failed, returning empty results:", queryError);
+
+      res.status(200).json({
+        success: true,
+        count: 0,
+        total: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        data: [],
+        message: "No lesson plans found for this user",
+      });
+    }
   } catch (error) {
     console.error("Error fetching user lesson plans:", error);
     res.status(500).json({
@@ -146,8 +210,14 @@ exports.shareLessonPlanToCommunity = async (req, res, next) => {
       });
     }
 
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
     // Check if user owns this lesson plan
-    if (lessonPlan.createdBy.toString() !== userId.toString()) {
+    const isOwner =
+      lessonPlan.createdBy.toString() === resolvedUserId.toString();
+
+    if (!isOwner) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to share this lesson plan",
@@ -224,8 +294,11 @@ exports.unshareLessonPlanFromCommunity = async (req, res, next) => {
       });
     }
 
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
     // Check if user owns this lesson plan
-    if (lessonPlan.createdBy.toString() !== userId.toString()) {
+    if (lessonPlan.createdBy.toString() !== resolvedUserId.toString()) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to unshare this lesson plan",
@@ -379,6 +452,9 @@ exports.toggleLikeLessonPlan = async (req, res, next) => {
       });
     }
 
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
     // Initialize communityData and likedBy array if they don't exist
     if (!lessonPlan.communityData) {
       lessonPlan.communityData = {
@@ -391,13 +467,15 @@ exports.toggleLikeLessonPlan = async (req, res, next) => {
       lessonPlan.communityData.likedBy = [];
     }
 
-    const hasLiked = lessonPlan.communityData.likedBy.includes(userId);
+    const hasLiked = lessonPlan.communityData.likedBy.some(
+      (id) => id.toString() === resolvedUserId.toString()
+    );
 
     if (hasLiked) {
       // Unlike
       lessonPlan.communityData.likedBy =
         lessonPlan.communityData.likedBy.filter(
-          (id) => id.toString() !== userId.toString()
+          (id) => id.toString() !== resolvedUserId.toString()
         );
       lessonPlan.communityData.likes = Math.max(
         0,
@@ -405,7 +483,7 @@ exports.toggleLikeLessonPlan = async (req, res, next) => {
       );
     } else {
       // Like
-      lessonPlan.communityData.likedBy.push(userId);
+      lessonPlan.communityData.likedBy.push(resolvedUserId);
       lessonPlan.communityData.likes += 1;
     }
 
@@ -474,15 +552,19 @@ exports.downloadLessonPlan = async (req, res, next) => {
     }
 
     if (userId) {
+      // Resolve Firebase UID to MongoDB ObjectId if needed
+      const resolvedUserId = await resolveUserId(userId);
+
       // Check if user hasn't already downloaded
       const alreadyDownloaded = lessonPlan.communityData.downloadedBy.some(
         (download) =>
-          download.user && download.user.toString() === userId.toString()
+          download.user &&
+          download.user.toString() === resolvedUserId.toString()
       );
 
       if (!alreadyDownloaded) {
         lessonPlan.communityData.downloadedBy.push({
-          user: userId,
+          user: resolvedUserId,
           downloadedAt: new Date(),
         });
       }

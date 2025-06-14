@@ -1,5 +1,11 @@
-// src/context/UserContext.js - Simplified version that works with AuthContext
-import React, { createContext, useContext, useState, useEffect } from "react";
+// src/context/UserContext.js - Fixed ESLint warning
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { authAPI } from "../services/api";
 import { useAuth } from "./AuthContext";
 
@@ -21,12 +27,8 @@ export const UserProvider = ({ children }) => {
   // Get Firebase user from AuthContext
   const { currentUser: firebaseUser } = useAuth();
 
-  // Load user data on component mount or when firebase user changes
-  useEffect(() => {
-    loadUser();
-  }, [firebaseUser]);
-
-  const loadUser = async () => {
+  // Wrap loadUser in useCallback to avoid infinite re-renders
+  const loadUser = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,16 +56,42 @@ export const UserProvider = ({ children }) => {
         }
       }
 
-      // Fallback to Firebase user if available
+      // Handle Firebase user - create/find MongoDB user
       if (firebaseUser) {
-        setUser({
-          _id: firebaseUser.uid,
-          id: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || firebaseUser.email,
-          roles: ["teacher"],
-          ...firebaseUser,
-        });
+        try {
+          console.log(
+            "Firebase user detected, creating/finding MongoDB user:",
+            firebaseUser.uid
+          );
+
+          const response = await authAPI.findOrCreateFirebaseUser({
+            firebaseUid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          });
+
+          if (response.success) {
+            console.log("MongoDB user created/found:", response.user);
+            setUser(response.user);
+          } else {
+            throw new Error("Failed to create/find MongoDB user");
+          }
+        } catch (error) {
+          console.error("Error creating/finding MongoDB user:", error);
+          // Fallback to Firebase user data
+          setUser({
+            _id: firebaseUser.uid,
+            id: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            roles: ["teacher"],
+            firebaseUid: firebaseUser.uid,
+          });
+        }
       }
     } catch (error) {
       console.error("Error loading user:", error);
@@ -71,7 +99,12 @@ export const UserProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [firebaseUser]); // Add firebaseUser as dependency
+
+  // Load user data on component mount or when firebase user changes
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]); // Now loadUser is properly memoized
 
   const login = async (credentials) => {
     try {
@@ -95,12 +128,29 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authAPI.logout();
+      // Call backend logout if we have a token
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        try {
+          await authAPI.logout();
+        } catch (error) {
+          console.error("Backend logout error:", error);
+          // Continue with logout even if backend call fails
+        }
+      }
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      // Always clear local state and storage
       setUser(null);
+      setError(null);
       localStorage.removeItem("authToken");
+
+      // Force reload to ensure clean state
+      // This helps with any lingering authentication state
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 100);
     }
   };
 
@@ -110,7 +160,12 @@ export const UserProvider = ({ children }) => {
 
   // Determine if user is authenticated (either backend or Firebase)
   const isAuthenticated = !!(user || firebaseUser);
+
+  // IMPORTANT: Now we should have the MongoDB ObjectId from the user
   const userId = user?._id || user?.id || firebaseUser?.uid;
+
+  console.log("UserContext - Current user:", user);
+  console.log("UserContext - UserId:", userId);
 
   const value = {
     user: user || firebaseUser,

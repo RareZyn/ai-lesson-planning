@@ -1,4 +1,6 @@
-/* ProtectedRoute.css */
+/* ProtectedRoute.css - Combined version */
+
+/* Auth states layout */
 .auth-loading,
 .auth-redirect,
 .auth-unauthorized {
@@ -8,28 +10,167 @@
   justify-content: center;
   height: 100vh;
   text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
+/* Spinner animation */
 .spinner {
   width: 50px;
   height: 50px;
   border: 5px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   border-top-color: #3498db;
-  animation: spin 1s ease-in-out infinite;
+  animation: spinner-spin 1s ease-in-out infinite;
   margin-bottom: 20px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Spinner keyframes (renamed to avoid conflicts) */
+@keyframes spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+/* Auth unauthorized specific styles */
 .auth-unauthorized h2 {
   color: #e74c3c;
   margin-bottom: 15px;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .auth-unauthorized p {
   font-size: 1.1rem;
   margin-bottom: 10px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Auth redirect styles */
+.auth-redirect p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+/* Auth loading styles */
+.auth-loading p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .auth-loading,
+  .auth-redirect,
+  .auth-unauthorized {
+    padding: 16px;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+    margin-bottom: 16px;
+  }
+
+  .auth-unauthorized h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+  }
+
+  .auth-unauthorized p,
+  .auth-redirect p,
+  .auth-loading p {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-loading,
+  .auth-redirect,
+  .auth-unauthorized {
+    padding: 12px;
+  }
+
+  .spinner {
+    width: 35px;
+    height: 35px;
+    border-width: 3px;
+    margin-bottom: 12px;
+  }
+
+  .auth-unauthorized h2 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+
+  .auth-unauthorized p,
+  .auth-redirect p,
+  .auth-loading p {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .spinner {
+    border-color: #000;
+    border-top-color: #3498db;
+  }
+
+  .auth-unauthorized h2 {
+    color: #000;
+  }
+
+  .auth-unauthorized p,
+  .auth-redirect p,
+  .auth-loading p {
+    color: #000;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .auth-loading,
+  .auth-redirect,
+  .auth-unauthorized {
+    background-color: #1a1a1a;
+    color: #fff;
+  }
+
+  .spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: #3498db;
+  }
+
+  .auth-unauthorized p,
+  .auth-redirect p,
+  .auth-loading p {
+    color: #ccc;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border: 5px solid #3498db;
+  }
+
+  .spinner::after {
+    content: "⏳";
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 20px;
+  }
 }
