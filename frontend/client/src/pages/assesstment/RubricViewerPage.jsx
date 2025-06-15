@@ -1,4 +1,4 @@
-// Fixed src/pages/assessment/RubricViewerPage.jsx - Handle different teacher content types
+// Updated src/pages/assessment/RubricViewerPage.jsx - Added PDF export functionality
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -11,6 +11,7 @@ import {
   Tag,
   Space,
   Divider,
+  Dropdown,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -18,8 +19,12 @@ import {
   DownloadOutlined,
   EditOutlined,
   EyeOutlined,
+  FilePdfOutlined,
+  FileWordOutlined,
+  CaretDownOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
+import { usePdfExport } from "../../hooks/usePdfExport";
 
 const { Title, Text } = Typography;
 
@@ -29,6 +34,9 @@ const RubricViewerPage = () => {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // PDF Export hook
+  const { exportElementToPdf, isExporting } = usePdfExport();
 
   useEffect(() => {
     fetchAssessment();
@@ -174,7 +182,67 @@ const RubricViewerPage = () => {
     }
   };
 
-  const handleDownload = () => {
+  // Enhanced handleDownload with PDF export using usePdfExport
+  const handleDownloadPdf = async () => {
+    const teacherContent = getTeacherContent();
+    if (!teacherContent) {
+      message.error("No content available to download");
+      return;
+    }
+
+    try {
+      // Create a temporary element to render the content for PDF export
+      const tempDiv = document.createElement("div");
+      tempDiv.id = "temp-rubric-content";
+      tempDiv.innerHTML = `
+        <div style="padding: 20px; font-family: Arial, sans-serif;">
+          <h1 style="color: #52c41a; margin-bottom: 10px;">${
+            assessment.title
+          } - ${getTeacherContentName()}</h1>
+          <div style="margin-bottom: 15px; color: #666; font-size: 14px;">
+            <strong>Subject:</strong> ${assessment.classId?.subject || "N/A"} | 
+            <strong>Grade:</strong> ${assessment.classId?.grade || "N/A"} | 
+            <strong>Type:</strong> ${assessment.activityType}
+          </div>
+          <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+            <strong>Instructions:</strong> ${
+              assessment.activityType === "assessment"
+                ? "Use this answer key to evaluate student responses efficiently."
+                : "Use this rubric to evaluate student performance consistently."
+            }
+          </div>
+          <div>${teacherContent}</div>
+        </div>
+      `;
+
+      // Temporarily add to DOM
+      tempDiv.style.position = "absolute";
+      tempDiv.style.left = "-9999px";
+      tempDiv.style.width =
+        assessment.activityType === "assessment" ? "800px" : "1200px"; // Wider for rubrics
+      document.body.appendChild(tempDiv);
+
+      // Use the HTML element export method
+      const fileName = `${assessment.title.replace(
+        /[^a-z0-9]/gi,
+        "_"
+      )}_${getTeacherContentName().replace(" ", "_")}.pdf`;
+      await exportElementToPdf("temp-rubric-content", fileName, {
+        format: "a4",
+        orientation:
+          assessment.activityType === "assessment" ? "portrait" : "landscape",
+      });
+
+      // Clean up
+      document.body.removeChild(tempDiv);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      message.error("Failed to export to PDF");
+    }
+  };
+
+  // HTML download as fallback
+  const handleDownloadHtml = () => {
     const teacherContent = getTeacherContent();
     if (teacherContent) {
       const blob = new Blob([teacherContent], {
@@ -208,6 +276,24 @@ const RubricViewerPage = () => {
   const handleGoBack = () => {
     navigate("/app/assessment");
   };
+
+  // Download menu items
+  const downloadMenuItems = [
+    {
+      key: "pdf",
+      icon: <FilePdfOutlined />,
+      label: "Download as PDF",
+      onClick: handleDownloadPdf,
+      disabled: !getTeacherContent() || isExporting,
+    },
+    {
+      key: "html",
+      icon: <FileWordOutlined />,
+      label: "Download as HTML",
+      onClick: handleDownloadHtml,
+      disabled: !getTeacherContent(),
+    },
+  ];
 
   if (loading) {
     return (
@@ -355,16 +441,25 @@ const RubricViewerPage = () => {
               icon={<PrinterOutlined />}
               onClick={handlePrint}
               type="default"
+              disabled={!teacherContent}
             >
               Print
             </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleDownload}
-              type="primary"
+            <Dropdown
+              menu={{ items: downloadMenuItems }}
+              trigger={["click"]}
+              disabled={!teacherContent}
             >
-              Download
-            </Button>
+              <Button
+                type="primary"
+                loading={isExporting}
+                disabled={!teacherContent}
+              >
+                <DownloadOutlined />
+                Download
+                <CaretDownOutlined />
+              </Button>
+            </Dropdown>
           </Space>
         </div>
       </Card>
@@ -373,6 +468,7 @@ const RubricViewerPage = () => {
       <Card title={getTeacherContentName()} style={{ marginBottom: "24px" }}>
         {teacherContent ? (
           <div
+            id="rubric-content"
             style={{
               background: "#fff",
               border: "1px solid #f0f0f0",
