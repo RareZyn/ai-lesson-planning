@@ -1,8 +1,11 @@
-// backend/route/assessment.js - Updated with authentication middleware
+// backend/route/assessment.js - Fixed assessment routes
 const express = require("express");
+const router = express.Router();
+
+// Import controllers
 const {
-  fullLessonPlanner,
   generateActivityAndRubric,
+  fullLessonPlanner,
   generateEssayAssessment,
   generateTextbookActivity,
   saveAssessment,
@@ -11,18 +14,19 @@ const {
   deleteAssessment,
 } = require("../controller/aseessmentController");
 
-// Import authentication middleware
+// Import middleware
+const { protect } = require("../middleware/auth");
 
+// Apply authentication middleware to all routes
+router.use(protect);
 
-const router = express.Router();
-
-
+// Route definitions
 router.post("/fullLessonPlanner", fullLessonPlanner);
 router.post("/generateActivityAndRubric", generateActivityAndRubric);
 router.post("/generateEssayAssessment", generateEssayAssessment);
 router.post("/generateTextbookActivity", generateTextbookActivity);
 
-// NEW: Assessment management routes
+// Assessment CRUD operations
 router.post("/save", saveAssessment);
 router.get("/my-assessments", getUserAssessments);
 router.get("/:id", getAssessmentById);

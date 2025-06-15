@@ -1,92 +1,108 @@
+// backend/controller/assessmentController.js - Fixed with better error handling
+const OpenAI = require("openai");
+const Assessment = require("../model/Assessment");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 const fullLessonPlanner = async (req, res) => {
-  const {
-    lesson,
-    lessonInSow,
-    day,
-    subject,
-    theme,
-    topic,
-    time,
-    date,
-    contentStandard,
-    learningStandard,
-    learningStandards,
-  } = req.body;
-
-  const prompt = `
-  You are a smart lesson planner assistant.
-  
-  Return a JSON object that follows this exact structure:
-  
-  {
-    "lesson": string,
-    "lessonInSow": string,
-    "day": string,
-    "subject": string,
-    "theme": string,
-    "topic": string,
-    "time": string,
-    "date": string,
-    "contentStandard": {
-      "main": string,
-      "component": string
-    },
-    "learningStandard": {
-      "main": string,
-      "component": string
-    },
-    "learningStandards": {
-      "iThink": string,
-      "fourSkill": string,
-      "writing": string,
-      "cce": string,
-      "gs": string,
-      "hots": string,
-      "create": string
-    },
-    "preActivity": string,
-    "activity": string,
-    "postActivity": string,
-    "objective": string,
-    "successCriteria": string
-  }
-  
-  Here is the lesson info to use:
-  
-  Lesson: ${lesson}
-  Lesson in SOW: ${lessonInSow}
-  Day: ${day}
-  Date: ${date}
-  Time: ${time}
-  Subject: ${subject}
-  Theme: ${theme}
-  Topic: ${topic}
-  
-  Content Standard:
-  - Main: ${contentStandard.main}
-  - Component: ${contentStandard.component}
-  
-  Learning Standard:
-  - Main: ${learningStandard.main}
-  - Component: ${learningStandard.component}
-  
-  Extra Tags:
-  - iThink: ${learningStandards.iThink}
-  - Four Skills: ${learningStandards.fourSkill}
-  - Writing: ${learningStandards.writing}
-  - CCE: ${learningStandards.cce}
-  - GS: ${learningStandards.gs}
-  - HOTS: ${learningStandards.hots}
-  - Create: ${learningStandards.create}
-  
-  IMPORTANT:
-  - Keep the field names and structure exactly as shown.
-  - Do not wrap values in objects like "preActivity": { ... }.
-  - Do not change field names.
-  - Reply only with a valid JSON object. No explanation.
-  `;
-
   try {
+    const {
+      lesson,
+      lessonInSow,
+      day,
+      subject,
+      theme,
+      topic,
+      time,
+      date,
+      contentStandard,
+      learningStandard,
+      learningStandards,
+    } = req.body;
+
+    // Validation
+    if (!lesson || !subject || !contentStandard || !learningStandard) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const prompt = `
+    You are a smart lesson planner assistant.
+    
+    Return a JSON object that follows this exact structure:
+    
+    {
+      "lesson": string,
+      "lessonInSow": string,
+      "day": string,
+      "subject": string,
+      "theme": string,
+      "topic": string,
+      "time": string,
+      "date": string,
+      "contentStandard": {
+        "main": string,
+        "component": string
+      },
+      "learningStandard": {
+        "main": string,
+        "component": string
+      },
+      "learningStandards": {
+        "iThink": string,
+        "fourSkill": string,
+        "writing": string,
+        "cce": string,
+        "gs": string,
+        "hots": string,
+        "create": string
+      },
+      "preActivity": string,
+      "activity": string,
+      "postActivity": string,
+      "objective": string,
+      "successCriteria": string
+    }
+    
+    Here is the lesson info to use:
+    
+    Lesson: ${lesson}
+    Lesson in SOW: ${lessonInSow}
+    Day: ${day}
+    Date: ${date}
+    Time: ${time}
+    Subject: ${subject}
+    Theme: ${theme}
+    Topic: ${topic}
+    
+    Content Standard:
+    - Main: ${contentStandard.main}
+    - Component: ${contentStandard.component}
+    
+    Learning Standard:
+    - Main: ${learningStandard.main}
+    - Component: ${learningStandard.component}
+    
+    Extra Tags:
+    - iThink: ${learningStandards?.iThink || ""}
+    - Four Skills: ${learningStandards?.fourSkill || ""}
+    - Writing: ${learningStandards?.writing || ""}
+    - CCE: ${learningStandards?.cce || ""}
+    - GS: ${learningStandards?.gs || ""}
+    - HOTS: ${learningStandards?.hots || ""}
+    - Create: ${learningStandards?.create || ""}
+    
+    IMPORTANT:
+    - Keep the field names and structure exactly as shown.
+    - Do not wrap values in objects like "preActivity": { ... }.
+    - Do not change field names.
+    - Reply only with a valid JSON object. No explanation.
+    `;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -107,6 +123,8 @@ const fullLessonPlanner = async (req, res) => {
     try {
       parsed = JSON.parse(raw);
     } catch (err) {
+      console.error("JSON parsing error:", err);
+      console.error("Raw response:", raw);
       return res.status(500).json({
         success: false,
         message: "Invalid JSON format from OpenAI",
@@ -123,32 +141,50 @@ const fullLessonPlanner = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Something went wrong",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 const generateActivityAndRubric = async (req, res) => {
-  const {
-    contentStandard,
-    learningStandard,
-    learningOutline,
-    activityType = "activityInClass",
-    lesson,
-    subject,
-    theme,
-    topic,
-    // Assessment metadata for saving
-    lessonPlanId,
-    classId,
-    assessmentTitle,
-    assessmentType,
-    questionCount,
-    duration,
-    difficulty,
-    skills,
-  } = req.body;
+  try {
+    const {
+      contentStandard,
+      learningStandard,
+      learningOutline,
+      activityType = "activityInClass",
+      lesson,
+      subject,
+      theme,
+      topic,
+      // Assessment metadata for saving
+      lessonPlanId,
+      classId,
+      assessmentTitle,
+      assessmentType,
+      questionCount,
+      duration,
+      difficulty,
+      skills,
+    } = req.body;
 
-  const prompt = `
+    // Validation
+    if (!contentStandard || !learningStandard || !lesson) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required fields: contentStandard, learningStandard, lesson",
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const prompt = `
 # Identity
 
 You are an AI assistant helping to generate creative and pedagogically sound in-class assessments and rubrics for English language teachers based on Malaysian KSSM curriculum lesson plans.
@@ -176,9 +212,9 @@ You must generate two HTML outputs:
     "component": "${learningStandard.component}"
   },
   "learningOutline": {
-    "pre": "${learningOutline.pre}",
-    "during": "${learningOutline.during}",
-    "post": "${learningOutline.post}"
+    "pre": "${learningOutline?.pre || ""}",
+    "during": "${learningOutline?.during || ""}",
+    "post": "${learningOutline?.post || ""}"
   },
   "activityType": "${activityType}"
 }
@@ -191,7 +227,6 @@ You must generate two HTML outputs:
 Do not include anything else. Just the two clean HTML blocks, no explanations.
 `;
 
-  try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -215,6 +250,7 @@ Do not include anything else. Just the two clean HTML blocks, no explanations.
     );
 
     if (!match || match.length < 3) {
+      console.error("Failed to parse HTML blocks from output:", output);
       return res.status(500).json({
         success: false,
         message: "OpenAI output did not contain both HTML blocks.",
@@ -226,7 +262,7 @@ Do not include anything else. Just the two clean HTML blocks, no explanations.
     const rubricHtml = match[2].trim();
 
     // Save assessment to database if metadata provided
-    if (lessonPlanId && classId && req.user) {
+    if (lessonPlanId && classId) {
       try {
         const assessment = await Assessment.create({
           title: assessmentTitle || `Assessment - ${lesson}`,
@@ -270,36 +306,53 @@ Do not include anything else. Just the two clean HTML blocks, no explanations.
       activityHTML: studentHtml,
       rubricHTML: rubricHtml,
     });
-  } catch (err) {
-    console.error("Error generating activity & rubric:", err);
+  } catch (error) {
+    console.error("Error generating activity & rubric:", error);
     res.status(500).json({
       success: false,
       message: "OpenAI API error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 const generateEssayAssessment = async (req, res) => {
-  const {
-    contentStandard,
-    learningStandard,
-    learningOutline,
-    lesson,
-    subject,
-    theme,
-    topic,
-    // Assessment metadata for saving
-    lessonPlanId,
-    classId,
-    assessmentTitle,
-    assessmentType,
-    questionCount,
-    duration,
-    difficulty,
-    skills,
-  } = req.body;
+  try {
+    const {
+      contentStandard,
+      learningStandard,
+      learningOutline,
+      lesson,
+      subject,
+      theme,
+      topic,
+      // Assessment metadata for saving
+      lessonPlanId,
+      classId,
+      assessmentTitle,
+      assessmentType,
+      questionCount,
+      duration,
+      difficulty,
+      skills,
+    } = req.body;
 
-  const prompt = `
+    // Validation
+    if (!contentStandard || !learningStandard || !lesson) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const prompt = `
 # Identity
 
 You are an AI assistant that creates HTML-based student essay tasks and teacher grading rubrics based on Malaysian KSSM curriculum lesson plans. All outputs must follow a professional, styled, printable A4-friendly layout.
@@ -345,9 +398,9 @@ Both must:
     "component": "${learningStandard.component}"
   },
   "learningOutline": {
-    "pre": "${learningOutline.pre}",
-    "during": "${learningOutline.during}",
-    "post": "${learningOutline.post}"
+    "pre": "${learningOutline?.pre || ""}",
+    "during": "${learningOutline?.during || ""}",
+    "post": "${learningOutline?.post || ""}"
   },
   "activityType": "essay"
 }
@@ -360,7 +413,6 @@ Both must:
 Do not include anything else. Just the raw HTMLs.
 `;
 
-  try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -394,7 +446,7 @@ Do not include anything else. Just the raw HTMLs.
     const rubricHtml = match[2].trim();
 
     // Save assessment to database if metadata provided
-    if (lessonPlanId && classId && req.user) {
+    if (lessonPlanId && classId) {
       try {
         const assessment = await Assessment.create({
           title: assessmentTitle || `Essay Assessment - ${lesson}`,
@@ -437,36 +489,53 @@ Do not include anything else. Just the raw HTMLs.
       activityHTML: studentHtml,
       rubricHTML: rubricHtml,
     });
-  } catch (err) {
-    console.error("Error generating essay assessment:", err);
+  } catch (error) {
+    console.error("Error generating essay assessment:", error);
     res.status(500).json({
       success: false,
       message: "OpenAI API error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 const generateTextbookActivity = async (req, res) => {
-  const {
-    contentStandard,
-    learningStandard,
-    learningOutline,
-    lesson,
-    subject,
-    theme,
-    topic,
-    // Assessment metadata for saving
-    lessonPlanId,
-    classId,
-    assessmentTitle,
-    assessmentType,
-    questionCount,
-    duration,
-    difficulty,
-    skills,
-  } = req.body;
+  try {
+    const {
+      contentStandard,
+      learningStandard,
+      learningOutline,
+      lesson,
+      subject,
+      theme,
+      topic,
+      // Assessment metadata for saving
+      lessonPlanId,
+      classId,
+      assessmentTitle,
+      assessmentType,
+      questionCount,
+      duration,
+      difficulty,
+      skills,
+    } = req.body;
 
-  const prompt = `
+    // Validation
+    if (!contentStandard || !learningStandard || !lesson) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const prompt = `
 # Identity
 
 You are an AI assistant that generates printable HTML-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. This request is for a **Textbook-Based Activity**.
@@ -507,9 +576,9 @@ You must return exactly two blocks of HTML content:
     "component": "${learningStandard.component}"
   },
   "learningOutline": {
-    "pre": "${learningOutline.pre}",
-    "during": "${learningOutline.during}",
-    "post": "${learningOutline.post}"
+    "pre": "${learningOutline?.pre || ""}",
+    "during": "${learningOutline?.during || ""}",
+    "post": "${learningOutline?.post || ""}"
   },
   "activityType": "textbook"
 }
@@ -522,7 +591,6 @@ You must return exactly two blocks of HTML content:
 No extra explanation. Just two valid HTML blocks.
 `;
 
-  try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -556,7 +624,7 @@ No extra explanation. Just two valid HTML blocks.
     const rubricHtml = match[2].trim();
 
     // Save assessment to database if metadata provided
-    if (lessonPlanId && classId && req.user) {
+    if (lessonPlanId && classId) {
       try {
         const assessment = await Assessment.create({
           title: assessmentTitle || `Textbook Activity - ${lesson}`,
@@ -599,16 +667,17 @@ No extra explanation. Just two valid HTML blocks.
       activityHTML: studentHtml,
       rubricHTML: rubricHtml,
     });
-  } catch (err) {
-    console.error("Error generating textbook activity:", err);
+  } catch (error) {
+    console.error("Error generating textbook activity:", error);
     res.status(500).json({
       success: false,
       message: "OpenAI API error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
-// NEW: Save assessment metadata
+// Save assessment metadata
 const saveAssessment = async (req, res) => {
   try {
     const {
@@ -632,6 +701,14 @@ const saveAssessment = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: "User authentication required",
+      });
+    }
+
+    // Validation
+    if (!title || !lessonPlanId || !classId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: title, lessonPlanId, classId",
       });
     }
 
@@ -671,7 +748,7 @@ const saveAssessment = async (req, res) => {
   }
 };
 
-// NEW: Get user's assessments with filters
+// Get user's assessments with filters
 const getUserAssessments = async (req, res) => {
   try {
     if (!req.user) {
@@ -775,7 +852,7 @@ const getUserAssessments = async (req, res) => {
   }
 };
 
-// NEW: Get assessment by ID
+// Get assessment by ID
 const getAssessmentById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -815,7 +892,7 @@ const getAssessmentById = async (req, res) => {
   }
 };
 
-// NEW: Delete assessment
+// Delete assessment
 const deleteAssessment = async (req, res) => {
   try {
     const { id } = req.params;

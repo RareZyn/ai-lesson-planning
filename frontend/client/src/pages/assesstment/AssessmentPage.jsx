@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx - Updated with backend integration for lesson-based assessments
+// src/pages/assessment/AssessmentPage.jsx - Fixed with better error handling and conditional rendering
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,6 +16,8 @@ import {
   message,
   Dropdown,
   Spin,
+  Alert,
+  Empty,
 } from "antd";
 import {
   FileTextOutlined,
@@ -34,6 +36,7 @@ import {
   TrophyOutlined,
   MoreOutlined,
   LoadingOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 
 // Import services
@@ -57,7 +60,7 @@ const { Option } = Select;
 
 const AssessmentPage = () => {
   const navigate = useNavigate();
-  const { userId } = useUser();
+  const { userId, user, loading: userLoading, isAuthenticated } = useUser();
   const [activeTab, setActiveTab] = useState("lesson-based");
 
   // Data States
@@ -65,6 +68,7 @@ const AssessmentPage = () => {
   const [standaloneAssessments, setStandaloneAssessments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [error, setError] = useState(null);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,9 +89,19 @@ const AssessmentPage = () => {
 
   // Fetch lesson-based assessments from backend
   const fetchLessonBasedAssessments = async () => {
-    if (!userId) return;
+    // Don't fetch if user is not authenticated or userId is not available
+    if (!isAuthenticated || !userId || userLoading) {
+      console.log("Skipping assessment fetch - user not ready:", {
+        isAuthenticated,
+        userId,
+        userLoading,
+      });
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+
     try {
       const params = {
         page: currentPage,
@@ -98,30 +112,44 @@ const AssessmentPage = () => {
         statusFilter,
       };
 
+      console.log("Fetching assessments with params:", params);
       const response = await assessmentAPI.getUserAssessments(params);
 
       if (response.success) {
         setLessonBasedAssessments(response.data || []);
         setTotalCount(response.total || 0);
+        console.log("Assessments loaded:", response.data?.length || 0);
       } else {
-        message.error("Failed to fetch assessments");
+        throw new Error(response.message || "Failed to fetch assessments");
       }
     } catch (error) {
       console.error("Error fetching assessments:", error);
-      message.error("Error loading assessments");
+      setError(error.message || "Error loading assessments");
       setLessonBasedAssessments([]);
+
+      // Don't show error message if it's just a network issue during loading
+      if (!error.message?.includes("Network Error")) {
+        message.error(error.message || "Failed to load assessments");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Load data on component mount and when filters change
+  // Load data when user is authenticated and userId is available
   useEffect(() => {
-    if (activeTab === "lesson-based") {
+    if (
+      activeTab === "lesson-based" &&
+      isAuthenticated &&
+      userId &&
+      !userLoading
+    ) {
       fetchLessonBasedAssessments();
     }
   }, [
     userId,
+    isAuthenticated,
+    userLoading,
     currentPage,
     pageSize,
     searchTerm,
@@ -577,6 +605,38 @@ const AssessmentPage = () => {
     setPageSize(pagination.pageSize);
   };
 
+  // Show loading if user is still loading
+  if (userLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "400px",
+        }}
+      >
+        <Spin size="large" />
+        <span style={{ marginLeft: 16 }}>Loading user data...</span>
+      </div>
+    );
+  }
+
+  // Show error if user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <Alert
+          message="Authentication Required"
+          description="Please log in to access the assessment page."
+          type="warning"
+          showIcon
+          icon={<ExclamationCircleOutlined />}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="assessment-page">
       <div className="page-header">
@@ -662,6 +722,28 @@ const AssessmentPage = () => {
                 </div>
               </div>
 
+              {/* Error Alert */}
+              {error && (
+                <Alert
+                  message="Error Loading Assessments"
+                  description={error}
+                  type="error"
+                  showIcon
+                  closable
+                  onClose={() => setError(null)}
+                  style={{ marginBottom: 16 }}
+                  action={
+                    <Button
+                      size="small"
+                      onClick={fetchLessonBasedAssessments}
+                      loading={loading}
+                    >
+                      Retry
+                    </Button>
+                  }
+                />
+              )}
+
               <Spin spinning={loading}>
                 <Table
                   columns={lessonBasedColumns}
@@ -680,8 +762,16 @@ const AssessmentPage = () => {
                   locale={{
                     emptyText: loading ? (
                       <LoadingOutlined />
+                    ) : error ? (
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="Failed to load assessments"
+                      />
                     ) : (
-                      "No assessments found"
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="No assessments found. Create your first assessment from a lesson plan!"
+                      />
                     ),
                   }}
                 />
@@ -735,6 +825,7 @@ const AssessmentPage = () => {
                 <p>
                   Create assessments without requiring existing lesson plans
                 </p>
+                <p style={{ fontSize: 14, color: "#999" }}>Coming soon...</p>
               </div>
             </div>
           </TabPane>
@@ -742,12 +833,14 @@ const AssessmentPage = () => {
       </Card>
 
       {/* Lesson-Based Assessment Modal (Entry Point) */}
-      <LessonSelectionModal
-        isOpen={isLessonSelectionModalVisible}
-        onClose={() => setIsLessonSelectionModalVisible(false)}
-        onSubmit={handleLessonBasedSubmit}
-        currentUserId={userId}
-      />
+      {userId && (
+        <LessonSelectionModal
+          isOpen={isLessonSelectionModalVisible}
+          onClose={() => setIsLessonSelectionModalVisible(false)}
+          onSubmit={handleLessonBasedSubmit}
+          currentUserId={userId}
+        />
+      )}
 
       {/* Standalone Assessment Options Modal */}
       <Modal

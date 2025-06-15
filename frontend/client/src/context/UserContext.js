@@ -1,4 +1,4 @@
-// src/context/UserContext.js - Fixed ESLint warning
+// src/context/UserContext.js - Fixed with better error handling and authentication flow
 import React, {
   createContext,
   useContext,
@@ -25,15 +25,22 @@ export const UserProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // Get Firebase user from AuthContext
-  const { currentUser: firebaseUser } = useAuth();
+  const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
   // Wrap loadUser in useCallback to avoid infinite re-renders
   const loadUser = useCallback(async () => {
+    // Don't load user if auth is still loading
+    if (authLoading) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       const token = localStorage.getItem("authToken");
+
+      // If no token and no Firebase user, user is not authenticated
       if (!token && !firebaseUser) {
         setUser(null);
         setLoading(false);
@@ -45,6 +52,7 @@ export const UserProvider = ({ children }) => {
         try {
           const response = await authAPI.getMe();
           if (response.success) {
+            console.log("Backend user loaded:", response.user);
             setUser(response.user);
             setLoading(false);
             return;
@@ -96,15 +104,18 @@ export const UserProvider = ({ children }) => {
     } catch (error) {
       console.error("Error loading user:", error);
       setError("Failed to load user data");
+      // Don't set user to null here - let the user stay logged in with Firebase data
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]); // Add firebaseUser as dependency
+  }, [firebaseUser, authLoading]); // Add authLoading as dependency
 
-  // Load user data on component mount or when firebase user changes
+  // Load user data when auth loading completes or when firebase user changes
   useEffect(() => {
-    loadUser();
-  }, [loadUser]); // Now loadUser is properly memoized
+    if (!authLoading) {
+      loadUser();
+    }
+  }, [loadUser, authLoading]); // Add authLoading dependency
 
   const login = async (credentials) => {
     try {
@@ -147,7 +158,6 @@ export const UserProvider = ({ children }) => {
       localStorage.removeItem("authToken");
 
       // Force reload to ensure clean state
-      // This helps with any lingering authentication state
       setTimeout(() => {
         window.location.href = "/";
       }, 100);
@@ -159,17 +169,20 @@ export const UserProvider = ({ children }) => {
   };
 
   // Determine if user is authenticated (either backend or Firebase)
-  const isAuthenticated = !!(user || firebaseUser);
+  const isAuthenticated = !!(user && !loading);
 
-  // IMPORTANT: Now we should have the MongoDB ObjectId from the user
-  const userId = user?._id || user?.id || firebaseUser?.uid;
+  // Get the MongoDB ObjectId (_id) which is what the backend expects
+  const userId = user?._id || user?.id;
 
+  // Debug logging (remove in production)
   console.log("UserContext - Current user:", user);
   console.log("UserContext - UserId:", userId);
+  console.log("UserContext - Loading:", loading);
+  console.log("UserContext - IsAuthenticated:", isAuthenticated);
 
   const value = {
-    user: user || firebaseUser,
-    loading,
+    user,
+    loading: loading || authLoading, // Include auth loading
     error,
     loadUser,
     login,
