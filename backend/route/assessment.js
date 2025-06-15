@@ -1,4 +1,4 @@
-// backend/route/assessment.js - Add new route
+// backend/route/assessment.js - FIXED import path
 const express = require("express");
 const {
   generateFromLessonPlan,
@@ -9,18 +9,21 @@ const {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
-} = require("../controller/aseessmentController");
+} = require("../controller/assessmentController"); 
 const { protect, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
+// Generate assessment from lesson plan
 router.post("/generateFromLessonPlan", protect, generateFromLessonPlan);
+
+// Save assessment
 router.post("/save", protect, saveAssessment);
 
 // Get user's assessments with filtering and pagination
 router.get("/my-assessments", protect, getUserAssessmentsFiltered);
 
-// NEW: Get lesson plans without assessments
+// Get lesson plans without assessments
 router.get("/available-lessons", protect, getLessonPlansWithoutAssessments);
 
 // Get specific assessment by ID

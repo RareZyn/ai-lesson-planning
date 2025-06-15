@@ -401,35 +401,147 @@ const getUserAssessmentsFiltered = async (req, res) => {
 };
 
 // Helper functions for different assessment types
+// Fixed generateActivityContent function with better error handling and flexible regex
 const generateActivityContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML student activities and teacher rubrics for classroom assessments.",
-      },
-      {
-        role: "user",
-        content: buildActivityPrompt(data),
-      },
-    ],
-  });
+  try {
+    console.log("Generating activity content with data:", data);
 
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
-  );
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate HTML student activities and teacher rubrics for classroom assessments. You must return exactly two HTML blocks with the specified comment headers.",
+        },
+        {
+          role: "user",
+          content: buildActivityPrompt(data),
+        },
+      ],
+    });
 
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+    const output = response.choices[0].message.content;
+    console.log("Raw AI output length:", output.length);
+    console.log("Raw AI output preview:", output.substring(0, 500) + "...");
+
+    // More flexible regex patterns to handle variations in comments and spacing
+    const patterns = [
+      // Original pattern
+      /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/,
+
+      // Alternative patterns for different comment formats
+      /```html\s*<!-- STUDENT ACTIVITY -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER RUBRIC -->\s*([\s\S]*?)\s*```/,
+
+      // Pattern without specific comments
+      /```html\s*([\s\S]*?)\s*```[\s\S]*?```html\s*([\s\S]*?)\s*```/,
+
+      // Pattern with more flexible spacing
+      /```html[^`]*?<!-- STUDENT[^>]*? -->[^`]*?([\s\S]*?)\s*```[\s\S]*?```html[^`]*?<!-- TEACHER[^>]*? -->[^`]*?([\s\S]*?)\s*```/i,
+    ];
+
+    let match = null;
+    let patternUsed = -1;
+
+    // Try each pattern until one matches
+    for (let i = 0; i < patterns.length; i++) {
+      match = output.match(patterns[i]);
+      if (match && match.length >= 3) {
+        patternUsed = i;
+        console.log(`Successfully matched with pattern ${i}`);
+        break;
+      }
+    }
+
+    // If no pattern matched, try to extract any two HTML blocks
+    if (!match) {
+      console.warn(
+        "No specific pattern matched, trying to extract any two HTML blocks"
+      );
+      const htmlBlocks = output.match(/```html\s*([\s\S]*?)\s*```/g);
+
+      if (htmlBlocks && htmlBlocks.length >= 2) {
+        const firstBlock = htmlBlocks[0].match(/```html\s*([\s\S]*?)\s*```/)[1];
+        const secondBlock = htmlBlocks[1].match(
+          /```html\s*([\s\S]*?)\s*```/
+        )[1];
+
+        match = [null, firstBlock.trim(), secondBlock.trim()];
+        console.log("Extracted two HTML blocks as fallback");
+      }
+    }
+
+    if (!match || match.length < 3) {
+      console.error("Failed to parse AI response. Full output:", output);
+
+      // Log what we found for debugging
+      const htmlBlocks = output.match(/```html/g);
+      console.error(
+        "Number of HTML blocks found:",
+        htmlBlocks ? htmlBlocks.length : 0
+      );
+
+      // Try to provide more helpful error information
+      if (output.includes("```html")) {
+        console.error(
+          "HTML blocks detected but regex failed. Checking format..."
+        );
+        const allHtmlContent = output.match(/```html[\s\S]*?```/g);
+        if (allHtmlContent) {
+          console.error("All HTML blocks found:", allHtmlContent.length);
+          allHtmlContent.forEach((block, index) => {
+            console.error(
+              `Block ${index + 1} preview:`,
+              block.substring(0, 100) + "..."
+            );
+          });
+        }
+      }
+
+      throw new Error(
+        `Invalid response format from AI - could not extract HTML blocks. Pattern used: ${patternUsed}`
+      );
+    }
+
+    const result = {
+      activityHTML: match[1].trim(),
+      rubricHTML: match[2].trim(),
+    };
+
+    // Validate that we have actual content
+    if (!result.activityHTML || result.activityHTML.length < 50) {
+      console.warn(
+        "Activity HTML seems too short:",
+        result.activityHTML?.length
+      );
+    }
+
+    if (!result.rubricHTML || result.rubricHTML.length < 50) {
+      console.warn("Rubric HTML seems too short:", result.rubricHTML?.length);
+    }
+
+    console.log("Successfully generated activity content:", {
+      activityHTML: result.activityHTML
+        ? `${result.activityHTML.length} chars`
+        : "Missing",
+      rubricHTML: result.rubricHTML
+        ? `${result.rubricHTML.length} chars`
+        : "Missing",
+      patternUsed: patternUsed,
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error in generateActivityContent:", error);
+
+    // If it's our custom error, re-throw it
+    if (error.message.includes("Invalid response format from AI")) {
+      throw error;
+    }
+
+    // For other errors (API, network, etc.), wrap them
+    throw new Error(`Failed to generate activity content: ${error.message}`);
   }
-
-  return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
-  };
 };
 
 const generateEssayContent = async (data) => {
@@ -616,12 +728,47 @@ const buildActivityPrompt = (data) => {
 
 You are an AI assistant helping to generate creative and pedagogically sound in-class assessments and rubrics for English language teachers based on Malaysian KSSM curriculum lesson plans.
 
-# Instructions
+# CRITICAL OUTPUT FORMAT REQUIREMENT
 
-You must generate two HTML outputs:
+You MUST return your response in this EXACT format with no additional text:
 
-1. 🎓 Student Activity Sheet (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
+\`\`\`html
+<!-- STUDENT ASSESSMENT -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Activity</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .activity { margin: 15px 0; padding: 10px; border-left: 3px solid #007acc; }
+    </style>
+</head>
+<body>
+    <!-- Your student activity content here -->
+</body>
+</html>
+\`\`\`
+
+\`\`\`html
+<!-- TEACHER ANSWER KEY -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teacher Rubric</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .rubric { margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <!-- Your teacher rubric content here -->
+</body>
+</html>
+\`\`\`
+
+Do not include ANY other text, explanations, or content outside of these two HTML blocks.
 
 # Lesson Data
 
@@ -660,12 +807,15 @@ Generate an in-class activity that incorporates:
     data.additionalRequirement || "Standard classroom activity"
   }
 
-# Output Format
+# Requirements
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+1. Generate complete, valid HTML documents for both student and teacher sections
+2. Include proper styling for print-friendly layouts
+3. Make the student activity engaging and age-appropriate
+4. Create a comprehensive rubric for teachers
+5. Base content on the provided lesson data
 
-Do not include anything else. Just the two clean HTML blocks, no explanations.
+Remember: Return ONLY the two HTML blocks with the exact comment headers shown above.
 `;
 };
 
