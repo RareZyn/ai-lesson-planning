@@ -353,19 +353,19 @@ Do not include anything else. Just the raw HTMLs.
       message: "OpenAI API error",
     });
   }
-}
-  const generateTextbookActivity = async (req, res) => {
-    const {
-      contentStandard,
-      learningStandard,
-      learningOutline,
-      lesson,
-      subject,
-      theme,
-      topic,
-    } = req.body;
-  
-    const prompt = `
+};
+const generateTextbookActivity = async (req, res) => {
+  const {
+    contentStandard,
+    learningStandard,
+    learningOutline,
+    lesson,
+    subject,
+    theme,
+    topic,
+  } = req.body;
+
+  const prompt = `
   # Identity
   
   You are an AI assistant that generates printable HTML-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. This request is for a **Textbook-Based Activity**.
@@ -420,57 +420,366 @@ Do not include anything else. Just the raw HTMLs.
   
   No extra explanation. Just two valid HTML blocks.
   `;
-  
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You generate HTML classroom textbook-based activities and teacher rubrics for the Malaysian curriculum.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-  
-      const output = response.choices[0].message.content;
-  
-      const match = output.match(
-        /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
-      );
-  
-      if (!match || match.length < 3) {
-        return res.status(500).json({
-          success: false,
-          message: "OpenAI output did not contain both HTML blocks.",
-          raw: output,
-        });
-      }
-  
-      const studentHtml = match[1].trim();
-      const rubricHtml = match[2].trim();
-  
-      res.status(200).json({
-        success: true,
-        activityHTML: studentHtml,
-        rubricHTML: rubricHtml,
-      });
-    } catch (err) {
-      console.error("Error generating textbook activity:", err);
-      res.status(500).json({
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate HTML classroom textbook-based activities and teacher rubrics for the Malaysian curriculum.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const output = response.choices[0].message.content;
+
+    const match = output.match(
+      /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+    );
+
+    if (!match || match.length < 3) {
+      return res.status(500).json({
         success: false,
-        message: "OpenAI API error",
+        message: "OpenAI output did not contain both HTML blocks.",
+        raw: output,
       });
     }
-  };
+
+    const studentHtml = match[1].trim();
+    const rubricHtml = match[2].trim();
+
+    res.status(200).json({
+      success: true,
+      activityHTML: studentHtml,
+      rubricHTML: rubricHtml,
+    });
+  } catch (err) {
+    console.error("Error generating textbook activity:", err);
+    res.status(500).json({
+      success: false,
+      message: "OpenAI API error",
+    });
+  }
+};
+
+/**
+ * @desc    Save a generated assessment to database
+ * @route   POST /api/assessment/save
+ * @access  Private
+ */
+const saveAssessment = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      lessonPlanId,
+      classId,
+      activityType,
+      assessmentType,
+      questionCount,
+      duration,
+      difficulty,
+      skills,
+      generatedContent,
+      lessonPlanSnapshot,
+      tags,
+      notes,
+    } = req.body;
+
+    // Validation
+    if (!title || !lessonPlanId || !classId || !activityType) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required fields: title, lessonPlanId, classId, activityType",
+      });
+    }
+
+    // Create assessment
+    const assessment = await Assessment.create({
+      title,
+      description,
+      createdBy: req.user.id,
+      lessonPlanId,
+      classId,
+      activityType,
+      assessmentType: assessmentType || "General Assessment",
+      questionCount: questionCount || 20,
+      duration: duration || "60 minutes",
+      difficulty: difficulty || "Intermediate",
+      skills: skills || [],
+      generatedContent: generatedContent || {},
+      lessonPlanSnapshot: lessonPlanSnapshot || {},
+      tags: tags || [],
+      notes: notes || "",
+      status: generatedContent ? "Generated" : "Draft",
+      hasActivity: !!(generatedContent && generatedContent.activityHTML),
+      hasRubric: !!(generatedContent && generatedContent.rubricHTML),
+    });
+
+    // Populate the response
+    const populatedAssessment = await Assessment.findById(assessment._id)
+      .populate("lessonPlanId", "parameters plan")
+      .populate("classId", "className grade subject")
+      .populate("createdBy", "name");
+
+    res.status(201).json({
+      success: true,
+      message: "Assessment saved successfully",
+      data: populatedAssessment,
+    });
+  } catch (error) {
+    console.error("Save assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error saving assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Get user's assessments with filtering
+ * @route   GET /api/assessment/my-assessments
+ * @access  Private
+ */
+const getUserAssessments = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      classId,
+      activityType,
+      status,
+      search,
+    } = req.query;
+
+    // Build filter object
+    const filter = { createdBy: req.user.id };
+
+    if (classId) filter.classId = classId;
+    if (activityType) filter.activityType = activityType;
+    if (status) filter.status = status;
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { assessmentType: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Execute query with pagination
+    const assessments = await Assessment.find(filter)
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Assessment.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      count: assessments.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: assessments,
+    });
+  } catch (error) {
+    console.error("Get user assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Get assessment by ID
+ * @route   GET /api/assessment/:id
+ * @access  Private
+ */
+const getAssessmentById = async (req, res) => {
+  try {
+    const assessment = await Assessment.findById(req.params.id)
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .populate({
+        path: "createdBy",
+        select: "name",
+      });
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy._id.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to access this assessment",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: assessment,
+    });
+  } catch (error) {
+    console.error("Get assessment by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Delete assessment
+ * @route   DELETE /api/assessment/:id
+ * @access  Private
+ */
+const deleteAssessment = async (req, res) => {
+  try {
+    const assessment = await Assessment.findById(req.params.id);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this assessment",
+      });
+    }
+
+    await assessment.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Assessment deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    console.error("Delete assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Update assessment status and generated content
+ * @route   PUT /api/assessment/:id
+ * @access  Private
+ */
+const updateAssessment = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      generatedContent,
+      status,
+      hasActivity,
+      hasRubric,
+      notes,
+      tags,
+    } = req.body;
+
+    const assessment = await Assessment.findById(req.params.id);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this assessment",
+      });
+    }
+
+    // Update fields
+    if (title) assessment.title = title;
+    if (description) assessment.description = description;
+    if (generatedContent) assessment.generatedContent = generatedContent;
+    if (status) assessment.status = status;
+    if (hasActivity !== undefined) assessment.hasActivity = hasActivity;
+    if (hasRubric !== undefined) assessment.hasRubric = hasRubric;
+    if (notes) assessment.notes = notes;
+    if (tags) assessment.tags = tags;
+
+    // Update usage tracking
+    assessment.usageCount += 1;
+    assessment.lastUsed = new Date();
+
+    await assessment.save();
+
+    // Return populated assessment
+    const updatedAssessment = await Assessment.findById(assessment._id)
+      .populate("lessonPlanId", "parameters plan")
+      .populate("classId", "className grade subject")
+      .populate("createdBy", "name");
+
+    res.status(200).json({
+      success: true,
+      message: "Assessment updated successfully",
+      data: updatedAssessment,
+    });
+  } catch (error) {
+    console.error("Update assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
 
 module.exports = {
   generateActivityAndRubric,
   fullLessonPlanner,
   generateEssayAssessment,
-  generateTextbookActivity
+  generateTextbookActivity,
+  saveAssessment,
+  getUserAssessments,
+  getAssessmentById,
+  deleteAssessment,
+  updateAssessment,
 };

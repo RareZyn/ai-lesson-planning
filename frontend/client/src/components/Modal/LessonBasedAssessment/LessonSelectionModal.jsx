@@ -24,6 +24,7 @@ import {
 import { getAllClasses } from "../../../services/classService";
 import { getAllLessonPlans } from "../../../services/lessonService";
 import { assessmentAPI } from "../../../services/assessmentService";
+import { useUser } from "../../../context/UserContext";
 
 // Import the dynamic assessment forms
 import AssessmentLesson from "./AssessmentLessonModal";
@@ -37,12 +38,8 @@ const { Option } = Select;
 const { TextArea } = Input;
 const { Text } = Typography;
 
-const LessonPlannerAssessmentModal = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  currentUserId,
-}) => {
+const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
+  const { userId } = useUser(); // Get userId from context
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedLessonPlan, setSelectedLessonPlan] = useState(null);
   const [showActivityForm, setShowActivityForm] = useState(false);
@@ -60,10 +57,10 @@ const LessonPlannerAssessmentModal = ({
 
   // Load data when modal opens
   useEffect(() => {
-    if (isOpen && currentUserId) {
+    if (isOpen && userId) {
       loadInitialData();
     }
-  }, [isOpen, currentUserId]);
+  }, [isOpen, userId]);
 
   const loadInitialData = async () => {
     await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
@@ -129,17 +126,18 @@ const LessonPlannerAssessmentModal = ({
     setIsGenerating(true);
 
     try {
-      // Determine which API endpoint to call based on activity type
-      const activityType =
-        selectedLessonPlan.parameters?.activityType || "assessment";
-
-      // Prepare the data for the backend
-      const requestData = {
-        // Lesson plan data
+      // Prepare the lesson plan data for the backend
+      const lessonPlanData = {
+        lessonPlanId: selectedLessonPlan._id,
+        classId: selectedClass || selectedLessonPlan.classId?._id,
         lesson: selectedLessonPlan.parameters?.specificTopic || "Lesson",
-        subject: getSelectedClassDetails()?.subject || "English",
+        subject:
+          getSelectedClassDetails()?.subject ||
+          selectedLessonPlan.classId?.subject ||
+          "English",
         theme: selectedLessonPlan.parameters?.sow?.theme || "General",
         topic: selectedLessonPlan.parameters?.specificTopic || "Topic",
+        grade: selectedLessonPlan.parameters?.grade || "Form 4",
         contentStandard: {
           main: selectedLessonPlan.parameters?.sow?.contentStandard?.main || "",
           component:
@@ -157,45 +155,35 @@ const LessonPlannerAssessmentModal = ({
             selectedLessonPlan.parameters?.sow?.learningOutline?.during || "",
           post: selectedLessonPlan.parameters?.sow?.learningOutline?.post || "",
         },
-
-        // Assessment metadata for saving
-        lessonPlanId: selectedLessonPlan._id,
-        classId: selectedClass || selectedLessonPlan.classId,
         assessmentTitle:
           assessmentTitle ||
           `Assessment - ${selectedLessonPlan.parameters?.specificTopic}`,
-        assessmentType: getAssessmentTypeFromActivity(activityType),
-        questionCount: activityData.numberOfQuestions || 10,
-        duration: activityData.timeAllocation
-          ? `${activityData.timeAllocation} minutes`
-          : "45 minutes",
-        difficulty: activityData.difficultyLevel || "Intermediate",
-        skills: activityData.skills || ["Reading", "Writing"],
-
-        // Activity-specific data
-        activityType,
-        ...activityData,
+        assessmentDescription:
+          assessmentDescription ||
+          selectedLessonPlan.plan?.learningObjective ||
+          "",
       };
 
-      let response;
+      // Add activity type metadata
+      const activityFormData = {
+        ...activityData,
+        activityType:
+          selectedLessonPlan.parameters?.activityType || "assessment",
+      };
 
-      // Call the appropriate backend endpoint
-      switch (activityType) {
-        case "essay":
-          response = await assessmentAPI.generateEssayAssessment(requestData);
-          break;
-        case "textbook":
-          response = await assessmentAPI.generateTextbookActivity(requestData);
-          break;
-        case "activity":
-        case "assessment":
-        default:
-          response = await assessmentAPI.generateActivityAndRubric(requestData);
-          break;
-      }
+      console.log("Generating assessment with data:", {
+        lessonPlanData,
+        activityFormData,
+      });
+
+      // Use the wrapper function that generates and saves
+      const response = await assessmentAPI.generateFromLessonPlan(
+        lessonPlanData,
+        activityFormData
+      );
 
       if (response.success) {
-        message.success("Assessment generated successfully!");
+        message.success("Assessment generated and saved successfully!");
 
         // Call parent callback with the response data
         if (onSubmit) {
@@ -203,7 +191,6 @@ const LessonPlannerAssessmentModal = ({
             ...response,
             lessonPlan: selectedLessonPlan,
             class: getSelectedClassDetails(),
-            activityType,
           });
         }
 
@@ -222,16 +209,6 @@ const LessonPlannerAssessmentModal = ({
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const getAssessmentTypeFromActivity = (activityType) => {
-    const typeMap = {
-      assessment: "Comprehensive Assessment",
-      essay: "Essay Writing",
-      textbook: "Textbook Activity",
-      activity: "Classroom Activity",
-    };
-    return typeMap[activityType] || "Assessment";
   };
 
   const handleReset = () => {
@@ -253,10 +230,6 @@ const LessonPlannerAssessmentModal = ({
     return classes.find((cls) => cls._id === selectedClass);
   };
 
-  const getSelectedLessonPlanDetails = () => {
-    return selectedLessonPlan;
-  };
-
   const formatLessonPlanOption = (plan) => {
     const topic = plan.parameters?.specificTopic || "No Topic";
     const grade = plan.parameters?.grade || "Unknown Grade";
@@ -275,7 +248,7 @@ const LessonPlannerAssessmentModal = ({
 
   const renderLessonPlanOptions = () => {
     const plansToShow = selectedClass
-      ? lessonPlans.filter((plan) => plan.classId === selectedClass)
+      ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
       : lessonPlans;
 
     return plansToShow.map((plan) => {
@@ -298,7 +271,7 @@ const LessonPlannerAssessmentModal = ({
   };
 
   const availablePlans = selectedClass
-    ? lessonPlans.filter((plan) => plan.classId === selectedClass)
+    ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
     : lessonPlans;
 
   // Render the appropriate activity form based on the selected lesson plan's activity type

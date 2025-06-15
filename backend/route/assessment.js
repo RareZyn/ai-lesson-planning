@@ -9,8 +9,8 @@ const {
   getUserAssessments,
   getAssessmentById,
   deleteAssessment,
+  updateAssessment,
 } = require("../controller/aseessmentController");
-
 
 const router = express.Router();
 
@@ -19,10 +19,10 @@ router.post("/generateActivityAndRubric", generateActivityAndRubric);
 router.post("/generateEssayAssessment", generateEssayAssessment);
 router.post("/generateTextbookActivity", generateTextbookActivity);
 
-// Assessment management routes (new)
 router.post("/save", saveAssessment);
 router.get("/my-assessments", getUserAssessments);
 router.get("/:id", getAssessmentById);
+router.put("/:id", updateAssessment);
 router.delete("/:id", deleteAssessment);
 
 module.exports = router;
