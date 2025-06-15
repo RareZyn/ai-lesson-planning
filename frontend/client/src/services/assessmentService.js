@@ -1,4 +1,4 @@
-// src/services/assessmentService.js - Updated for lesson-based assessment integration
+// src/services/assessmentService.js - Updated to match backend controller
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -50,123 +50,10 @@ apiClient.interceptors.response.use(
  * Assessment API Service for lesson plan-based assessments
  */
 export const assessmentAPI = {
-  // Generate full lesson planner (lesson info + activities)
-  generateFullLessonPlanner: async (lessonData) => {
-    try {
-      const response = await apiClient.post(
-        "/assessment/fullLessonPlanner",
-        lessonData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error generating full lesson planner:", error);
-      throw error;
-    }
-  },
-
-  // Generate activity and rubric based on lesson plan
-  generateActivityAndRubric: async (assessmentData) => {
-    try {
-      const response = await apiClient.post(
-        "/assessment/generateActivityAndRubric",
-        assessmentData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error generating activity and rubric:", error);
-      throw error;
-    }
-  },
-
-  // Generate essay assessment
-  generateEssayAssessment: async (essayData) => {
-    try {
-      const response = await apiClient.post(
-        "/assessment/generateEssayAssessment",
-        essayData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error generating essay assessment:", error);
-      throw error;
-    }
-  },
-
-  // Generate textbook activity
-  generateTextbookActivity: async (textbookData) => {
-    try {
-      const response = await apiClient.post(
-        "/assessment/generateTextbookActivity",
-        textbookData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error generating textbook activity:", error);
-      throw error;
-    }
-  },
-
-  // Save generated assessment to database
-  saveAssessment: async (assessmentData) => {
-    try {
-      const response = await apiClient.post("/assessment/save", assessmentData);
-      return response.data;
-    } catch (error) {
-      console.error("Error saving assessment:", error);
-      throw error;
-    }
-  },
-
-  // Get user's assessments with filtering and pagination
-  getUserAssessments: async (params = {}) => {
-    try {
-      const response = await apiClient.get("/assessment/my-assessments", {
-        params,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching user assessments:", error);
-      throw error;
-    }
-  },
-
-  // Get assessment by ID
-  getAssessmentById: async (assessmentId) => {
-    try {
-      const response = await apiClient.get(`/assessment/${assessmentId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching assessment:", error);
-      throw error;
-    }
-  },
-
-  // Update assessment
-  updateAssessment: async (assessmentId, updateData) => {
-    try {
-      const response = await apiClient.put(
-        `/assessment/${assessmentId}`,
-        updateData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error updating assessment:", error);
-      throw error;
-    }
-  },
-
-  // Delete assessment
-  deleteAssessment: async (assessmentId) => {
-    try {
-      const response = await apiClient.delete(`/assessment/${assessmentId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error deleting assessment:", error);
-      throw error;
-    }
-  },
-
-  // Main integration function: Generate assessment from lesson plan
+  /**
+   * Main function: Generate assessment from lesson plan data
+   * This matches the backend controller's generateFromLessonPlan endpoint
+   */
   generateFromLessonPlan: async (lessonPlanData, activityFormData) => {
     try {
       console.log("Starting assessment generation with data:", {
@@ -174,16 +61,21 @@ export const assessmentAPI = {
         activityFormData,
       });
 
-      // Prepare the request data based on the backend controller structure
+      // Prepare the request data to match backend controller expectations
       const requestData = {
-        // Lesson plan information
+        // Required fields for backend validation
+        lessonPlanId: lessonPlanData.lessonPlanId || lessonPlanData._id,
+        classId: lessonPlanData.classId || activityFormData.classId,
         lesson: lessonPlanData.lesson || lessonPlanData.title,
+        activityType: activityFormData.activityType || "activityInClass",
+
+        // Lesson plan core information
         subject: lessonPlanData.subject,
         theme: lessonPlanData.theme,
         topic: lessonPlanData.topic,
         grade: lessonPlanData.grade,
 
-        // Standards
+        // Standards from lesson plan
         contentStandard: {
           main: lessonPlanData.contentStandard?.main || "",
           component: lessonPlanData.contentStandard?.component || "",
@@ -200,90 +92,265 @@ export const assessmentAPI = {
           post: lessonPlanData.learningOutline?.post || "",
         },
 
-        // Activity type determines which endpoint to call
-        activityType: activityFormData.activityType || "activityInClass",
+        // Assessment metadata
+        assessmentTitle:
+          activityFormData.assessmentTitle ||
+          `${lessonPlanData.lesson || "Assessment"} - ${
+            activityFormData.activityType
+          }`,
+        assessmentDescription:
+          activityFormData.assessmentDescription ||
+          `Generated ${activityFormData.activityType} assessment`,
 
-        // Additional form data from user input
+        // Activity-specific data from form
         ...activityFormData,
       };
 
       console.log("Prepared request data:", requestData);
 
-      // Call the appropriate generation endpoint based on activity type
-      let generationResponse;
-      switch (requestData.activityType) {
-        case "essay":
-          generationResponse = await assessmentAPI.generateEssayAssessment(
-            requestData
-          );
-          break;
-        case "textbook":
-          generationResponse = await assessmentAPI.generateTextbookActivity(
-            requestData
-          );
-          break;
-        case "activityInClass":
-        case "assessment":
-        default:
-          generationResponse = await assessmentAPI.generateActivityAndRubric(
-            requestData
-          );
-          break;
-      }
+      // Call the unified backend endpoint
+      const response = await apiClient.post(
+        "/assessment/generateFromLessonPlan",
+        requestData
+      );
 
-      console.log("Generation response:", generationResponse);
+      console.log("Backend response:", response.data);
 
-      // If generation successful, save the assessment
-      if (generationResponse.success) {
-        const saveData = {
-          title:
-            lessonPlanData.assessmentTitle ||
-            `Assessment - ${lessonPlanData.lesson}`,
-          description:
-            lessonPlanData.assessmentDescription ||
-            "Generated from lesson plan",
-          lessonPlanId: lessonPlanData.lessonPlanId,
-          classId: lessonPlanData.classId,
-          activityType: requestData.activityType,
-          assessmentType: "Generated Assessment",
-          questionCount: 20, // Default or from form data
-          duration: "60 minutes", // Default or from form data
-          difficulty: "Intermediate", // Default or from form data
-          skills: [], // From form data if available
-          generatedContent: {
-            activityHTML: generationResponse.activityHTML,
-            rubricHTML: generationResponse.rubricHTML,
-            aiResponse: generationResponse,
-          },
-          lessonPlanSnapshot: {
-            title: lessonPlanData.lesson,
-            subject: lessonPlanData.subject,
-            grade: lessonPlanData.grade,
-            contentStandard: lessonPlanData.contentStandard,
-            learningStandard: lessonPlanData.learningStandard,
-            learningOutline: lessonPlanData.learningOutline,
-          },
-          hasActivity: !!generationResponse.activityHTML,
-          hasRubric: !!generationResponse.rubricHTML,
-          status: "Generated",
-        };
-
-        console.log("Saving assessment data:", saveData);
-        const saveResponse = await assessmentAPI.saveAssessment(saveData);
-
-        return {
-          success: true,
-          generation: generationResponse,
-          saved: saveResponse,
-          data: saveResponse.data,
-        };
-      }
-
-      return generationResponse;
+      return {
+        success: true,
+        data: response.data.data, // The saved assessment
+        generatedContent: response.data.generatedContent,
+        message: response.data.message,
+      };
     } catch (error) {
       console.error("Error in generateFromLessonPlan:", error);
       throw error;
     }
+  },
+
+  /**
+   * Save assessment manually (if needed for standalone assessments)
+   */
+  saveAssessment: async (assessmentData) => {
+    try {
+      const response = await apiClient.post("/assessment/save", assessmentData);
+      return response.data;
+    } catch (error) {
+      console.error("Error saving assessment:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get user's assessments with filtering and pagination
+   */
+  getUserAssessments: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/assessment/my-assessments", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user assessments:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get assessment by ID
+   */
+  getAssessmentById: async (assessmentId) => {
+    try {
+      const response = await apiClient.get(`/assessment/${assessmentId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching assessment:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update assessment
+   */
+  updateAssessment: async (assessmentId, updateData) => {
+    try {
+      const response = await apiClient.put(
+        `/assessment/${assessmentId}`,
+        updateData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating assessment:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete assessment
+   */
+  deleteAssessment: async (assessmentId) => {
+    try {
+      const response = await apiClient.delete(`/assessment/${assessmentId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting assessment:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get assessments for a specific lesson plan
+   */
+  getAssessmentsByLessonPlan: async (lessonPlanId) => {
+    try {
+      const response = await apiClient.get("/assessment/my-assessments", {
+        params: { lessonPlanId },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching assessments for lesson plan:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get assessments for a specific class
+   */
+  getAssessmentsByClass: async (classId) => {
+    try {
+      const response = await apiClient.get("/assessment/my-assessments", {
+        params: { classId },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching assessments for class:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Export assessment content as PDF or DOCX
+   */
+  exportAssessment: async (assessmentId, format = "pdf") => {
+    try {
+      const response = await apiClient.get(
+        `/assessment/${assessmentId}/export`,
+        {
+          params: { format },
+          responseType: "blob",
+        }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `assessment.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true, message: "Assessment exported successfully" };
+    } catch (error) {
+      console.error("Error exporting assessment:", error);
+      throw error;
+    }
+  },
+};
+
+// Utility functions for assessment data preparation
+export const assessmentUtils = {
+  /**
+   * Prepare lesson plan data for assessment generation
+   */
+  prepareLessonPlanData: (lessonPlan, classInfo) => {
+    return {
+      lessonPlanId: lessonPlan._id,
+      classId: classInfo?._id || lessonPlan.classId,
+      lesson: lessonPlan.parameters?.specificTopic || lessonPlan.title,
+      subject: lessonPlan.parameters?.subject || classInfo?.subject,
+      theme: lessonPlan.parameters?.theme,
+      topic: lessonPlan.parameters?.topic,
+      grade: lessonPlan.parameters?.formLevel || classInfo?.grade,
+      contentStandard: lessonPlan.parameters?.contentStandard,
+      learningStandard: lessonPlan.parameters?.learningStandard,
+      learningOutline: lessonPlan.plan
+        ? {
+            pre: Array.isArray(lessonPlan.plan.activities?.preLesson)
+              ? lessonPlan.plan.activities.preLesson.join("; ")
+              : lessonPlan.plan.activities?.preLesson || "",
+            during: Array.isArray(lessonPlan.plan.activities?.duringLesson)
+              ? lessonPlan.plan.activities.duringLesson.join("; ")
+              : lessonPlan.plan.activities?.duringLesson || "",
+            post: Array.isArray(lessonPlan.plan.activities?.postLesson)
+              ? lessonPlan.plan.activities.postLesson.join("; ")
+              : lessonPlan.plan.activities?.postLesson || "",
+          }
+        : {},
+    };
+  },
+
+  /**
+   * Validate assessment form data
+   */
+  validateAssessmentForm: (formData) => {
+    const errors = [];
+
+    if (!formData.activityType) {
+      errors.push("Activity type is required");
+    }
+
+    if (formData.activityType === "essay" && !formData.essayType) {
+      errors.push("Essay type is required for essay assessments");
+    }
+
+    if (formData.activityType === "assessment" && !formData.questionTypes) {
+      errors.push("Question types are required for assessments");
+    }
+
+    if (
+      formData.numberOfQuestions &&
+      (formData.numberOfQuestions < 1 || formData.numberOfQuestions > 100)
+    ) {
+      errors.push("Number of questions must be between 1 and 100");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  },
+
+  /**
+   * Get default assessment settings based on activity type
+   */
+  getDefaultSettings: (activityType) => {
+    const defaults = {
+      activityInClass: {
+        duration: "30-45 minutes",
+        numberOfQuestions: 10,
+        studentArrangement: "small_group",
+        resourceUsage: "classroom_only",
+      },
+      essay: {
+        duration: "60 minutes",
+        wordCount: "200-300 words",
+        essayType: "descriptive",
+      },
+      textbook: {
+        duration: "45 minutes",
+        resourceUsage: "textbook_required",
+      },
+      assessment: {
+        duration: "60 minutes",
+        numberOfQuestions: 20,
+        questionTypes: ["multiple_choice", "short_answer"],
+        assessmentType: "Unit Test",
+      },
+    };
+
+    return defaults[activityType] || defaults.activityInClass;
   },
 };
 
