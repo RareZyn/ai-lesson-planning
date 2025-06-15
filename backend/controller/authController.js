@@ -1,4 +1,4 @@
-// controllers/authController.js
+// controllers/authController.js - Fixed version with better error handling
 const User = require("../model/User");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
@@ -341,68 +341,142 @@ exports.changePassword = async (req, res) => {
  */
 exports.findOrCreateFirebaseUser = async (req, res) => {
   try {
+    console.log("Firebase user sync request received:", req.body);
+
     const { firebaseUid, email, name, displayName, photoURL } = req.body;
 
-    if (!firebaseUid || !email) {
+    // Enhanced validation with better error messages
+    if (!firebaseUid) {
+      console.error("Missing firebaseUid in request");
       return res.status(400).json({
         success: false,
-        message: "Firebase UID and email are required",
+        message: "Firebase UID is required",
+        missingField: "firebaseUid",
       });
     }
+
+    if (!email) {
+      console.error("Missing email in request");
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+        missingField: "email",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.error("Invalid email format:", email);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+        invalidField: "email",
+      });
+    }
+
+    console.log("Looking for existing user with Firebase UID:", firebaseUid);
 
     // Try to find existing user by Firebase UID
     let user = await User.findOne({ firebaseUid });
 
     if (!user) {
+      console.log("No user found with Firebase UID, checking by email:", email);
       // Try to find by email (in case user exists but doesn't have firebaseUid set)
       user = await User.findOne({ email: email.toLowerCase() });
 
       if (user) {
+        console.log("Found existing user by email, updating with Firebase UID");
         // Update existing user with Firebase UID
         user.firebaseUid = firebaseUid;
         user.lastLogin = new Date();
         if (photoURL) user.avatar = photoURL;
         if (displayName && !user.name) user.name = displayName;
         await user.save();
+        console.log("Successfully updated existing user");
       } else {
-        // Create new user
+        console.log("No existing user found, creating new user");
+        // Create new user with better defaults
+        const userName = name || displayName || email.split("@")[0] || "User";
+
         user = await User.create({
           firebaseUid,
           email: email.toLowerCase(),
-          name: name || displayName || email,
-          roles: ["teacher"],
+          name: userName,
+          roles: ["teacher"], // Default role
           isEmailVerified: true, // Assume Firebase users are verified
           lastLogin: new Date(),
           avatar: photoURL || "",
+          schoolName: "", // Will be set later by user
+          isActive: true,
         });
+        console.log("Successfully created new user:", user._id);
       }
     } else {
-      // Update last login
+      console.log("Found existing user with Firebase UID, updating last login");
+      // Update last login and photo if provided
       user.lastLogin = new Date();
-      if (photoURL) user.avatar = photoURL;
+      if (photoURL && photoURL !== user.avatar) {
+        user.avatar = photoURL;
+      }
       await user.save();
+      console.log("Successfully updated existing Firebase user");
     }
+
+    // Return consistent user object
+    const userResponse = {
+      _id: user._id,
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+      firebaseUid: user.firebaseUid,
+      schoolName: user.schoolName || "",
+      lastLogin: user.lastLogin,
+      avatar: user.avatar || "",
+      isActive: user.isActive,
+      isEmailVerified: user.isEmailVerified,
+    };
+
+    console.log("Sending successful response for user:", user._id);
 
     res.status(200).json({
       success: true,
-      user: {
-        _id: user._id,
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        roles: user.roles,
-        firebaseUid: user.firebaseUid,
-        schoolName: user.schoolName,
-        lastLogin: user.lastLogin,
-        avatar: user.avatar,
-      },
+      message: "Firebase user synced successfully",
+      user: userResponse,
     });
   } catch (error) {
     console.error("Error in findOrCreateFirebaseUser:", error);
+
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `User with this ${field} already exists`,
+        errorType: "duplicate_key",
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((val) => val.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors,
+        errorType: "validation",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Server error while processing Firebase user",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+      errorType: "server_error",
     });
   }
 };

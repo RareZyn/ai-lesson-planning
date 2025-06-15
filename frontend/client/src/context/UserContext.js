@@ -1,161 +1,223 @@
-// src/context/UserContext.js - Fixed version with proper loading states
+// src/context/UserContext.js - Fixed version
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { authAPI } from "../services/api";
 
 const UserContext = createContext();
 
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
+  return context;
+};
+
 export const UserProvider = ({ children }) => {
-  const { currentUser, loading: authLoading } = useAuth();
-  const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [syncing, setSyncing] = useState(false); // New state for sync process
+  const [isReady, setIsReady] = useState(false);
 
-  // Sync Firebase user with MongoDB
+  const { user: firebaseUser, loading: authLoading } = useAuth();
+
+  // Debug logging function
+  const logUserState = () => {
+    console.log("UserContext - Current user:", currentUser);
+    console.log("UserContext - UserId:", userId);
+    console.log("UserContext - Loading:", loading);
+    console.log("UserContext - IsAuthenticated:", isAuthenticated);
+    console.log("UserContext - IsReady:", isReady);
+  };
+
+  // Sync Firebase user with MongoDB backend
   const syncFirebaseUserWithMongoDB = async (firebaseUser) => {
-    if (!firebaseUser || syncing) {
-      return null;
-    }
-
-    setSyncing(true);
-    console.log(
-      "Firebase user detected, creating/finding MongoDB user:",
-      firebaseUser.uid
-    );
-
     try {
+      console.log(
+        "Firebase user detected, creating/finding MongoDB user:",
+        firebaseUser?.uid
+      );
+
+      if (!firebaseUser) {
+        console.error("No Firebase user provided to sync function");
+        return null;
+      }
+
+      // Prepare user data for backend - handle potential undefined values
       const userData = {
         firebaseUid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
+        email: firebaseUser.email || "",
+        name:
+          firebaseUser.displayName ||
+          firebaseUser.email?.split("@")[0] ||
+          "User",
+        displayName: firebaseUser.displayName || "",
+        photoURL: firebaseUser.photoURL || "",
       };
 
+      console.log("Sending user data to backend:", userData);
+
+      // Call backend to find or create MongoDB user
       const response = await authAPI.findOrCreateFirebaseUser(userData);
 
-      if (response.success) {
-        console.log("MongoDB user created/found:", response.user);
-        setUser(response.user);
+      console.log("Backend response:", response);
+
+      if (response.success && response.user) {
+        setCurrentUser(response.user);
+        setUserId(response.user._id || response.user.id);
         setIsAuthenticated(true);
         return response.user;
       } else {
-        console.error(
-          "Failed to sync Firebase user with MongoDB:",
-          response.message
-        );
-        return null;
+        console.error("Backend response indicates failure:", response);
+        throw new Error(response.message || "Failed to sync user with backend");
       }
     } catch (error) {
       console.error("Error syncing Firebase user with MongoDB:", error);
+
+      // More detailed error logging
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        console.error("Response headers:", error.response.headers);
+      }
+
+      // Reset user state on error
+      setCurrentUser(null);
+      setUserId(null);
+      setIsAuthenticated(false);
       return null;
-    } finally {
-      setSyncing(false);
     }
   };
 
-  // Main effect to handle authentication state
-  useEffect(() => {
-    let isMounted = true;
+  // Handle Firebase auth state changes
+  const handleAuthState = async (firebaseUser) => {
+    setLoading(true);
 
-    const handleAuthState = async () => {
-      // Wait for auth loading to complete
-      if (authLoading) {
-        return;
-      }
+    try {
+      if (firebaseUser) {
+        console.log("Firebase user detected:", {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified,
+        });
 
-      if (currentUser) {
-        // Firebase user exists, sync with MongoDB
-        const mongoUser = await syncFirebaseUserWithMongoDB(currentUser);
+        // Wait a moment for Firebase to fully initialize
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        if (isMounted) {
-          if (mongoUser) {
-            setUser(mongoUser);
-            setIsAuthenticated(true);
-          } else {
-            // Sync failed, clear state
-            setUser(null);
-            setIsAuthenticated(false);
-          }
-          setLoading(false);
+        const mongoUser = await syncFirebaseUserWithMongoDB(firebaseUser);
+
+        if (mongoUser) {
+          console.log("✅ MongoDB user synced successfully:", mongoUser);
+        } else {
+          console.error("❌ Failed to sync MongoDB user");
         }
       } else {
-        // No Firebase user, clear everything
-        if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
-          setLoading(false);
-        }
+        console.log("No Firebase user - clearing user state");
+        setCurrentUser(null);
+        setUserId(null);
+        setIsAuthenticated(false);
       }
-    };
-
-    handleAuthState();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser, authLoading]);
-
-  // Update profile function
-  const updateUserProfile = async (profileData) => {
-    try {
-      const response = await authAPI.updateProfile(profileData);
-      if (response.success) {
-        setUser(response.user);
-        return response;
-      }
-      throw new Error(response.message);
     } catch (error) {
-      console.error("Error updating profile:", error);
-      throw error;
+      console.error("Error in handleAuthState:", error);
+      setCurrentUser(null);
+      setUserId(null);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+      setIsReady(true);
     }
   };
+
+  // Effect to handle Firebase auth state changes
+  useEffect(() => {
+    logUserState();
+
+    // Don't process if Firebase auth is still loading
+    if (authLoading) {
+      console.log("Firebase auth still loading, waiting...");
+      return;
+    }
+
+    console.log(
+      "Processing Firebase auth state change:",
+      firebaseUser?.uid || "No user"
+    );
+    handleAuthState(firebaseUser);
+  }, [firebaseUser, authLoading]);
+
+  // Log state changes for debugging
+  useEffect(() => {
+    logUserState();
+  }, [currentUser, userId, loading, isAuthenticated, isReady]);
 
   // Logout function
   const logout = async () => {
     try {
-      await authAPI.logout();
-      setUser(null);
+      setLoading(true);
+
+      // Clear local state first
+      setCurrentUser(null);
+      setUserId(null);
       setIsAuthenticated(false);
+
+      // Call backend logout (optional, mainly for cookie clearing)
+      try {
+        await authAPI.logout();
+      } catch (error) {
+        console.warn("Backend logout failed (non-critical):", error);
+      }
+
+      console.log("User logged out successfully");
     } catch (error) {
       console.error("Error during logout:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Helper function to get user ID (prioritize MongoDB _id)
-  const getUserId = () => {
-    if (user?._id) return user._id;
-    if (user?.id) return user.id;
-    if (currentUser?.uid) return currentUser.uid;
-    return null;
+  // Update user function
+  const updateUser = async (updatedData) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.updateProfile(updatedData);
+
+      if (response.success && response.user) {
+        setCurrentUser(response.user);
+        return response.user;
+      } else {
+        throw new Error(response.message || "Failed to update user");
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const value = {
-    user,
-    userId: getUserId(),
-    loading: loading || authLoading || syncing, // Include syncing in loading state
+  const contextValue = {
+    // User state
+    currentUser,
+    userId,
+    loading,
     isAuthenticated,
-    updateUserProfile,
+    isReady,
+
+    // Firebase user for reference
+    firebaseUser,
+
+    // Functions
     logout,
-    // Additional helper
-    isReady: !loading && !authLoading && !syncing, // New flag for when everything is ready
+    updateUser,
+    syncFirebaseUserWithMongoDB,
+
+    // Utility functions
+    refreshUser: () => handleAuthState(firebaseUser),
   };
 
-  // Debug logging
-  console.log("UserContext - Current user:", user);
-  console.log("UserContext - UserId:", getUserId());
-  console.log("UserContext - Loading:", loading || authLoading || syncing);
-  console.log("UserContext - IsAuthenticated:", isAuthenticated);
-  console.log("UserContext - IsReady:", !loading && !authLoading && !syncing);
-
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};
-
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
-  }
-  return context;
+  return (
+    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
+  );
 };

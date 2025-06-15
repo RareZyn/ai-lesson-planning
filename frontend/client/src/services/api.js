@@ -59,10 +59,11 @@ export const authAPI = {
     return response.data;
   },
   findOrCreateFirebaseUser: async (firebaseUserData) => {
+    console.log("Sending Firebase user data:", firebaseUserData);
     const response = await api.post("/auth/firebase-user", firebaseUserData);
+    console.log("Received response:", response.data);
     return response.data;
   },
-
   // Google OAuth
   googleAuth: async (googleData) => {
     const response = await api.post("/auth/google", googleData);
