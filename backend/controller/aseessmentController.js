@@ -1,12 +1,12 @@
-// Fixed backend/controller/aseessmentController.js - Add activity type validation and mapping
+// Fixed backend/controller/assessmentController.js - Fix generatedContent saving
 const OpenAI = require("openai");
 const Assessment = require("../model/Assessment");
-const LessonPlan = require("../model/Lesson"); // Add this import
+const LessonPlan = require("../model/Lesson");
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// FIXED: Activity type mapping to ensure valid enum values
+// Activity type mapping to ensure valid enum values
 const ACTIVITY_TYPE_MAPPING = {
   activityInClass: "activity",
   "activity-in-class": "activity",
@@ -17,7 +17,7 @@ const ACTIVITY_TYPE_MAPPING = {
   assessment: "assessment",
 };
 
-// FIXED: Function to validate and map activity type
+// Function to validate and map activity type
 const validateAndMapActivityType = (activityType) => {
   if (!activityType) {
     return "activity"; // Default fallback
@@ -35,24 +35,23 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
+// FIXED: Standardize assessment response format
 const standardizeAssessmentResponse = (
   activityHTML,
   rubricHTML,
   assessmentHTML,
   answerKeyHTML
 ) => {
-  return {
+  const response = {
     success: true,
     generatedContent: {
-      // For activities and textbook
+      // Store all possible content types
       activityHTML: activityHTML || null,
       rubricHTML: rubricHTML || null,
-
-      // For assessments/exams
       assessmentHTML: assessmentHTML || null,
       answerKeyHTML: answerKeyHTML || null,
 
-      // For frontend convenience
+      // For frontend convenience - these help determine which content to show
       studentContent: activityHTML || assessmentHTML || null,
       teacherContent: rubricHTML || answerKeyHTML || null,
 
@@ -62,6 +61,9 @@ const standardizeAssessmentResponse = (
       generatedAt: new Date(),
     },
   };
+
+  console.log("Standardized response:", response);
+  return response;
 };
 
 const generateFromLessonPlan = async (req, res) => {
@@ -85,7 +87,7 @@ const generateFromLessonPlan = async (req, res) => {
 
     console.log("Received request body:", req.body);
 
-    // FIXED: Validate and map activity type
+    // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
     console.log(
       `Activity type validation: "${rawActivityType}" -> "${activityType}"`
@@ -113,7 +115,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
-          activityType: "activity", // Use validated type
+          activityType: "activity",
           ...activityData,
         });
         break;
@@ -175,7 +177,9 @@ const generateFromLessonPlan = async (req, res) => {
         break;
     }
 
-    // For testing, you can use a fake user ID
+    console.log("Generated content from AI:", generatedContent);
+
+    // FIXED: Ensure we have the user properly
     if (!req.user) {
       req.user = { id: "test-user-id" };
     }
@@ -186,10 +190,11 @@ const generateFromLessonPlan = async (req, res) => {
       lessonPlanId,
       classId,
       createdBy: req.user.id,
+      generatedContent, // Make sure this is included
     });
 
-    // Save assessment to database
-    const assessment = await Assessment.create({
+    // FIXED: Save assessment to database with proper content structure
+    const assessmentData = {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       description:
         assessmentDescription || `Generated ${activityType} assessment`,
@@ -205,7 +210,21 @@ const generateFromLessonPlan = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: "Intermediate",
       skills: [],
-      generatedContent,
+      // FIXED: Ensure generatedContent is properly structured
+      generatedContent: {
+        activityHTML: generatedContent.activityHTML || null,
+        rubricHTML: generatedContent.rubricHTML || null,
+        assessmentHTML: generatedContent.assessmentHTML || null,
+        answerKeyHTML: generatedContent.answerKeyHTML || null,
+        // Include metadata
+        hasStudentContent: !!(
+          generatedContent.activityHTML || generatedContent.assessmentHTML
+        ),
+        hasTeacherContent: !!(
+          generatedContent.rubricHTML || generatedContent.answerKeyHTML
+        ),
+        generatedAt: new Date(),
+      },
       lessonPlanSnapshot: {
         title: lesson,
         subject,
@@ -215,17 +234,23 @@ const generateFromLessonPlan = async (req, res) => {
         learningOutline,
       },
       status: "Generated",
+      // FIXED: Set proper flags based on content availability
       hasActivity: !!(
         generatedContent.activityHTML || generatedContent.assessmentHTML
       ),
       hasRubric: !!(
         generatedContent.rubricHTML || generatedContent.answerKeyHTML
       ),
-    });
+    };
+
+    console.log("Assessment data to save:", assessmentData);
+
+    const assessment = await Assessment.create(assessmentData);
 
     console.log("Assessment created successfully:", assessment._id);
+    console.log("Saved generatedContent:", assessment.generatedContent);
 
-    // FIXED: Update lesson plan status properly
+    // Update lesson plan status
     try {
       await LessonPlan.findByIdAndUpdate(lessonPlanId, {
         assessmentStatus: "generated",
@@ -240,14 +265,14 @@ const generateFromLessonPlan = async (req, res) => {
       console.log(`Updated lesson plan ${lessonPlanId} status to generated`);
     } catch (lessonPlanError) {
       console.error("Error updating lesson plan status:", lessonPlanError);
-      // Don't fail the whole request if lesson plan update fails
     }
 
+    // FIXED: Return the complete response with all content
     res.status(201).json({
       success: true,
       message: `${activityType} assessment generated and saved successfully`,
       data: assessment,
-      generatedContent,
+      generatedContent: assessment.generatedContent, // Include the generated content in response
     });
   } catch (error) {
     console.error("Error in generateFromLessonPlan:", error);
@@ -285,7 +310,7 @@ const getLessonPlansWithoutAssessments = async (req, res) => {
   }
 };
 
-// FIXED: Add method to get assessments with proper filtering
+// Get filtered assessments method
 const getUserAssessmentsFiltered = async (req, res) => {
   try {
     const {
@@ -303,7 +328,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     if (classId) filter.classId = classId;
 
-    // FIXED: Validate activity type filter
+    // Validate activity type filter
     if (rawActivityType) {
       const mappedActivityType = validateAndMapActivityType(rawActivityType);
       filter.activityType = mappedActivityType;
@@ -311,7 +336,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     if (status) filter.status = status;
 
-    // FIXED: Filter by lesson plan presence - handle string values properly
+    // Filter by lesson plan presence
     if (hasLessonPlan !== undefined) {
       if (hasLessonPlan === "true") {
         filter.lessonPlanId = { $exists: true, $ne: null };
@@ -369,7 +394,6 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
 // Helper functions for different assessment types
 const generateActivityContent = async (data) => {
-  // Simulate the generateActivityAndRubric logic but return the content
   const response = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [
@@ -462,7 +486,10 @@ const generateTextbookContent = async (data) => {
   };
 };
 
+// FIXED: Assessment content generation - return proper field names
 const generateAssessmentContent = async (data) => {
+  console.log("Generating assessment content with data:", data);
+
   const response = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [
@@ -479,18 +506,28 @@ const generateAssessmentContent = async (data) => {
   });
 
   const output = response.choices[0].message.content;
+  console.log("Raw AI output:", output.substring(0, 500) + "...");
+
   const match = output.match(
     /```html\s*<!-- STUDENT ASSESSMENT -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER ANSWER KEY -->\s*(.*?)\s*```/s
   );
 
   if (!match || match.length < 3) {
+    console.error("Failed to parse AI response. Output:", output);
     throw new Error("Invalid response format from AI");
   }
 
-  return {
-    assessmentHTML: match[1].trim(),
-    answerKeyHTML: match[2].trim(),
+  const result = {
+    assessmentHTML: match[1].trim(), // For assessment type, use assessmentHTML
+    answerKeyHTML: match[2].trim(), // For assessment type, use answerKeyHTML
   };
+
+  console.log("Generated assessment content:", {
+    assessmentHTML: result.assessmentHTML ? "Generated" : "Missing",
+    answerKeyHTML: result.answerKeyHTML ? "Generated" : "Missing",
+  });
+
+  return result;
 };
 
 // Helper functions to build prompts (keeping the existing ones)
@@ -681,6 +718,7 @@ No extra explanation. Just two valid HTML blocks.
 `;
 };
 
+// FIXED: Assessment prompt to generate proper content
 const buildAssessmentPrompt = (data) => {
   return `
 # Identity
@@ -785,7 +823,7 @@ const saveAssessment = async (req, res) => {
       notes,
     } = req.body;
 
-    // FIXED: Validate and map activity type
+    // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
 
     // Validation
@@ -869,7 +907,7 @@ const getUserAssessments = async (req, res) => {
 
     if (classId) filter.classId = classId;
 
-    // FIXED: Validate activity type filter
+    // Validate activity type filter
     if (rawActivityType) {
       const mappedActivityType = validateAndMapActivityType(rawActivityType);
       filter.activityType = mappedActivityType;
@@ -963,6 +1001,13 @@ const getAssessmentById = async (req, res) => {
       });
     }
 
+    console.log("Returning assessment:", {
+      id: assessment._id,
+      generatedContent: assessment.generatedContent,
+      hasActivity: assessment.hasActivity,
+      hasRubric: assessment.hasRubric,
+    });
+
     res.status(200).json({
       success: true,
       data: assessment,
@@ -1009,7 +1054,7 @@ const deleteAssessment = async (req, res) => {
       });
     }
 
-    // FIXED: Also update the lesson plan status when deleting assessment
+    // Also update the lesson plan status when deleting assessment
     if (assessment.lessonPlanId) {
       try {
         // Check if this is the only assessment for this lesson plan
@@ -1113,7 +1158,7 @@ const updateAssessment = async (req, res) => {
     if (notes) assessment.notes = notes;
     if (tags) assessment.tags = tags;
 
-    // FIXED: Validate activity type if provided
+    // Validate activity type if provided
     if (rawActivityType) {
       assessment.activityType = validateAndMapActivityType(rawActivityType);
     }

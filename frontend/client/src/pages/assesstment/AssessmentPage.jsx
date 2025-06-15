@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx - Fixed version
+// src/pages/assessment/AssessmentPage.jsx - Fixed navigation and debugging
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -75,7 +75,7 @@ const AssessmentPage = () => {
   // Load assessments when tab changes or filters change
   useEffect(() => {
     if (activeTab === "lesson-based") {
-      loadLessonBasedData(); // This will show lesson plans and their assessment status
+      loadLessonBasedData();
     } else {
       loadStandaloneAssessments();
     }
@@ -101,7 +101,6 @@ const AssessmentPage = () => {
     }
   };
 
-  // FIXED: New function to load lesson plans with assessment status
   const loadLessonBasedData = async () => {
     try {
       setLoading(true);
@@ -112,12 +111,17 @@ const AssessmentPage = () => {
       // Get all assessments that have lesson plans
       const assessmentResponse = await assessmentAPI.getUserAssessments({
         ...filters,
-        hasLessonPlan: "true", // FIXED: Pass as string
+        hasLessonPlan: "true",
       });
 
       const assessmentsWithLessonPlans = assessmentResponse.success
         ? assessmentResponse.data || []
         : [];
+
+      console.log(
+        "Loaded assessments with lesson plans:",
+        assessmentsWithLessonPlans
+      );
 
       // Create a map of lesson plan IDs to their assessments
       const lessonPlanAssessmentMap = {};
@@ -146,7 +150,6 @@ const AssessmentPage = () => {
           assessments: assessments,
           hasActivity: assessments.some((a) => a.hasActivity),
           hasRubric: assessments.some((a) => a.hasRubric),
-          // For display purposes, we'll use the lesson plan data
           title: lessonPlan.parameters?.specificTopic || "Untitled Lesson",
           description: lessonPlan.plan?.learningObjective || "",
           activityType: lessonPlan.parameters?.activityType || "lesson",
@@ -187,6 +190,7 @@ const AssessmentPage = () => {
         }
       }
 
+      console.log("Final lesson plan rows:", filteredRows);
       setAssessments(filteredRows);
     } catch (error) {
       console.error("Error loading lesson-based data:", error);
@@ -201,7 +205,7 @@ const AssessmentPage = () => {
       setLoading(true);
       const response = await assessmentAPI.getUserAssessments({
         ...filters,
-        hasLessonPlan: "false", // FIXED: Pass as string
+        hasLessonPlan: "false",
       });
 
       if (response.success) {
@@ -220,7 +224,6 @@ const AssessmentPage = () => {
     if (activeTab === "lesson-based") {
       setIsLessonSelectionModalVisible(true);
     } else {
-      // Handle standalone assessment creation
       message.info("Standalone assessment creation coming soon!");
     }
   };
@@ -238,9 +241,19 @@ const AssessmentPage = () => {
       // Refresh the lesson plans list to show updated status
       loadLessonBasedData();
 
-      // Navigate to the generated assessment
+      // Enhanced navigation with better error handling
       if (data.data?._id) {
-        navigate(`/app/assessment/activity/${data.data._id}`);
+        console.log("Navigating to assessment with ID:", data.data._id);
+
+        // Wait a moment for the data to be saved
+        setTimeout(() => {
+          navigate(`/app/assessment/activity/${data.data._id}`);
+        }, 500);
+      } else {
+        console.warn(
+          "No assessment ID found in response, showing list instead"
+        );
+        message.info("Assessment created successfully! Check the list below.");
       }
     } catch (error) {
       console.error("Error creating assessment:", error);
@@ -250,40 +263,70 @@ const AssessmentPage = () => {
     }
   };
 
-  // Handle viewing assessment activity
+  // Enhanced view activity handler with better error handling
   const handleViewActivity = (record) => {
+    console.log("View activity clicked for record:", record);
+
     if (
       record.assessmentStatus === "generated" &&
       record.assessments?.length > 0
     ) {
       // Find the first assessment with activity
       const assessmentWithActivity = record.assessments.find(
-        (a) => a.hasActivity
+        (a) =>
+          a.hasActivity ||
+          a.generatedContent?.activityHTML ||
+          a.generatedContent?.assessmentHTML
       );
+
+      console.log("Found assessment with activity:", assessmentWithActivity);
+
       if (assessmentWithActivity) {
+        console.log(
+          "Navigating to activity viewer with ID:",
+          assessmentWithActivity._id
+        );
         navigate(`/app/assessment/activity/${assessmentWithActivity._id}`);
       } else {
-        message.warning("No activity available for this assessment");
+        console.warn("No assessment with activity content found");
+        message.warning("No activity content available for this assessment");
       }
     } else {
+      console.warn("No assessment activity available for this lesson plan");
       message.warning("No assessment activity available for this lesson plan");
     }
   };
 
-  // Handle viewing assessment rubric
+  // Enhanced view rubric handler
   const handleViewRubric = (record) => {
+    console.log("View rubric clicked for record:", record);
+
     if (
       record.assessmentStatus === "generated" &&
       record.assessments?.length > 0
     ) {
-      // Find the first assessment with rubric
-      const assessmentWithRubric = record.assessments.find((a) => a.hasRubric);
+      // Find the first assessment with rubric/answer key
+      const assessmentWithRubric = record.assessments.find(
+        (a) =>
+          a.hasRubric ||
+          a.generatedContent?.rubricHTML ||
+          a.generatedContent?.answerKeyHTML
+      );
+
+      console.log("Found assessment with rubric:", assessmentWithRubric);
+
       if (assessmentWithRubric) {
+        console.log(
+          "Navigating to rubric viewer with ID:",
+          assessmentWithRubric._id
+        );
         navigate(`/app/assessment/rubric/${assessmentWithRubric._id}`);
       } else {
-        message.warning("No rubric available for this assessment");
+        console.warn("No assessment with rubric content found");
+        message.warning("No rubric/answer key available for this assessment");
       }
     } else {
+      console.warn("No assessment rubric available for this lesson plan");
       message.warning("No assessment rubric available for this lesson plan");
     }
   };
@@ -323,7 +366,7 @@ const AssessmentPage = () => {
     }));
   };
 
-  // FIXED: Updated columns for lesson-based view
+  // Enhanced columns for lesson-based view with better action handling
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
@@ -378,32 +421,48 @@ const AssessmentPage = () => {
     {
       title: "Content Available",
       key: "content",
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          {record.hasActivity && (
-            <Tag
-              color="blue"
-              style={{ cursor: "pointer" }}
-              onClick={() => handleViewActivity(record)}
-            >
-              Activity
-            </Tag>
-          )}
-          {record.hasRubric && (
-            <Tag
-              color="green"
-              style={{ cursor: "pointer" }}
-              onClick={() => handleViewRubric(record)}
-            >
-              Rubric
-            </Tag>
-          )}
-          {record.assessmentStatus === "not_generated" && (
-            <Tag color="default">No Content</Tag>
-          )}
-        </Space>
-      ),
+      width: 150,
+      render: (_, record) => {
+        // Enhanced content checking
+        const hasStudentContent = record.assessments?.some(
+          (a) =>
+            a.hasActivity ||
+            a.generatedContent?.activityHTML ||
+            a.generatedContent?.assessmentHTML
+        );
+        const hasTeacherContent = record.assessments?.some(
+          (a) =>
+            a.hasRubric ||
+            a.generatedContent?.rubricHTML ||
+            a.generatedContent?.answerKeyHTML
+        );
+
+        return (
+          <Space>
+            {hasStudentContent && (
+              <Tag
+                color="blue"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleViewActivity(record)}
+              >
+                Activity
+              </Tag>
+            )}
+            {hasTeacherContent && (
+              <Tag
+                color="green"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleViewRubric(record)}
+              >
+                Rubric
+              </Tag>
+            )}
+            {record.assessmentStatus === "not_generated" && (
+              <Tag color="default">No Content</Tag>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: "Created",
@@ -416,38 +475,54 @@ const AssessmentPage = () => {
       title: "Actions",
       key: "actions",
       width: 150,
-      render: (_, record) => (
-        <Space>
-          {record.hasActivity && (
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => handleViewActivity(record)}
-              title="View Activity"
-            />
-          )}
-          {record.hasRubric && (
-            <Button
-              type="text"
-              icon={<FileExclamationOutlined />}
-              size="small"
-              onClick={() => handleViewRubric(record)}
-              title="View Rubric"
-            />
-          )}
-          {record.assessments?.length > 0 && (
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              size="small"
-              danger
-              onClick={() => handleDeleteAssessment(record)}
-              title="Delete Assessment"
-            />
-          )}
-        </Space>
-      ),
+      render: (_, record) => {
+        // Enhanced action button logic
+        const hasStudentContent = record.assessments?.some(
+          (a) =>
+            a.hasActivity ||
+            a.generatedContent?.activityHTML ||
+            a.generatedContent?.assessmentHTML
+        );
+        const hasTeacherContent = record.assessments?.some(
+          (a) =>
+            a.hasRubric ||
+            a.generatedContent?.rubricHTML ||
+            a.generatedContent?.answerKeyHTML
+        );
+
+        return (
+          <Space>
+            {hasStudentContent && (
+              <Button
+                type="text"
+                icon={<EyeOutlined />}
+                size="small"
+                onClick={() => handleViewActivity(record)}
+                title="View Activity"
+              />
+            )}
+            {hasTeacherContent && (
+              <Button
+                type="text"
+                icon={<FileExclamationOutlined />}
+                size="small"
+                onClick={() => handleViewRubric(record)}
+                title="View Rubric"
+              />
+            )}
+            {record.assessments?.length > 0 && (
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                size="small"
+                danger
+                onClick={() => handleDeleteAssessment(record)}
+                title="Delete Assessment"
+              />
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

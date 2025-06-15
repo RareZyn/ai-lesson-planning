@@ -1,4 +1,4 @@
-// Fixed src/pages/assessment/ActivityViewerPage.jsx - Handle different content types
+// Fixed src/pages/assessment/ActivityViewerPage.jsx - Better error handling and debugging
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -37,21 +37,41 @@ const ActivityViewerPage = () => {
   const fetchAssessment = async () => {
     try {
       setLoading(true);
+      console.log("Fetching assessment with ID:", id);
+
       const response = await assessmentAPI.getAssessmentById(id);
+      console.log("Assessment API response:", response);
 
       if (response.success && response.data) {
         setAssessment(response.data);
+        console.log("Assessment data loaded:", response.data);
+        console.log("Generated content:", response.data.generatedContent);
 
-        // FIXED: Check for both activityHTML and assessmentHTML
-        const hasStudentContent = !!(
-          response.data.generatedContent?.activityHTML ||
-          response.data.generatedContent?.assessmentHTML
-        );
+        // Enhanced content validation with detailed logging
+        const { activityHTML, assessmentHTML, rubricHTML, answerKeyHTML } =
+          response.data.generatedContent || {};
+
+        console.log("Content availability:", {
+          activityHTML: !!activityHTML,
+          assessmentHTML: !!assessmentHTML,
+          rubricHTML: !!rubricHTML,
+          answerKeyHTML: !!answerKeyHTML,
+          activityType: response.data.activityType,
+        });
+
+        // Check for student content based on activity type
+        const hasStudentContent = getStudentContentFromData(response.data);
+        console.log("Has student content:", hasStudentContent);
 
         if (!hasStudentContent) {
+          console.warn(
+            "No student content found for activity type:",
+            response.data.activityType
+          );
           setError("No student content found for this assessment.");
         }
       } else {
+        console.error("API response unsuccessful or no data:", response);
         setError("Assessment not found.");
       }
     } catch (error) {
@@ -63,21 +83,52 @@ const ActivityViewerPage = () => {
     }
   };
 
-  // FIXED: Get the appropriate content based on activity type
-  const getStudentContent = () => {
-    if (!assessment?.generatedContent) return null;
+  // Helper function to check content availability from raw data
+  const getStudentContentFromData = (assessmentData) => {
+    if (!assessmentData?.generatedContent) return null;
 
-    const { activityHTML, assessmentHTML } = assessment.generatedContent;
+    const { activityHTML, assessmentHTML } = assessmentData.generatedContent;
 
     // For assessment type, use assessmentHTML; for others, use activityHTML
-    if (assessment.activityType === "assessment") {
+    if (assessmentData.activityType === "assessment") {
       return assessmentHTML;
     } else {
       return activityHTML;
     }
   };
 
-  // FIXED: Get the appropriate teacher content
+  // Get the appropriate content based on activity type
+  const getStudentContent = () => {
+    if (!assessment?.generatedContent) {
+      console.log("No generated content available");
+      return null;
+    }
+
+    const { activityHTML, assessmentHTML } = assessment.generatedContent;
+
+    // Enhanced logging
+    console.log(
+      "Getting student content for activityType:",
+      assessment.activityType
+    );
+    console.log("Available content:", {
+      activityHTML: activityHTML ? "Present" : "Missing",
+      assessmentHTML: assessmentHTML ? "Present" : "Missing",
+    });
+
+    // For assessment type, use assessmentHTML; for others, use activityHTML
+    if (assessment.activityType === "assessment") {
+      const content = assessmentHTML;
+      console.log("Returning assessmentHTML for assessment type:", !!content);
+      return content;
+    } else {
+      const content = activityHTML;
+      console.log("Returning activityHTML for non-assessment type:", !!content);
+      return content;
+    }
+  };
+
+  // Get the appropriate teacher content
   const getTeacherContent = () => {
     if (!assessment?.generatedContent) return null;
 
@@ -91,13 +142,21 @@ const ActivityViewerPage = () => {
     }
   };
 
-  // FIXED: Check if teacher content exists
+  // Check if teacher content exists
   const hasTeacherContent = () => {
-    return !!getTeacherContent();
+    const teacherContent = getTeacherContent();
+    const hasContent = !!teacherContent;
+    console.log("Has teacher content:", hasContent);
+    return hasContent;
   };
 
   const handlePrint = () => {
     const studentContent = getStudentContent();
+    if (!studentContent) {
+      message.error("No content available to print");
+      return;
+    }
+
     const printWindow = window.open("", "_blank");
     if (printWindow && studentContent) {
       printWindow.document.write(`
@@ -129,26 +188,29 @@ const ActivityViewerPage = () => {
 
   const handleDownload = () => {
     const studentContent = getStudentContent();
-    if (studentContent) {
-      const blob = new Blob([studentContent], {
-        type: "text/html",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${assessment.title}_${
-        assessment.activityType === "assessment" ? "Assessment" : "Activity"
-      }.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      message.success(
-        `${
-          assessment.activityType === "assessment" ? "Assessment" : "Activity"
-        } downloaded successfully!`
-      );
+    if (!studentContent) {
+      message.error("No content available to download");
+      return;
     }
+
+    const blob = new Blob([studentContent], {
+      type: "text/html",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${assessment.title}_${
+      assessment.activityType === "assessment" ? "Assessment" : "Activity"
+    }.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success(
+      `${
+        assessment.activityType === "assessment" ? "Assessment" : "Activity"
+      } downloaded successfully!`
+    );
   };
 
   const handleViewRubric = () => {
@@ -167,7 +229,7 @@ const ActivityViewerPage = () => {
     navigate("/app/assessment");
   };
 
-  // FIXED: Get appropriate content type name
+  // Get appropriate content type name
   const getContentTypeName = () => {
     if (!assessment) return "Content";
 
@@ -185,7 +247,7 @@ const ActivityViewerPage = () => {
     }
   };
 
-  // FIXED: Get appropriate teacher content name
+  // Get appropriate teacher content name
   const getTeacherContentName = () => {
     if (!assessment) return "Teacher Content";
 
@@ -221,7 +283,27 @@ const ActivityViewerPage = () => {
       <div style={{ padding: "24px" }}>
         <Alert
           message="Error Loading Assessment"
-          description={error}
+          description={
+            <div>
+              <div>{error}</div>
+              {assessment && (
+                <div style={{ marginTop: "8px", fontSize: "12px" }}>
+                  <strong>Debug Info:</strong>
+                  <br />
+                  Activity Type: {assessment.activityType}
+                  <br />
+                  Content Available:{" "}
+                  {JSON.stringify({
+                    activityHTML: !!assessment.generatedContent?.activityHTML,
+                    assessmentHTML:
+                      !!assessment.generatedContent?.assessmentHTML,
+                    rubricHTML: !!assessment.generatedContent?.rubricHTML,
+                    answerKeyHTML: !!assessment.generatedContent?.answerKeyHTML,
+                  })}
+                </div>
+              )}
+            </div>
+          }
           type="error"
           showIcon
           action={
@@ -344,6 +426,7 @@ const ActivityViewerPage = () => {
               icon={<PrinterOutlined />}
               onClick={handlePrint}
               type="default"
+              disabled={!studentContent}
             >
               Print
             </Button>
@@ -351,6 +434,7 @@ const ActivityViewerPage = () => {
               icon={<DownloadOutlined />}
               onClick={handleDownload}
               type="primary"
+              disabled={!studentContent}
             >
               Download
             </Button>
@@ -375,11 +459,34 @@ const ActivityViewerPage = () => {
         ) : (
           <Alert
             message="No Student Content"
-            description={`No ${
-              assessment.activityType === "assessment"
-                ? "assessment"
-                : "activity"
-            } content has been generated for this assessment.`}
+            description={
+              <div>
+                <div>
+                  No{" "}
+                  {assessment.activityType === "assessment"
+                    ? "assessment"
+                    : "activity"}{" "}
+                  content has been generated for this assessment.
+                </div>
+                <div style={{ marginTop: "8px", fontSize: "12px" }}>
+                  <strong>Debug Info:</strong>
+                  <br />
+                  Activity Type: {assessment.activityType}
+                  <br />
+                  Expected Content:{" "}
+                  {assessment.activityType === "assessment"
+                    ? "assessmentHTML"
+                    : "activityHTML"}
+                  <br />
+                  Content Available:{" "}
+                  {JSON.stringify({
+                    activityHTML: !!assessment.generatedContent?.activityHTML,
+                    assessmentHTML:
+                      !!assessment.generatedContent?.assessmentHTML,
+                  })}
+                </div>
+              </div>
+            }
             type="warning"
             showIcon
           />
