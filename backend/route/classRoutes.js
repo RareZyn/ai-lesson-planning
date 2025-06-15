@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getClasses,
   getClassById,
@@ -8,44 +7,34 @@ const {
   deleteClass,
   getClassesByYear,
   getClassesBySubject,
-  getRecentClasses
+  getRecentClasses,
 } = require('../controller/classController');
-
-// Middleware to protect routes (if needed)
 const { protect } = require('../middleware/auth');
 
-router.use(protect)
-// @desc    Get all classes with filtering
-// @route   GET /api/classes
-router.get('/', getClasses);
+const router = express.Router();
 
-router.get('/recent', getRecentClasses);  
-
-// @desc    Get single class by ID
-// @route   GET /api/classes/:id
-router.get('/:id', getClassById);
-
-// @desc    Create new class
-// @route   POST /api/classes
-router.post('/', createClass);
+// Apply authentication middleware to all routes in this file
+router.use(protect);
 
 
-// @desc    Update class
-// @route   PUT /api/classes/:id
-router.put('/:id', updateClass);
+// --- Specific routes first ---
+router.get('/recent', getRecentClasses);          // GET /api/classes/recent
+router.get('/year/:year', getClassesByYear);    // GET /api/classes/year/2025
+router.get('/subject/:subject', getClassesBySubject); // GET /api/classes/subject/English
 
-// @desc    Delete class
-// @route   DELETE /api/classes/:id
-router.delete('/:id', deleteClass);
 
-// @desc    Get classes by year
-// @route   GET /api/classes/year/:year
-router.get('/year/:year', getClassesByYear);
+// --- Routes for the base path '/' ---
+router.route('/')
+  .get(getClasses)      // GET /api/classes
+  .post(createClass);     // POST /api/classes
 
-// @desc    Get classes by subject
-// @route   GET /api/classes/subject/:subject
-router.get('/subject/:subject', getClassesBySubject);
 
+// --- Generic wildcard routes last ---
+// These will handle any request that didn't match the specific routes above
+router.route('/:id')
+  .get(getClassById)      // GET /api/classes/some_object_id
+  .put(updateClass)       // PUT /api/classes/some_object_id
+  .delete(deleteClass);   // DELETE /api/classes/some_object_id
 
 
 module.exports = router;

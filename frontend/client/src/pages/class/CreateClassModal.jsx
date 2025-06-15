@@ -1,6 +1,7 @@
 // src/components/ClassModal.jsx
 import React, { useState, useEffect } from 'react';
 import { createClass, updateClass } from '../../services/classService';
+import './CreateClassModal.css'; // Assuming you have a CSS module for styles
 
 const CreateClassModal = ({ isOpen, onClose, onSave, currentClass }) => {
   const [formData, setFormData] = useState({

@@ -1,4 +1,5 @@
 const Class = require('../model/Class');
+const LessonPlan = require('../model/lesson');
 
 const getClasses = async (req, res) => {
     const { year, subject } = req.query;
@@ -93,63 +94,64 @@ const createClass = async (req, res) => {
     }
 };
 
-const updateClass = async (req, res) => {
+/**
+ * @desc    Update a class
+ * @route   PUT /api/classes/:id
+ * @access  Private
+ */
+const updateClass = async (req, res, next) => {
     try {
-        const cls = await Class.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
+        let classInfo = await Class.findById(req.params.id);
 
-        if (!cls) {
-            return res.status(404).json({
-                success: false,
-                error: 'Class not found'
-            });
+        if (!classInfo) {
+            return res.status(404).json({ success: false, message: 'Class not found' });
         }
 
-        res.status(200).json({
-            success: true,
-            data: cls
-        });
-    } catch (err) {
-        if (err.name === 'ValidationError') {
-            const messages = Object.values(err.errors).map(val => val.message);
-            return res.status(400).json({
-                success: false,
-                error: messages
-            });
-        } else {
-            return res.status(500).json({
-                success: false,
-                error: 'Server Error'
-            });
+        if (classInfo.createdBy.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this class' });
         }
+        // --- END OF FIX ---
+
+        // Find the class by its ID and update it with the data from the request body
+        classInfo = await Class.findByIdAndUpdate(req.params.id, req.body, {
+            new: true, // Return the updated document
+            runValidators: true // Run schema validators on the update
+        });
+
+        res.status(200).json({ success: true, data: classInfo });
+    } catch (error) {
+        console.error("Error updating class:", error);
+        next(error);
     }
 };
 
-const deleteClass = async (req, res) => {
+/**
+ * @desc    Delete a class and all its associated lesson plans
+ * @route   DELETE /api/classes/:id
+ * @access  Private
+ */
+const deleteClass = async (req, res, next) => {
     try {
-        const cls = await Class.findByIdAndDelete(req.params.id);
+        let classInfo = await Class.findById(req.params.id);
 
-        if (!cls) {
-            return res.status(404).json({
-                success: false,
-                error: 'Class not found'
-            });
+        if (!classInfo) {
+            return res.status(404).json({ success: false, message: 'Class not found' });
         }
 
-        res.status(200).json({
-            success: true,
-            data: {}
-        });
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            error: 'Server Error'
-        });
+        if (classInfo.createdBy.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this class' });
+        }
+        // --- END OF FIX ---
+        // **IMPORTANT**: Also delete all lesson plans associated with this class
+        await LessonPlan.deleteMany({ classId: req.params.id });
+
+        await classInfo.deleteOne();
+
+        res.status(200).json({ success: true, data: {} });
+    } catch (error) {
+        next(error);
     }
 };
-
 const getClassesByYear = async (req, res) => {
     try {
         const classes = await Class.find({ year: req.params.year });

@@ -30,25 +30,23 @@ export const createClass = async (classData) => {
   return response.data;
 };
 
-/**
- * Updates an existing class by its ID.
- * @param {string} id - The ID of the class to update.
- * @param {object} classData - The updated data for the class.
- * @returns {Promise<object>} A promise that resolves to the updated class.
- */
 export const updateClass = async (id, classData) => {
-  const response = await axios.put(`${API_URL}/${id}`, classData, getAuthConfig());
-  return response.data;
+    try {
+        const response = await axios.put(`/api/classes/${id}`, classData, getAuthConfig());
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Could not update class.');
+    }
 };
 
-/**
- * Deletes a class by its ID.
- * @param {string} id - The ID of the class to delete.
- * @returns {Promise<object>} A promise that resolves on successful deletion.
- */
 export const deleteClass = async (id) => {
-  const response = await axios.delete(`${API_URL}/${id}`, getAuthConfig());
-  return response.data;
+    try {
+      console.log("Deleting class with ID:", id);
+        const response = await axios.delete(`/api/classes/${id}`, getAuthConfig());
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Could not delete class.');
+    }
 };
 
 /**

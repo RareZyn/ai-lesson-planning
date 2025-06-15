@@ -3,15 +3,7 @@
   margin-top: 1rem;
 }
 
-.recent-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 0.5rem;
-  width: 100%;
-  justify-content: space-between;
-  /* Ensures title and button are on opposite ends */
-}
+
 
 .recent-opened-title {
   color: #333;

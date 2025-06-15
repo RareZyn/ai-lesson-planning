@@ -1,12 +1,19 @@
+.container {
+    margin: 0 auto;
+}
+
 .status {
     text-align: center;
     padding: 4rem;
     font-size: 1.2rem;
-    color: #666;
+    color: #6c757d;
+}
+.error {
+    color: #e53e3e;
 }
 
 .backButton {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     background: none;
@@ -14,27 +21,72 @@
     color: #495057;
     font-size: 1rem;
     cursor: pointer;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 .backButton:hover {
     color: #000;
 }
 
 .header {
-    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #e9ecef;
 }
-.header h1 {
+.headerMain h1 {
     font-size: 2rem;
     font-weight: 700;
     color: #343a40;
     margin-bottom: 0.25rem;
 }
-.header p {
+.headerMain p {
     font-size: 1.1rem;
     color: #6c757d;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    padding-top: 0.25rem;
+}
+
+.actionButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.editButton {
+    background-color: #f8f9fa;
+    color: #495057;
+    border-color: #dee2e6;
+}
+.editButton:hover {
+    background-color: #e9ecef;
+}
+
+.deleteButton {
+    background-color: #fff5f5;
+    color: #e5383b;
+    border-color: #ffb3b3;
+}
+.deleteButton:hover {
+    background-color: #ffe3e3;
 }
 
 .lessonsGrid {
@@ -46,16 +98,21 @@
 .empty {
     text-align: center;
     background-color: #f8f9fa;
-    padding: 3rem;
-    border-radius: 8px;
-    border: 1px dashed #dee2e6;
+    padding: 4rem 2rem;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
 }
 .empty h2 {
     color: #495057;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 .empty p {
     color: #6c757d;
     margin-bottom: 1.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .createButton {
@@ -63,10 +120,14 @@
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 .createButton:hover {
     background-color: #36459b;
