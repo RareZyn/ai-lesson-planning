@@ -1,4 +1,4 @@
-// backend/model/Assessment.js
+// backend/model/Assessment.js - Updated to support all content types
 const mongoose = require("mongoose");
 
 const AssessmentSchema = new mongoose.Schema(
@@ -69,17 +69,43 @@ const AssessmentSchema = new mongoose.Schema(
       },
     ],
 
-    // Generated content from AI
+    // UPDATED: Generated content from AI - supports all content types
     generatedContent: {
-      // Activity HTML content
+      // For activity, essay, textbook types
       activityHTML: {
         type: String,
+        default: null,
       },
-      // Rubric HTML content
       rubricHTML: {
         type: String,
+        default: null,
       },
-      // Raw AI response data
+
+      // For assessment type
+      assessmentHTML: {
+        type: String,
+        default: null,
+      },
+      answerKeyHTML: {
+        type: String,
+        default: null,
+      },
+
+      // Metadata fields
+      hasStudentContent: {
+        type: Boolean,
+        default: false,
+      },
+      hasTeacherContent: {
+        type: Boolean,
+        default: false,
+      },
+      generatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+
+      // Raw AI response data (for debugging)
       aiResponse: {
         type: mongoose.Schema.Types.Mixed,
       },
@@ -161,32 +187,37 @@ AssessmentSchema.virtual("formattedCreatedDate").get(function () {
   return this.createdAt.toLocaleDateString();
 });
 
-// Instance method to update usage statistics
+// UPDATED: Instance method to update usage statistics
 AssessmentSchema.methods.recordUsage = function () {
   this.lastUsed = new Date();
   this.usageCount += 1;
   return this.save();
 };
 
-// Instance method to mark as having activity
-AssessmentSchema.methods.markActivityGenerated = function (activityHTML) {
-  this.hasActivity = true;
-  this.generatedContent.activityHTML = activityHTML;
-  this.status = "Generated";
-  return this.save();
-};
-
-// Instance method to mark as having rubric
-AssessmentSchema.methods.markRubricGenerated = function (rubricHTML) {
-  this.hasRubric = true;
-  this.generatedContent.rubricHTML = rubricHTML;
-  if (this.hasActivity) {
-    this.status = "Completed";
+// UPDATED: Instance method to mark content generated based on activity type
+AssessmentSchema.methods.markContentGenerated = function (
+  studentContent,
+  teacherContent,
+  activityType
+) {
+  if (activityType === "assessment") {
+    this.generatedContent.assessmentHTML = studentContent;
+    this.generatedContent.answerKeyHTML = teacherContent;
+  } else {
+    this.generatedContent.activityHTML = studentContent;
+    this.generatedContent.rubricHTML = teacherContent;
   }
+
+  this.generatedContent.hasStudentContent = !!studentContent;
+  this.generatedContent.hasTeacherContent = !!teacherContent;
+  this.hasActivity = !!studentContent;
+  this.hasRubric = !!teacherContent;
+  this.status = "Generated";
+
   return this.save();
 };
 
-// Static method to get user's assessments with filters
+// UPDATED: Static method to get user's assessments with filters
 AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
   const query = { createdBy: userId };
 
@@ -207,11 +238,26 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .sort({ createdAt: -1 });
 };
 
-// Pre-save middleware to update status
+// UPDATED: Pre-save middleware to update status and flags
 AssessmentSchema.pre("save", function (next) {
+  // Update hasActivity and hasRubric based on content availability
+  const content = this.generatedContent;
+
+  if (this.activityType === "assessment") {
+    this.hasActivity = !!content.assessmentHTML;
+    this.hasRubric = !!content.answerKeyHTML;
+  } else {
+    this.hasActivity = !!content.activityHTML;
+    this.hasRubric = !!content.rubricHTML;
+  }
+
+  // Update status based on content availability
   if (this.hasActivity && this.hasRubric && this.status === "Generated") {
     this.status = "Completed";
+  } else if (this.hasActivity || this.hasRubric) {
+    this.status = "Generated";
   }
+
   next();
 });
 

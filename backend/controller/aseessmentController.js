@@ -1,4 +1,4 @@
-// Fixed backend/controller/assessmentController.js - Fix generatedContent saving
+// Fixed backend/controller/assessmentController.js - Properly handle different content types
 const OpenAI = require("openai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
@@ -35,35 +35,54 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// FIXED: Standardize assessment response format
-const standardizeAssessmentResponse = (
-  activityHTML,
-  rubricHTML,
-  assessmentHTML,
-  answerKeyHTML
-) => {
-  const response = {
-    success: true,
-    generatedContent: {
-      // Store all possible content types
-      activityHTML: activityHTML || null,
-      rubricHTML: rubricHTML || null,
-      assessmentHTML: assessmentHTML || null,
-      answerKeyHTML: answerKeyHTML || null,
+// FIXED: Properly structure generated content based on activity type
+const structureGeneratedContent = (generatedContent, activityType) => {
+  console.log("Structuring content for activity type:", activityType);
+  console.log("Raw generated content:", Object.keys(generatedContent));
 
-      // For frontend convenience - these help determine which content to show
-      studentContent: activityHTML || assessmentHTML || null,
-      teacherContent: rubricHTML || answerKeyHTML || null,
-
-      // Metadata
-      hasStudentContent: !!(activityHTML || assessmentHTML),
-      hasTeacherContent: !!(rubricHTML || answerKeyHTML),
-      generatedAt: new Date(),
-    },
+  // Initialize the content structure
+  const structuredContent = {
+    activityHTML: null,
+    rubricHTML: null,
+    assessmentHTML: null,
+    answerKeyHTML: null,
+    hasStudentContent: false,
+    hasTeacherContent: false,
+    generatedAt: new Date(),
   };
 
-  console.log("Standardized response:", response);
-  return response;
+  // Map content based on activity type
+  switch (activityType) {
+    case "assessment":
+      // For assessments: student content = assessmentHTML, teacher content = answerKeyHTML
+      structuredContent.assessmentHTML =
+        generatedContent.assessmentHTML || null;
+      structuredContent.answerKeyHTML = generatedContent.answerKeyHTML || null;
+      structuredContent.hasStudentContent = !!generatedContent.assessmentHTML;
+      structuredContent.hasTeacherContent = !!generatedContent.answerKeyHTML;
+      console.log("Assessment content structured:", {
+        hasAssessmentHTML: !!structuredContent.assessmentHTML,
+        hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
+      });
+      break;
+
+    case "essay":
+    case "textbook":
+    case "activity":
+    default:
+      // For other types: student content = activityHTML, teacher content = rubricHTML
+      structuredContent.activityHTML = generatedContent.activityHTML || null;
+      structuredContent.rubricHTML = generatedContent.rubricHTML || null;
+      structuredContent.hasStudentContent = !!generatedContent.activityHTML;
+      structuredContent.hasTeacherContent = !!generatedContent.rubricHTML;
+      console.log("Activity content structured:", {
+        hasActivityHTML: !!structuredContent.activityHTML,
+        hasRubricHTML: !!structuredContent.rubricHTML,
+      });
+      break;
+  }
+
+  return structuredContent;
 };
 
 const generateFromLessonPlan = async (req, res) => {
@@ -177,12 +196,18 @@ const generateFromLessonPlan = async (req, res) => {
         break;
     }
 
-    console.log("Generated content from AI:", generatedContent);
+    console.log("Generated content from AI:", Object.keys(generatedContent));
 
     // FIXED: Ensure we have the user properly
     if (!req.user) {
       req.user = { id: "test-user-id" };
     }
+
+    // FIXED: Structure the content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType
+    );
 
     console.log("Creating assessment with data:", {
       title: assessmentTitle || `${lesson} - ${activityType}`,
@@ -190,7 +215,7 @@ const generateFromLessonPlan = async (req, res) => {
       lessonPlanId,
       classId,
       createdBy: req.user.id,
-      generatedContent, // Make sure this is included
+      structuredContent,
     });
 
     // FIXED: Save assessment to database with proper content structure
@@ -210,21 +235,8 @@ const generateFromLessonPlan = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: "Intermediate",
       skills: [],
-      // FIXED: Ensure generatedContent is properly structured
-      generatedContent: {
-        activityHTML: generatedContent.activityHTML || null,
-        rubricHTML: generatedContent.rubricHTML || null,
-        assessmentHTML: generatedContent.assessmentHTML || null,
-        answerKeyHTML: generatedContent.answerKeyHTML || null,
-        // Include metadata
-        hasStudentContent: !!(
-          generatedContent.activityHTML || generatedContent.assessmentHTML
-        ),
-        hasTeacherContent: !!(
-          generatedContent.rubricHTML || generatedContent.answerKeyHTML
-        ),
-        generatedAt: new Date(),
-      },
+      // FIXED: Use the properly structured content
+      generatedContent: structuredContent,
       lessonPlanSnapshot: {
         title: lesson,
         subject,
@@ -234,13 +246,9 @@ const generateFromLessonPlan = async (req, res) => {
         learningOutline,
       },
       status: "Generated",
-      // FIXED: Set proper flags based on content availability
-      hasActivity: !!(
-        generatedContent.activityHTML || generatedContent.assessmentHTML
-      ),
-      hasRubric: !!(
-        generatedContent.rubricHTML || generatedContent.answerKeyHTML
-      ),
+      // FIXED: Set proper flags based on content availability and activity type
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
     };
 
     console.log("Assessment data to save:", assessmentData);
@@ -411,7 +419,7 @@ const generateActivityContent = async (data) => {
 
   const output = response.choices[0].message.content;
   const match = output.match(
-    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
   );
 
   if (!match || match.length < 3) {
@@ -490,13 +498,16 @@ const generateTextbookContent = async (data) => {
 const generateAssessmentContent = async (data) => {
   console.log("Generating assessment content with data:", data);
 
+  const numberOfQuestions = data.numberOfQuestions || 20;
+  console.log(`Generating assessment with ${numberOfQuestions} questions`);
+
   const response = await openai.chat.completions.create({
     model: "gpt-4",
+    temperature: 0.7, // Slight creativity for question variety
     messages: [
       {
         role: "system",
-        content:
-          "You generate comprehensive HTML assessments and answer keys for English language evaluation.",
+        content: `You are an expert assessment creator for English language evaluation. You MUST generate exactly ${numberOfQuestions} questions as requested. Do not stop until all ${numberOfQuestions} questions are complete. Each question should be numbered clearly and include proper formatting.`,
       },
       {
         role: "user",
@@ -506,28 +517,96 @@ const generateAssessmentContent = async (data) => {
   });
 
   const output = response.choices[0].message.content;
-  console.log("Raw AI output:", output.substring(0, 500) + "...");
+  console.log("Raw AI output length:", output.length);
+  console.log("Raw AI output preview:", output.substring(0, 500) + "...");
 
   const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER ANSWER KEY -->\s*(.*?)\s*```/s
+    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
   );
 
   if (!match || match.length < 3) {
-    console.error("Failed to parse AI response. Output:", output);
-    throw new Error("Invalid response format from AI");
+    console.error("Failed to parse AI response. Full output:", output);
+    throw new Error(
+      "Invalid response format from AI - could not extract HTML blocks"
+    );
   }
 
   const result = {
-    assessmentHTML: match[1].trim(), // For assessment type, use assessmentHTML
-    answerKeyHTML: match[2].trim(), // For assessment type, use answerKeyHTML
+    assessmentHTML: match[1].trim(),
+    answerKeyHTML: match[2].trim(),
   };
 
-  console.log("Generated assessment content:", {
+  // Verify question count in generated content
+  const questionMatches = [
+    result.assessmentHTML.match(/<(?:div|p|li)[^>]*>\s*\d+\.\s*/gi),
+    result.assessmentHTML.match(/\b\d+\.\s+[A-Z]/g),
+    result.assessmentHTML.match(/<h[3-6][^>]*>Question\s+\d+/gi),
+    result.assessmentHTML.match(/Question\s+\d+:/gi),
+  ].filter(Boolean);
+
+  const detectedQuestions =
+    questionMatches.length > 0
+      ? Math.max(...questionMatches.map((m) => m.length))
+      : 0;
+
+  console.log(`Generated content analysis:`, {
     assessmentHTML: result.assessmentHTML ? "Generated" : "Missing",
     answerKeyHTML: result.answerKeyHTML ? "Generated" : "Missing",
+    assessmentLength: result.assessmentHTML.length,
+    answerKeyLength: result.answerKeyHTML.length,
+    detectedQuestions: detectedQuestions,
+    requestedQuestions: numberOfQuestions,
   });
 
+  if (detectedQuestions < numberOfQuestions) {
+    console.warn(
+      `⚠️  Generated ${detectedQuestions} questions but ${numberOfQuestions} were requested. Regenerating...`
+    );
+
+    // Try one more time with a more explicit prompt
+    return await retryAssessmentGeneration(data, numberOfQuestions);
+  }
+
   return result;
+};
+
+// ADDED: Retry function for when question count is insufficient
+const retryAssessmentGeneration = async (data, numberOfQuestions) => {
+  console.log(
+    `Retrying assessment generation with emphasis on ${numberOfQuestions} questions`
+  );
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    temperature: 0.5,
+    messages: [
+      {
+        role: "system",
+        content: `You are creating an assessment with EXACTLY ${numberOfQuestions} questions. This is critical - you must not stop until you have generated all ${numberOfQuestions} questions. Count as you go: Question 1, Question 2, etc., up to Question ${numberOfQuestions}.`,
+      },
+      {
+        role: "user",
+        content: buildEnhancedAssessmentPrompt(data, numberOfQuestions),
+      },
+    ],
+  });
+
+  const output = response.choices[0].message.content;
+  console.log("Retry attempt - AI output length:", output.length);
+
+  const match = output.match(
+    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
+  );
+
+  if (!match || match.length < 3) {
+    console.error("Retry failed to parse AI response. Full output:", output);
+    throw new Error("Retry failed - Invalid response format from AI");
+  }
+
+  return {
+    assessmentHTML: match[1].trim(),
+    answerKeyHTML: match[2].trim(),
+  };
 };
 
 // Helper functions to build prompts (keeping the existing ones)
@@ -720,79 +799,168 @@ No extra explanation. Just two valid HTML blocks.
 
 // FIXED: Assessment prompt to generate proper content
 const buildAssessmentPrompt = (data) => {
+  const numberOfQuestions = data.numberOfQuestions || 20;
+  const questionTypes = Array.isArray(data.questionTypes)
+    ? data.questionTypes.join(", ")
+    : data.questionTypes || "multiple_choice, short_answer";
+
   return `
-# Identity
+# CRITICAL REQUIREMENT: Generate EXACTLY ${numberOfQuestions} questions
 
-You are an AI assistant that creates comprehensive English assessments (exams/tests) and marking rubrics based on Malaysian KSSM curriculum lesson plans.
+You must create a complete English assessment with exactly ${numberOfQuestions} questions based on the lesson "${
+    data.lesson || "English Lesson"
+  }".
 
-# Instructions
-
-You must return exactly two blocks of HTML content:
-
-1. 📝 Student Assessment Paper (Styled HTML)
-2. 🧑‍🏫 Teacher Answer Key & Rubric (Styled HTML)
-
-# Assessment Configuration
-
-- Assessment Type: ${data.assessmentType || "Unit Test"}
-- Question Types: ${
-    Array.isArray(data.questionTypes)
-      ? data.questionTypes.join(", ")
-      : data.questionTypes || "multiple_choice, short_answer"
-  }
-- Number of Questions: ${data.numberOfQuestions || 20}
+## Assessment Details:
+- Subject: ${data.subject || "English"}  
+- Topic: ${data.lesson || "General English"}
+- Grade Level: ${data.grade || "Form 4"}
+- Number of Questions: **${numberOfQuestions}** (MANDATORY - DO NOT GENERATE LESS)
 - Time Allocation: ${data.timeAllocation || "60 minutes"}
+- Question Types: ${questionTypes}
 
-# Lesson Data
+## Lesson Context:
+- Theme: ${data.theme || ""}
+- Specific Topic: ${data.topic || ""}
+- Content Standard: ${data.contentStandard?.main || ""}
+- Learning Standard: ${data.learningStandard?.main || ""}
 
-{
-  "lesson": "${data.lesson}",
-  "subject": "${data.subject}",
-  "theme": "${data.theme || ""}",
-  "topic": "${data.topic || ""}",
-  "contentStandard": {
-    "main": "${data.contentStandard?.main || ""}",
-    "component": "${data.contentStandard?.component || ""}"
-  },
-  "learningStandard": {
-    "main": "${data.learningStandard?.main || ""}",
-    "component": "${data.learningStandard?.component || ""}"
-  },
-  "learningOutline": {
-    "pre": "${data.learningOutline?.pre || ""}",
-    "during": "${data.learningOutline?.during || ""}",
-    "post": "${data.learningOutline?.post || ""}"
-  },
-  "activityType": "assessment",
-  "numberOfQuestions": ${data.numberOfQuestions || 20},
-  "timeAllocation": "${data.timeAllocation || "60 minutes"}",
-  "additionalRequirement": "${data.additionalRequirement || ""}"
-}
+## Question Requirements:
+1. Generate ALL ${numberOfQuestions} questions - do not stop early
+2. Number each question clearly (1, 2, 3, ... ${numberOfQuestions})
+3. Mix question types: ${questionTypes}
+4. Base questions on the lesson content
+5. Include appropriate difficulty for ${data.grade || "Form 4"}
 
-## Student Assessment Paper Guidelines:
-- Include assessment header with subject, class, time, and instructions
-- Generate ${
-    data.numberOfQuestions || 20
-  } questions based on the specified question types
-- Include clear numbering and proper spacing for answers
-- Add student information section (Name, Class, Date)
-- Include marking scheme summary at the end
+## Output Requirements:
 
-## Teacher Answer Key & Rubric Guidelines:
-- Provide comprehensive answer key for all questions
-- Include marking scheme with point allocation
-- Add assessment rubric with grading criteria
-- Include suggested time allocation per section
-- Provide additional notes for markers
+Generate TWO HTML blocks:
 
-# Output Format
+**Block 1: STUDENT ASSESSMENT PAPER**
+\`\`\`html
+<!-- STUDENT ASSESSMENT -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${data.lesson || "English Assessment"}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .question { margin: 20px 0; padding: 10px; border-left: 3px solid #007acc; }
+        .answer-space { border-bottom: 1px solid #ccc; margin: 10px 0; height: 20px; }
+        .instructions { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${data.lesson || "English Assessment"}</h1>
+        <p>Subject: ${data.subject || "English"} | Time: ${
+    data.timeAllocation || "60 minutes"
+  } | Total Questions: ${numberOfQuestions}</p>
+        <p>Name: _________________ Class: _____________ Date: _____________</p>
+    </div>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ul>
+            <li>Read all questions carefully before answering</li>
+            <li>Answer ALL ${numberOfQuestions} questions</li>
+            <li>Write clearly and legibly</li>
+            <li>Manage your time wisely</li>
+        </ul>
+    </div>
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ASSESSMENT -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER ANSWER KEY -->\n<html>...</html>\n\`\`\`
+    <!-- Generate all ${numberOfQuestions} questions here -->
+    <div class="question">
+        <h4>Question 1:</h4>
+        <!-- Question content -->
+    </div>
+    
+    <!-- Continue for ALL ${numberOfQuestions} questions -->
+    
+</body>
+</html>
+\`\`\`
 
-Generate a comprehensive ${
-    data.assessmentType || "assessment"
-  } that thoroughly evaluates the lesson objectives.
+**Block 2: TEACHER ANSWER KEY**
+\`\`\`html  
+<!-- TEACHER ANSWER KEY -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Answer Key - ${data.lesson || "English Assessment"}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .answer { margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px; }
+        .points { color: #007acc; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ANSWER KEY</h1>
+        <h2>${data.lesson || "English Assessment"}</h2>
+        <p>Total Questions: ${numberOfQuestions} | Answer Key & Marking Guide</p>
+    </div>
+
+    <!-- Provide answers for all ${numberOfQuestions} questions -->
+    <div class="answer">
+        <h4>Question 1: <span class="points">[X points]</span></h4>
+        <p><strong>Answer:</strong> [Correct answer]</p>
+        <p><strong>Marking notes:</strong> [Guidance for teachers]</p>
+    </div>
+    
+    <!-- Continue for ALL ${numberOfQuestions} questions -->
+    
+</body>
+</html>
+\`\`\`
+
+Remember: You MUST generate exactly ${numberOfQuestions} questions. Count them as you write to ensure you reach the required number.
+`;
+};
+
+// ADDED: Enhanced prompt for retry attempts
+const buildEnhancedAssessmentPrompt = (data, numberOfQuestions) => {
+  return `
+# URGENT: Generate EXACTLY ${numberOfQuestions} Questions
+
+This is a retry because the previous attempt didn't generate enough questions.
+
+YOU MUST CREATE ALL ${numberOfQuestions} QUESTIONS. Here's the checklist:
+□ Question 1
+□ Question 2  
+□ Question 3
+${Array.from(
+  { length: numberOfQuestions - 3 },
+  (_, i) => `□ Question ${i + 4}`
+).join("\n")}
+
+## Requirements:
+- Topic: ${data.lesson || "English Lesson"}
+- Grade: ${data.grade || "Form 4"}
+- Question Types: ${
+    Array.isArray(data.questionTypes) ? data.questionTypes.join(", ") : "mixed"
+  }
+
+## Template Structure:
+Generate TWO complete HTML documents:
+
+1. **STUDENT ASSESSMENT** with ALL ${numberOfQuestions} questions numbered clearly
+2. **TEACHER ANSWER KEY** with answers to ALL ${numberOfQuestions} questions
+
+Start with:
+\`\`\`html
+<!-- STUDENT ASSESSMENT -->
+[Complete HTML with ${numberOfQuestions} questions]
+\`\`\`
+
+\`\`\`html  
+<!-- TEACHER ANSWER KEY -->
+[Complete answer key for ${numberOfQuestions} questions]
+\`\`\`
+
+DO NOT STOP until you have written Question ${numberOfQuestions}!
 `;
 };
 
