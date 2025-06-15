@@ -1,5 +1,5 @@
-// src/components/Modal/AssessmentCreative/LessonPlannerAssessmentModal.jsx - Updated with dynamic forms
-import React, { useState } from "react";
+// src/components/Modal/LessonBasedAssessment/LessonSelectionModal.jsx - Updated with backend integration
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Select,
@@ -17,9 +17,15 @@ import {
   FileTextOutlined,
   BookOutlined,
   TeamOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 
-// Import the dynamic assessment form
+// Import backend services
+import { getAllClasses } from "../../../services/classService";
+import { getAllLessonPlans } from "../../../services/lessonService";
+import { assessmentAPI } from "../../../services/assessmentService";
+
+// Import the dynamic assessment forms
 import AssessmentLesson from "./AssessmentLessonModal";
 import EssayLesson from "./EssayLessonModal";
 import TextbookLesson from "./TextbookLessonModal";
@@ -28,6 +34,7 @@ import ActivityInClassLesson from "./ActivityInClassLessonModal";
 import "./ModalStyles.css";
 
 const { Option } = Select;
+const { TextArea } = Input;
 const { Text } = Typography;
 
 const LessonPlannerAssessmentModal = ({
@@ -39,96 +46,56 @@ const LessonPlannerAssessmentModal = ({
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedLessonPlan, setSelectedLessonPlan] = useState(null);
   const [showActivityForm, setShowActivityForm] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Data states
+  const [classes, setClasses] = useState([]);
+  const [lessonPlans, setLessonPlans] = useState([]);
+  const [classesLoading, setClassesLoading] = useState(false);
   const [lessonPlansLoading, setLessonPlansLoading] = useState(false);
 
-  // Dummy lesson plans data with activity types
-  const lessonPlans = [
-    {
-      id: "684da7f4b96de6d12b6b124e",
-      title: "Making our school community safer",
-      class: "5 Anggerik",
-      grade: "Form 5",
-      subject: "English",
-      theme: "People and Culture",
-      topic: "It's Personal!",
-      focus: "evaluate",
-      proficiencyLevel: "B1 Mid",
-      activityType: "assessment", // This determines which form to show
-      learningObjective:
-        "Students will be able to evaluate the effectiveness of different safety measures in creating a safer school community.",
-      date: "2025-06-08",
-    },
-    {
-      id: "684da7f4b96de6d12b6b125f",
-      title: "An informal email to a friend about a celebrity I admire",
-      class: "5 UM",
-      grade: "Form 5",
-      subject: "English",
-      theme: "People and Culture",
-      topic: "It's Personal!",
-      focus: "create",
-      proficiencyLevel: "B1 High",
-      activityType: "essay", // Essay type
-      learningObjective:
-        "By the end of the lesson, students will be able to write a multi-paragraph informal email, using appropriate structure, tone, and descriptive language to express admiration for a famous person.",
-      date: "2025-06-10",
-    },
-    {
-      id: "684da7f4b96de6d12b6b126g",
-      title: "Understanding different text types and their purposes",
-      class: "Biruni",
-      grade: "Form 5",
-      subject: "English",
-      theme: "Science and Technology",
-      topic: "Tomorrow's World",
-      focus: "understand",
-      proficiencyLevel: "B1 Low",
-      activityType: "textbook", // Textbook type
-      learningObjective:
-        "Students will be able to identify different text types and understand their specific purposes and language features.",
-      date: "2025-06-15",
-    },
-    {
-      id: "684da7f4b96de6d12b6b127h",
-      title: "Group discussion about cultural diversity",
-      class: "5 UTHM",
-      grade: "Form 5",
-      subject: "English",
-      theme: "People and Culture",
-      topic: "Celebrating Differences",
-      focus: "apply",
-      proficiencyLevel: "B1 Mid",
-      activityType: "activity", // Activity type
-      learningObjective:
-        "Students will be able to engage in meaningful discussions about cultural diversity and express their opinions respectfully.",
-      date: "2025-06-12",
-    },
-  ];
+  // Assessment details
+  const [assessmentTitle, setAssessmentTitle] = useState("");
+  const [assessmentDescription, setAssessmentDescription] = useState("");
 
-  // Dummy classes data
-  const classes = [
-    {
-      _id: "684ae8e1f20a7dd141136657",
-      className: "Biruni",
-      grade: "Form 5",
-      subject: "English",
-      year: "2025",
-    },
-    {
-      _id: "684af0958396c2624a5350d9",
-      className: "5 UTHM",
-      grade: "Form 5",
-      subject: "English",
-      year: "2025",
-    },
-    {
-      _id: "684af4608396c2624a535137",
-      className: "5 UM",
-      grade: "Form 5",
-      subject: "English",
-      year: "2025",
-    },
-  ];
+  // Load data when modal opens
+  useEffect(() => {
+    if (isOpen && currentUserId) {
+      loadInitialData();
+    }
+  }, [isOpen, currentUserId]);
+
+  const loadInitialData = async () => {
+    await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
+  };
+
+  const fetchClasses = async () => {
+    setClassesLoading(true);
+    try {
+      const classesData = await getAllClasses();
+      setClasses(Array.isArray(classesData) ? classesData : []);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      message.error("Failed to fetch classes");
+      setClasses([]);
+    } finally {
+      setClassesLoading(false);
+    }
+  };
+
+  const fetchUserLessonPlans = async () => {
+    setLessonPlansLoading(true);
+    try {
+      const lessonPlansData = await getAllLessonPlans();
+      setLessonPlans(Array.isArray(lessonPlansData) ? lessonPlansData : []);
+    } catch (error) {
+      console.error("Error fetching lesson plans:", error);
+      message.error("Failed to fetch lesson plans");
+      setLessonPlans([]);
+    } finally {
+      setLessonPlansLoading(false);
+    }
+  };
 
   const handleClassChange = (classId) => {
     setSelectedClass(classId);
@@ -137,9 +104,17 @@ const LessonPlannerAssessmentModal = ({
   };
 
   const handleLessonPlanChange = (lessonPlanId) => {
-    const lessonPlan = lessonPlans.find((plan) => plan.id === lessonPlanId);
+    const lessonPlan = lessonPlans.find((plan) => plan._id === lessonPlanId);
     setSelectedLessonPlan(lessonPlan);
     setShowActivityForm(false);
+
+    // Auto-fill assessment title
+    if (lessonPlan && !assessmentTitle) {
+      const autoTitle = `${
+        lessonPlan.parameters?.specificTopic || "Assessment"
+      } - ${lessonPlan.parameters?.grade || "Form 4"}`;
+      setAssessmentTitle(autoTitle);
+    }
   };
 
   const handleProceedToForm = () => {
@@ -150,52 +125,163 @@ const LessonPlannerAssessmentModal = ({
     setShowActivityForm(true);
   };
 
-  const handleActivityFormSubmit = (data) => {
-    console.log("Activity form data:", data);
-    onSubmit(data);
-    handleReset();
+  const handleActivityFormSubmit = async (activityData) => {
+    setIsGenerating(true);
+
+    try {
+      // Determine which API endpoint to call based on activity type
+      const activityType =
+        selectedLessonPlan.parameters?.activityType || "assessment";
+
+      // Prepare the data for the backend
+      const requestData = {
+        // Lesson plan data
+        lesson: selectedLessonPlan.parameters?.specificTopic || "Lesson",
+        subject: getSelectedClassDetails()?.subject || "English",
+        theme: selectedLessonPlan.parameters?.sow?.theme || "General",
+        topic: selectedLessonPlan.parameters?.specificTopic || "Topic",
+        contentStandard: {
+          main: selectedLessonPlan.parameters?.sow?.contentStandard?.main || "",
+          component:
+            selectedLessonPlan.parameters?.sow?.contentStandard?.comp || "",
+        },
+        learningStandard: {
+          main:
+            selectedLessonPlan.parameters?.sow?.learningStandard?.main || "",
+          component:
+            selectedLessonPlan.parameters?.sow?.learningStandard?.comp || "",
+        },
+        learningOutline: {
+          pre: selectedLessonPlan.parameters?.sow?.learningOutline?.pre || "",
+          during:
+            selectedLessonPlan.parameters?.sow?.learningOutline?.during || "",
+          post: selectedLessonPlan.parameters?.sow?.learningOutline?.post || "",
+        },
+
+        // Assessment metadata for saving
+        lessonPlanId: selectedLessonPlan._id,
+        classId: selectedClass || selectedLessonPlan.classId,
+        assessmentTitle:
+          assessmentTitle ||
+          `Assessment - ${selectedLessonPlan.parameters?.specificTopic}`,
+        assessmentType: getAssessmentTypeFromActivity(activityType),
+        questionCount: activityData.numberOfQuestions || 10,
+        duration: activityData.timeAllocation
+          ? `${activityData.timeAllocation} minutes`
+          : "45 minutes",
+        difficulty: activityData.difficultyLevel || "Intermediate",
+        skills: activityData.skills || ["Reading", "Writing"],
+
+        // Activity-specific data
+        activityType,
+        ...activityData,
+      };
+
+      let response;
+
+      // Call the appropriate backend endpoint
+      switch (activityType) {
+        case "essay":
+          response = await assessmentAPI.generateEssayAssessment(requestData);
+          break;
+        case "textbook":
+          response = await assessmentAPI.generateTextbookActivity(requestData);
+          break;
+        case "activity":
+        case "assessment":
+        default:
+          response = await assessmentAPI.generateActivityAndRubric(requestData);
+          break;
+      }
+
+      if (response.success) {
+        message.success("Assessment generated successfully!");
+
+        // Call parent callback with the response data
+        if (onSubmit) {
+          onSubmit({
+            ...response,
+            lessonPlan: selectedLessonPlan,
+            class: getSelectedClassDetails(),
+            activityType,
+          });
+        }
+
+        handleReset();
+        onClose();
+      } else {
+        throw new Error(response.message || "Failed to generate assessment");
+      }
+    } catch (error) {
+      console.error("Error generating assessment:", error);
+      message.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to generate assessment. Please try again."
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const getAssessmentTypeFromActivity = (activityType) => {
+    const typeMap = {
+      assessment: "Comprehensive Assessment",
+      essay: "Essay Writing",
+      textbook: "Textbook Activity",
+      activity: "Classroom Activity",
+    };
+    return typeMap[activityType] || "Assessment";
   };
 
   const handleReset = () => {
     setSelectedClass(null);
     setSelectedLessonPlan(null);
     setShowActivityForm(false);
+    setAssessmentTitle("");
+    setAssessmentDescription("");
   };
 
   const handleClose = () => {
-    handleReset();
-    onClose();
+    if (!isGenerating) {
+      handleReset();
+      onClose();
+    }
   };
 
   const getSelectedClassDetails = () => {
     return classes.find((cls) => cls._id === selectedClass);
   };
 
+  const getSelectedLessonPlanDetails = () => {
+    return selectedLessonPlan;
+  };
+
   const formatLessonPlanOption = (plan) => {
-    const topic = plan.title || "No Topic";
-    const grade = plan.grade || "Unknown Grade";
-    const date = plan.date || "No Date";
+    const topic = plan.parameters?.specificTopic || "No Topic";
+    const grade = plan.parameters?.grade || "Unknown Grade";
+    const date = plan.lessonDate
+      ? new Date(plan.lessonDate).toLocaleDateString()
+      : "No Date";
 
     return {
       label: topic,
       details: `${grade} | ${date}`,
-      hots: plan.focus || null,
-      proficiency: plan.proficiencyLevel || null,
-      activityType: plan.activityType || "assessment",
+      hots: plan.parameters?.hotsFocus || null,
+      proficiency: plan.parameters?.proficiencyLevel || null,
+      activityType: plan.parameters?.activityType || "assessment",
     };
   };
 
   const renderLessonPlanOptions = () => {
     const plansToShow = selectedClass
-      ? lessonPlans.filter(
-          (plan) => plan.class === getSelectedClassDetails()?.className
-        )
+      ? lessonPlans.filter((plan) => plan.classId === selectedClass)
       : lessonPlans;
 
     return plansToShow.map((plan) => {
       const formatted = formatLessonPlanOption(plan);
       return (
-        <Option key={plan.id} value={plan.id}>
+        <Option key={plan._id} value={plan._id}>
           <div>
             <div style={{ fontWeight: 500 }}>{formatted.label}</div>
             <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
@@ -212,68 +298,36 @@ const LessonPlannerAssessmentModal = ({
   };
 
   const availablePlans = selectedClass
-    ? lessonPlans.filter(
-        (plan) => plan.class === getSelectedClassDetails()?.className
-      )
+    ? lessonPlans.filter((plan) => plan.classId === selectedClass)
     : lessonPlans;
 
   // Render the appropriate activity form based on the selected lesson plan's activity type
   const renderActivityForm = () => {
     if (!selectedLessonPlan || !showActivityForm) return null;
 
-    const { activityType } = selectedLessonPlan;
+    const activityType =
+      selectedLessonPlan.parameters?.activityType || "assessment";
+
+    const commonProps = {
+      isOpen: true,
+      onClose: () => setShowActivityForm(false),
+      onSubmit: handleActivityFormSubmit,
+      selectedLessonPlan: selectedLessonPlan,
+      activityType: activityType,
+      isLoading: isGenerating,
+    };
 
     switch (activityType) {
       case "assessment":
-        return (
-          <AssessmentLesson
-            isOpen={true}
-            onClose={() => setShowActivityForm(false)}
-            onSubmit={handleActivityFormSubmit}
-            selectedLessonPlan={selectedLessonPlan}
-            activityType="assessment"
-          />
-        );
+        return <AssessmentLesson {...commonProps} />;
       case "essay":
-        return (
-          <EssayLesson
-            isOpen={true}
-            onClose={() => setShowActivityForm(false)}
-            onSubmit={handleActivityFormSubmit}
-            selectedLessonPlan={selectedLessonPlan}
-            activityType="essay"
-          />
-        );
+        return <EssayLesson {...commonProps} />;
       case "textbook":
-        return (
-          <TextbookLesson
-            isOpen={true}
-            onClose={() => setShowActivityForm(false)}
-            onSubmit={handleActivityFormSubmit}
-            selectedLessonPlan={selectedLessonPlan}
-            activityType="textbook"
-          />
-        );
+        return <TextbookLesson {...commonProps} />;
       case "activity":
-        return (
-          <ActivityInClassLesson
-            isOpen={true}
-            onClose={() => setShowActivityForm(false)}
-            onSubmit={handleActivityFormSubmit}
-            selectedLessonPlan={selectedLessonPlan}
-            activityType="activity"
-          />
-        );
+        return <ActivityInClassLesson {...commonProps} />;
       default:
-        return (
-          <AssessmentLesson
-            isOpen={true}
-            onClose={() => setShowActivityForm(false)}
-            onSubmit={handleActivityFormSubmit}
-            selectedLessonPlan={selectedLessonPlan}
-            activityType="assessment"
-          />
-        );
+        return <AssessmentLesson {...commonProps} />;
     }
   };
 
@@ -299,7 +353,11 @@ const LessonPlannerAssessmentModal = ({
             </div>
             <h3 className="modal-title">Assessment from Lesson Planner</h3>
           </div>
-          <button className="modal-close" onClick={handleClose}>
+          <button
+            className="modal-close"
+            onClick={handleClose}
+            disabled={isGenerating}
+          >
             ×
           </button>
         </div>
@@ -333,33 +391,30 @@ const LessonPlannerAssessmentModal = ({
                 }
                 className="selection-card"
               >
-                <Select
-                  placeholder="Choose a class to filter lessons"
-                  value={selectedClass}
-                  onChange={handleClassChange}
-                  size="large"
-                  style={{ width: "100%" }}
-                  allowClear
-                >
-                  {classes.map((classItem) => (
-                    <Option key={classItem._id} value={classItem._id}>
-                      {classItem.className} - {classItem.grade}{" "}
-                      {classItem.subject}
-                    </Option>
-                  ))}
-                </Select>
+                <Spin spinning={classesLoading}>
+                  <Select
+                    placeholder="Choose a class to filter lessons"
+                    value={selectedClass}
+                    onChange={handleClassChange}
+                    size="large"
+                    style={{ width: "100%" }}
+                    loading={classesLoading}
+                    allowClear
+                    disabled={isGenerating}
+                  >
+                    {classes.map((classItem) => (
+                      <Option key={classItem._id} value={classItem._id}>
+                        {classItem.className} - {classItem.grade}{" "}
+                        {classItem.subject}
+                      </Option>
+                    ))}
+                  </Select>
+                </Spin>
 
                 {selectedClass && getSelectedClassDetails() && (
-                  <div
-                    style={{
-                      marginTop: "12px",
-                      padding: "8px",
-                      background: "#f6ffed",
-                      borderRadius: "6px",
-                    }}
-                  >
+                  <div className="selected-preview">
                     <Text strong>Selected Class:</Text>
-                    <div style={{ marginTop: "4px" }}>
+                    <div className="preview-content">
                       <Tag color="blue">
                         {getSelectedClassDetails().className}
                       </Tag>
@@ -395,12 +450,13 @@ const LessonPlannerAssessmentModal = ({
                 <Spin spinning={lessonPlansLoading}>
                   <Select
                     placeholder="Choose a lesson plan to base assessment on"
-                    value={selectedLessonPlan?.id}
+                    value={selectedLessonPlan?._id}
                     onChange={handleLessonPlanChange}
                     size="large"
                     style={{ width: "100%" }}
                     loading={lessonPlansLoading}
                     showSearch
+                    disabled={isGenerating}
                     filterOption={(input, option) =>
                       option.children.props.children[0].props.children
                         .toLowerCase()
@@ -412,85 +468,107 @@ const LessonPlannerAssessmentModal = ({
                 </Spin>
 
                 {selectedLessonPlan && (
-                  <div
-                    style={{
-                      marginTop: "16px",
-                      padding: "16px",
-                      background: "#f6ffed",
-                      borderRadius: "8px",
-                      border: "1px solid #b7eb8f",
-                    }}
-                  >
-                    <Text strong style={{ color: "#52c41a" }}>
-                      Selected Lesson Plan:
-                    </Text>
-                    <div style={{ marginTop: "8px" }}>
-                      <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                        {selectedLessonPlan.title}
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <Tag color="blue">{selectedLessonPlan.class}</Tag>
-                        <Tag color="green">{selectedLessonPlan.grade}</Tag>
-                        <Tag color="purple">
-                          {selectedLessonPlan.focus?.toUpperCase()}
-                        </Tag>
-                        <Tag color="orange">
-                          {selectedLessonPlan.proficiencyLevel}
-                        </Tag>
-                        <Tag color="cyan">
-                          {selectedLessonPlan.activityType?.toUpperCase()}{" "}
-                          Activity
-                        </Tag>
-                      </div>
-                      <div style={{ color: "#666", fontSize: "13px" }}>
-                        <strong>Theme:</strong> {selectedLessonPlan.theme} |{" "}
-                        <strong>Topic:</strong> {selectedLessonPlan.topic}
-                      </div>
-                      <div
-                        style={{
-                          color: "#666",
-                          fontSize: "13px",
-                          marginTop: "8px",
-                          padding: "8px",
-                          background: "white",
-                          borderRadius: "4px",
-                          border: "1px solid #d9d9d9",
-                        }}
-                      >
-                        <strong>Learning Objective:</strong>{" "}
-                        {selectedLessonPlan.learningObjective}
+                  <div className="selected-preview">
+                    <Text strong>Selected Lesson:</Text>
+                    <div className="preview-content">
+                      <div className="lesson-preview">
+                        <div className="lesson-title">
+                          {selectedLessonPlan.parameters?.specificTopic ||
+                            "Lesson Plan"}
+                        </div>
+                        <div className="lesson-meta">
+                          <Tag color="green">
+                            {selectedLessonPlan.parameters?.grade}
+                          </Tag>
+                          {selectedLessonPlan.parameters?.hotsFocus && (
+                            <Tag color="purple">
+                              {selectedLessonPlan.parameters.hotsFocus.toUpperCase()}
+                            </Tag>
+                          )}
+                          {selectedLessonPlan.parameters?.proficiencyLevel && (
+                            <Tag color="orange">
+                              {selectedLessonPlan.parameters.proficiencyLevel}
+                            </Tag>
+                          )}
+                          <Tag color="cyan">
+                            {(
+                              selectedLessonPlan.parameters?.activityType ||
+                              "assessment"
+                            ).toUpperCase()}{" "}
+                            Activity
+                          </Tag>
+                        </div>
+                        <Text type="secondary" className="lesson-objective">
+                          {selectedLessonPlan.plan?.learningObjective}
+                        </Text>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {availablePlans.length === 0 && !lessonPlansLoading && (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "20px",
-                      color: "#666",
-                      background: "#fafafa",
-                      borderRadius: "6px",
-                      border: "1px dashed #d9d9d9",
-                      marginTop: "12px",
-                    }}
-                  >
+                  <div className="empty-state">
                     <Text type="secondary">
                       {selectedClass
                         ? "No lesson plans found for this class."
-                        : "No lesson plans available. Create some lesson plans first."}
+                        : "No lesson plans found. Create some lesson plans first."}
                     </Text>
                   </div>
                 )}
               </Card>
             </Col>
+
+            {/* Assessment Details */}
+            {selectedLessonPlan && (
+              <Col span={24}>
+                <Card
+                  size="small"
+                  title="Assessment Details"
+                  className="selection-card"
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Assessment Title
+                      </label>
+                      <Input
+                        placeholder="Enter assessment title"
+                        value={assessmentTitle}
+                        onChange={(e) => setAssessmentTitle(e.target.value)}
+                        size="large"
+                        disabled={isGenerating}
+                      />
+                    </Col>
+                    <Col span={24}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Description (Optional)
+                      </label>
+                      <TextArea
+                        rows={3}
+                        placeholder="Enter assessment description..."
+                        value={assessmentDescription}
+                        onChange={(e) =>
+                          setAssessmentDescription(e.target.value)
+                        }
+                        disabled={isGenerating}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+            )}
           </Row>
         </div>
 
@@ -500,7 +578,7 @@ const LessonPlannerAssessmentModal = ({
             <button
               className="btn-reset"
               onClick={handleReset}
-              disabled={lessonPlansLoading}
+              disabled={isGenerating}
             >
               Reset All
             </button>
@@ -509,21 +587,33 @@ const LessonPlannerAssessmentModal = ({
             <button
               className="btn-cancel"
               onClick={handleClose}
-              disabled={lessonPlansLoading}
+              disabled={isGenerating}
             >
               Cancel
             </button>
             <button
-              className={`btn-submit ${!selectedLessonPlan ? "disabled" : ""}`}
+              className={`btn-submit ${!selectedLessonPlan ? "disabled" : ""} ${
+                isGenerating ? "loading" : ""
+              }`}
               onClick={handleProceedToForm}
-              disabled={!selectedLessonPlan || lessonPlansLoading}
+              disabled={!selectedLessonPlan || isGenerating}
             >
-              {selectedLessonPlan
-                ? `📝 Create ${
-                    selectedLessonPlan.activityType?.charAt(0).toUpperCase() +
-                    selectedLessonPlan.activityType?.slice(1)
-                  } Assessment`
-                : "📝 Proceed to Assessment"}
+              {isGenerating ? (
+                <>
+                  <LoadingOutlined /> Generating...
+                </>
+              ) : selectedLessonPlan ? (
+                `📝 Create ${
+                  (selectedLessonPlan.parameters?.activityType || "assessment")
+                    .charAt(0)
+                    .toUpperCase() +
+                  (
+                    selectedLessonPlan.parameters?.activityType || "assessment"
+                  ).slice(1)
+                } Assessment`
+              ) : (
+                "📝 Proceed to Assessment"
+              )}
             </button>
           </div>
         </div>
