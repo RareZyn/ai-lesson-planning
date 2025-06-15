@@ -133,13 +133,15 @@ const LessonPlannerAssessmentModal = ({
       const activityType =
         selectedLessonPlan.parameters?.activityType || "assessment";
 
-      // Prepare the data for the backend
+      // Prepare the comprehensive data for the backend
       const requestData = {
-        // Lesson plan data
+        // Core lesson plan data for generation
         lesson: selectedLessonPlan.parameters?.specificTopic || "Lesson",
         subject: getSelectedClassDetails()?.subject || "English",
         theme: selectedLessonPlan.parameters?.sow?.theme || "General",
         topic: selectedLessonPlan.parameters?.specificTopic || "Topic",
+
+        // Standards from the lesson plan
         contentStandard: {
           main: selectedLessonPlan.parameters?.sow?.contentStandard?.main || "",
           component:
@@ -158,24 +160,31 @@ const LessonPlannerAssessmentModal = ({
           post: selectedLessonPlan.parameters?.sow?.learningOutline?.post || "",
         },
 
-        // Assessment metadata for saving
+        // Assessment metadata for saving to database
         lessonPlanId: selectedLessonPlan._id,
-        classId: selectedClass || selectedLessonPlan.classId,
+        classId:
+          selectedClass ||
+          selectedLessonPlan.classId?._id ||
+          selectedLessonPlan.classId,
         assessmentTitle:
           assessmentTitle ||
           `Assessment - ${selectedLessonPlan.parameters?.specificTopic}`,
         assessmentType: getAssessmentTypeFromActivity(activityType),
-        questionCount: activityData.numberOfQuestions || 10,
+        questionCount:
+          activityData.numberOfQuestions ||
+          getDefaultQuestionCount(activityType),
         duration: activityData.timeAllocation
           ? `${activityData.timeAllocation} minutes`
           : "45 minutes",
         difficulty: activityData.difficultyLevel || "Intermediate",
-        skills: activityData.skills || ["Reading", "Writing"],
+        skills: activityData.skills || getDefaultSkills(activityType),
 
-        // Activity-specific data
+        // Activity-specific data from the form
         activityType,
         ...activityData,
       };
+
+      console.log("Sending request data:", requestData);
 
       let response;
 
@@ -194,8 +203,10 @@ const LessonPlannerAssessmentModal = ({
           break;
       }
 
+      console.log("Backend response:", response);
+
       if (response.success) {
-        message.success("Assessment generated successfully!");
+        message.success("Assessment generated and saved successfully!");
 
         // Call parent callback with the response data
         if (onSubmit) {
@@ -204,6 +215,11 @@ const LessonPlannerAssessmentModal = ({
             lessonPlan: selectedLessonPlan,
             class: getSelectedClassDetails(),
             activityType,
+            metadata: {
+              title: assessmentTitle,
+              description: assessmentDescription,
+              ...requestData,
+            },
           });
         }
 
@@ -214,24 +230,45 @@ const LessonPlannerAssessmentModal = ({
       }
     } catch (error) {
       console.error("Error generating assessment:", error);
-      message.error(
+      const errorMessage =
         error.response?.data?.message ||
-          error.message ||
-          "Failed to generate assessment. Please try again."
-      );
+        error.message ||
+        "Failed to generate assessment. Please try again.";
+      message.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
   };
 
+  // Helper functions
   const getAssessmentTypeFromActivity = (activityType) => {
     const typeMap = {
       assessment: "Comprehensive Assessment",
-      essay: "Essay Writing",
-      textbook: "Textbook Activity",
-      activity: "Classroom Activity",
+      essay: "Essay Writing Assessment",
+      textbook: "Textbook-Based Activity",
+      activity: "Interactive Classroom Activity",
     };
     return typeMap[activityType] || "Assessment";
+  };
+
+  const getDefaultQuestionCount = (activityType) => {
+    const countMap = {
+      assessment: 20,
+      essay: 3,
+      textbook: 8,
+      activity: 6,
+    };
+    return countMap[activityType] || 10;
+  };
+
+  const getDefaultSkills = (activityType) => {
+    const skillsMap = {
+      assessment: ["Reading", "Writing", "Critical Thinking"],
+      essay: ["Writing", "Creativity", "Language Use"],
+      textbook: ["Reading", "Comprehension", "Analysis"],
+      activity: ["Speaking", "Listening", "Collaboration"],
+    };
+    return skillsMap[activityType] || ["Reading", "Writing"];
   };
 
   const handleReset = () => {
@@ -275,7 +312,11 @@ const LessonPlannerAssessmentModal = ({
 
   const renderLessonPlanOptions = () => {
     const plansToShow = selectedClass
-      ? lessonPlans.filter((plan) => plan.classId === selectedClass)
+      ? lessonPlans.filter((plan) => {
+          // Handle both populated and non-populated classId
+          const planClassId = plan.classId?._id || plan.classId;
+          return planClassId === selectedClass;
+        })
       : lessonPlans;
 
     return plansToShow.map((plan) => {
@@ -298,7 +339,10 @@ const LessonPlannerAssessmentModal = ({
   };
 
   const availablePlans = selectedClass
-    ? lessonPlans.filter((plan) => plan.classId === selectedClass)
+    ? lessonPlans.filter((plan) => {
+        const planClassId = plan.classId?._id || plan.classId;
+        return planClassId === selectedClass;
+      })
     : lessonPlans;
 
   // Render the appropriate activity form based on the selected lesson plan's activity type
