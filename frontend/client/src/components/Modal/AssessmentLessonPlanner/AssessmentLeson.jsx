@@ -26,14 +26,14 @@ import {
   englishAssessmentTypes,
   questionTypes,
   timeAllocation,
-} from "../../data/englishAssessmentTypes";
+} from "../../../data/englishAssessmentTypes";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
 const { Text } = Typography;
 const { Option } = Select;
 
-const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
+const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     assessmentType: "",
     questionTypes: [],
@@ -524,4 +524,4 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-export default AssessmentLeson;
+export default AssessmentLesson;

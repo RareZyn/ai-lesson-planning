@@ -11,8 +11,8 @@ import {
   Divider,
 } from "antd";
 import { BookOutlined, FormOutlined, BulbOutlined } from "@ant-design/icons";
-import textbookService from "../../services/textbookService";
-import { englishActivityTypes } from "../../data/activityTypes";
+import textbookService from "../../../services/textbookService";
+import { englishActivityTypes } from "../../../data/activityTypes";
 import "./ModalStyles.css";
 
 const { Option } = Select;

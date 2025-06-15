@@ -1,4 +1,4 @@
-//ActivityInClassLesson.jsx according to lesson planner
+//ActivityInClassLesson.jsx according to lesson planner - Simplified version
 import React, { useState } from "react";
 import {
   Card,
@@ -14,6 +14,7 @@ import {
   Select,
   Divider,
   message,
+  Alert,
 } from "antd";
 import {
   ThunderboltOutlined,
@@ -27,14 +28,20 @@ import {
   studentArrangementOptions,
   resourceOptions,
   timeDurationOptions,
-} from "../../data/activityTypesInClass";
+} from "../../../data/activityTypesInClass";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
 const { Text } = Typography;
 const { Option } = Select;
 
-const ActivityInClassLesson = ({ isOpen, onClose, onSubmit }) => {
+const ActivityInClassLesson = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedLessonPlan,
+  activityType = "activity",
+}) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
     resourceUsage: "classroom_only",
@@ -61,7 +68,12 @@ const ActivityInClassLesson = ({ isOpen, onClose, onSubmit }) => {
 
     setLoading(true);
     try {
-      await onSubmit(formData);
+      const submitData = {
+        ...formData,
+        selectedLessonPlan,
+        activityType,
+      };
+      await onSubmit(submitData);
       message.success("Activity settings submitted successfully!");
       onClose();
     } catch (error) {
@@ -106,6 +118,21 @@ const ActivityInClassLesson = ({ isOpen, onClose, onSubmit }) => {
 
         {/* Body */}
         <div className="modal-body">
+          {/* Selected Lesson Plan Info */}
+          {selectedLessonPlan && (
+            <Alert
+              message={`Based on Lesson Plan: ${
+                selectedLessonPlan.title || "Selected Lesson"
+              }`}
+              description={`Generate classroom activity for: ${
+                selectedLessonPlan.class || "Class"
+              } | ${selectedLessonPlan.grade || "Grade"}`}
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
           <Row gutter={[16, 24]}>
             {/* Student Arrangement */}
             <Col span={24}>
@@ -323,38 +350,86 @@ const ActivityInClassLesson = ({ isOpen, onClose, onSubmit }) => {
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity..."
+                  placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
                   maxLength={300}
                   showCount
                 />
               </Card>
             </Col>
+
+            {/* Summary */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title="Activity Summary"
+                style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
+              >
+                <Row gutter={[16, 8]}>
+                  <Col xs={24} sm={12} md={6}>
+                    <Text strong style={{ color: "#666" }}>
+                      Student Setup:
+                    </Text>
+                    <br />
+                    <Tag color="blue">
+                      {formData.studentArrangement.replace("_", " ")}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Text strong style={{ color: "#666" }}>
+                      Resources:
+                    </Text>
+                    <br />
+                    <Tag color="green">
+                      {formData.resourceUsage.replace("_", " ")}
+                    </Tag>
+                  </Col>
+                  {formData.activityType && (
+                    <Col xs={24} sm={12} md={6}>
+                      <Text strong style={{ color: "#666" }}>
+                        Activity:
+                      </Text>
+                      <br />
+                      <Tag color="purple">{formData.activityType}</Tag>
+                    </Col>
+                  )}
+                  {formData.duration && (
+                    <Col xs={24} sm={12} md={6}>
+                      <Text strong style={{ color: "#666" }}>
+                        Duration:
+                      </Text>
+                      <br />
+                      <Tag color="orange">{formData.duration}</Tag>
+                    </Col>
+                  )}
+                  {selectedLessonPlan && (
+                    <Col span={24}>
+                      <Text strong style={{ color: "#666" }}>
+                        Based on Lesson:
+                      </Text>
+                      <br />
+                      <Text>{selectedLessonPlan.title}</Text>
+                    </Col>
+                  )}
+                </Row>
+              </Card>
+            </Col>
           </Row>
         </div>
 
-        {/* Standardized Footer */}
-        <div className="modal-footer">
-          <div className="modal-footer-left">
-            <button
-              className="btn-reset"
-              onClick={handleReset}
-              disabled={loading}
-            >
-              Reset All
-            </button>
-          </div>
-          <div className="modal-footer-right">
-            <button className="btn-cancel" onClick={onClose} disabled={loading}>
-              Cancel
-            </button>
-            <button
-              className={`btn-submit ${loading ? "loading" : ""}`}
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? "⏳ Creating..." : "✨ Create Activity"}
-            </button>
-          </div>
+        {/* Footer Buttons */}
+        <div
+          className="modal-footer"
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "10px",
+            marginTop: "20px",
+          }}
+        >
+          <Button onClick={handleReset}>Reset</Button>
+          <Button type="primary" loading={loading} onClick={handleSubmit}>
+            Submit Activity
+          </Button>
         </div>
       </div>
     </div>

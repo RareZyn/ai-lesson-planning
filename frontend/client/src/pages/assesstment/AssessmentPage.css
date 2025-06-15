@@ -1,4 +1,4 @@
-/* src/pages/assessment/AssessmentPage.css */
+/* src/pages/assessment/AssessmentPage.css - Updated with creative options modal */
 
 .assessment-page {
   padding: 0;
@@ -167,6 +167,7 @@
   margin-top: 8px;
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .assessment-title {
@@ -188,6 +189,7 @@
   margin-top: 8px;
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .assessment-type {
@@ -236,6 +238,65 @@
 .assessment-table .ant-btn.ant-btn-dangerous:hover {
   color: #ff4d4f;
   background: rgba(255, 77, 79, 0.1);
+}
+
+/* Creative Options Modal Styles */
+.creative-options-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.creative-options-modal .ant-modal-header {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 24px;
+}
+
+.creative-options-modal .ant-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.creative-options-modal .ant-modal-body {
+  padding: 24px;
+}
+
+.creative-option-card {
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid #f0f0f0 !important;
+}
+
+.creative-option-card:hover {
+  border-color: #1890ff !important;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.15);
+}
+
+.creative-option-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  min-height: 160px;
+}
+
+.creative-option-card h3 {
+  color: #262626;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 12px 0 8px 0;
+}
+
+.creative-option-card p {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
 }
 
 /* Stats Cards (if needed) */
@@ -363,6 +424,24 @@
   .assessment-meta {
     flex-wrap: wrap;
   }
+
+  /* Creative options modal mobile */
+  .creative-options-modal .ant-modal-body {
+    padding: 16px;
+  }
+
+  .creative-option-card .ant-card-body {
+    min-height: 140px;
+    padding: 16px 12px;
+  }
+
+  .creative-option-card h3 {
+    font-size: 15px;
+  }
+
+  .creative-option-card p {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -402,5 +481,102 @@
 
   .stats-number {
     font-size: 1.5rem;
+  }
+
+  /* Creative options mobile layout */
+  .creative-options-modal .ant-modal-body {
+    padding: 12px;
+  }
+
+  .creative-option-card .ant-card-body {
+    min-height: 120px;
+    padding: 12px 8px;
+  }
+
+  .creative-option-card h3 {
+    font-size: 14px;
+    margin: 8px 0 6px 0;
+  }
+
+  .creative-option-card p {
+    font-size: 11px;
+  }
+}
+
+/* Loading and disabled states */
+.btn-submit.disabled {
+  background: #f5f5f5 !important;
+  color: #bfbfbf !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Enhanced hover effects */
+.assessment-table .ant-table-tbody > tr:hover .lesson-title,
+.assessment-table .ant-table-tbody > tr:hover .assessment-title {
+  color: #1890ff;
+}
+
+/* Activity type tag colors */
+.ant-tag[data-activity="assessment"] {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.ant-tag[data-activity="essay"] {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.ant-tag[data-activity="textbook"] {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.ant-tag[data-activity="activity"] {
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+/* Animation for modal appearance */
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.creative-options-modal .ant-modal-content {
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+/* Focus states for accessibility */
+.creative-option-card:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .page-header,
+  .filters-section,
+  .assessment-table .ant-table-pagination {
+    display: none;
+  }
+
+  .assessment-table {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .assessment-table .ant-table-thead > tr > th,
+  .assessment-table .ant-table-tbody > tr > td {
+    border: 1px solid #000 !important;
+    background: white !important;
   }
 }

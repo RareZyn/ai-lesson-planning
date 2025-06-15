@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx
+// src/pages/assessment/AssessmentPage.jsx - Updated with proper modal flow
 import React, { useState } from "react";
 import {
   Card,
@@ -9,7 +9,9 @@ import {
   Tabs,
   Input,
   Select,
-  DatePicker,
+  Modal,
+  Row,
+  Col,
 } from "antd";
 import {
   FileTextOutlined,
@@ -20,9 +22,21 @@ import {
   BookOutlined,
   BulbOutlined,
   SearchOutlined,
+  ThunderboltOutlined,
+  EditOutlined as EditIcon,
+  FileTextOutlined as FileIcon,
+  BookOutlined as BookIcon,
 } from "@ant-design/icons";
-import AssessmentModal from "../../components/Modal/AssessmentCreative/AssesstmentModal";
+
+// Lesson Planner Assessment Modals
 import LessonPlannerAssessmentModal from "../../components/Modal/AssessmentCreative/LessonPlannerAssessmentModal";
+
+// Creative Assessment Modals
+import ActivityInClassModal from "../../components/Modal/AssessmentCreative/ActivityInClassModal";
+import AssessmentModal from "../../components/Modal/AssessmentCreative/AssesstmentModal";
+import EssayModal from "../../components/Modal/AssessmentCreative/EssayModal";
+import TextBookModal from "../../components/Modal/AssessmentCreative/TextBookModal";
+
 import "./AssessmentPage.css";
 
 const { TabPane } = Tabs;
@@ -31,11 +45,17 @@ const { Option } = Select;
 
 const AssessmentPage = () => {
   const [activeTab, setActiveTab] = useState("lesson-planner");
-  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Lesson Planner Modal State
   const [isLessonPlannerModalVisible, setIsLessonPlannerModalVisible] =
     useState(false);
 
-  // Dummy data for assessments by lesson planner
+  // Creative Assessment States
+  const [isCreativeOptionsVisible, setIsCreativeOptionsVisible] =
+    useState(false);
+  const [activeCreativeModal, setActiveCreativeModal] = useState(null);
+
+  // Sample lesson planner data with different activity types
   const lessonPlannerAssessments = [
     {
       id: 1,
@@ -44,6 +64,7 @@ const AssessmentPage = () => {
       class: "5 Anggerik",
       grade: "Form 5",
       subject: "English",
+      activityType: "assessment", // This determines which modal to show
       assessmentType: "Monthly Test",
       questionCount: 25,
       duration: "60 minutes",
@@ -59,6 +80,7 @@ const AssessmentPage = () => {
       class: "5 UM",
       grade: "Form 5",
       subject: "English",
+      activityType: "essay", // Essay type
       assessmentType: "Writing Assessment",
       questionCount: 3,
       duration: "45 minutes",
@@ -74,6 +96,7 @@ const AssessmentPage = () => {
       class: "Biruni",
       grade: "Form 5",
       subject: "English",
+      activityType: "textbook", // Textbook type
       assessmentType: "Reading Comprehension",
       questionCount: 15,
       duration: "30 minutes",
@@ -84,7 +107,7 @@ const AssessmentPage = () => {
     },
   ];
 
-  // Dummy data for creative assessments
+  // Creative assessments data
   const creativeAssessments = [
     {
       id: 1,
@@ -130,6 +153,39 @@ const AssessmentPage = () => {
     },
   ];
 
+  // Creative assessment options
+  const creativeOptions = [
+    {
+      id: "activity-in-class",
+      title: "Activity in Class",
+      description:
+        "Interactive classroom activities with group work and discussions",
+      icon: <ThunderboltOutlined />,
+      color: "#ff4757",
+    },
+    {
+      id: "assessment",
+      title: "Assessment",
+      description: "Comprehensive assessments with various question types",
+      icon: <FileIcon />,
+      color: "#42a5f5",
+    },
+    {
+      id: "essay",
+      title: "Essay",
+      description: "Writing assignments and essay-based assessments",
+      icon: <EditIcon />,
+      color: "#ffa726",
+    },
+    {
+      id: "textbook",
+      title: "Textbook",
+      description: "Textbook-based activities and exercises",
+      icon: <BookIcon />,
+      color: "#66bb6a",
+    },
+  ];
+
   // Columns for lesson planner assessments table
   const lessonPlannerColumns = [
     {
@@ -143,6 +199,7 @@ const AssessmentPage = () => {
           <div className="lesson-meta">
             <Tag color="blue">{record.class}</Tag>
             <Tag color="green">{record.grade}</Tag>
+            <Tag color="purple">{record.activityType}</Tag>
           </div>
         </div>
       ),
@@ -321,18 +378,37 @@ const AssessmentPage = () => {
     },
   ];
 
+  // Handle create assessment button click
   const handleCreateAssessment = () => {
     if (activeTab === "lesson-planner") {
       setIsLessonPlannerModalVisible(true);
     } else {
-      setIsModalVisible(true);
+      setIsCreativeOptionsVisible(true);
     }
   };
 
-  const handleModalSubmit = (data) => {
-    console.log("Assessment data:", data);
-    setIsModalVisible(false);
+  // Handle creative option selection
+  const handleCreativeOptionSelect = (optionId) => {
+    setIsCreativeOptionsVisible(false);
+    setActiveCreativeModal(optionId);
+  };
+
+  // Handle modal submissions
+  const handleLessonPlannerSubmit = (data) => {
+    console.log("Lesson Planner Assessment data:", data);
     setIsLessonPlannerModalVisible(false);
+  };
+
+  const handleCreativeModalSubmit = (data) => {
+    console.log("Creative Assessment data:", data);
+    setActiveCreativeModal(null);
+  };
+
+  // Close all modals
+  const closeAllModals = () => {
+    setIsLessonPlannerModalVisible(false);
+    setIsCreativeOptionsVisible(false);
+    setActiveCreativeModal(null);
   };
 
   return (
@@ -390,6 +466,16 @@ const AssessmentPage = () => {
                     <Option value="5-anggerik">5 Anggerik</Option>
                     <Option value="5-um">5 UM</Option>
                     <Option value="biruni">Biruni</Option>
+                  </Select>
+                  <Select
+                    placeholder="Filter by activity type"
+                    style={{ width: 180 }}
+                    allowClear
+                  >
+                    <Option value="assessment">Assessment</Option>
+                    <Option value="essay">Essay</Option>
+                    <Option value="textbook">Textbook</Option>
+                    <Option value="activity">Activity</Option>
                   </Select>
                   <Select
                     placeholder="Filter by status"
@@ -472,18 +558,99 @@ const AssessmentPage = () => {
         </Tabs>
       </Card>
 
-      {/* Creative Assessment Modal */}
-      <AssessmentModal
-        isOpen={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        onSubmit={handleModalSubmit}
-      />
-
       {/* Lesson Planner Assessment Modal */}
       <LessonPlannerAssessmentModal
         isOpen={isLessonPlannerModalVisible}
         onClose={() => setIsLessonPlannerModalVisible(false)}
-        onSubmit={handleModalSubmit}
+        onSubmit={handleLessonPlannerSubmit}
+      />
+
+      {/* Creative Assessment Options Modal */}
+      <Modal
+        title="Choose Assessment Type"
+        open={isCreativeOptionsVisible}
+        onCancel={() => setIsCreativeOptionsVisible(false)}
+        footer={null}
+        width={800}
+        className="creative-options-modal"
+      >
+        <div style={{ padding: "20px 0" }}>
+          <p style={{ marginBottom: 24, color: "#666", textAlign: "center" }}>
+            Select the type of assessment you would like to create:
+          </p>
+          <Row gutter={[16, 16]}>
+            {creativeOptions.map((option) => (
+              <Col xs={24} sm={12} key={option.id}>
+                <Card
+                  hoverable
+                  className="creative-option-card"
+                  onClick={() => handleCreativeOptionSelect(option.id)}
+                  style={{
+                    textAlign: "center",
+                    border: "2px solid #f0f0f0",
+                    borderRadius: "12px",
+                    transition: "all 0.3s ease",
+                  }}
+                  bodyStyle={{ padding: "24px 16px" }}
+                >
+                  <div
+                    style={{
+                      fontSize: "48px",
+                      color: option.color,
+                      marginBottom: "16px",
+                    }}
+                  >
+                    {option.icon}
+                  </div>
+                  <h3
+                    style={{
+                      margin: "0 0 8px 0",
+                      color: "#262626",
+                      fontSize: "18px",
+                    }}
+                  >
+                    {option.title}
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#666",
+                      fontSize: "14px",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {option.description}
+                  </p>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
+      </Modal>
+
+      {/* Creative Assessment Modals */}
+      <ActivityInClassModal
+        isOpen={activeCreativeModal === "activity-in-class"}
+        onClose={closeAllModals}
+        onSubmit={handleCreativeModalSubmit}
+      />
+
+      <AssessmentModal
+        isOpen={activeCreativeModal === "assessment"}
+        onClose={closeAllModals}
+        onSubmit={handleCreativeModalSubmit}
+      />
+
+      <EssayModal
+        isOpen={activeCreativeModal === "essay"}
+        onClose={closeAllModals}
+        onSubmit={handleCreativeModalSubmit}
+      />
+
+      <TextBookModal
+        isOpen={activeCreativeModal === "textbook"}
+        onClose={closeAllModals}
+        onSubmit={handleCreativeModalSubmit}
       />
     </div>
   );
