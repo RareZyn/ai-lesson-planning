@@ -1,10 +1,12 @@
-// backend/route/assessment.js - Updated with authentication middleware
+// backend/route/assessment.js - Simple routes without middleware
 const express = require("express");
 const {
   fullLessonPlanner,
   generateActivityAndRubric,
   generateEssayAssessment,
   generateTextbookActivity,
+  generateAssessment,
+  generateFromLessonPlan,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -12,22 +14,41 @@ const {
   updateAssessment,
 } = require("../controller/aseessmentController");
 
-// Import authentication middleware
-const { protect, authorize } = require("../middleware/auth");
-
 const router = express.Router();
 
-// Lesson-based assessment generation endpoints (require auth)
-router.post("/fullLessonPlanner", protect, fullLessonPlanner);
-router.post("/generateActivityAndRubric", protect, generateActivityAndRubric);
-router.post("/generateEssayAssessment", protect, generateEssayAssessment);
-router.post("/generateTextbookActivity", protect, generateTextbookActivity);
+// =================================
+// LESSON-BASED ASSESSMENT GENERATION
+// =================================
 
-// Assessment CRUD operations (all require auth)
-router.post("/save", protect, saveAssessment);
-router.get("/my-assessments", protect, getUserAssessments);
-router.get("/:id", protect, getAssessmentById);
-router.put("/:id", protect, updateAssessment);
-router.delete("/:id", protect, deleteAssessment);
+// Legacy lesson planner endpoint
+router.post("/fullLessonPlanner", fullLessonPlanner);
+
+// Individual assessment type generation endpoints
+router.post("/generateActivityAndRubric", generateActivityAndRubric);
+router.post("/generateEssayAssessment", generateEssayAssessment);
+router.post("/generateTextbookActivity", generateTextbookActivity);
+router.post("/generateAssessment", generateAssessment);
+
+// Unified lesson plan to assessment generation endpoint
+router.post("/generateFromLessonPlan", generateFromLessonPlan);
+
+// =================================
+// ASSESSMENT CRUD OPERATIONS
+// =================================
+
+// Create/Save assessment
+router.post("/save", saveAssessment);
+
+// Get user's assessments with filtering and pagination
+router.get("/my-assessments", getUserAssessments);
+
+// Get specific assessment by ID
+router.get("/:id", getAssessmentById);
+
+// Update assessment
+router.put("/:id", updateAssessment);
+
+// Delete assessment
+router.delete("/:id", deleteAssessment);
 
 module.exports = router;

@@ -133,6 +133,7 @@ const fullLessonPlanner = async (req, res) => {
   }
 };
 
+// Generate Activity and Rubric based on lesson plan data
 const generateActivityAndRubric = async (req, res) => {
   const {
     contentStandard,
@@ -143,6 +144,11 @@ const generateActivityAndRubric = async (req, res) => {
     subject,
     theme,
     topic,
+    // Additional parameters from the frontend modal
+    studentArrangement,
+    resourceUsage,
+    duration,
+    additionalRequirement,
   } = req.body;
 
   const prompt = `
@@ -177,8 +183,22 @@ You must generate two HTML outputs:
     "during": "${learningOutline.during}",
     "post": "${learningOutline.post}"
   },
-  "activityType": "${activityType}"
+  "activityType": "${activityType}",
+  "studentArrangement": "${studentArrangement}",
+  "resourceUsage": "${resourceUsage}",
+  "duration": "${duration}",
+  "additionalRequirement": "${additionalRequirement}"
 }
+
+# Activity Configuration
+
+Generate an in-class activity that incorporates:
+- Student Arrangement: ${studentArrangement || "small_group"}
+- Resource Usage: ${resourceUsage || "classroom_only"}
+- Duration: ${duration || "30-45 minutes"}
+- Additional Requirements: ${
+    additionalRequirement || "Standard classroom activity"
+  }
 
 # Output Format
 
@@ -236,6 +256,7 @@ Do not include anything else. Just the two clean HTML blocks, no explanations.
   }
 };
 
+// Generate Essay Assessment based on lesson plan data
 const generateEssayAssessment = async (req, res) => {
   const {
     contentStandard,
@@ -245,6 +266,11 @@ const generateEssayAssessment = async (req, res) => {
     subject,
     theme,
     topic,
+    // Additional parameters from the frontend modal
+    essayType,
+    wordCount,
+    duration,
+    additionalRequirement,
   } = req.body;
 
   const prompt = `
@@ -266,10 +292,12 @@ Both must:
 
 ## Student Essay Activity Guidelines
 - Include fields for Student Name, Class, and Teacher Name
-- Provide a clear title and engaging prompt (e.g., “A Famous Person I Admire”)
+- Provide a clear title and engaging prompt related to the lesson topic
 - Include bullet points under instructions explaining what to write
 - Add a large text box for the essay (at least 600px height)
 - Include a note to students about tone, grammar, and proofreading
+- Word count requirement: ${wordCount || "200-300 words"}
+- Duration: ${duration || "60 minutes"}
 
 ## Teacher Rubric Guidelines
 - Create a 5-column rubric table with: Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Improvement (1–2)
@@ -297,7 +325,11 @@ Both must:
     "during": "${learningOutline.during}",
     "post": "${learningOutline.post}"
   },
-  "activityType": "essay"
+  "activityType": "essay",
+  "essayType": "${essayType}",
+  "wordCount": "${wordCount}",
+  "duration": "${duration}",
+  "additionalRequirement": "${additionalRequirement}"
 }
 
 # Output Format
@@ -354,6 +386,8 @@ Do not include anything else. Just the raw HTMLs.
     });
   }
 };
+
+// Generate Textbook Activity based on lesson plan data
 const generateTextbookActivity = async (req, res) => {
   const {
     contentStandard,
@@ -363,6 +397,8 @@ const generateTextbookActivity = async (req, res) => {
     subject,
     theme,
     topic,
+    // Additional parameters from the frontend modal
+    additionalRequirement,
   } = req.body;
 
   const prompt = `
@@ -410,7 +446,8 @@ const generateTextbookActivity = async (req, res) => {
       "during": "${learningOutline.during}",
       "post": "${learningOutline.post}"
     },
-    "activityType": "textbook"
+    "activityType": "textbook",
+    "additionalRequirement": "${additionalRequirement}"
   }
   
   # Output Format
@@ -466,6 +503,460 @@ const generateTextbookActivity = async (req, res) => {
       message: "OpenAI API error",
     });
   }
+};
+
+// Generate Assessment (Exam/Test) based on lesson plan data
+const generateAssessment = async (req, res) => {
+  const {
+    contentStandard,
+    learningStandard,
+    learningOutline,
+    lesson,
+    subject,
+    theme,
+    topic,
+    // Additional parameters from the frontend modal
+    assessmentType,
+    questionTypes,
+    numberOfQuestions,
+    timeAllocation,
+    additionalRequirement,
+  } = req.body;
+
+  const prompt = `
+# Identity
+
+You are an AI assistant that creates comprehensive English assessments (exams/tests) and marking rubrics based on Malaysian KSSM curriculum lesson plans.
+
+# Instructions
+
+You must return exactly two blocks of HTML content:
+
+1. 📝 Student Assessment Paper (Styled HTML)
+2. 🧑‍🏫 Teacher Answer Key & Rubric (Styled HTML)
+
+# Assessment Configuration
+
+- Assessment Type: ${assessmentType}
+- Question Types: ${
+    Array.isArray(questionTypes) ? questionTypes.join(", ") : questionTypes
+  }
+- Number of Questions: ${numberOfQuestions || 20}
+- Time Allocation: ${timeAllocation || "60 minutes"}
+
+# Lesson Data
+
+{
+  "lesson": "${lesson}",
+  "subject": "${subject}",
+  "theme": "${theme}",
+  "topic": "${topic}",
+  "contentStandard": {
+    "main": "${contentStandard.main}",
+    "component": "${contentStandard.component}"
+  },
+  "learningStandard": {
+    "main": "${learningStandard.main}",
+    "component": "${learningStandard.component}"
+  },
+  "learningOutline": {
+    "pre": "${learningOutline.pre}",
+    "during": "${learningOutline.during}",
+    "post": "${learningOutline.post}"
+  },
+  "activityType": "assessment",
+  "numberOfQuestions": ${numberOfQuestions || 20},
+  "timeAllocation": "${timeAllocation || "60 minutes"}",
+  "additionalRequirement": "${additionalRequirement}"
+}
+
+## Student Assessment Paper Guidelines:
+- Include assessment header with subject, class, time, and instructions
+- Generate ${
+    numberOfQuestions || 20
+  } questions based on the specified question types
+- Include clear numbering and proper spacing for answers
+- Add student information section (Name, Class, Date)
+- Include marking scheme summary at the end
+
+## Teacher Answer Key & Rubric Guidelines:
+- Provide comprehensive answer key for all questions
+- Include marking scheme with point allocation
+- Add assessment rubric with grading criteria
+- Include suggested time allocation per section
+- Provide additional notes for markers
+
+# Output Format
+
+1. Begin your response with \`\`\`html\n<!-- STUDENT ASSESSMENT -->\n<html>...</html>\n\`\`\`
+2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER ANSWER KEY -->\n<html>...</html>\n\`\`\`
+
+Generate a comprehensive ${assessmentType} assessment that thoroughly evaluates the lesson objectives.
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate comprehensive HTML assessments and answer keys for English language evaluation.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const output = response.choices[0].message.content;
+
+    const match = output.match(
+      /```html\s*<!-- STUDENT ASSESSMENT -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER ANSWER KEY -->\s*(.*?)\s*```/s
+    );
+
+    if (!match || match.length < 3) {
+      return res.status(500).json({
+        success: false,
+        message: "OpenAI output did not contain both HTML blocks.",
+        raw: output,
+      });
+    }
+
+    const assessmentHtml = match[1].trim();
+    const answerKeyHtml = match[2].trim();
+
+    res.status(200).json({
+      success: true,
+      assessmentHTML: assessmentHtml,
+      answerKeyHTML: answerKeyHtml,
+    });
+  } catch (err) {
+    console.error("Error generating assessment:", err);
+    res.status(500).json({
+      success: false,
+      message: "OpenAI API error",
+    });
+  }
+};
+
+// Unified function to generate assessments based on lesson plan data
+const generateFromLessonPlan = async (req, res) => {
+  try {
+    const {
+      lessonPlanId,
+      classId,
+      lesson,
+      subject,
+      theme,
+      topic,
+      grade,
+      contentStandard,
+      learningStandard,
+      learningOutline,
+      assessmentTitle,
+      assessmentDescription,
+      activityType,
+      ...activityData
+    } = req.body;
+
+    // Validate required fields
+    if (!lessonPlanId || !classId || !lesson || !activityType) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required fields: lessonPlanId, classId, lesson, activityType",
+      });
+    }
+
+    let generatedContent;
+
+    // Route to appropriate generation function based on activity type
+    switch (activityType) {
+      case "activityInClass":
+      case "activity":
+        generatedContent = await generateActivityContent({
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          activityType: "activityInClass",
+          ...activityData,
+        });
+        break;
+
+      case "essay":
+        generatedContent = await generateEssayContent({
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          ...activityData,
+        });
+        break;
+
+      case "textbook":
+        generatedContent = await generateTextbookContent({
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          ...activityData,
+        });
+        break;
+
+      case "assessment":
+        generatedContent = await generateAssessmentContent({
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          ...activityData,
+        });
+        break;
+
+      default:
+        return res.status(400).json({
+          success: false,
+          message: `Unknown activity type: ${activityType}`,
+        });
+    }
+
+    // Save assessment to database
+    const assessment = await Assessment.create({
+      title: assessmentTitle || `${lesson} - ${activityType}`,
+      description:
+        assessmentDescription || `Generated ${activityType} assessment`,
+      createdBy: req.user.id,
+      lessonPlanId,
+      classId,
+      activityType,
+      assessmentType: `${activityType
+        .charAt(0)
+        .toUpperCase()}${activityType.slice(1)} Assessment`,
+      questionCount: activityData.numberOfQuestions || 20,
+      duration:
+        activityData.timeAllocation || activityData.duration || "60 minutes",
+      difficulty: "Intermediate",
+      skills: [],
+      generatedContent,
+      lessonPlanSnapshot: {
+        title: lesson,
+        subject,
+        grade,
+        contentStandard,
+        learningStandard,
+        learningOutline,
+      },
+      status: "Generated",
+      hasActivity: !!(
+        generatedContent.activityHTML || generatedContent.assessmentHTML
+      ),
+      hasRubric: !!(
+        generatedContent.rubricHTML || generatedContent.answerKeyHTML
+      ),
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${activityType} assessment generated and saved successfully`,
+      data: assessment,
+      generatedContent,
+    });
+  } catch (error) {
+    console.error("Error in generateFromLessonPlan:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating assessment from lesson plan",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// Helper functions for different assessment types
+const generateActivityContent = async (data) => {
+  // Simulate the generateActivityAndRubric logic but return the content
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You generate HTML student activities and teacher rubrics for classroom assessments.",
+      },
+      {
+        role: "user",
+        content: buildActivityPrompt(data),
+      },
+    ],
+  });
+
+  const output = response.choices[0].message.content;
+  const match = output.match(
+    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+  );
+
+  if (!match || match.length < 3) {
+    throw new Error("Invalid response format from AI");
+  }
+
+  return {
+    activityHTML: match[1].trim(),
+    rubricHTML: match[2].trim(),
+  };
+};
+
+const generateEssayContent = async (data) => {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You generate HTML student activities and teacher rubrics for KSSM English essay assessments.",
+      },
+      {
+        role: "user",
+        content: buildEssayPrompt(data),
+      },
+    ],
+  });
+
+  const output = response.choices[0].message.content;
+  const match = output.match(
+    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+  );
+
+  if (!match || match.length < 3) {
+    throw new Error("Invalid response format from AI");
+  }
+
+  return {
+    activityHTML: match[1].trim(),
+    rubricHTML: match[2].trim(),
+  };
+};
+
+const generateTextbookContent = async (data) => {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You generate HTML classroom textbook-based activities and teacher rubrics for the Malaysian curriculum.",
+      },
+      {
+        role: "user",
+        content: buildTextbookPrompt(data),
+      },
+    ],
+  });
+
+  const output = response.choices[0].message.content;
+  const match = output.match(
+    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+  );
+
+  if (!match || match.length < 3) {
+    throw new Error("Invalid response format from AI");
+  }
+
+  return {
+    activityHTML: match[1].trim(),
+    rubricHTML: match[2].trim(),
+  };
+};
+
+const generateAssessmentContent = async (data) => {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You generate comprehensive HTML assessments and answer keys for English language evaluation.",
+      },
+      {
+        role: "user",
+        content: buildAssessmentPrompt(data),
+      },
+    ],
+  });
+
+  const output = response.choices[0].message.content;
+  const match = output.match(
+    /```html\s*<!-- STUDENT ASSESSMENT -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER ANSWER KEY -->\s*(.*?)\s*```/s
+  );
+
+  if (!match || match.length < 3) {
+    throw new Error("Invalid response format from AI");
+  }
+
+  return {
+    assessmentHTML: match[1].trim(),
+    answerKeyHTML: match[2].trim(),
+  };
+};
+
+// Helper functions to build prompts (simplified versions of the main functions)
+const buildActivityPrompt = (data) => {
+  return `Generate an in-class activity and rubric for: ${
+    data.lesson
+  }. Student arrangement: ${
+    data.studentArrangement || "small_group"
+  }. Resource usage: ${data.resourceUsage || "classroom_only"}. Duration: ${
+    data.duration || "30-45 minutes"
+  }. Additional requirements: ${
+    data.additionalRequirement || "Standard classroom activity"
+  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
+};
+
+const buildEssayPrompt = (data) => {
+  return `Generate an essay assessment and rubric for: ${
+    data.lesson
+  }. Essay type: ${data.essayType || "narrative"}. Word count: ${
+    data.wordCount || "200-300 words"
+  }. Duration: ${data.duration || "60 minutes"}. Additional requirements: ${
+    data.additionalRequirement || "Standard essay assessment"
+  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
+};
+
+const buildTextbookPrompt = (data) => {
+  return `Generate a textbook-based activity and rubric for: ${
+    data.lesson
+  }. Additional requirements: ${
+    data.additionalRequirement || "Standard textbook activity"
+  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
+};
+
+const buildAssessmentPrompt = (data) => {
+  return `Generate a comprehensive assessment and answer key for: ${
+    data.lesson
+  }. Assessment type: ${
+    data.assessmentType || "Unit Test"
+  }. Number of questions: ${data.numberOfQuestions || 20}. Time allocation: ${
+    data.timeAllocation || "60 minutes"
+  }. Question types: ${
+    Array.isArray(data.questionTypes)
+      ? data.questionTypes.join(", ")
+      : data.questionTypes || "Multiple choice, short answer"
+  }. Additional requirements: ${
+    data.additionalRequirement || "Standard assessment"
+  }. Return HTML format with <!-- STUDENT ASSESSMENT --> and <!-- TEACHER ANSWER KEY --> sections.`;
 };
 
 const saveAssessment = async (req, res) => {
@@ -809,9 +1300,11 @@ const updateAssessment = async (req, res) => {
 
 module.exports = {
   generateActivityAndRubric,
-  fullLessonPlanner,
   generateEssayAssessment,
   generateTextbookActivity,
+  generateAssessment,
+  generateFromLessonPlan,
+  fullLessonPlanner,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
