@@ -1,0 +1,342 @@
+/* src/pages/assessment/ActivityGenerated.css */
+
+.activity-generated {
+  padding: 0;
+  background: transparent;
+}
+
+/* Loading State */
+.activity-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.activity-loading .ant-spin {
+  margin-bottom: 20px;
+}
+
+/* Placeholder State */
+.activity-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px dashed #d9d9d9;
+}
+
+.activity-placeholder .anticon {
+  margin-bottom: 20px;
+}
+
+/* Header Card */
+.activity-header-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);
+  border: 1px solid #e6f7ff;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-info .ant-typography h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-actions {
+  flex-shrink: 0;
+}
+
+.header-actions .ant-btn {
+  border-radius: 8px;
+  font-weight: 500;
+  height: 40px;
+  padding: 0 20px;
+}
+
+.header-actions .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.header-actions .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+}
+
+/* Card Styling */
+.activity-generated .ant-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.activity-generated .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.activity-generated .ant-card-head {
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 12px 12px 0 0;
+}
+
+.activity-generated .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-generated .ant-card-head-title .anticon {
+  color: #1890ff;
+}
+
+/* Steps Styling */
+.activity-generated .ant-steps-item-title {
+  font-weight: 600 !important;
+  color: #262626 !important;
+}
+
+.activity-generated .ant-steps-item-description {
+  color: #666 !important;
+}
+
+.activity-generated .ant-steps-item-description .ant-card {
+  margin-top: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+/* Criteria Cards */
+.criteria-card {
+  height: 100%;
+  background: linear-gradient(135deg, #f6ffed 0%, #ffffff 100%);
+  border: 1px solid #d9f7be;
+  transition: all 0.2s ease;
+}
+
+.criteria-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.15);
+}
+
+/* Collapse Styling */
+.activity-generated .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.activity-generated .ant-collapse > .ant-collapse-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-generated .ant-collapse > .ant-collapse-item:last-child {
+  border-bottom: none;
+}
+
+.activity-generated .ant-collapse-header {
+  padding: 12px 16px !important;
+  font-weight: 500;
+  color: #262626;
+}
+
+.activity-generated .ant-collapse-content {
+  background: white;
+  border-top: 1px solid #f0f0f0;
+}
+
+.activity-generated .ant-collapse-content-box {
+  padding: 16px;
+}
+
+/* Timeline Styling */
+.activity-generated .ant-timeline {
+  margin-top: 16px;
+}
+
+.activity-generated .ant-timeline-item-head {
+  background: #1890ff;
+  border: 2px solid #1890ff;
+}
+
+.activity-generated .ant-timeline-item-content {
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Tags Styling */
+.activity-generated .ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  border: none;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+/* Alert Styling */
+.activity-generated .ant-alert {
+  border-radius: 8px;
+  border: 1px solid #d6f7ff;
+}
+
+.activity-generated .ant-alert-info {
+  background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+}
+
+/* Question Preview Styling */
+.activity-generated .ant-collapse .ant-collapse-header {
+  background: #fafafa;
+  border-radius: 6px 6px 0 0;
+}
+
+.activity-generated .ant-collapse-content {
+  border-radius: 0 0 6px 6px;
+}
+
+/* List Styling */
+.activity-generated ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.activity-generated li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .activity-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .header-actions .ant-space {
+    width: 100%;
+  }
+
+  .header-actions .ant-space .ant-space-item {
+    flex: 1;
+  }
+
+  .header-actions .ant-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .activity-generated .ant-card-body {
+    padding: 16px;
+  }
+
+  .activity-generated .ant-steps {
+    margin-top: 0;
+  }
+
+  .activity-generated .ant-steps-item-description .ant-card {
+    margin-top: 12px;
+  }
+
+  .criteria-card .ant-card-body {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .activity-loading,
+  .activity-placeholder {
+    padding: 40px 16px;
+  }
+
+  .activity-generated .ant-card-head-title {
+    font-size: 16px;
+  }
+
+  .header-info .ant-typography h3 {
+    font-size: 18px;
+  }
+
+  .activity-generated .ant-collapse-header {
+    padding: 8px 12px !important;
+    font-size: 14px;
+  }
+
+  .activity-generated .ant-collapse-content-box {
+    padding: 12px;
+  }
+
+  .activity-generated .ant-steps-item-title {
+    font-size: 14px !important;
+  }
+}
+
+/* Animation for loading */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.activity-generated {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Print Styles */
+@media print {
+  .header-actions {
+    display: none;
+  }
+
+  .activity-generated .ant-card {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .activity-generated .ant-collapse {
+    border: 1px solid #000;
+  }
+
+  .activity-generated .ant-tag {
+    border: 1px solid #000;
+    color: #000 !important;
+    background: white !important;
+  }
+}
