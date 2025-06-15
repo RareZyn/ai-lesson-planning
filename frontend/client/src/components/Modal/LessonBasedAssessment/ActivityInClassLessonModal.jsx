@@ -1,4 +1,4 @@
-//ActivityInClassLesson.jsx according to lesson planner - Simplified version
+// Fixed ActivityInClassLessonModal.jsx - Change activityType to "activity"
 import React, { useState } from "react";
 import {
   Card,
@@ -40,12 +40,12 @@ const ActivityInClassLesson = ({
   onClose,
   onSubmit,
   selectedLessonPlan,
-  activityType = "activity",
+  activityType = "activity", // FIXED: Changed from "activityInClass" to "activity"
 }) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
     resourceUsage: "classroom_only",
-    activityType: "",
+    activityType: "", // This is for specific activity type selection
     duration: "",
     additionalRequirement: "",
   });
@@ -71,7 +71,7 @@ const ActivityInClassLesson = ({
       const submitData = {
         ...formData,
         selectedLessonPlan,
-        activityType,
+        activityType: "activity", // FIXED: Always send "activity" as the main type
       };
       await onSubmit(submitData);
       message.success("Activity settings submitted successfully!");

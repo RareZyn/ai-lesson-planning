@@ -1,10 +1,39 @@
-// backend/controller/aseessmentController.js - Fixed version
+// Fixed backend/controller/aseessmentController.js - Add activity type validation and mapping
 const OpenAI = require("openai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson"); // Add this import
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// FIXED: Activity type mapping to ensure valid enum values
+const ACTIVITY_TYPE_MAPPING = {
+  activityInClass: "activity",
+  "activity-in-class": "activity",
+  activity_in_class: "activity",
+  activity: "activity",
+  essay: "essay",
+  textbook: "textbook",
+  assessment: "assessment",
+};
+
+// FIXED: Function to validate and map activity type
+const validateAndMapActivityType = (activityType) => {
+  if (!activityType) {
+    return "activity"; // Default fallback
+  }
+
+  const mapped = ACTIVITY_TYPE_MAPPING[activityType.toLowerCase()];
+  if (!mapped) {
+    console.warn(
+      `Unknown activity type "${activityType}", defaulting to "activity"`
+    );
+    return "activity";
+  }
+
+  console.log(`Mapped activity type: "${activityType}" -> "${mapped}"`);
+  return mapped;
+};
 
 const standardizeAssessmentResponse = (
   activityHTML,
@@ -50,9 +79,17 @@ const generateFromLessonPlan = async (req, res) => {
       learningOutline,
       assessmentTitle,
       assessmentDescription,
-      activityType,
+      activityType: rawActivityType,
       ...activityData
     } = req.body;
+
+    console.log("Received request body:", req.body);
+
+    // FIXED: Validate and map activity type
+    const activityType = validateAndMapActivityType(rawActivityType);
+    console.log(
+      `Activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
 
     // Validate required fields
     if (!lessonPlanId || !classId || !lesson || !activityType) {
@@ -67,7 +104,6 @@ const generateFromLessonPlan = async (req, res) => {
 
     // Route to appropriate generation function based on activity type
     switch (activityType) {
-      case "activityInClass":
       case "activity":
         generatedContent = await generateActivityContent({
           contentStandard,
@@ -77,7 +113,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
-          activityType: "activityInClass",
+          activityType: "activity", // Use validated type
           ...activityData,
         });
         break;
@@ -122,16 +158,35 @@ const generateFromLessonPlan = async (req, res) => {
         break;
 
       default:
-        return res.status(400).json({
-          success: false,
-          message: `Unknown activity type: ${activityType}`,
+        console.warn(
+          `Unhandled activity type: ${activityType}, falling back to activity`
+        );
+        generatedContent = await generateActivityContent({
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          activityType: "activity",
+          ...activityData,
         });
+        break;
     }
 
     // For testing, you can use a fake user ID
     if (!req.user) {
       req.user = { id: "test-user-id" };
     }
+
+    console.log("Creating assessment with data:", {
+      title: assessmentTitle || `${lesson} - ${activityType}`,
+      activityType,
+      lessonPlanId,
+      classId,
+      createdBy: req.user.id,
+    });
 
     // Save assessment to database
     const assessment = await Assessment.create({
@@ -141,7 +196,7 @@ const generateFromLessonPlan = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType,
+      activityType, // Use the validated activity type
       assessmentType: `${activityType
         .charAt(0)
         .toUpperCase()}${activityType.slice(1)} Assessment`,
@@ -167,6 +222,8 @@ const generateFromLessonPlan = async (req, res) => {
         generatedContent.rubricHTML || generatedContent.answerKeyHTML
       ),
     });
+
+    console.log("Assessment created successfully:", assessment._id);
 
     // FIXED: Update lesson plan status properly
     try {
@@ -235,7 +292,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       page = 1,
       limit = 10,
       classId,
-      activityType,
+      activityType: rawActivityType,
       status,
       search,
       hasLessonPlan,
@@ -245,7 +302,13 @@ const getUserAssessmentsFiltered = async (req, res) => {
     const filter = { createdBy: req.user.id };
 
     if (classId) filter.classId = classId;
-    if (activityType) filter.activityType = activityType;
+
+    // FIXED: Validate activity type filter
+    if (rawActivityType) {
+      const mappedActivityType = validateAndMapActivityType(rawActivityType);
+      filter.activityType = mappedActivityType;
+    }
+
     if (status) filter.status = status;
 
     // FIXED: Filter by lesson plan presence - handle string values properly
@@ -267,6 +330,8 @@ const getUserAssessmentsFiltered = async (req, res) => {
         { assessmentType: { $regex: search, $options: "i" } },
       ];
     }
+
+    console.log("Assessment filter query:", filter);
 
     // Execute query with pagination
     const assessments = await Assessment.find(filter)
@@ -462,7 +527,7 @@ You must generate two HTML outputs:
     "during": "${data.learningOutline?.during || ""}",
     "post": "${data.learningOutline?.post || ""}"
   },
-  "activityType": "${data.activityType || "activityInClass"}",
+  "activityType": "${data.activityType || "activity"}",
   "studentArrangement": "${data.studentArrangement || "small_group"}",
   "resourceUsage": "${data.resourceUsage || "classroom_only"}",
   "duration": "${data.duration || "30-45 minutes"}",
@@ -708,7 +773,7 @@ const saveAssessment = async (req, res) => {
       description,
       lessonPlanId,
       classId,
-      activityType,
+      activityType: rawActivityType,
       assessmentType,
       questionCount,
       duration,
@@ -719,6 +784,9 @@ const saveAssessment = async (req, res) => {
       tags,
       notes,
     } = req.body;
+
+    // FIXED: Validate and map activity type
+    const activityType = validateAndMapActivityType(rawActivityType);
 
     // Validation
     if (!title || !lessonPlanId || !classId || !activityType) {
@@ -736,7 +804,7 @@ const saveAssessment = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType,
+      activityType, // Use validated activity type
       assessmentType: assessmentType || "General Assessment",
       questionCount: questionCount || 20,
       duration: duration || "60 minutes",
@@ -791,7 +859,7 @@ const getUserAssessments = async (req, res) => {
       page = 1,
       limit = 10,
       classId,
-      activityType,
+      activityType: rawActivityType,
       status,
       search,
     } = req.query;
@@ -800,7 +868,13 @@ const getUserAssessments = async (req, res) => {
     const filter = { createdBy: req.user.id };
 
     if (classId) filter.classId = classId;
-    if (activityType) filter.activityType = activityType;
+
+    // FIXED: Validate activity type filter
+    if (rawActivityType) {
+      const mappedActivityType = validateAndMapActivityType(rawActivityType);
+      filter.activityType = mappedActivityType;
+    }
+
     if (status) filter.status = status;
 
     if (search) {
@@ -1009,6 +1083,7 @@ const updateAssessment = async (req, res) => {
       hasRubric,
       notes,
       tags,
+      activityType: rawActivityType,
     } = req.body;
 
     const assessment = await Assessment.findById(req.params.id);
@@ -1037,6 +1112,11 @@ const updateAssessment = async (req, res) => {
     if (hasRubric !== undefined) assessment.hasRubric = hasRubric;
     if (notes) assessment.notes = notes;
     if (tags) assessment.tags = tags;
+
+    // FIXED: Validate activity type if provided
+    if (rawActivityType) {
+      assessment.activityType = validateAndMapActivityType(rawActivityType);
+    }
 
     // Update usage tracking
     assessment.usageCount += 1;
@@ -1073,5 +1153,5 @@ module.exports = {
   deleteAssessment,
   updateAssessment,
   getLessonPlansWithoutAssessments,
-  getUserAssessmentsFiltered, 
+  getUserAssessmentsFiltered,
 };

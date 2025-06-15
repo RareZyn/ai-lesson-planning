@@ -1,4 +1,4 @@
-// src/components/Modal/LessonBasedAssessment/LessonPlannerAssessmentModal.jsx - Fixed version
+// Fixed LessonPlannerAssessmentModal.jsx - Map activity types correctly
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -38,6 +38,16 @@ const { Option } = Select;
 const { TextArea } = Input;
 const { Text } = Typography;
 
+// FIXED: Activity type mapping to ensure valid enum values
+const ACTIVITY_TYPE_MAPPING = {
+  activityInClass: "activity",
+  "activity-in-class": "activity",
+  activity: "activity",
+  essay: "essay",
+  textbook: "textbook",
+  assessment: "assessment",
+};
+
 const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   const { userId } = useUser(); // Get userId from context
   const [selectedClass, setSelectedClass] = useState(null);
@@ -70,7 +80,6 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   const fetchClasses = async () => {
     setClassesLoading(true);
     try {
-    
       // Add timeout to catch hanging requests
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(
@@ -98,7 +107,6 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       setClassesLoading(false);
     }
   };
-
 
   // FIXED: Fetch only lesson plans that don't have assessments yet
   const fetchAvailableLessonPlans = async () => {
@@ -191,11 +199,21 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
           "",
       };
 
-      // Add activity type metadata
+      // FIXED: Map activity type to valid enum value
+      const originalActivityType =
+        selectedLessonPlan.parameters?.activityType || "activity";
+      const mappedActivityType =
+        ACTIVITY_TYPE_MAPPING[originalActivityType] || "activity";
+
+      console.log("Activity type mapping:", {
+        original: originalActivityType,
+        mapped: mappedActivityType,
+      });
+
+      // Add activity type metadata with proper mapping
       const activityFormData = {
         ...activityData,
-        activityType:
-          selectedLessonPlan.parameters?.activityType || "assessment",
+        activityType: mappedActivityType, // Use mapped activity type
       };
 
       console.log("Generating assessment with data:", {
@@ -264,12 +282,17 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       ? new Date(plan.lessonDate).toLocaleDateString()
       : "No Date";
 
+    // FIXED: Map activity type for display
+    const originalActivityType = plan.parameters?.activityType || "assessment";
+    const mappedActivityType =
+      ACTIVITY_TYPE_MAPPING[originalActivityType] || "activity";
+
     return {
       label: topic,
       details: `${grade} | ${date}`,
       hots: plan.parameters?.hotsFocus || null,
       proficiency: plan.parameters?.proficiencyLevel || null,
-      activityType: plan.parameters?.activityType || "assessment",
+      activityType: mappedActivityType,
     };
   };
 
@@ -318,19 +341,23 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   const renderActivityForm = () => {
     if (!selectedLessonPlan || !showActivityForm) return null;
 
-    const activityType =
+    // FIXED: Map activity type correctly
+    const originalActivityType =
       selectedLessonPlan.parameters?.activityType || "assessment";
+    const mappedActivityType =
+      ACTIVITY_TYPE_MAPPING[originalActivityType] || "activity";
 
     const commonProps = {
       isOpen: true,
       onClose: () => setShowActivityForm(false),
       onSubmit: handleActivityFormSubmit,
       selectedLessonPlan: selectedLessonPlan,
-      activityType: activityType,
+      activityType: mappedActivityType, // Use mapped type
       isLoading: isGenerating,
     };
 
-    switch (activityType) {
+    // FIXED: Switch based on mapped activity type
+    switch (mappedActivityType) {
       case "assessment":
         return <AssessmentLesson {...commonProps} />;
       case "essay":
@@ -540,9 +567,11 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                             </Tag>
                           )}
                           <Tag color="cyan">
+                            {/* FIXED: Display mapped activity type */}
                             {(
-                              selectedLessonPlan.parameters?.activityType ||
-                              "assessment"
+                              ACTIVITY_TYPE_MAPPING[
+                                selectedLessonPlan.parameters?.activityType
+                              ] || "activity"
                             ).toUpperCase()}{" "}
                             Activity
                           </Tag>
@@ -653,11 +682,17 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                 </>
               ) : selectedLessonPlan ? (
                 `📝 Create ${
-                  (selectedLessonPlan.parameters?.activityType || "assessment")
+                  (
+                    ACTIVITY_TYPE_MAPPING[
+                      selectedLessonPlan.parameters?.activityType
+                    ] || "activity"
+                  )
                     .charAt(0)
                     .toUpperCase() +
                   (
-                    selectedLessonPlan.parameters?.activityType || "assessment"
+                    ACTIVITY_TYPE_MAPPING[
+                      selectedLessonPlan.parameters?.activityType
+                    ] || "activity"
                   ).slice(1)
                 } Assessment`
               ) : (

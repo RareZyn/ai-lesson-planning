@@ -1,4 +1,4 @@
-// src/pages/assessment/ActivityViewerPage.jsx
+// Fixed src/pages/assessment/ActivityViewerPage.jsx - Handle different content types
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -42,9 +42,14 @@ const ActivityViewerPage = () => {
       if (response.success && response.data) {
         setAssessment(response.data);
 
-        // Check if activity HTML exists
-        if (!response.data.generatedContent?.activityHTML) {
-          setError("No activity content found for this assessment.");
+        // FIXED: Check for both activityHTML and assessmentHTML
+        const hasStudentContent = !!(
+          response.data.generatedContent?.activityHTML ||
+          response.data.generatedContent?.assessmentHTML
+        );
+
+        if (!hasStudentContent) {
+          setError("No student content found for this assessment.");
         }
       } else {
         setError("Assessment not found.");
@@ -58,14 +63,48 @@ const ActivityViewerPage = () => {
     }
   };
 
+  // FIXED: Get the appropriate content based on activity type
+  const getStudentContent = () => {
+    if (!assessment?.generatedContent) return null;
+
+    const { activityHTML, assessmentHTML } = assessment.generatedContent;
+
+    // For assessment type, use assessmentHTML; for others, use activityHTML
+    if (assessment.activityType === "assessment") {
+      return assessmentHTML;
+    } else {
+      return activityHTML;
+    }
+  };
+
+  // FIXED: Get the appropriate teacher content
+  const getTeacherContent = () => {
+    if (!assessment?.generatedContent) return null;
+
+    const { rubricHTML, answerKeyHTML } = assessment.generatedContent;
+
+    // For assessment type, use answerKeyHTML; for others, use rubricHTML
+    if (assessment.activityType === "assessment") {
+      return answerKeyHTML;
+    } else {
+      return rubricHTML;
+    }
+  };
+
+  // FIXED: Check if teacher content exists
+  const hasTeacherContent = () => {
+    return !!getTeacherContent();
+  };
+
   const handlePrint = () => {
+    const studentContent = getStudentContent();
     const printWindow = window.open("", "_blank");
-    if (printWindow && assessment?.generatedContent?.activityHTML) {
+    if (printWindow && studentContent) {
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Assessment Activity - ${assessment.title}</title>
+            <title>Assessment - ${assessment.title}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -79,7 +118,7 @@ const ActivityViewerPage = () => {
             </style>
           </head>
           <body>
-            ${assessment.generatedContent.activityHTML}
+            ${studentContent}
           </body>
         </html>
       `);
@@ -89,32 +128,77 @@ const ActivityViewerPage = () => {
   };
 
   const handleDownload = () => {
-    if (assessment?.generatedContent?.activityHTML) {
-      const blob = new Blob([assessment.generatedContent.activityHTML], {
+    const studentContent = getStudentContent();
+    if (studentContent) {
+      const blob = new Blob([studentContent], {
         type: "text/html",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${assessment.title}_Activity.html`;
+      a.download = `${assessment.title}_${
+        assessment.activityType === "assessment" ? "Assessment" : "Activity"
+      }.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      message.success("Activity downloaded successfully!");
+      message.success(
+        `${
+          assessment.activityType === "assessment" ? "Assessment" : "Activity"
+        } downloaded successfully!`
+      );
     }
   };
 
   const handleViewRubric = () => {
-    if (assessment?.hasRubric) {
+    if (hasTeacherContent()) {
       navigate(`/app/assessment/rubric/${id}`);
     } else {
-      message.warning("No rubric available for this assessment.");
+      message.warning(
+        `No ${
+          assessment.activityType === "assessment" ? "answer key" : "rubric"
+        } available for this assessment.`
+      );
     }
   };
 
   const handleGoBack = () => {
     navigate("/app/assessment");
+  };
+
+  // FIXED: Get appropriate content type name
+  const getContentTypeName = () => {
+    if (!assessment) return "Content";
+
+    switch (assessment.activityType) {
+      case "assessment":
+        return "Assessment Paper";
+      case "essay":
+        return "Essay Activity";
+      case "textbook":
+        return "Textbook Activity";
+      case "activity":
+        return "Class Activity";
+      default:
+        return "Activity";
+    }
+  };
+
+  // FIXED: Get appropriate teacher content name
+  const getTeacherContentName = () => {
+    if (!assessment) return "Teacher Content";
+
+    switch (assessment.activityType) {
+      case "assessment":
+        return "Answer Key";
+      case "essay":
+      case "textbook":
+      case "activity":
+        return "Rubric";
+      default:
+        return "Teacher Guide";
+    }
   };
 
   if (loading) {
@@ -127,7 +211,7 @@ const ActivityViewerPage = () => {
           height: "60vh",
         }}
       >
-        <Spin size="large" tip="Loading assessment activity..." />
+        <Spin size="large" tip="Loading assessment content..." />
       </div>
     );
   }
@@ -172,6 +256,8 @@ const ActivityViewerPage = () => {
       </div>
     );
   }
+
+  const studentContent = getStudentContent();
 
   return (
     <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
@@ -245,13 +331,13 @@ const ActivityViewerPage = () => {
 
           {/* Action Buttons */}
           <Space wrap>
-            {assessment.hasRubric && (
+            {hasTeacherContent() && (
               <Button
                 icon={<EyeOutlined />}
                 onClick={handleViewRubric}
                 type="default"
               >
-                View Rubric
+                View {getTeacherContentName()}
               </Button>
             )}
             <Button
@@ -272,9 +358,9 @@ const ActivityViewerPage = () => {
         </div>
       </Card>
 
-      {/* Activity Content */}
-      <Card title="Student Activity Sheet" style={{ marginBottom: "24px" }}>
-        {assessment.generatedContent?.activityHTML ? (
+      {/* Student Content */}
+      <Card title={getContentTypeName()} style={{ marginBottom: "24px" }}>
+        {studentContent ? (
           <div
             style={{
               background: "#fff",
@@ -283,13 +369,17 @@ const ActivityViewerPage = () => {
               overflow: "auto",
             }}
             dangerouslySetInnerHTML={{
-              __html: assessment.generatedContent.activityHTML,
+              __html: studentContent,
             }}
           />
         ) : (
           <Alert
-            message="No Activity Content"
-            description="No activity content has been generated for this assessment."
+            message="No Student Content"
+            description={`No ${
+              assessment.activityType === "assessment"
+                ? "assessment"
+                : "activity"
+            } content has been generated for this assessment.`}
             type="warning"
             showIcon
           />
@@ -306,6 +396,20 @@ const ActivityViewerPage = () => {
               gap: "16px",
             }}
           >
+            <div>
+              <Text strong style={{ display: "block", marginBottom: "4px" }}>
+                Content Type
+              </Text>
+              <Text type="secondary">{getContentTypeName()}</Text>
+            </div>
+
+            <div>
+              <Text strong style={{ display: "block", marginBottom: "4px" }}>
+                Activity Type
+              </Text>
+              <Text type="secondary">{assessment.activityType}</Text>
+            </div>
+
             <div>
               <Text strong style={{ display: "block", marginBottom: "4px" }}>
                 Created Date
@@ -330,11 +434,26 @@ const ActivityViewerPage = () => {
               </Text>
               <Tag
                 color={
-                  assessment.status === "Generated" ? "success" : "processing"
+                  assessment.status === "Generated" ||
+                  assessment.status === "Completed"
+                    ? "success"
+                    : "processing"
                 }
               >
                 {assessment.status}
               </Tag>
+            </div>
+
+            <div>
+              <Text strong style={{ display: "block", marginBottom: "4px" }}>
+                Available Content
+              </Text>
+              <Space>
+                {studentContent && <Tag color="blue">Student Content</Tag>}
+                {hasTeacherContent() && (
+                  <Tag color="green">{getTeacherContentName()}</Tag>
+                )}
+              </Space>
             </div>
 
             {assessment.usageCount > 0 && (
