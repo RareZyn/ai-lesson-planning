@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx - Updated with backend integration
+// src/pages/assessment/AssessmentPage.jsx - Fixed version
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -72,10 +72,10 @@ const AssessmentPage = () => {
     loadInitialData();
   }, [userId]);
 
-  // Load assessments when tab changes
+  // Load assessments when tab changes or filters change
   useEffect(() => {
     if (activeTab === "lesson-based") {
-      loadLessonBasedAssessments();
+      loadLessonBasedData(); // This will show lesson plans and their assessment status
     } else {
       loadStandaloneAssessments();
     }
@@ -101,20 +101,96 @@ const AssessmentPage = () => {
     }
   };
 
-  const loadLessonBasedAssessments = async () => {
+  // FIXED: New function to load lesson plans with assessment status
+  const loadLessonBasedData = async () => {
     try {
       setLoading(true);
-      const response = await assessmentAPI.getUserAssessments({
+
+      // Get all lesson plans for the user
+      const allLessonPlans = await getAllLessonPlans();
+
+      // Get all assessments that have lesson plans
+      const assessmentResponse = await assessmentAPI.getUserAssessments({
         ...filters,
-        hasLessonPlan: true, // Only get assessments that were created from lesson plans
+        hasLessonPlan: "true", // FIXED: Pass as string
       });
 
-      if (response.success) {
-        setAssessments(response.data || []);
+      const assessmentsWithLessonPlans = assessmentResponse.success
+        ? assessmentResponse.data || []
+        : [];
+
+      // Create a map of lesson plan IDs to their assessments
+      const lessonPlanAssessmentMap = {};
+      assessmentsWithLessonPlans.forEach((assessment) => {
+        if (assessment.lessonPlanId) {
+          const lessonPlanId =
+            typeof assessment.lessonPlanId === "object"
+              ? assessment.lessonPlanId._id
+              : assessment.lessonPlanId;
+
+          if (!lessonPlanAssessmentMap[lessonPlanId]) {
+            lessonPlanAssessmentMap[lessonPlanId] = [];
+          }
+          lessonPlanAssessmentMap[lessonPlanId].push(assessment);
+        }
+      });
+
+      // Transform lesson plans into displayable format with assessment status
+      const lessonPlanRows = allLessonPlans.map((lessonPlan) => {
+        const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
+        const hasAssessments = assessments.length > 0;
+
+        return {
+          ...lessonPlan,
+          assessmentStatus: hasAssessments ? "generated" : "not_generated",
+          assessments: assessments,
+          hasActivity: assessments.some((a) => a.hasActivity),
+          hasRubric: assessments.some((a) => a.hasRubric),
+          // For display purposes, we'll use the lesson plan data
+          title: lessonPlan.parameters?.specificTopic || "Untitled Lesson",
+          description: lessonPlan.plan?.learningObjective || "",
+          activityType: lessonPlan.parameters?.activityType || "lesson",
+          createdAt: lessonPlan.createdAt,
+          updatedAt: lessonPlan.updatedAt,
+          status: hasAssessments ? "Generated" : "Not Generated",
+        };
+      });
+
+      // Apply filters to lesson plans
+      let filteredRows = lessonPlanRows;
+
+      if (filters.search) {
+        filteredRows = filteredRows.filter(
+          (row) =>
+            row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+            row.description.toLowerCase().includes(filters.search.toLowerCase())
+        );
       }
+
+      if (filters.classId) {
+        filteredRows = filteredRows.filter(
+          (row) =>
+            row.classId?._id === filters.classId ||
+            row.classId === filters.classId
+        );
+      }
+
+      if (filters.status) {
+        if (filters.status === "Generated") {
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "generated"
+          );
+        } else if (filters.status === "Not Generated") {
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "not_generated"
+          );
+        }
+      }
+
+      setAssessments(filteredRows);
     } catch (error) {
-      console.error("Error loading lesson-based assessments:", error);
-      message.error("Failed to load assessments");
+      console.error("Error loading lesson-based data:", error);
+      message.error("Failed to load lesson plans and assessments");
     } finally {
       setLoading(false);
     }
@@ -125,7 +201,7 @@ const AssessmentPage = () => {
       setLoading(true);
       const response = await assessmentAPI.getUserAssessments({
         ...filters,
-        hasLessonPlan: false, // Only get standalone assessments (no lesson plan)
+        hasLessonPlan: "false", // FIXED: Pass as string
       });
 
       if (response.success) {
@@ -154,14 +230,13 @@ const AssessmentPage = () => {
     try {
       setLoading(true);
 
-      // The data structure comes from LessonSelectionModal
       console.log("Received assessment data:", data);
 
       message.success("Assessment created successfully!");
       setIsLessonSelectionModalVisible(false);
 
-      // Refresh the assessments list
-      loadLessonBasedAssessments();
+      // Refresh the lesson plans list to show updated status
+      loadLessonBasedData();
 
       // Navigate to the generated assessment
       if (data.data?._id) {
@@ -177,44 +252,67 @@ const AssessmentPage = () => {
 
   // Handle viewing assessment activity
   const handleViewActivity = (record) => {
-    if (record.hasActivity) {
-      navigate(`/app/assessment/activity/${record._id}`);
+    if (
+      record.assessmentStatus === "generated" &&
+      record.assessments?.length > 0
+    ) {
+      // Find the first assessment with activity
+      const assessmentWithActivity = record.assessments.find(
+        (a) => a.hasActivity
+      );
+      if (assessmentWithActivity) {
+        navigate(`/app/assessment/activity/${assessmentWithActivity._id}`);
+      } else {
+        message.warning("No activity available for this assessment");
+      }
     } else {
-      message.warning("No activity available for this assessment");
+      message.warning("No assessment activity available for this lesson plan");
     }
   };
 
   // Handle viewing assessment rubric
   const handleViewRubric = (record) => {
-    if (record.hasRubric) {
-      navigate(`/app/assessment/rubric/${record._id}`);
+    if (
+      record.assessmentStatus === "generated" &&
+      record.assessments?.length > 0
+    ) {
+      // Find the first assessment with rubric
+      const assessmentWithRubric = record.assessments.find((a) => a.hasRubric);
+      if (assessmentWithRubric) {
+        navigate(`/app/assessment/rubric/${assessmentWithRubric._id}`);
+      } else {
+        message.warning("No rubric available for this assessment");
+      }
     } else {
-      message.warning("No rubric available for this assessment");
+      message.warning("No assessment rubric available for this lesson plan");
     }
   };
 
   // Handle deleting assessment
   const handleDeleteAssessment = async (record) => {
-    Modal.confirm({
-      title: "Delete Assessment",
-      content: `Are you sure you want to delete "${record.title}"?`,
-      onOk: async () => {
-        try {
-          await assessmentAPI.deleteAssessment(record._id);
-          message.success("Assessment deleted successfully");
-
-          // Refresh the list
-          if (activeTab === "lesson-based") {
-            loadLessonBasedAssessments();
-          } else {
-            loadStandaloneAssessments();
+    if (record.assessments?.length > 0) {
+      Modal.confirm({
+        title: "Delete Assessment",
+        content: `Are you sure you want to delete the assessment(s) for "${record.title}"?`,
+        onOk: async () => {
+          try {
+            // Delete all assessments for this lesson plan
+            await Promise.all(
+              record.assessments.map((assessment) =>
+                assessmentAPI.deleteAssessment(assessment._id)
+              )
+            );
+            message.success("Assessment(s) deleted successfully");
+            loadLessonBasedData(); // Refresh the list
+          } catch (error) {
+            console.error("Error deleting assessment:", error);
+            message.error("Failed to delete assessment(s)");
           }
-        } catch (error) {
-          console.error("Error deleting assessment:", error);
-          message.error("Failed to delete assessment");
-        }
-      },
-    });
+        },
+      });
+    } else {
+      message.info("No assessments to delete for this lesson plan");
+    }
   };
 
   // Handle filter changes
@@ -225,21 +323,28 @@ const AssessmentPage = () => {
     }));
   };
 
-  // Columns for lesson-based assessments table
+  // FIXED: Updated columns for lesson-based view
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
-      dataIndex: "lessonPlanSnapshot",
       key: "lessonPlan",
       width: 250,
-      render: (snapshot, record) => (
+      render: (_, record) => (
         <div>
-          <div className="lesson-title">{snapshot?.title || record.title}</div>
+          <div className="lesson-title">{record.title}</div>
           <div className="lesson-meta">
             {record.classId && (
               <>
-                <Tag color="blue">{record.classId.className}</Tag>
-                <Tag color="green">{record.classId.grade}</Tag>
+                <Tag color="blue">
+                  {typeof record.classId === "object"
+                    ? record.classId.className
+                    : "Unknown Class"}
+                </Tag>
+                <Tag color="green">
+                  {typeof record.classId === "object"
+                    ? record.classId.grade
+                    : record.parameters?.grade || "Unknown Grade"}
+                </Tag>
               </>
             )}
             <Tag color="purple">{record.activityType}</Tag>
@@ -248,30 +353,30 @@ const AssessmentPage = () => {
       ),
     },
     {
-      title: "Assessment Details",
-      key: "assessmentDetails",
-      width: 200,
+      title: "Assessment Status",
+      key: "assessmentStatus",
+      width: 150,
       render: (_, record) => (
         <div>
-          <div className="assessment-type">{record.assessmentType}</div>
-          <div className="assessment-info">
-            {record.questionCount} questions • {record.duration}
-          </div>
+          <Tag
+            color={
+              record.assessmentStatus === "generated" ? "success" : "warning"
+            }
+          >
+            {record.assessmentStatus === "generated"
+              ? "Generated"
+              : "Not Generated"}
+          </Tag>
+          {record.assessments?.length > 0 && (
+            <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+              {record.assessments.length} assessment(s)
+            </div>
+          )}
         </div>
       ),
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      width: 100,
-      render: (status, record) => {
-        const color = status === "Generated" ? "success" : "processing";
-        return <Tag color={color}>{status}</Tag>;
-      },
-    },
-    {
-      title: "Content",
+      title: "Content Available",
       key: "content",
       width: 120,
       render: (_, record) => (
@@ -293,6 +398,9 @@ const AssessmentPage = () => {
             >
               Rubric
             </Tag>
+          )}
+          {record.assessmentStatus === "not_generated" && (
+            <Tag color="default">No Content</Tag>
           )}
         </Space>
       ),
@@ -328,14 +436,16 @@ const AssessmentPage = () => {
               title="View Rubric"
             />
           )}
-          <Button
-            type="text"
-            icon={<DeleteOutlined />}
-            size="small"
-            danger
-            onClick={() => handleDeleteAssessment(record)}
-            title="Delete Assessment"
-          />
+          {record.assessments?.length > 0 && (
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              size="small"
+              danger
+              onClick={() => handleDeleteAssessment(record)}
+              title="Delete Assessment"
+            />
+          )}
         </Space>
       ),
     },
@@ -391,7 +501,7 @@ const AssessmentPage = () => {
               <div className="filters-section">
                 <div className="filters-row">
                   <Search
-                    placeholder="Search assessments..."
+                    placeholder="Search lesson plans..."
                     allowClear
                     style={{ width: 300 }}
                     prefix={<SearchOutlined />}
@@ -410,20 +520,6 @@ const AssessmentPage = () => {
                     {classOptions}
                   </Select>
                   <Select
-                    placeholder="Filter by activity type"
-                    style={{ width: 180 }}
-                    allowClear
-                    value={filters.activityType}
-                    onChange={(value) =>
-                      handleFilterChange("activityType", value)
-                    }
-                  >
-                    <Option value="assessment">Assessment</Option>
-                    <Option value="essay">Essay</Option>
-                    <Option value="textbook">Textbook</Option>
-                    <Option value="activity">Activity</Option>
-                  </Select>
-                  <Select
                     placeholder="Filter by status"
                     style={{ width: 150 }}
                     allowClear
@@ -431,7 +527,7 @@ const AssessmentPage = () => {
                     onChange={(value) => handleFilterChange("status", value)}
                   >
                     <Option value="Generated">Generated</Option>
-                    <Option value="Draft">Draft</Option>
+                    <Option value="Not Generated">Not Generated</Option>
                   </Select>
                 </div>
               </div>
@@ -445,7 +541,7 @@ const AssessmentPage = () => {
                     pageSize: 10,
                     showSizeChanger: true,
                     showQuickJumper: true,
-                    showTotal: (total) => `Total ${total} assessments`,
+                    showTotal: (total) => `Total ${total} lesson plans`,
                   }}
                   className="assessment-table"
                 />

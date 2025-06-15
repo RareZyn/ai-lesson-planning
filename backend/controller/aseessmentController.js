@@ -1,5 +1,7 @@
+// backend/controller/aseessmentController.js - Fixed version
 const OpenAI = require("openai");
 const Assessment = require("../model/Assessment");
+const LessonPlan = require("../model/Lesson"); // Add this import
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -32,6 +34,7 @@ const standardizeAssessmentResponse = (
     },
   };
 };
+
 const generateFromLessonPlan = async (req, res) => {
   try {
     const {
@@ -165,7 +168,7 @@ const generateFromLessonPlan = async (req, res) => {
       ),
     });
 
-    // UPDATE: Mark lesson plan as having generated assessment
+    // FIXED: Update lesson plan status properly
     try {
       await LessonPlan.findByIdAndUpdate(lessonPlanId, {
         assessmentStatus: "generated",
@@ -173,10 +176,11 @@ const generateFromLessonPlan = async (req, res) => {
           generatedAssessments: {
             assessmentId: assessment._id,
             activityType: activityType,
-            generatedAt: new Date()
-          }
-        }
+            generatedAt: new Date(),
+          },
+        },
       });
+      console.log(`Updated lesson plan ${lessonPlanId} status to generated`);
     } catch (lessonPlanError) {
       console.error("Error updating lesson plan status:", lessonPlanError);
       // Don't fail the whole request if lesson plan update fails
@@ -202,17 +206,17 @@ const generateFromLessonPlan = async (req, res) => {
 const getLessonPlansWithoutAssessments = async (req, res) => {
   try {
     const LessonPlan = require("../model/Lesson");
-    
+
     const lessonPlans = await LessonPlan.find({
       createdBy: req.user.id,
-      assessmentStatus: { $ne: "generated" }
+      assessmentStatus: { $ne: "generated" },
     })
-    .populate("classId", "className grade subject")
-    .sort({ updatedAt: -1 });
+      .populate("classId", "className grade subject")
+      .sort({ updatedAt: -1 });
 
     res.status(200).json({
       success: true,
-      data: lessonPlans
+      data: lessonPlans,
     });
   } catch (error) {
     console.error("Error fetching lesson plans without assessments:", error);
@@ -224,7 +228,7 @@ const getLessonPlansWithoutAssessments = async (req, res) => {
   }
 };
 
-// Add method to get assessments with proper filtering
+// FIXED: Add method to get assessments with proper filtering
 const getUserAssessmentsFiltered = async (req, res) => {
   try {
     const {
@@ -234,7 +238,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       activityType,
       status,
       search,
-      hasLessonPlan
+      hasLessonPlan,
     } = req.query;
 
     // Build filter object
@@ -244,12 +248,15 @@ const getUserAssessmentsFiltered = async (req, res) => {
     if (activityType) filter.activityType = activityType;
     if (status) filter.status = status;
 
-    // Filter by lesson plan presence
+    // FIXED: Filter by lesson plan presence - handle string values properly
     if (hasLessonPlan !== undefined) {
-      if (hasLessonPlan === 'true') {
+      if (hasLessonPlan === "true") {
         filter.lessonPlanId = { $exists: true, $ne: null };
-      } else if (hasLessonPlan === 'false') {
-        filter.lessonPlanId = { $exists: false };
+      } else if (hasLessonPlan === "false") {
+        filter.$or = [
+          { lessonPlanId: { $exists: false } },
+          { lessonPlanId: null },
+        ];
       }
     }
 
@@ -294,7 +301,6 @@ const getUserAssessmentsFiltered = async (req, res) => {
     });
   }
 };
-
 
 // Helper functions for different assessment types
 const generateActivityContent = async (data) => {
@@ -422,7 +428,7 @@ const generateAssessmentContent = async (data) => {
   };
 };
 
-// Helper functions to build prompts
+// Helper functions to build prompts (keeping the existing ones)
 const buildActivityPrompt = (data) => {
   return `
 # Identity
@@ -929,6 +935,39 @@ const deleteAssessment = async (req, res) => {
       });
     }
 
+    // FIXED: Also update the lesson plan status when deleting assessment
+    if (assessment.lessonPlanId) {
+      try {
+        // Check if this is the only assessment for this lesson plan
+        const otherAssessments = await Assessment.countDocuments({
+          lessonPlanId: assessment.lessonPlanId,
+          _id: { $ne: assessment._id },
+        });
+
+        if (otherAssessments === 0) {
+          // If this is the only assessment, update lesson plan status back to not_generated
+          await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
+            assessmentStatus: "not_generated",
+            $pull: {
+              generatedAssessments: { assessmentId: assessment._id },
+            },
+          });
+        } else {
+          // Just remove this assessment from the array
+          await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
+            $pull: {
+              generatedAssessments: { assessmentId: assessment._id },
+            },
+          });
+        }
+      } catch (lessonPlanError) {
+        console.error(
+          "Error updating lesson plan after deletion:",
+          lessonPlanError
+        );
+      }
+    }
+
     await assessment.deleteOne();
 
     res.status(200).json({
@@ -1033,6 +1072,6 @@ module.exports = {
   getAssessmentById,
   deleteAssessment,
   updateAssessment,
-  getLessonPlansWithoutAssessments, // Add this new method
-  getUserAssessmentsFiltered, // Add this new method
+  getLessonPlansWithoutAssessments,
+  getUserAssessmentsFiltered, 
 };

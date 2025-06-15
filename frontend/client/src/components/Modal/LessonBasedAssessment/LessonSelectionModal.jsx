@@ -1,4 +1,4 @@
-// src/components/Modal/LessonBasedAssessment/LessonSelectionModal.jsx - Updated with backend integration
+// src/components/Modal/LessonBasedAssessment/LessonSelectionModal.jsx - Fixed version
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -22,7 +22,6 @@ import {
 
 // Import backend services
 import { getAllClasses } from "../../../services/classService";
-import { getAllLessonPlans } from "../../../services/lessonService";
 import { assessmentAPI } from "../../../services/assessmentService";
 import { useUser } from "../../../context/UserContext";
 
@@ -63,7 +62,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   }, [isOpen, userId]);
 
   const loadInitialData = async () => {
-    await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
+    await Promise.all([fetchClasses(), fetchAvailableLessonPlans()]);
   };
 
   const fetchClasses = async () => {
@@ -80,14 +79,23 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  const fetchUserLessonPlans = async () => {
+  // FIXED: Fetch only lesson plans that don't have assessments yet
+  const fetchAvailableLessonPlans = async () => {
     setLessonPlansLoading(true);
     try {
-      const lessonPlansData = await getAllLessonPlans();
-      setLessonPlans(Array.isArray(lessonPlansData) ? lessonPlansData : []);
+      // Use the backend endpoint that specifically gets lesson plans without assessments
+      const response = await assessmentAPI.getLessonPlansWithoutAssessments();
+
+      if (response && response.success) {
+        setLessonPlans(Array.isArray(response.data) ? response.data : []);
+        console.log("Available lesson plans for assessment:", response.data);
+      } else {
+        console.warn("No lesson plans available for assessment creation");
+        setLessonPlans([]);
+      }
     } catch (error) {
-      console.error("Error fetching lesson plans:", error);
-      message.error("Failed to fetch lesson plans");
+      console.error("Error fetching available lesson plans:", error);
+      message.error("Failed to fetch available lesson plans");
       setLessonPlans([]);
     } finally {
       setLessonPlansLoading(false);
@@ -248,8 +256,17 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
   const renderLessonPlanOptions = () => {
     const plansToShow = selectedClass
-      ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
+      ? lessonPlans.filter((plan) => {
+          // Handle both populated and non-populated classId
+          const planClassId =
+            typeof plan.classId === "object" ? plan.classId._id : plan.classId;
+          return planClassId === selectedClass;
+        })
       : lessonPlans;
+
+    if (plansToShow.length === 0) {
+      return [];
+    }
 
     return plansToShow.map((plan) => {
       const formatted = formatLessonPlanOption(plan);
@@ -271,7 +288,11 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const availablePlans = selectedClass
-    ? lessonPlans.filter((plan) => plan.classId?._id === selectedClass)
+    ? lessonPlans.filter((plan) => {
+        const planClassId =
+          typeof plan.classId === "object" ? plan.classId._id : plan.classId;
+        return planClassId === selectedClass;
+      })
     : lessonPlans;
 
   // Render the appropriate activity form based on the selected lesson plan's activity type
@@ -483,8 +504,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   <div className="empty-state">
                     <Text type="secondary">
                       {selectedClass
-                        ? "No lesson plans found for this class."
-                        : "No lesson plans found. Create some lesson plans first."}
+                        ? "No lesson plans available for assessment creation in this class. All lesson plans may already have assessments."
+                        : "No lesson plans available for assessment creation. Either create some lesson plans first, or all existing lesson plans already have assessments."}
                     </Text>
                   </div>
                 )}

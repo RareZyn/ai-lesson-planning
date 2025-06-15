@@ -1,4 +1,4 @@
-// src/services/assessmentService.js - Updated to match backend controller
+// src/services/assessmentService.js - Updated with getLessonPlansWithoutAssessments
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -124,6 +124,21 @@ export const assessmentAPI = {
       };
     } catch (error) {
       console.error("Error in generateFromLessonPlan:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * NEW: Get lesson plans without assessments
+   * This is used by the LessonSelectionModal to show only lesson plans
+   * that don't have assessments yet
+   */
+  getLessonPlansWithoutAssessments: async () => {
+    try {
+      const response = await apiClient.get("/assessment/available-lessons");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching lesson plans without assessments:", error);
       throw error;
     }
   },
