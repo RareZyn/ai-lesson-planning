@@ -4,6 +4,35 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const standardizeAssessmentResponse = (
+  activityHTML,
+  rubricHTML,
+  assessmentHTML,
+  answerKeyHTML
+) => {
+  return {
+    success: true,
+    generatedContent: {
+      // For activities and textbook
+      activityHTML: activityHTML || null,
+      rubricHTML: rubricHTML || null,
+
+      // For assessments/exams
+      assessmentHTML: assessmentHTML || null,
+      answerKeyHTML: answerKeyHTML || null,
+
+      // For frontend convenience
+      studentContent: activityHTML || assessmentHTML || null,
+      teacherContent: rubricHTML || answerKeyHTML || null,
+
+      // Metadata
+      hasStudentContent: !!(activityHTML || assessmentHTML),
+      hasTeacherContent: !!(rubricHTML || answerKeyHTML),
+      generatedAt: new Date(),
+    },
+  };
+};
+
 const fullLessonPlanner = async (req, res) => {
   const {
     lesson,
@@ -242,11 +271,9 @@ Do not include anything else. Just the two clean HTML blocks, no explanations.
     const studentHtml = match[1].trim();
     const rubricHtml = match[2].trim();
 
-    res.status(200).json({
-      success: true,
-      activityHTML: studentHtml,
-      rubricHTML: rubricHtml,
-    });
+    res
+      .status(200)
+      .json(standardizeAssessmentResponse(studentHtml, rubricHtml));
   } catch (err) {
     console.error("Error generating activity & rubric:", err);
     res.status(500).json({
@@ -373,11 +400,9 @@ Do not include anything else. Just the raw HTMLs.
     const studentHtml = match[1].trim();
     const rubricHtml = match[2].trim();
 
-    res.status(200).json({
-      success: true,
-      activityHTML: studentHtml,
-      rubricHTML: rubricHtml,
-    });
+    res
+      .status(200)
+      .json(standardizeAssessmentResponse(studentHtml, rubricHtml));
   } catch (err) {
     console.error("Error generating essay assessment:", err);
     res.status(500).json({
@@ -491,11 +516,9 @@ const generateTextbookActivity = async (req, res) => {
     const studentHtml = match[1].trim();
     const rubricHtml = match[2].trim();
 
-    res.status(200).json({
-      success: true,
-      activityHTML: studentHtml,
-      rubricHTML: rubricHtml,
-    });
+    res
+      .status(200)
+      .json(standardizeAssessmentResponse(studentHtml, rubricHtml));
   } catch (err) {
     console.error("Error generating textbook activity:", err);
     res.status(500).json({
@@ -515,7 +538,6 @@ const generateAssessment = async (req, res) => {
     subject,
     theme,
     topic,
-    // Additional parameters from the frontend modal
     assessmentType,
     questionTypes,
     numberOfQuestions,
@@ -627,11 +649,9 @@ Generate a comprehensive ${assessmentType} assessment that thoroughly evaluates 
     const assessmentHtml = match[1].trim();
     const answerKeyHtml = match[2].trim();
 
-    res.status(200).json({
-      success: true,
-      assessmentHTML: assessmentHtml,
-      answerKeyHTML: answerKeyHtml,
-    });
+    res
+      .status(200)
+      .json(standardizeAssessmentResponse(studentHtml, rubricHtml));
   } catch (err) {
     console.error("Error generating assessment:", err);
     res.status(500).json({
@@ -912,52 +932,7 @@ const generateAssessmentContent = async (data) => {
   };
 };
 
-// Helper functions to build prompts (simplified versions of the main functions)
-const buildActivityPrompt = (data) => {
-  return `Generate an in-class activity and rubric for: ${
-    data.lesson
-  }. Student arrangement: ${
-    data.studentArrangement || "small_group"
-  }. Resource usage: ${data.resourceUsage || "classroom_only"}. Duration: ${
-    data.duration || "30-45 minutes"
-  }. Additional requirements: ${
-    data.additionalRequirement || "Standard classroom activity"
-  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
-};
 
-const buildEssayPrompt = (data) => {
-  return `Generate an essay assessment and rubric for: ${
-    data.lesson
-  }. Essay type: ${data.essayType || "narrative"}. Word count: ${
-    data.wordCount || "200-300 words"
-  }. Duration: ${data.duration || "60 minutes"}. Additional requirements: ${
-    data.additionalRequirement || "Standard essay assessment"
-  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
-};
-
-const buildTextbookPrompt = (data) => {
-  return `Generate a textbook-based activity and rubric for: ${
-    data.lesson
-  }. Additional requirements: ${
-    data.additionalRequirement || "Standard textbook activity"
-  }. Return HTML format with <!-- STUDENT ACTIVITY --> and <!-- TEACHER RUBRIC --> sections.`;
-};
-
-const buildAssessmentPrompt = (data) => {
-  return `Generate a comprehensive assessment and answer key for: ${
-    data.lesson
-  }. Assessment type: ${
-    data.assessmentType || "Unit Test"
-  }. Number of questions: ${data.numberOfQuestions || 20}. Time allocation: ${
-    data.timeAllocation || "60 minutes"
-  }. Question types: ${
-    Array.isArray(data.questionTypes)
-      ? data.questionTypes.join(", ")
-      : data.questionTypes || "Multiple choice, short answer"
-  }. Additional requirements: ${
-    data.additionalRequirement || "Standard assessment"
-  }. Return HTML format with <!-- STUDENT ASSESSMENT --> and <!-- TEACHER ANSWER KEY --> sections.`;
-};
 
 const saveAssessment = async (req, res) => {
   try {
