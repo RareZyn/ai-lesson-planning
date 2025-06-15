@@ -412,4 +412,3 @@ const RubricViewerPage = () => {
 };
 
 export default RubricViewerPage;
-z

@@ -32,10 +32,6 @@ const standardizeAssessmentResponse = (
     },
   };
 };
-
-
-
-// Unified function to generate assessments based on lesson plan data
 const generateFromLessonPlan = async (req, res) => {
   try {
     const {
@@ -169,6 +165,23 @@ const generateFromLessonPlan = async (req, res) => {
       ),
     });
 
+    // UPDATE: Mark lesson plan as having generated assessment
+    try {
+      await LessonPlan.findByIdAndUpdate(lessonPlanId, {
+        assessmentStatus: "generated",
+        $push: {
+          generatedAssessments: {
+            assessmentId: assessment._id,
+            activityType: activityType,
+            generatedAt: new Date()
+          }
+        }
+      });
+    } catch (lessonPlanError) {
+      console.error("Error updating lesson plan status:", lessonPlanError);
+      // Don't fail the whole request if lesson plan update fails
+    }
+
     res.status(201).json({
       success: true,
       message: `${activityType} assessment generated and saved successfully`,
@@ -184,6 +197,104 @@ const generateFromLessonPlan = async (req, res) => {
     });
   }
 };
+
+// Add method to get lesson plans without assessments
+const getLessonPlansWithoutAssessments = async (req, res) => {
+  try {
+    const LessonPlan = require("../model/Lesson");
+    
+    const lessonPlans = await LessonPlan.find({
+      createdBy: req.user.id,
+      assessmentStatus: { $ne: "generated" }
+    })
+    .populate("classId", "className grade subject")
+    .sort({ updatedAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: lessonPlans
+    });
+  } catch (error) {
+    console.error("Error fetching lesson plans without assessments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching lesson plans",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// Add method to get assessments with proper filtering
+const getUserAssessmentsFiltered = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      classId,
+      activityType,
+      status,
+      search,
+      hasLessonPlan
+    } = req.query;
+
+    // Build filter object
+    const filter = { createdBy: req.user.id };
+
+    if (classId) filter.classId = classId;
+    if (activityType) filter.activityType = activityType;
+    if (status) filter.status = status;
+
+    // Filter by lesson plan presence
+    if (hasLessonPlan !== undefined) {
+      if (hasLessonPlan === 'true') {
+        filter.lessonPlanId = { $exists: true, $ne: null };
+      } else if (hasLessonPlan === 'false') {
+        filter.lessonPlanId = { $exists: false };
+      }
+    }
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { assessmentType: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Execute query with pagination
+    const assessments = await Assessment.find(filter)
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Assessment.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      count: assessments.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: assessments,
+    });
+  } catch (error) {
+    console.error("Get filtered assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 
 // Helper functions for different assessment types
 const generateActivityContent = async (data) => {
@@ -922,4 +1033,6 @@ module.exports = {
   getAssessmentById,
   deleteAssessment,
   updateAssessment,
+  getLessonPlansWithoutAssessments, // Add this new method
+  getUserAssessmentsFiltered, // Add this new method
 };

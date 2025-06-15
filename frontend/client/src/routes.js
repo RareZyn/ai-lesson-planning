@@ -1,8 +1,8 @@
-// src/routes.js - Updated with new assessment structure
+// src/routes.js - Updated with correct assessment routes
 import { createBrowserRouter } from "react-router-dom";
-import AssessmentPage from "./pages/assesstment/AssessmentPage"; 
-import ActivityGenerated from "./pages/assesstment/ActivityGenerated"; 
-import RubricGenerated from "./pages/assesstment/RubricGenerated"; 
+import AssessmentPage from "./pages/assesstment/AssessmentPage";
+import ActivityViewerPage from "./pages/assesstment/ActivityViewerPage"; // Corrected import
+import RubricViewerPage from "./pages/assesstment/RubricViewerPage"; // Corrected import
 import MainLayout from "./layout/MainLayout";
 import HomePage from "./pages/general/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
@@ -17,6 +17,7 @@ import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner"
 import Community from "./pages/community/Community";
 import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
+
 const router = createBrowserRouter([
   {
     path: "/app",
@@ -28,19 +29,19 @@ const router = createBrowserRouter([
     children: [
       { path: "", element: <HomePage /> },
 
-      // Updated assessment routes
+      // Assessment routes - corrected
       { path: "assessment", element: <AssessmentPage /> },
-      { path: "assessment/activity/:id", element: <ActivityGenerated /> },
-      { path: "assessment/rubric/:id", element: <RubricGenerated /> },
+      { path: "assessment/activity/:id", element: <ActivityViewerPage /> },
+      { path: "assessment/rubric/:id", element: <RubricViewerPage /> },
 
       { path: "downloads", element: <FileDownloadPage /> },
       { path: "lessons", element: <MyLessons /> },
       { path: "materials", element: <MaterialManagement /> },
       { path: "classes", element: <ClassManagement /> },
       { path: "planner", element: <MultiStepPlanner /> },
-      {path:"community",element:<Community/>},
-      { path: "lessons/:id", element: <DisplayLessonPage />},
-      { path: "classes/:classId", element: <ClassLessonsPage />}
+      { path: "community", element: <Community /> },
+      { path: "lessons/:id", element: <DisplayLessonPage /> },
+      { path: "classes/:classId", element: <ClassLessonsPage /> },
     ],
   },
   { path: "/", element: <LoginPage /> },

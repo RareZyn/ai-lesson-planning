@@ -115,6 +115,28 @@ if (mongoose.models.LessonPlan) {
           max: 5,
         },
       },
+      assessmentStatus: {
+        type: String,
+        enum: ["not_generated", "generated"],
+        default: "not_generated",
+      },
+
+      generatedAssessments: [
+        {
+          assessmentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Assessment",
+          },
+          activityType: {
+            type: String,
+            enum: ["assessment", "essay", "textbook", "activity"],
+          },
+          generatedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
 
       // --- Parameters used to generate the plan ---
       parameters: {

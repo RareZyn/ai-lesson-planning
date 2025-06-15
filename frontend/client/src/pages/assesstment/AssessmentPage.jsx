@@ -1,5 +1,5 @@
-// src/pages/assessment/AssessmentPage.jsx - Refactored with new import structure
-import React, { useState } from "react";
+// src/pages/assessment/AssessmentPage.jsx - Updated with backend integration
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -12,6 +12,8 @@ import {
   Modal,
   Row,
   Col,
+  message,
+  Spin,
 } from "antd";
 import {
   FileTextOutlined,
@@ -22,20 +24,18 @@ import {
   BookOutlined,
   BulbOutlined,
   SearchOutlined,
-  ThunderboltOutlined,
-  EditOutlined as EditIcon,
-  FileTextOutlined as FileIcon,
-  BookOutlined as BookIcon,
+  FileExclamationOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
-// Lesson-Based Assessment Modals (requires existing lesson plan)
+// Import services
+import { getAllLessonPlans } from "../../services/lessonService";
+import { getAllClasses } from "../../services/classService";
+import { assessmentAPI } from "../../services/assessmentService";
+import { useUser } from "../../context/UserContext";
+
+// Lesson-Based Assessment Modal
 import LessonSelectionModal from "../../components/Modal/LessonBasedAssessment/LessonSelectionModal";
-
-// Standalone Assessment Modals (no lesson plan required)
-import ActivityInClassStandaloneModal from "../../components/Modal/StandaloneAssessment/ActivityInClassStandaloneModal";
-import AssessmentStandaloneModal from "../../components/Modal/StandaloneAssessment/AssessmentStandaloneModal";
-import EssayStandaloneModal from "../../components/Modal/StandaloneAssessment/EssayStandaloneModal";
-import TextbookStandaloneModal from "../../components/Modal/StandaloneAssessment/TextbookStandaloneModal";
 
 import "./AssessmentPage.css";
 
@@ -44,191 +44,204 @@ const { Search } = Input;
 const { Option } = Select;
 
 const AssessmentPage = () => {
+  const navigate = useNavigate();
+  const { userId } = useUser();
+
   const [activeTab, setActiveTab] = useState("lesson-based");
+  const [loading, setLoading] = useState(false);
 
   // Lesson-Based Assessment Modal State
   const [isLessonSelectionModalVisible, setIsLessonSelectionModalVisible] =
     useState(false);
 
-  // Standalone Assessment States
-  const [isStandaloneOptionsVisible, setIsStandaloneOptionsVisible] =
-    useState(false);
-  const [activeStandaloneModal, setActiveStandaloneModal] = useState(null);
+  // Data states
+  const [lessonPlans, setLessonPlans] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [assessments, setAssessments] = useState([]);
 
-  // Sample lesson-based assessments data with different activity types
-  const lessonBasedAssessments = [
-    {
-      id: 1,
-      lessonPlanId: "684da7f4b96de6d12b6b124e",
-      lessonTitle: "Making our school community safer",
-      class: "5 Anggerik",
-      grade: "Form 5",
-      subject: "English",
-      activityType: "assessment", // This determines which modal to show
-      assessmentType: "Monthly Test",
-      questionCount: 25,
-      duration: "60 minutes",
-      status: "Generated",
-      createdDate: "2025-06-15",
-      difficulty: "Intermediate",
-      skills: ["Reading", "Writing", "Critical Thinking"],
-    },
-    {
-      id: 2,
-      lessonPlanId: "684da7f4b96de6d12b6b125f",
-      lessonTitle: "An informal email to a friend about a celebrity I admire",
-      class: "5 UM",
-      grade: "Form 5",
-      subject: "English",
-      activityType: "essay", // Essay type
-      assessmentType: "Writing Assessment",
-      questionCount: 3,
-      duration: "45 minutes",
-      status: "Generated",
-      createdDate: "2025-06-14",
-      difficulty: "Advanced",
-      skills: ["Writing", "Creativity"],
-    },
-    {
-      id: 3,
-      lessonPlanId: "684da7f4b96de6d12b6b126g",
-      lessonTitle: "Understanding different text types and their purposes",
-      class: "Biruni",
-      grade: "Form 5",
-      subject: "English",
-      activityType: "textbook", // Textbook type
-      assessmentType: "Reading Comprehension",
-      questionCount: 15,
-      duration: "30 minutes",
-      status: "Draft",
-      createdDate: "2025-06-13",
-      difficulty: "Intermediate",
-      skills: ["Reading", "Analysis"],
-    },
-    {
-      id: 4,
-      lessonPlanId: "684da7f4b96de6d12b6b127h",
-      lessonTitle: "Group discussion about cultural diversity",
-      class: "5 UTHM",
-      grade: "Form 5",
-      subject: "English",
-      activityType: "activity", // Activity type
-      assessmentType: "Group Activity Assessment",
-      questionCount: 8,
-      duration: "40 minutes",
-      status: "Generated",
-      createdDate: "2025-06-12",
-      difficulty: "Intermediate",
-      skills: ["Speaking", "Collaboration"],
-    },
-  ];
+  // Filter states
+  const [filters, setFilters] = useState({
+    search: "",
+    classId: null,
+    activityType: null,
+    status: null,
+  });
 
-  // Standalone assessments data
-  const standaloneAssessments = [
-    {
-      id: 1,
-      title: "General English Proficiency Test",
-      subject: "English",
-      grade: "Form 4",
-      assessmentType: "Comprehensive Test",
-      questionCount: 40,
-      duration: "90 minutes",
-      status: "Generated",
-      createdDate: "2025-06-12",
-      difficulty: "Intermediate",
-      skills: ["Reading", "Writing", "Grammar", "Vocabulary"],
-      description: "Comprehensive assessment covering all language skills",
-    },
-    {
-      id: 2,
-      title: "Creative Writing Portfolio Assessment",
-      subject: "English",
-      grade: "Form 5",
-      assessmentType: "Portfolio Assessment",
-      questionCount: 5,
-      duration: "120 minutes",
-      status: "Generated",
-      createdDate: "2025-06-10",
-      difficulty: "Advanced",
-      skills: ["Writing", "Creativity", "Critical Thinking"],
-      description: "Assessment focusing on creative writing abilities",
-    },
-    {
-      id: 3,
-      title: "Literature Analysis Skills Test",
-      subject: "English",
-      grade: "Form 5",
-      assessmentType: "Literature Analysis",
-      questionCount: 12,
-      duration: "75 minutes",
-      status: "Draft",
-      createdDate: "2025-06-08",
-      difficulty: "Advanced",
-      skills: ["Literature", "Analysis", "Critical Thinking"],
-      description: "Deep analysis of literary works and themes",
-    },
-    {
-      id: 4,
-      title: "Interactive Classroom Activities",
-      subject: "English",
-      grade: "Form 4",
-      assessmentType: "Activity Assessment",
-      questionCount: 6,
-      duration: "50 minutes",
-      status: "Generated",
-      createdDate: "2025-06-07",
-      difficulty: "Intermediate",
-      skills: ["Speaking", "Listening", "Collaboration"],
-      description: "Assessment through interactive classroom activities",
-    },
-  ];
+  // Load data on component mount
+  useEffect(() => {
+    loadInitialData();
+  }, [userId]);
 
-  // Standalone assessment options
-  const standaloneOptions = [
-    {
-      id: "activity-in-class",
-      title: "Activity in Class",
-      description:
-        "Interactive classroom activities with group work and discussions",
-      icon: <ThunderboltOutlined />,
-      color: "#ff4757",
-    },
-    {
-      id: "assessment",
-      title: "Assessment",
-      description: "Comprehensive assessments with various question types",
-      icon: <FileIcon />,
-      color: "#42a5f5",
-    },
-    {
-      id: "essay",
-      title: "Essay",
-      description: "Writing assignments and essay-based assessments",
-      icon: <EditIcon />,
-      color: "#ffa726",
-    },
-    {
-      id: "textbook",
-      title: "Textbook",
-      description: "Textbook-based activities and exercises",
-      icon: <BookIcon />,
-      color: "#66bb6a",
-    },
-  ];
+  // Load assessments when tab changes
+  useEffect(() => {
+    if (activeTab === "lesson-based") {
+      loadLessonBasedAssessments();
+    } else {
+      loadStandaloneAssessments();
+    }
+  }, [activeTab, filters]);
+
+  const loadInitialData = async () => {
+    if (!userId) return;
+
+    setLoading(true);
+    try {
+      const [lessonPlansData, classesData] = await Promise.all([
+        getAllLessonPlans(),
+        getAllClasses(),
+      ]);
+
+      setLessonPlans(Array.isArray(lessonPlansData) ? lessonPlansData : []);
+      setClasses(Array.isArray(classesData) ? classesData : []);
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      message.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadLessonBasedAssessments = async () => {
+    try {
+      setLoading(true);
+      const response = await assessmentAPI.getUserAssessments({
+        ...filters,
+        hasLessonPlan: true, // Only get assessments that were created from lesson plans
+      });
+
+      if (response.success) {
+        setAssessments(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading lesson-based assessments:", error);
+      message.error("Failed to load assessments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStandaloneAssessments = async () => {
+    try {
+      setLoading(true);
+      const response = await assessmentAPI.getUserAssessments({
+        ...filters,
+        hasLessonPlan: false, // Only get standalone assessments (no lesson plan)
+      });
+
+      if (response.success) {
+        setAssessments(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading standalone assessments:", error);
+      message.error("Failed to load assessments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle create assessment button click
+  const handleCreateAssessment = () => {
+    if (activeTab === "lesson-based") {
+      setIsLessonSelectionModalVisible(true);
+    } else {
+      // Handle standalone assessment creation
+      message.info("Standalone assessment creation coming soon!");
+    }
+  };
+
+  // Handle lesson-based assessment submission
+  const handleLessonBasedSubmit = async (data) => {
+    try {
+      setLoading(true);
+
+      // The data structure comes from LessonSelectionModal
+      console.log("Received assessment data:", data);
+
+      message.success("Assessment created successfully!");
+      setIsLessonSelectionModalVisible(false);
+
+      // Refresh the assessments list
+      loadLessonBasedAssessments();
+
+      // Navigate to the generated assessment
+      if (data.data?._id) {
+        navigate(`/app/assessment/activity/${data.data._id}`);
+      }
+    } catch (error) {
+      console.error("Error creating assessment:", error);
+      message.error("Failed to create assessment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle viewing assessment activity
+  const handleViewActivity = (record) => {
+    if (record.hasActivity) {
+      navigate(`/app/assessment/activity/${record._id}`);
+    } else {
+      message.warning("No activity available for this assessment");
+    }
+  };
+
+  // Handle viewing assessment rubric
+  const handleViewRubric = (record) => {
+    if (record.hasRubric) {
+      navigate(`/app/assessment/rubric/${record._id}`);
+    } else {
+      message.warning("No rubric available for this assessment");
+    }
+  };
+
+  // Handle deleting assessment
+  const handleDeleteAssessment = async (record) => {
+    Modal.confirm({
+      title: "Delete Assessment",
+      content: `Are you sure you want to delete "${record.title}"?`,
+      onOk: async () => {
+        try {
+          await assessmentAPI.deleteAssessment(record._id);
+          message.success("Assessment deleted successfully");
+
+          // Refresh the list
+          if (activeTab === "lesson-based") {
+            loadLessonBasedAssessments();
+          } else {
+            loadStandaloneAssessments();
+          }
+        } catch (error) {
+          console.error("Error deleting assessment:", error);
+          message.error("Failed to delete assessment");
+        }
+      },
+    });
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
   // Columns for lesson-based assessments table
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
-      dataIndex: "lessonTitle",
-      key: "lessonTitle",
+      dataIndex: "lessonPlanSnapshot",
+      key: "lessonPlan",
       width: 250,
-      render: (text, record) => (
+      render: (snapshot, record) => (
         <div>
-          <div className="lesson-title">{text}</div>
+          <div className="lesson-title">{snapshot?.title || record.title}</div>
           <div className="lesson-meta">
-            <Tag color="blue">{record.class}</Tag>
-            <Tag color="green">{record.grade}</Tag>
+            {record.classId && (
+              <>
+                <Tag color="blue">{record.classId.className}</Tag>
+                <Tag color="green">{record.classId.grade}</Tag>
+              </>
+            )}
             <Tag color="purple">{record.activityType}</Tag>
           </div>
         </div>
@@ -248,55 +261,48 @@ const AssessmentPage = () => {
       ),
     },
     {
-      title: "Skills",
-      dataIndex: "skills",
-      key: "skills",
-      width: 150,
-      render: (skills) => (
-        <div>
-          {skills.slice(0, 2).map((skill) => (
-            <Tag key={skill} size="small" color="purple">
-              {skill}
-            </Tag>
-          ))}
-          {skills.length > 2 && (
-            <Tag size="small" color="default">
-              +{skills.length - 2}
-            </Tag>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Difficulty",
-      dataIndex: "difficulty",
-      key: "difficulty",
-      width: 100,
-      render: (difficulty) => {
-        const color =
-          difficulty === "Advanced"
-            ? "red"
-            : difficulty === "Intermediate"
-            ? "orange"
-            : "green";
-        return <Tag color={color}>{difficulty}</Tag>;
-      },
-    },
-    {
       title: "Status",
       dataIndex: "status",
       key: "status",
       width: 100,
-      render: (status) => {
+      render: (status, record) => {
         const color = status === "Generated" ? "success" : "processing";
         return <Tag color={color}>{status}</Tag>;
       },
     },
     {
-      title: "Created",
-      dataIndex: "createdDate",
-      key: "createdDate",
+      title: "Content",
+      key: "content",
       width: 120,
+      render: (_, record) => (
+        <Space>
+          {record.hasActivity && (
+            <Tag
+              color="blue"
+              style={{ cursor: "pointer" }}
+              onClick={() => handleViewActivity(record)}
+            >
+              Activity
+            </Tag>
+          )}
+          {record.hasRubric && (
+            <Tag
+              color="green"
+              style={{ cursor: "pointer" }}
+              onClick={() => handleViewRubric(record)}
+            >
+              Rubric
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: "Created",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 120,
+      render: (date) => new Date(date).toLocaleDateString(),
     },
     {
       title: "Actions",
@@ -304,142 +310,43 @@ const AssessmentPage = () => {
       width: 150,
       render: (_, record) => (
         <Space>
-          <Button type="text" icon={<EyeOutlined />} size="small" />
-          <Button type="text" icon={<EditOutlined />} size="small" />
-          <Button type="text" icon={<DeleteOutlined />} size="small" danger />
-        </Space>
-      ),
-    },
-  ];
-
-  // Columns for standalone assessments table
-  const standaloneColumns = [
-    {
-      title: "Assessment Title",
-      dataIndex: "title",
-      key: "title",
-      width: 250,
-      render: (text, record) => (
-        <div>
-          <div className="assessment-title">{text}</div>
-          <div className="assessment-description">{record.description}</div>
-          <div className="assessment-meta">
-            <Tag color="blue">{record.subject}</Tag>
-            <Tag color="green">{record.grade}</Tag>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Assessment Details",
-      key: "assessmentDetails",
-      width: 200,
-      render: (_, record) => (
-        <div>
-          <div className="assessment-type">{record.assessmentType}</div>
-          <div className="assessment-info">
-            {record.questionCount} questions • {record.duration}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Skills",
-      dataIndex: "skills",
-      key: "skills",
-      width: 150,
-      render: (skills) => (
-        <div>
-          {skills.slice(0, 2).map((skill) => (
-            <Tag key={skill} size="small" color="purple">
-              {skill}
-            </Tag>
-          ))}
-          {skills.length > 2 && (
-            <Tag size="small" color="default">
-              +{skills.length - 2}
-            </Tag>
+          {record.hasActivity && (
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => handleViewActivity(record)}
+              title="View Activity"
+            />
           )}
-        </div>
-      ),
-    },
-    {
-      title: "Difficulty",
-      dataIndex: "difficulty",
-      key: "difficulty",
-      width: 100,
-      render: (difficulty) => {
-        const color =
-          difficulty === "Advanced"
-            ? "red"
-            : difficulty === "Intermediate"
-            ? "orange"
-            : "green";
-        return <Tag color={color}>{difficulty}</Tag>;
-      },
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      width: 100,
-      render: (status) => {
-        const color = status === "Generated" ? "success" : "processing";
-        return <Tag color={color}>{status}</Tag>;
-      },
-    },
-    {
-      title: "Created",
-      dataIndex: "createdDate",
-      key: "createdDate",
-      width: 120,
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 150,
-      render: (_, record) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} size="small" />
-          <Button type="text" icon={<EditOutlined />} size="small" />
-          <Button type="text" icon={<DeleteOutlined />} size="small" danger />
+          {record.hasRubric && (
+            <Button
+              type="text"
+              icon={<FileExclamationOutlined />}
+              size="small"
+              onClick={() => handleViewRubric(record)}
+              title="View Rubric"
+            />
+          )}
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            size="small"
+            danger
+            onClick={() => handleDeleteAssessment(record)}
+            title="Delete Assessment"
+          />
         </Space>
       ),
     },
   ];
 
-  // Handle create assessment button click
-  const handleCreateAssessment = () => {
-    if (activeTab === "lesson-based") {
-      setIsLessonSelectionModalVisible(true);
-    } else {
-      setIsStandaloneOptionsVisible(true);
-    }
-  };
-
-  // Handle standalone option selection
-  const handleStandaloneOptionSelect = (optionId) => {
-    setIsStandaloneOptionsVisible(false);
-    setActiveStandaloneModal(optionId);
-  };
-
-  // Handle modal submissions
-  const handleLessonBasedSubmit = (data) => {
-    console.log("Lesson-Based Assessment data:", data);
-    setIsLessonSelectionModalVisible(false);
-  };
-
-  const handleStandaloneModalSubmit = (data) => {
-    console.log("Standalone Assessment data:", data);
-    setActiveStandaloneModal(null);
-  };
-
-  // Close all modals
-  const closeAllModals = () => {
-    setIsLessonSelectionModalVisible(false);
-    setIsStandaloneOptionsVisible(false);
-    setActiveStandaloneModal(null);
-  };
+  // Filter options for classes
+  const classOptions = classes.map((cls) => (
+    <Option key={cls._id} value={cls._id}>
+      {cls.className} - {cls.grade}
+    </Option>
+  ));
 
   return (
     <div className="assessment-page">
@@ -457,6 +364,7 @@ const AssessmentPage = () => {
             size="large"
             onClick={handleCreateAssessment}
             className="create-btn"
+            loading={loading}
           >
             Create Assessment
           </Button>
@@ -483,25 +391,32 @@ const AssessmentPage = () => {
               <div className="filters-section">
                 <div className="filters-row">
                   <Search
-                    placeholder="Search lesson plans..."
+                    placeholder="Search assessments..."
                     allowClear
                     style={{ width: 300 }}
                     prefix={<SearchOutlined />}
+                    value={filters.search}
+                    onChange={(e) =>
+                      handleFilterChange("search", e.target.value)
+                    }
                   />
                   <Select
                     placeholder="Filter by class"
-                    style={{ width: 150 }}
+                    style={{ width: 200 }}
                     allowClear
+                    value={filters.classId}
+                    onChange={(value) => handleFilterChange("classId", value)}
                   >
-                    <Option value="5-anggerik">5 Anggerik</Option>
-                    <Option value="5-um">5 UM</Option>
-                    <Option value="biruni">Biruni</Option>
-                    <Option value="5-uthm">5 UTHM</Option>
+                    {classOptions}
                   </Select>
                   <Select
                     placeholder="Filter by activity type"
                     style={{ width: 180 }}
                     allowClear
+                    value={filters.activityType}
+                    onChange={(value) =>
+                      handleFilterChange("activityType", value)
+                    }
                   >
                     <Option value="assessment">Assessment</Option>
                     <Option value="essay">Essay</Option>
@@ -512,25 +427,29 @@ const AssessmentPage = () => {
                     placeholder="Filter by status"
                     style={{ width: 150 }}
                     allowClear
+                    value={filters.status}
+                    onChange={(value) => handleFilterChange("status", value)}
                   >
-                    <Option value="generated">Generated</Option>
-                    <Option value="draft">Draft</Option>
+                    <Option value="Generated">Generated</Option>
+                    <Option value="Draft">Draft</Option>
                   </Select>
                 </div>
               </div>
 
-              <Table
-                columns={lessonBasedColumns}
-                dataSource={lessonBasedAssessments}
-                rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total) => `Total ${total} assessments`,
-                }}
-                className="assessment-table"
-              />
+              <Spin spinning={loading}>
+                <Table
+                  columns={lessonBasedColumns}
+                  dataSource={assessments}
+                  rowKey="_id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total) => `Total ${total} assessments`,
+                  }}
+                  className="assessment-table"
+                />
+              </Spin>
             </div>
           </TabPane>
 
@@ -544,145 +463,25 @@ const AssessmentPage = () => {
             key="standalone"
           >
             <div className="tab-content">
-              <div className="filters-section">
-                <div className="filters-row">
-                  <Search
-                    placeholder="Search assessments..."
-                    allowClear
-                    style={{ width: 300 }}
-                    prefix={<SearchOutlined />}
-                  />
-                  <Select
-                    placeholder="Filter by grade"
-                    style={{ width: 150 }}
-                    allowClear
-                  >
-                    <Option value="form4">Form 4</Option>
-                    <Option value="form5">Form 5</Option>
-                  </Select>
-                  <Select
-                    placeholder="Filter by type"
-                    style={{ width: 200 }}
-                    allowClear
-                  >
-                    <Option value="comprehensive">Comprehensive Test</Option>
-                    <Option value="portfolio">Portfolio Assessment</Option>
-                    <Option value="literature">Literature Analysis</Option>
-                    <Option value="activity">Activity Assessment</Option>
-                  </Select>
-                </div>
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                <h3 style={{ color: "#666", marginTop: 16 }}>
+                  Standalone Assessments
+                </h3>
+                <p style={{ color: "#999" }}>
+                  Create assessments without lesson plans - Coming Soon!
+                </p>
               </div>
-
-              <Table
-                columns={standaloneColumns}
-                dataSource={standaloneAssessments}
-                rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total) => `Total ${total} assessments`,
-                }}
-                className="assessment-table"
-              />
             </div>
           </TabPane>
         </Tabs>
       </Card>
 
-      {/* Lesson-Based Assessment Modal (Entry Point) */}
+      {/* Lesson-Based Assessment Modal */}
       <LessonSelectionModal
         isOpen={isLessonSelectionModalVisible}
         onClose={() => setIsLessonSelectionModalVisible(false)}
         onSubmit={handleLessonBasedSubmit}
-      />
-
-      {/* Standalone Assessment Options Modal */}
-      <Modal
-        title="Choose Assessment Type"
-        open={isStandaloneOptionsVisible}
-        onCancel={() => setIsStandaloneOptionsVisible(false)}
-        footer={null}
-        width={800}
-        className="creative-options-modal"
-      >
-        <div style={{ padding: "20px 0" }}>
-          <p style={{ marginBottom: 24, color: "#666", textAlign: "center" }}>
-            Select the type of assessment you would like to create:
-          </p>
-          <Row gutter={[16, 16]}>
-            {standaloneOptions.map((option) => (
-              <Col xs={24} sm={12} key={option.id}>
-                <Card
-                  hoverable
-                  className="creative-option-card"
-                  onClick={() => handleStandaloneOptionSelect(option.id)}
-                  style={{
-                    textAlign: "center",
-                    border: "2px solid #f0f0f0",
-                    borderRadius: "12px",
-                    transition: "all 0.3s ease",
-                  }}
-                  bodyStyle={{ padding: "24px 16px" }}
-                >
-                  <div
-                    style={{
-                      fontSize: "48px",
-                      color: option.color,
-                      marginBottom: "16px",
-                    }}
-                  >
-                    {option.icon}
-                  </div>
-                  <h3
-                    style={{
-                      margin: "0 0 8px 0",
-                      color: "#262626",
-                      fontSize: "18px",
-                    }}
-                  >
-                    {option.title}
-                  </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#666",
-                      fontSize: "14px",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {option.description}
-                  </p>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </div>
-      </Modal>
-
-      {/* Standalone Assessment Modals */}
-      <ActivityInClassStandaloneModal
-        isOpen={activeStandaloneModal === "activity-in-class"}
-        onClose={closeAllModals}
-        onSubmit={handleStandaloneModalSubmit}
-      />
-
-      <AssessmentStandaloneModal
-        isOpen={activeStandaloneModal === "assessment"}
-        onClose={closeAllModals}
-        onSubmit={handleStandaloneModalSubmit}
-      />
-
-      <EssayStandaloneModal
-        isOpen={activeStandaloneModal === "essay"}
-        onClose={closeAllModals}
-        onSubmit={handleStandaloneModalSubmit}
-      />
-
-      <TextbookStandaloneModal
-        isOpen={activeStandaloneModal === "textbook"}
-        onClose={closeAllModals}
-        onSubmit={handleStandaloneModalSubmit}
       />
     </div>
   );

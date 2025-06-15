@@ -1,13 +1,14 @@
-// backend/route/assessment.js - Simplified with unified endpoint
+// backend/route/assessment.js - Add new route
 const express = require("express");
 const {
-  fullLessonPlanner,
   generateFromLessonPlan,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
   deleteAssessment,
   updateAssessment,
+  getLessonPlansWithoutAssessments,
+  getUserAssessmentsFiltered,
 } = require("../controller/aseessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
@@ -17,7 +18,10 @@ router.post("/generateFromLessonPlan", protect, generateFromLessonPlan);
 router.post("/save", protect, saveAssessment);
 
 // Get user's assessments with filtering and pagination
-router.get("/my-assessments", protect, getUserAssessments);
+router.get("/my-assessments", protect, getUserAssessmentsFiltered);
+
+// NEW: Get lesson plans without assessments
+router.get("/available-lessons", protect, getLessonPlansWithoutAssessments);
 
 // Get specific assessment by ID
 router.get("/:id", protect, getAssessmentById);
