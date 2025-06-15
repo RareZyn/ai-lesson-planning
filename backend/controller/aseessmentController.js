@@ -468,13 +468,16 @@ const generateTextbookActivity = async (req, res) => {
   }
 };
 
-/**
- * @desc    Save a generated assessment to database
- * @route   POST /api/assessment/save
- * @access  Private
- */
 const saveAssessment = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const {
       title,
       description,
@@ -551,6 +554,14 @@ const saveAssessment = async (req, res) => {
  */
 const getUserAssessments = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const {
       page = 1,
       limit = 10,
@@ -616,6 +627,14 @@ const getUserAssessments = async (req, res) => {
  */
 const getAssessmentById = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const assessment = await Assessment.findById(req.params.id)
       .populate({
         path: "lessonPlanId",
@@ -666,6 +685,14 @@ const getAssessmentById = async (req, res) => {
  */
 const deleteAssessment = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const assessment = await Assessment.findById(req.params.id);
 
     if (!assessment) {
@@ -707,6 +734,14 @@ const deleteAssessment = async (req, res) => {
  */
 const updateAssessment = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const {
       title,
       description,
@@ -771,6 +806,7 @@ const updateAssessment = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   generateActivityAndRubric,

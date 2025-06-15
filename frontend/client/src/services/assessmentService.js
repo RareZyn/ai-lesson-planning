@@ -1,4 +1,4 @@
-// src/services/assessmentService.js - Updated with complete API integration
+// src/services/assessmentService.js - Updated for lesson-based assessment integration
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -166,19 +166,52 @@ export const assessmentAPI = {
     }
   },
 
-  // Generate assessment from lesson plan (wrapper function that combines generation and saving)
+  // Main integration function: Generate assessment from lesson plan
   generateFromLessonPlan: async (lessonPlanData, activityFormData) => {
     try {
-      // First, generate the assessment content
-      let generationResponse;
+      console.log("Starting assessment generation with data:", {
+        lessonPlanData,
+        activityFormData,
+      });
 
+      // Prepare the request data based on the backend controller structure
       const requestData = {
-        ...lessonPlanData,
+        // Lesson plan information
+        lesson: lessonPlanData.lesson || lessonPlanData.title,
+        subject: lessonPlanData.subject,
+        theme: lessonPlanData.theme,
+        topic: lessonPlanData.topic,
+        grade: lessonPlanData.grade,
+
+        // Standards
+        contentStandard: {
+          main: lessonPlanData.contentStandard?.main || "",
+          component: lessonPlanData.contentStandard?.component || "",
+        },
+        learningStandard: {
+          main: lessonPlanData.learningStandard?.main || "",
+          component: lessonPlanData.learningStandard?.component || "",
+        },
+
+        // Learning outline from lesson plan
+        learningOutline: {
+          pre: lessonPlanData.learningOutline?.pre || "",
+          during: lessonPlanData.learningOutline?.during || "",
+          post: lessonPlanData.learningOutline?.post || "",
+        },
+
+        // Activity type determines which endpoint to call
+        activityType: activityFormData.activityType || "activityInClass",
+
+        // Additional form data from user input
         ...activityFormData,
       };
 
-      // Call appropriate generation endpoint based on activity type
-      switch (activityFormData.activityType) {
+      console.log("Prepared request data:", requestData);
+
+      // Call the appropriate generation endpoint based on activity type
+      let generationResponse;
+      switch (requestData.activityType) {
         case "essay":
           generationResponse = await assessmentAPI.generateEssayAssessment(
             requestData
@@ -189,7 +222,7 @@ export const assessmentAPI = {
             requestData
           );
           break;
-        case "activity":
+        case "activityInClass":
         case "assessment":
         default:
           generationResponse = await assessmentAPI.generateActivityAndRubric(
@@ -198,24 +231,25 @@ export const assessmentAPI = {
           break;
       }
 
+      console.log("Generation response:", generationResponse);
+
       // If generation successful, save the assessment
       if (generationResponse.success) {
         const saveData = {
           title:
-            requestData.assessmentTitle ||
+            lessonPlanData.assessmentTitle ||
             `Assessment - ${lessonPlanData.lesson}`,
           description:
-            requestData.assessmentDescription || "Generated assessment",
-          lessonPlanId: requestData.lessonPlanId,
-          classId: requestData.classId,
-          activityType: activityFormData.activityType,
-          assessmentType: requestData.assessmentType || "Generated Assessment",
-          questionCount: activityFormData.numberOfQuestions || 20,
-          duration: activityFormData.timeAllocation
-            ? `${activityFormData.timeAllocation} minutes`
-            : "60 minutes",
-          difficulty: activityFormData.difficultyLevel || "Intermediate",
-          skills: activityFormData.skills || [],
+            lessonPlanData.assessmentDescription ||
+            "Generated from lesson plan",
+          lessonPlanId: lessonPlanData.lessonPlanId,
+          classId: lessonPlanData.classId,
+          activityType: requestData.activityType,
+          assessmentType: "Generated Assessment",
+          questionCount: 20, // Default or from form data
+          duration: "60 minutes", // Default or from form data
+          difficulty: "Intermediate", // Default or from form data
+          skills: [], // From form data if available
           generatedContent: {
             activityHTML: generationResponse.activityHTML,
             rubricHTML: generationResponse.rubricHTML,
@@ -224,7 +258,7 @@ export const assessmentAPI = {
           lessonPlanSnapshot: {
             title: lessonPlanData.lesson,
             subject: lessonPlanData.subject,
-            grade: lessonPlanData.grade || "Form 4",
+            grade: lessonPlanData.grade,
             contentStandard: lessonPlanData.contentStandard,
             learningStandard: lessonPlanData.learningStandard,
             learningOutline: lessonPlanData.learningOutline,
@@ -234,6 +268,7 @@ export const assessmentAPI = {
           status: "Generated",
         };
 
+        console.log("Saving assessment data:", saveData);
         const saveResponse = await assessmentAPI.saveAssessment(saveData);
 
         return {

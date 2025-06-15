@@ -1,4 +1,4 @@
-// backend/route/assessment.js - Updated with additional routes
+// backend/route/assessment.js - Updated with authentication middleware
 const express = require("express");
 const {
   fullLessonPlanner,
@@ -12,17 +12,22 @@ const {
   updateAssessment,
 } = require("../controller/aseessmentController");
 
+// Import authentication middleware
+const { protect, authorize } = require("../middleware/auth");
+
 const router = express.Router();
 
-router.post("/fullLessonPlanner", fullLessonPlanner);
-router.post("/generateActivityAndRubric", generateActivityAndRubric);
-router.post("/generateEssayAssessment", generateEssayAssessment);
-router.post("/generateTextbookActivity", generateTextbookActivity);
+// Lesson-based assessment generation endpoints (require auth)
+router.post("/fullLessonPlanner", protect, fullLessonPlanner);
+router.post("/generateActivityAndRubric", protect, generateActivityAndRubric);
+router.post("/generateEssayAssessment", protect, generateEssayAssessment);
+router.post("/generateTextbookActivity", protect, generateTextbookActivity);
 
-router.post("/save", saveAssessment);
-router.get("/my-assessments", getUserAssessments);
-router.get("/:id", getAssessmentById);
-router.put("/:id", updateAssessment);
-router.delete("/:id", deleteAssessment);
+// Assessment CRUD operations (all require auth)
+router.post("/save", protect, saveAssessment);
+router.get("/my-assessments", protect, getUserAssessments);
+router.get("/:id", protect, getAssessmentById);
+router.put("/:id", protect, updateAssessment);
+router.delete("/:id", protect, deleteAssessment);
 
 module.exports = router;
