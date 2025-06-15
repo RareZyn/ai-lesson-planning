@@ -133,4 +133,107 @@ const fullLessonPlanner = async (req, res) => {
   }
 };
 
-module.exports = { fullLessonPlanner };
+const generateActivityAndRubric = async (req, res) => {
+  const {
+    contentStandard,
+    learningStandard,
+    learningOutline,
+    activityType = "activityInClass",
+    lesson,
+    subject,
+    theme,
+    topic,
+  } = req.body;
+
+  const prompt = `
+# Identity
+
+You are an AI assistant helping to generate creative and pedagogically sound in-class assessments and rubrics for English language teachers based on Malaysian KSSM curriculum lesson plans.
+
+# Instructions
+
+You must generate two HTML outputs:
+
+1. 🎓 Student Activity Sheet (Styled HTML)
+2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
+
+# Lesson Data
+
+{
+  "lesson": "${lesson}",
+  "subject": "${subject}",
+  "theme": "${theme}",
+  "topic": "${topic}",
+  "contentStandard": {
+    "main": "${contentStandard.main}",
+    "component": "${contentStandard.component}"
+  },
+  "learningStandard": {
+    "main": "${learningStandard.main}",
+    "component": "${learningStandard.component}"
+  },
+  "learningOutline": {
+    "pre": "${learningOutline.pre}",
+    "during": "${learningOutline.during}",
+    "post": "${learningOutline.post}"
+  },
+  "activityType": "${activityType}"
+}
+
+# Output Format
+
+1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
+2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+
+Do not include anything else. Just the two clean HTML blocks, no explanations.
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate HTML student activities and teacher rubrics for classroom assessments.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const output = response.choices[0].message.content;
+
+    // Flexible regex: matches even with newline/space variations
+    const match = output.match(
+      /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
+    );
+
+    if (!match || match.length < 3) {
+      return res.status(500).json({
+        success: false,
+        message: "OpenAI output did not contain both HTML blocks.",
+        raw: output,
+      });
+    }
+
+    const studentHtml = match[1].trim();
+    const rubricHtml = match[2].trim();
+
+    res.status(200).json({
+      success: true,
+      activityHTML: studentHtml,
+      rubricHTML: rubricHtml,
+    });
+  } catch (err) {
+    console.error("Error generating activity & rubric:", err);
+    res.status(500).json({
+      success: false,
+      message: "OpenAI API error",
+    });
+  }
+};
+
+module.exports = { generateActivityAndRubric, fullLessonPlanner };

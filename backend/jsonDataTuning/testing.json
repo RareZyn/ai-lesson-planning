@@ -1,10 +1,278 @@
 {
   "success": true,
-  "count": 1,
-  "total": 1,
+  "count": 4,
+  "total": 4,
   "totalPages": 1,
   "currentPage": 1,
   "data": [
+    {
+      "communityData": {
+        "tags": [],
+        "likes": 0,
+        "downloads": 0,
+        "averageRating": 0,
+        "downloadedBy": [],
+        "reviews": [],
+        "likedByCount": 0,
+        "reviewCount": 0
+      },
+      "parameters": {
+        "sow": {
+          "contentStandard": {
+            "main": "Listening 1.1",
+            "comp": "Speaking 2.1"
+          },
+          "learningStandard": {
+            "main": "Listening 1.1.3",
+            "comp": "Speaking 2.1.4"
+          },
+          "learningOutline": {
+            "pre": "Activate pupils’ prior knowledge by having them work on Activity 1, first alone and then in pairs. Put pupils in new pairs to create sentences with phrases from the activity.",
+            "during": "This lesson focuses on Activities 2 and 3. Activity 3 focuses on developing the main skill. An extension of Activity 2 focuses on the complementary skill, where pupils explain their answers and their partner's admirable qualities to new partners.",
+            "post": "Have a class discussion. Ask pupils which of the listed qualities they find most admirable and why? Discuss other admirable qualities and what they admire most in their friends."
+          },
+          "lessonNo": 4,
+          "focus": "listening",
+          "theme": "People and Culture",
+          "topic": "It’s Personal!",
+          "differentiationStrategy": "Make a note to follow up with less proficient pupils. To support confident pupils, pause the listening track at selected intervals. Challenge more proficient pupils by asking them to create a list of abstract nouns and decide if they describe good or bad qualities.",
+          "cce": ["Values"],
+          "materials": []
+        },
+        "grade": "Form 5",
+        "proficiencyLevel": "B1 Mid",
+        "hotsFocus": "apply",
+        "specificTopic": "It’s Personal!",
+        "activityType": "assessment",
+        "additionalNotes": ""
+      },
+      "plan": {
+        "activities": {
+          "preLesson": [
+            "Students complete Activity 1 individually by matching adjectives describing personal qualities to their definitions.",
+            "Students pair up and discuss their answers, then create original sentences using the adjectives.",
+            "The teacher facilitates whole-class feedback, clarifying any misunderstandings."
+          ],
+          "duringLesson": [
+            "Students listen to a recording (Activity 2) about individuals describing their admirable qualities and complete a gap-fill exercise focusing on identifying those qualities.",
+            "Students check their answers in pairs and discuss any discrepancies.",
+            "Students complete Activity 3 by brainstorming examples of how the qualities they heard in the recording are demonstrated in real life. (e.g., If they heard about 'patience', they might suggest 'waiting calmly in a long queue').",
+            "Students get into new pairs and explain their answers from Activity 2, also mentioning their partner’s admirable qualities based on their interactions so far."
+          ],
+          "postLesson": [
+            "The class engages in a whole-class discussion about which of the listed qualities they find most admirable and why.",
+            "Students brainstorm other admirable qualities not mentioned in the recording, such as resilience, humility, or creativity.",
+            "Students discuss what they admire most in their friends and provide specific examples of how those qualities are demonstrated."
+          ]
+        },
+        "learningObjective": "By the end of the lesson, students will be able to identify and describe admirable qualities in themselves and others using appropriate vocabulary related to personal characteristics, and articulate how these qualities are demonstrated in everyday actions.",
+        "successCriteria": [
+          "I can identify at least three admirable qualities in a person's character.",
+          "I can use specific vocabulary to describe admirable qualities.",
+          "I can explain how these qualities are demonstrated in everyday actions or situations.",
+          "I can apply my understanding of admirable qualities to real-life scenarios."
+        ]
+      },
+      "_id": "684e65181c103dbf19060333",
+      "createdBy": {
+        "_id": "684aeee48cdce75d30a8af11",
+        "name": "Razin Nazarudin",
+        "schoolName": "SAM BESTARI"
+      },
+      "classId": {
+        "_id": "684c432862c64505054979c1",
+        "className": "Amanah",
+        "grade": "Form 5",
+        "subject": "English",
+        "id": "684c432862c64505054979c1"
+      },
+      "lessonDate": "2025-06-10T16:00:00.000Z",
+      "isSharedToCommunity": false,
+      "status": "completed",
+      "version": 1,
+      "createdAt": "2025-06-15T06:15:52.749Z",
+      "updatedAt": "2025-06-15T06:15:52.749Z",
+      "__v": 0,
+      "id": "684e65181c103dbf19060333"
+    },
+    {
+      "communityData": {
+        "tags": [],
+        "likes": 0,
+        "downloads": 0,
+        "averageRating": 0,
+        "downloadedBy": [],
+        "reviews": [],
+        "likedByCount": 0,
+        "reviewCount": 0
+      },
+      "parameters": {
+        "sow": {
+          "contentStandard": { "main": null, "comp": null },
+          "learningStandard": { "main": null, "comp": null },
+          "learningOutline": {
+            "pre": "Activate pupils’ prior knowledge by asking questions to elicit responses using either the present simple or present continuous. Ask pupils to explain the difference in usage.",
+            "during": "This lesson focuses on present simple vs present continuous and relative clauses. Use activities from Student's Book p9 and p11, allowing for pair and group discussions before collecting responses.",
+            "post": "Ask pupils to review their learning by working in pairs and making their own sentences using relative clauses. Put a list of relative clauses on the board and ask pupils to share their ideas with the class."
+          },
+          "lessonNo": 3,
+          "focus": "language awareness",
+          "theme": "People and Culture",
+          "topic": "It’s Personal!",
+          "differentiationStrategy": "Organise talk partners or grouping so that a more proficient pupil can help a less proficient pupil. Challenge more proficient pupils by asking them to write their own paragraph using multiple relative pronouns, including more challenging ones with prepositions.",
+          "cce": ["Language"],
+          "materials": []
+        },
+        "grade": "Form 5",
+        "proficiencyLevel": "A2 High",
+        "hotsFocus": "create",
+        "specificTopic": "Technology",
+        "activityType": "activityInClass",
+        "additionalNotes": ""
+      },
+      "plan": {
+        "activities": {
+          "preLesson": [
+            "The teacher initiates a class discussion about technology use by asking students about their favourite apps and devices, focusing on how often they use them.",
+            "Students share their answers and the teacher writes some of the verbs and nouns used on the board.",
+            "The teacher asks students to differentiate between habits (present simple) and what they are doing right now (present continuous) with their devices, using the examples on the board."
+          ],
+          "duringLesson": [
+            "Students individually brainstorm a list of 5 things they frequently do with technology (present simple) and 5 things they are currently using technology for or plan to use it for today (present continuous).",
+            "Students pair up and share their lists, correcting each other's tense usage as needed.",
+            "The teacher displays a list of relative pronouns (who, which, that, whose, where) and provides example sentences on the board related to technology, highlighting the use of relative clauses to add detail.",
+            "Students work in groups of four to transform their individual sentences into more complex sentences by adding relative clauses (e.g., 'I use my phone which has a really big screen').",
+            "Each group shares some of their improved sentences with the class."
+          ],
+          "postLesson": [
+            "Students individually write a short paragraph (5-7 sentences) about their personal relationship with technology, incorporating both present simple/continuous tenses and relative clauses.",
+            "Students exchange their paragraphs with a partner and provide constructive feedback, focusing on grammar and clarity.",
+            "The teacher facilitates a class discussion, prompting students to share what they learned about their classmates' technology habits and any common challenges they face.",
+            "The teacher asks students to think of possible solutions or advice for a person who is excessively addicted to technology (using relative clauses), and students share their ideas with the class."
+          ]
+        },
+        "learningObjective": "By the end of the lesson, students will be able to create sentences and a short paragraph about their personal relationship with technology using present simple, present continuous, and relative clauses.",
+        "successCriteria": [
+          "I can accurately use the present simple and present continuous tenses to describe my technology habits.",
+          "I can correctly form relative clauses using 'who', 'which', 'that', 'whose', and 'where' to add detail to my sentences.",
+          "I can combine sentences with relative clauses to create a coherent paragraph about my relationship with technology.",
+          "I can offer suggestions for improvement using relative clauses."
+        ]
+      },
+      "_id": "684e62e31c103dbf19060292",
+      "createdBy": {
+        "_id": "684aeee48cdce75d30a8af11",
+        "name": "Razin Nazarudin",
+        "schoolName": "SAM BESTARI"
+      },
+      "classId": {
+        "_id": "684c432862c64505054979c1",
+        "className": "Amanah",
+        "grade": "Form 5",
+        "subject": "English",
+        "id": "684c432862c64505054979c1"
+      },
+      "lessonDate": "2025-06-18T16:00:00.000Z",
+      "isSharedToCommunity": false,
+      "status": "completed",
+      "version": 1,
+      "createdAt": "2025-06-15T06:06:27.651Z",
+      "updatedAt": "2025-06-15T06:06:27.651Z",
+      "__v": 0,
+      "id": "684e62e31c103dbf19060292"
+    },
+    {
+      "communityData": {
+        "title": "Using formal register - Form 5",
+        "description": "By the end of the lesson, students will be able to role-play a formal speaking test scenario, demonstrating appropriate register and language with minimal errors.",
+        "tags": [],
+        "sharedAt": "2025-06-15T04:55:09.715Z",
+        "likes": 0,
+        "downloads": 0,
+        "downloadedBy": [],
+        "reviews": [],
+        "averageRating": 0,
+        "likedByCount": 0,
+        "reviewCount": 0
+      },
+      "parameters": {
+        "sow": {
+          "contentStandard": { "main": "Speaking 2.2", "comp": "Speaking 2.1" },
+          "learningStandard": {
+            "main": "Speaking 2.2.1",
+            "comp": "Speaking 2.1.5"
+          },
+          "learningOutline": {
+            "pre": "Choose an appropriate pre-lesson activity that suits pupils’ needs/interests and that will review language and/or vocabulary.",
+            "during": "This lesson focuses on speaking activities, emphasizing the use of appropriate register. Pupils discuss the correct register for a speaking test, then role-play as examiner and candidate. At the end of the role play, pupils discuss their feelings about past speaking tests.",
+            "post": "Ask pupils to review their learning by completing an exit card about the speaking activities: ‘what they were able to do well?’ and ‘what they found particularly challenging?’."
+          },
+          "lessonNo": 6,
+          "focus": "speaking",
+          "theme": "People and Culture",
+          "topic": "Using formal register",
+          "differentiationStrategy": "Give new rounds of questions to proficient pairs and provide feedback to pairs that need support, then ask them to repeat their role play. Plan additional speaking activities in case of extra time.",
+          "cce": ["Values"],
+          "materials": []
+        },
+        "grade": "Form 5",
+        "proficiencyLevel": "B1 Low",
+        "hotsFocus": "evaluate",
+        "specificTopic": "Using formal register",
+        "activityType": "activityInClass",
+        "additionalNotes": ""
+      },
+      "plan": {
+        "activities": {
+          "preLesson": [
+            "The teacher displays pictures of various formal and informal settings (e.g., job interview vs. chatting with friends) and asks students to identify the register used in each scenario.",
+            "Students brainstorm words and phrases associated with formal communication and the teacher writes them on the board.",
+            "Teacher leads a quick review of common grammatical errors made in speaking tests (e.g., subject-verb agreement, tense usage)."
+          ],
+          "duringLesson": [
+            "The teacher explains the specific requirements of a formal speaking test, highlighting the importance of register, tone, and grammar.",
+            "Students are given a sample speaking test prompt and work in pairs to create a short dialogue using a formal register.",
+            "Each pair takes turns role-playing the speaking test, with one student acting as the examiner and the other as the candidate.",
+            "After each role-play, the teacher provides constructive feedback on the students' use of formal register, offering suggestions for improvement.",
+            "Pairs are given new speaking prompts to repeat the role-play with improved formal register, if they need support with new round of questions."
+          ],
+          "postLesson": [
+            "Students complete an exit card reflecting on their role-play, noting one thing they did well and one thing they found challenging regarding formal register.",
+            "The teacher leads a brief class discussion about the importance of using formal register in different contexts, emphasizing its relevance for future academic and professional opportunities.",
+            "Students share their feelings about the speaking test. "
+          ]
+        },
+        "learningObjective": "By the end of the lesson, students will be able to role-play a formal speaking test scenario, demonstrating appropriate register and language with minimal errors.",
+        "successCriteria": [
+          "I can identify and use formal greetings and farewells in a speaking test.",
+          "I can use appropriate vocabulary and grammar when answering questions in a formal setting.",
+          "I can maintain a polite and respectful tone throughout the role-play.",
+          "I can evaluate my own and my partner's use of formal register during the role-play."
+        ]
+      },
+      "_id": "684e51c24ba1fa0622e39c85",
+      "createdBy": {
+        "_id": "684aeee48cdce75d30a8af11",
+        "name": "Razin Nazarudin",
+        "schoolName": "SAM BESTARI"
+      },
+      "classId": {
+        "_id": "684c432862c64505054979c1",
+        "className": "Amanah",
+        "grade": "Form 5",
+        "subject": "English",
+        "id": "684c432862c64505054979c1"
+      },
+      "lessonDate": "2025-06-04T16:00:00.000Z",
+      "isSharedToCommunity": true,
+      "status": "completed",
+      "version": 1,
+      "createdAt": "2025-06-15T04:53:22.468Z",
+      "updatedAt": "2025-06-15T04:55:09.717Z",
+      "__v": 0,
+      "lastModifiedBy": "684aeee48cdce75d30a8af11",
+      "id": "684e51c24ba1fa0622e39c85"
+    },
     {
       "communityData": {
         "tags": [],
