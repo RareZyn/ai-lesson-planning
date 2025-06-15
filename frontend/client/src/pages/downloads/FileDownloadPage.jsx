@@ -1,7 +1,7 @@
 // src/pages/downloads/FileDownloadPage.jsx
 import React, { useState } from "react";
 import { Eye, Download } from "lucide-react";
-import LessonInfoModal from "../../components/Modal/AssessmentCreative/LessonInfoModal";
+import LessonInfoModal from "../../components/Modal/LessonInfoModal";
 import "./FileDownloadPage.css";
 
 const FileDownloadPage = () => {

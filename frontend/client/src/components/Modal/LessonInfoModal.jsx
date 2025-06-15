@@ -1,7 +1,7 @@
 // src/components/Modal/LessonInfoModal.jsx
 import React from "react";
 import { X, BookOpen } from "lucide-react";
-import "./ModalStyles.css";
+import "./StandaloneAssessment/ModalStyles.css";
 import "./LessonInfoModal.css";
 
 const LessonInfoModal = ({ isOpen, onClose, lessonData }) => {

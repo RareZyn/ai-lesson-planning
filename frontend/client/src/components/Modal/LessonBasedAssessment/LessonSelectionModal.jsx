@@ -20,10 +20,10 @@ import {
 } from "@ant-design/icons";
 
 // Import the dynamic assessment form
-import AssessmentLesson from "../AssessmentLessonPlanner/AssessmentLeson";
-import EssayLesson from "../AssessmentLessonPlanner/EssayLesson";
-import TextbookLesson from "../AssessmentLessonPlanner/TextbookLesson";
-import ActivityInClassLesson from "../AssessmentLessonPlanner/ActivityInClassLesson";
+import AssessmentLesson from "./AssessmentLessonModal";
+import EssayLesson from "./EssayLessonModal";
+import TextbookLesson from "./TextbookLessonModal";
+import ActivityInClassLesson from "./ActivityInClassLessonModal";
 
 import "./ModalStyles.css";
 
