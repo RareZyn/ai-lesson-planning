@@ -1,5 +1,5 @@
 const OpenAI = require("openai");
-
+const Assessment = require("../model/Assessment");
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -806,7 +806,6 @@ const updateAssessment = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   generateActivityAndRubric,
