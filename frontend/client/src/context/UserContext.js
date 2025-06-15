@@ -1,4 +1,4 @@
-// src/context/UserContext.js - Clean version without console logs
+// src/context/UserContext.js - Fixed version with proper auth handling
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { authAPI } from "../services/api";
@@ -20,9 +20,25 @@ export const UserProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  const { user: firebaseUser, loading: authLoading } = useAuth();
+  // FIXED: Make sure we're getting the right property from AuthContext
+  const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
-  // Sync Firebase user with MongoDB backend
+  // Helper function to set authenticated state
+  const setAuthenticatedState = (user) => {
+    setCurrentUser(user);
+    setUserId(user._id || user.id);
+    setIsAuthenticated(true);
+  };
+
+  // Helper function to clear authenticated state
+  const clearAuthenticatedState = () => {
+    setCurrentUser(null);
+    setUserId(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem("authToken");
+  };
+
+  // FIXED: Sync Firebase user with MongoDB backend
   const syncFirebaseUserWithMongoDB = async (firebaseUser) => {
     try {
       if (!firebaseUser) {
@@ -45,54 +61,80 @@ export const UserProvider = ({ children }) => {
       const response = await authAPI.findOrCreateFirebaseUser(userData);
 
       if (response.success && response.user) {
-        setCurrentUser(response.user);
-        setUserId(response.user._id || response.user.id);
-        setIsAuthenticated(true);
+        // Store the JWT token if provided
+        if (response.token) {
+          localStorage.setItem("authToken", response.token);
+        }
+
+        // Set authenticated state
+        setAuthenticatedState(response.user);
         return response.user;
       } else {
         throw new Error(response.message || "Failed to sync user with backend");
       }
     } catch (error) {
-      // Reset user state on error
-      setCurrentUser(null);
-      setUserId(null);
-      setIsAuthenticated(false);
+      clearAuthenticatedState();
       return null;
     }
   };
 
-  // Handle Firebase auth state changes
-  const handleAuthState = async (firebaseUser) => {
+  // FIXED: Check for existing JWT token
+  const checkExistingAuth = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        return false;
+      }
+
+      // Verify token with backend
+      const response = await authAPI.getMe();
+
+      if (response.success && response.user) {
+        setAuthenticatedState(response.user);
+        return true;
+      } else {
+        throw new Error("Invalid token response");
+      }
+    } catch (error) {
+      // Clear invalid token
+      localStorage.removeItem("authToken");
+      clearAuthenticatedState();
+      return false;
+    }
+  };
+
+  // FIXED: Main auth initialization function
+  const initializeAuth = async () => {
     setLoading(true);
 
     try {
-      if (firebaseUser) {
-        // Wait a moment for Firebase to fully initialize
-        await new Promise((resolve) => setTimeout(resolve, 100));
+      // First, check if we have a Firebase user
+      if (firebaseUser && firebaseUser.uid) {
         await syncFirebaseUserWithMongoDB(firebaseUser);
       } else {
-        setCurrentUser(null);
-        setUserId(null);
-        setIsAuthenticated(false);
+        // No Firebase user, check for existing JWT token
+        const hasExistingAuth = await checkExistingAuth();
+
+        if (!hasExistingAuth) {
+          clearAuthenticatedState();
+        }
       }
     } catch (error) {
-      setCurrentUser(null);
-      setUserId(null);
-      setIsAuthenticated(false);
+      clearAuthenticatedState();
     } finally {
       setLoading(false);
       setIsReady(true);
     }
   };
 
-  // Effect to handle Firebase auth state changes
+  // FIXED: Effect to handle auth state changes
   useEffect(() => {
-    // Don't process if Firebase auth is still loading
+    // Wait for Firebase auth to finish loading
     if (authLoading) {
       return;
     }
 
-    handleAuthState(firebaseUser);
+    initializeAuth();
   }, [firebaseUser, authLoading]);
 
   // Logout function
@@ -101,9 +143,7 @@ export const UserProvider = ({ children }) => {
       setLoading(true);
 
       // Clear local state first
-      setCurrentUser(null);
-      setUserId(null);
-      setIsAuthenticated(false);
+      clearAuthenticatedState();
 
       // Call backend logout (optional, mainly for cookie clearing)
       try {
@@ -112,7 +152,7 @@ export const UserProvider = ({ children }) => {
         // Ignore backend logout errors
       }
     } catch (error) {
-      // Ignore logout errors
+      // Handle logout errors silently
     } finally {
       setLoading(false);
     }
@@ -125,7 +165,7 @@ export const UserProvider = ({ children }) => {
       const response = await authAPI.updateProfile(updatedData);
 
       if (response.success && response.user) {
-        setCurrentUser(response.user);
+        setAuthenticatedState(response.user);
         return response.user;
       } else {
         throw new Error(response.message || "Failed to update user");
@@ -154,7 +194,7 @@ export const UserProvider = ({ children }) => {
     syncFirebaseUserWithMongoDB,
 
     // Utility functions
-    refreshUser: () => handleAuthState(firebaseUser),
+    refreshUser: initializeAuth,
   };
 
   return (

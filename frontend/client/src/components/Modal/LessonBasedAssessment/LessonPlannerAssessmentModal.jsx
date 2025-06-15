@@ -1,5 +1,6 @@
-// src/components/Modal/LessonBasedAssessment/LessonSelectionModal.jsx - Fixed version
+// src/components/Modal/LessonBasedAssessment/LessonPlannerAssessmentModal.jsx - Fixed version
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Card,
   Select,
@@ -20,8 +21,8 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 
-// Import backend services
-// FIXED: Import the assessmentAPI for classes instead of classService
+// FIXED: Import the correct class service
+import { getAllClasses } from "../../../services/classService";
 import { assessmentAPI } from "../../../services/assessmentService";
 import { useUser } from "../../../context/UserContext";
 
@@ -65,62 +66,39 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     await Promise.all([fetchClasses(), fetchAvailableLessonPlans()]);
   };
 
-  // FIXED: Create a new function to fetch classes using assessmentAPI
+  // FIXED: Use the existing classService instead of manual fetch
   const fetchClasses = async () => {
     setClassesLoading(true);
     try {
-      console.log("Fetching classes for user:", userId);
-
-      if (!userId) {
-        console.error("No userId available");
-        setClasses([]);
-        return;
-      }
-
-      // FIXED: Use assessmentAPI instead of getAllClasses
-      // We'll create a direct API call here
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/classes`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-        credentials: "include",
+    
+      // Add timeout to catch hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error("API call timeout after 10 seconds")),
+          10000
+        );
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const apiCallPromise = getAllClasses();
 
-      const data = await response.json();
-      console.log("Classes API response:", data);
-
-      let classesData = [];
-      if (data && data.success && data.data) {
-        classesData = data.data;
-      } else if (Array.isArray(data)) {
-        classesData = data;
-      }
-
-      console.log("Processed classes data:", classesData);
-      setClasses(Array.isArray(classesData) ? classesData : []);
-
-      if (classesData.length === 0) {
-        console.warn("No classes found for user");
-        message.info(
-          "No classes found. Please create a class first in Class Management."
+      // Race between API call and timeout
+      const classesData = await Promise.race([apiCallPromise, timeoutPromise]);
+      const finalClasses = Array.isArray(classesData) ? classesData : [];
+      setClasses(finalClasses);
+    } catch (error) {
+      if (error.message.includes("timeout")) {
+        message.error(
+          "Request timed out. Please check your network connection."
         );
       } else {
-        console.log(`Found ${classesData.length} classes`);
+        message.error(`Failed to fetch classes: ${error.message}`);
       }
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      message.error(`Failed to fetch classes: ${error.message}`);
       setClasses([]);
     } finally {
       setClassesLoading(false);
     }
   };
+
 
   // FIXED: Fetch only lesson plans that don't have assessments yet
   const fetchAvailableLessonPlans = async () => {
@@ -131,9 +109,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
       if (response && response.success) {
         setLessonPlans(Array.isArray(response.data) ? response.data : []);
-        console.log("Available lesson plans for assessment:", response.data);
       } else {
-        console.warn("No lesson plans available for assessment creation");
         setLessonPlans([]);
       }
     } catch (error) {
@@ -464,7 +440,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   </div>
                 )}
 
-                {/* FIXED: Show debug info for classes */}
+                {/* FIXED: Enhanced debug info for classes */}
                 {classesLoading && (
                   <div style={{ textAlign: "center", padding: "10px" }}>
                     <Text type="secondary">Loading classes...</Text>
@@ -484,6 +460,19 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       No classes found. Please create a class first in{" "}
                       <strong>Class Management</strong>.
                     </Text>
+                  </div>
+                )}
+
+                {/* FIXED: Add debug information */}
+                {process.env.NODE_ENV === "development" && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "12px",
+                      color: "#999",
+                    }}
+                  >
+                    Debug: Found {classes.length} classes | User ID: {userId}
                   </div>
                 )}
               </Card>
