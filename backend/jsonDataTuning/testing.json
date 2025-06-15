@@ -1,10 +1,99 @@
 {
   "success": true,
-  "count": 4,
-  "total": 4,
+  "count": 5,
+  "total": 5,
   "totalPages": 1,
   "currentPage": 1,
   "data": [
+    {
+      "communityData": {
+        "tags": [],
+        "likes": 0,
+        "downloads": 0,
+        "averageRating": 0,
+        "downloadedBy": [],
+        "reviews": [],
+        "likedByCount": 0,
+        "reviewCount": 0
+      },
+      "parameters": {
+        "sow": {
+          "contentStandard": {
+            "main": "Writing 4.2",
+            "comp": "Reading 3.1"
+          },
+          "learningStandard": {
+            "main": "Writing 4.2.3",
+            "comp": "Reading 3.1.6"
+          },
+          "learningOutline": {
+            "pre": "Get pupils to review their learning in the unit so far by asking them to explain which famous person they most admire. Allow pupils time to discuss their ideas in small groups before sharing.",
+            "during": "This lesson focuses on Activities 1–4. First complete Activity 1, identifying features of formal/informal emails. Extend Activity 2 by asking pupils to make a plan of an informal email they would write in reply. After completing Activities 3 and 4, ask pupils to modify their rough draft.",
+            "post": "Ask pupils to work in groups and discuss the easiest and most challenging part of creating a plan. Monitor and make a note of their feedback for future planning."
+          },
+          "lessonNo": 7,
+          "focus": "writing",
+          "theme": "People and Culture",
+          "topic": "It’s Personal!",
+          "differentiationStrategy": "Allow more proficient pupils to work independently. Support less proficient pupils during Activities 1 and 2 by making them teacher-led. Help with ideas by creating a mind map. Challenge proficient pupils to write a more detailed draft of up to 250 words.",
+          "cce": ["Values"],
+          "materials": []
+        },
+        "grade": "Form 5",
+        "proficiencyLevel": "B1 High",
+        "hotsFocus": "create",
+        "specificTopic": "It’s Personal!",
+        "activityType": "essay",
+        "additionalNotes": ""
+      },
+      "plan": {
+        "activities": {
+          "preLesson": [
+            "Students participate in a brief 'Think-Pair-Share' activity, discussing which famous person they most admire and why, sharing their initial ideas with a partner.",
+            "The teacher leads a whole-class discussion, encouraging students to briefly share their famous person and a single reason for their admiration, creating a collaborative mind map on the board."
+          ],
+          "duringLesson": [
+            "Students will analyse examples of formal and informal emails, identifying key differences in language and structure.",
+            "Students work in pairs to brainstorm ideas and create a plan for an informal email responding to a prompt: 'Imagine you're writing to a friend about a famous person you admire. Who is it and why?'",
+            "Students independently begin drafting their informal email response, focusing on clarity, coherence, and appropriate tone.",
+            "Students participate in a 'peer review' activity, where they exchange their rough drafts with a partner and provide constructive feedback based on a simple checklist (e.g., clarity, tone, content)."
+          ],
+          "postLesson": [
+            "Students individually reflect on the planning and drafting process, noting down one thing they found easy and one thing they found challenging.",
+            "Students form small groups to discuss their reflections, sharing their challenges and offering potential solutions to one another.",
+            "The teacher facilitates a brief whole-class debriefing, summarizing common challenges and offering further guidance."
+          ]
+        },
+        "learningObjective": "By the end of the lesson, students will be able to create a structured informal email draft of approximately 150-200 words responding to a prompt about a famous person they admire, demonstrating an understanding of appropriate tone and language.",
+        "successCriteria": [
+          "I can identify the key features of formal and informal emails.",
+          "I can plan the content and structure of my informal email response.",
+          "I can use informal language and tone appropriately in my email draft.",
+          "I can provide a detailed explanation of why I admire a particular famous person."
+        ]
+      },
+      "_id": "684e6828eb7e589a7b0aa9a6",
+      "createdBy": {
+        "_id": "684aeee48cdce75d30a8af11",
+        "name": "Razin Nazarudin",
+        "schoolName": "SAM BESTARI"
+      },
+      "classId": {
+        "_id": "684c432862c64505054979c1",
+        "className": "Amanah",
+        "grade": "Form 5",
+        "subject": "English",
+        "id": "684c432862c64505054979c1"
+      },
+      "lessonDate": "2025-06-05T16:00:00.000Z",
+      "isSharedToCommunity": false,
+      "status": "completed",
+      "version": 1,
+      "createdAt": "2025-06-15T06:28:56.143Z",
+      "updatedAt": "2025-06-15T06:28:56.143Z",
+      "__v": 0,
+      "id": "684e6828eb7e589a7b0aa9a6"
+    },
     {
       "communityData": {
         "tags": [],
@@ -108,8 +197,14 @@
       },
       "parameters": {
         "sow": {
-          "contentStandard": { "main": null, "comp": null },
-          "learningStandard": { "main": null, "comp": null },
+          "contentStandard": {
+            "main": null,
+            "comp": null
+          },
+          "learningStandard": {
+            "main": null,
+            "comp": null
+          },
           "learningOutline": {
             "pre": "Activate pupils’ prior knowledge by asking questions to elicit responses using either the present simple or present continuous. Ask pupils to explain the difference in usage.",
             "during": "This lesson focuses on present simple vs present continuous and relative clauses. Use activities from Student's Book p9 and p11, allowing for pair and group discussions before collecting responses.",
@@ -197,7 +292,10 @@
       },
       "parameters": {
         "sow": {
-          "contentStandard": { "main": "Speaking 2.2", "comp": "Speaking 2.1" },
+          "contentStandard": {
+            "main": "Speaking 2.2",
+            "comp": "Speaking 2.1"
+          },
           "learningStandard": {
             "main": "Speaking 2.2.1",
             "comp": "Speaking 2.1.5"
@@ -286,7 +384,10 @@
       },
       "parameters": {
         "sow": {
-          "contentStandard": { "main": "Reading 3.1", "comp": "Speaking 2.1" },
+          "contentStandard": {
+            "main": "Reading 3.1",
+            "comp": "Speaking 2.1"
+          },
           "learningStandard": {
             "main": "Reading 3.1.1",
             "comp": "Speaking 2.1.5"
