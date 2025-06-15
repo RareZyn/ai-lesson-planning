@@ -1,7 +1,7 @@
+//AssessmentLesson.jsx according to lesson planner
 import React, { useState } from "react";
 import {
   Card,
-  Radio,
   Button,
   Input,
   Row,
@@ -14,26 +14,18 @@ import {
   Divider,
   message,
   InputNumber,
-  Checkbox,
 } from "antd";
 import {
   FileTextOutlined,
   ClockCircleOutlined,
-  BarChartOutlined,
-  BookOutlined,
   EditOutlined,
   CheckCircleOutlined,
   BulbOutlined,
-  SettingOutlined,
 } from "@ant-design/icons";
 import {
-  englishForms,
   englishAssessmentTypes,
   questionTypes,
-  englishSkills,
-  difficultyLevels,
   timeAllocation,
-  literatureComponents,
 } from "../../data/englishAssessmentTypes";
 import "./ModalStyles.css";
 
@@ -43,17 +35,10 @@ const { Option } = Select;
 
 const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    form: "form4",
     assessmentType: "",
     questionTypes: [],
-    skills: [],
-    difficultyLevel: "intermediate",
     numberOfQuestions: 20,
     timeAllocation: "60",
-    includeInstructions: true,
-    includeAnswerKey: true,
-    literatureComponent: "",
-    specificTopic: "",
     additionalRequirement: "",
   });
 
@@ -87,11 +72,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       return;
     }
 
-    if (formData.skills.length === 0) {
-      message.warning("Please select at least one English skill to assess");
-      return;
-    }
-
     setLoading(true);
     try {
       await onSubmit(formData);
@@ -107,17 +87,10 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleReset = () => {
     setFormData({
-      form: "form4",
       assessmentType: "",
       questionTypes: [],
-      skills: [],
-      difficultyLevel: "intermediate",
       numberOfQuestions: 20,
       timeAllocation: "60",
-      includeInstructions: true,
-      includeAnswerKey: true,
-      literatureComponent: "",
-      specificTopic: "",
       additionalRequirement: "",
     });
   };
@@ -130,16 +103,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     return allTypes.find((type) => type.value === formData.assessmentType);
   };
 
-  const getSkillColor = (skill) => {
-    const skillObj = englishSkills.find((s) => s.value === skill);
-    return skillObj ? skillObj.color : "#1890ff";
-  };
-
-  const getSkillIcon = (skill) => {
-    const skillObj = englishSkills.find((s) => s.value === skill);
-    return skillObj ? skillObj.icon : "📝";
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -147,7 +110,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "900px" }}
+        style={{ maxWidth: "800px" }}
       >
         {/* Standardized Header */}
         <div className="modal-header">
@@ -165,81 +128,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
         {/* Body */}
         <div className="modal-body">
           <Row gutter={[16, 24]}>
-            {/* Form Level & Assessment Type */}
-            <Col span={24}>
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Card
-                    size="small"
-                    title={
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        <BookOutlined style={{ color: "#1890ff" }} />
-                        <span>Form Level</span>
-                      </div>
-                    }
-                  >
-                    <Select
-                      value={formData.form}
-                      onChange={(value) => handleInputChange("form", value)}
-                      style={{ width: "100%" }}
-                      size="large"
-                    >
-                      {englishForms.map((form) => (
-                        <Option key={form.value} value={form.value}>
-                          {form.label}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Card>
-                </Col>
-
-                <Col xs={24} sm={12}>
-                  <Card
-                    size="small"
-                    title={
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        <BarChartOutlined style={{ color: "#eb2f96" }} />
-                        <span>Difficulty Level</span>
-                      </div>
-                    }
-                  >
-                    <Select
-                      value={formData.difficultyLevel}
-                      onChange={(value) =>
-                        handleInputChange("difficultyLevel", value)
-                      }
-                      style={{ width: "100%" }}
-                      size="large"
-                    >
-                      {difficultyLevels.map((level) => (
-                        <Option key={level.value} value={level.value}>
-                          <Tag
-                            color={level.color}
-                            style={{ marginRight: "8px" }}
-                          >
-                            {level.label}
-                          </Tag>
-                          {level.description}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Card>
-                </Col>
-              </Row>
-            </Col>
-
             {/* Assessment Type */}
             <Col span={24}>
               <Card
@@ -451,95 +339,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
               </Card>
             </Col>
 
-            {/* English Skills */}
-            <Col span={24}>
-              <Card
-                size="small"
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <SettingOutlined style={{ color: "#722ed1" }} />
-                    <span>English Skills to Assess</span>
-                  </div>
-                }
-              >
-                <Row gutter={[12, 12]}>
-                  {englishSkills.map((skill) => (
-                    <Col xs={12} sm={8} md={6} key={skill.value}>
-                      <div
-                        onClick={() => handleArrayToggle("skills", skill.value)}
-                        style={{
-                          padding: "10px",
-                          border: `2px solid ${
-                            formData.skills.includes(skill.value)
-                              ? skill.color
-                              : "#d9d9d9"
-                          }`,
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          background: formData.skills.includes(skill.value)
-                            ? `${skill.color}15`
-                            : "white",
-                          transition: "all 0.2s ease",
-                          textAlign: "center",
-                          position: "relative",
-                        }}
-                      >
-                        {formData.skills.includes(skill.value) && (
-                          <CheckCircleOutlined
-                            style={{
-                              position: "absolute",
-                              top: "4px",
-                              right: "4px",
-                              color: skill.color,
-                            }}
-                          />
-                        )}
-                        <div style={{ fontSize: "18px", marginBottom: "4px" }}>
-                          {skill.icon}
-                        </div>
-                        <div
-                          style={{
-                            fontWeight: "500",
-                            fontSize: "12px",
-                            color: formData.skills.includes(skill.value)
-                              ? skill.color
-                              : "#666",
-                          }}
-                        >
-                          {skill.label}
-                        </div>
-                      </div>
-                    </Col>
-                  ))}
-                </Row>
-
-                {formData.skills.length > 0 && (
-                  <div style={{ marginTop: "16px" }}>
-                    <Text strong>Selected Skills: </Text>
-                    <Space wrap>
-                      {formData.skills.map((skill) => (
-                        <Tag
-                          key={skill}
-                          color={getSkillColor(skill)}
-                          closable
-                          onClose={() => handleArrayToggle("skills", skill)}
-                        >
-                          {getSkillIcon(skill)}{" "}
-                          {englishSkills.find((s) => s.value === skill)?.label}
-                        </Tag>
-                      ))}
-                    </Space>
-                  </div>
-                )}
-              </Card>
-            </Col>
-
             {/* Assessment Configuration */}
             <Col span={24}>
               <Row gutter={16}>
@@ -599,99 +398,12 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       {timeAllocation.map((time) => (
                         <Option key={time.value} value={time.value}>
                           {time.label}
-                          <Text
-                            type="secondary"
-                            style={{ fontSize: "12px", display: "block" }}
-                          >
-                            {time.description}
-                          </Text>
                         </Option>
                       ))}
                     </Select>
                   </Card>
                 </Col>
               </Row>
-            </Col>
-
-            {/* Literature Component (Optional) */}
-            <Col span={24}>
-              <Card
-                size="small"
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <BookOutlined style={{ color: "#fadb14" }} />
-                    <span>Literature Component (Optional)</span>
-                  </div>
-                }
-              >
-                <Select
-                  placeholder="Select if assessment includes literature"
-                  value={formData.literatureComponent}
-                  onChange={(value) =>
-                    handleInputChange("literatureComponent", value)
-                  }
-                  style={{ width: "100%" }}
-                  size="large"
-                  allowClear
-                >
-                  {literatureComponents.map((component) => (
-                    <Option key={component.value} value={component.value}>
-                      <div>
-                        <div style={{ fontWeight: "500" }}>
-                          {component.label}
-                        </div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          {component.description}
-                        </Text>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Card>
-            </Col>
-
-            {/* Specific Topic */}
-            <Col span={24}>
-              <Card size="small" title="Specific Topic/Theme (Optional)">
-                <Input
-                  placeholder="Enter specific topic, chapter, or theme to focus on..."
-                  value={formData.specificTopic}
-                  onChange={(e) =>
-                    handleInputChange("specificTopic", e.target.value)
-                  }
-                  size="large"
-                />
-              </Card>
-            </Col>
-
-            {/* Additional Options */}
-            <Col span={24}>
-              <Card size="small" title="Additional Options">
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Checkbox
-                    checked={formData.includeInstructions}
-                    onChange={(e) =>
-                      handleInputChange("includeInstructions", e.target.checked)
-                    }
-                  >
-                    Include detailed instructions for students
-                  </Checkbox>
-                  <Checkbox
-                    checked={formData.includeAnswerKey}
-                    onChange={(e) =>
-                      handleInputChange("includeAnswerKey", e.target.checked)
-                    }
-                  >
-                    Generate answer key/marking scheme
-                  </Checkbox>
-                </Space>
-              </Card>
             </Col>
 
             {/* Additional Requirements */}
@@ -714,9 +426,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
             </Col>
 
             {/* Assessment Preview Summary */}
-            {(formData.assessmentType ||
-              formData.questionTypes.length > 0 ||
-              formData.skills.length > 0) && (
+            {(formData.assessmentType || formData.questionTypes.length > 0) && (
               <Col span={24}>
                 <Card
                   size="small"
@@ -735,18 +445,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
                 >
                   <Row gutter={[16, 8]}>
-                    <Col xs={24} sm={12} md={6}>
-                      <Text strong style={{ color: "#666" }}>
-                        Form Level:
-                      </Text>
-                      <br />
-                      <Text>
-                        {
-                          englishForms.find((f) => f.value === formData.form)
-                            ?.label
-                        }
-                      </Text>
-                    </Col>
                     <Col xs={24} sm={12} md={6}>
                       <Text strong style={{ color: "#666" }}>
                         Assessment Type:
@@ -779,25 +477,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                     </Col>
                     <Col xs={24} sm={12} md={6}>
                       <Text strong style={{ color: "#666" }}>
-                        Difficulty:
-                      </Text>
-                      <br />
-                      <Tag
-                        color={
-                          difficultyLevels.find(
-                            (d) => d.value === formData.difficultyLevel
-                          )?.color
-                        }
-                      >
-                        {
-                          difficultyLevels.find(
-                            (d) => d.value === formData.difficultyLevel
-                          )?.label
-                        }
-                      </Tag>
-                    </Col>
-                    <Col xs={24} sm={12} md={6}>
-                      <Text strong style={{ color: "#666" }}>
                         Question Types:
                       </Text>
                       <br />
@@ -805,52 +484,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         {formData.questionTypes.length} types selected
                       </Text>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
-                      <Text strong style={{ color: "#666" }}>
-                        Skills:
-                      </Text>
-                      <br />
-                      <Text>{formData.skills.length} skills selected</Text>
-                    </Col>
-                    {formData.literatureComponent && (
-                      <Col xs={24} sm={12} md={6}>
-                        <Text strong style={{ color: "#666" }}>
-                          Literature:
-                        </Text>
-                        <br />
-                        <Text>
-                          {
-                            literatureComponents.find(
-                              (l) => l.value === formData.literatureComponent
-                            )?.label
-                          }
-                        </Text>
-                      </Col>
-                    )}
                   </Row>
-
-                  {formData.specificTopic && (
-                    <div style={{ marginTop: "12px" }}>
-                      <Text strong style={{ color: "#666" }}>
-                        Specific Topic:{" "}
-                      </Text>
-                      <Text>{formData.specificTopic}</Text>
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: "12px" }}>
-                    <Text strong style={{ color: "#666" }}>
-                      Options:{" "}
-                    </Text>
-                    <Space>
-                      {formData.includeInstructions && (
-                        <Tag color="blue">📋 Instructions</Tag>
-                      )}
-                      {formData.includeAnswerKey && (
-                        <Tag color="green">🔑 Answer Key</Tag>
-                      )}
-                    </Space>
-                  </div>
                 </Card>
               </Col>
             )}
@@ -878,7 +512,6 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
               disabled={
                 !formData.assessmentType ||
                 formData.questionTypes.length === 0 ||
-                formData.skills.length === 0 ||
                 loading
               }
             >
@@ -891,4 +524,4 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-export default AssessmentModal;
+export default AssessmentLeson;

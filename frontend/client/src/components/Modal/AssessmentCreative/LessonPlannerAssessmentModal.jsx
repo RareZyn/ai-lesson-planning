@@ -36,7 +36,7 @@ import {
   difficultyLevels,
   timeAllocation,
   literatureComponents,
-} from "../../data/englishAssessmentTypes";
+} from "../../../data/englishAssessmentTypes";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
@@ -73,7 +73,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       topic: "It's Personal!",
       focus: "evaluate",
       proficiencyLevel: "B1 Mid",
-      learningObjective: "Students will be able to evaluate the effectiveness of different safety measures in creating a safer school community.",
+      learningObjective:
+        "Students will be able to evaluate the effectiveness of different safety measures in creating a safer school community.",
       date: "2025-06-08",
     },
     {
@@ -86,7 +87,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       topic: "It's Personal!",
       focus: "create",
       proficiencyLevel: "B1 High",
-      learningObjective: "By the end of the lesson, students will be able to write a multi-paragraph informal email, using appropriate structure, tone, and descriptive language to express admiration for a famous person.",
+      learningObjective:
+        "By the end of the lesson, students will be able to write a multi-paragraph informal email, using appropriate structure, tone, and descriptive language to express admiration for a famous person.",
       date: "2025-06-10",
     },
     {
@@ -99,7 +101,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       topic: "Tomorrow's World",
       focus: "understand",
       proficiencyLevel: "B1 Low",
-      learningObjective: "Students will be able to identify different text types and understand their specific purposes and language features.",
+      learningObjective:
+        "Students will be able to identify different text types and understand their specific purposes and language features.",
       date: "2025-06-15",
     },
   ];
@@ -249,7 +252,9 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                 <Select
                   placeholder="Choose a lesson plan to base the assessment on"
                   value={formData.selectedLessonPlan}
-                  onChange={(value) => handleInputChange("selectedLessonPlan", value)}
+                  onChange={(value) =>
+                    handleInputChange("selectedLessonPlan", value)
+                  }
                   style={{ width: "100%" }}
                   size="large"
                   showSearch
@@ -264,7 +269,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       <div>
                         <div style={{ fontWeight: 500 }}>{plan.title}</div>
                         <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
-                          {plan.class} • {plan.grade} • {plan.theme} • {plan.date}
+                          {plan.class} • {plan.grade} • {plan.theme} •{" "}
+                          {plan.date}
                         </div>
                       </div>
                     </Option>
@@ -289,25 +295,39 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       <div style={{ fontWeight: 600, marginBottom: "8px" }}>
                         {selectedPlan.title}
                       </div>
-                      <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginBottom: "8px",
+                        }}
+                      >
                         <Tag color="blue">{selectedPlan.class}</Tag>
                         <Tag color="green">{selectedPlan.grade}</Tag>
-                        <Tag color="purple">{selectedPlan.focus.toUpperCase()}</Tag>
-                        <Tag color="orange">{selectedPlan.proficiencyLevel}</Tag>
+                        <Tag color="purple">
+                          {selectedPlan.focus.toUpperCase()}
+                        </Tag>
+                        <Tag color="orange">
+                          {selectedPlan.proficiencyLevel}
+                        </Tag>
                       </div>
                       <div style={{ color: "#666", fontSize: "13px" }}>
-                        <strong>Theme:</strong> {selectedPlan.theme} | <strong>Topic:</strong> {selectedPlan.topic}
+                        <strong>Theme:</strong> {selectedPlan.theme} |{" "}
+                        <strong>Topic:</strong> {selectedPlan.topic}
                       </div>
-                      <div style={{ 
-                        color: "#666", 
-                        fontSize: "13px", 
-                        marginTop: "8px",
-                        padding: "8px",
-                        background: "white",
-                        borderRadius: "4px",
-                        border: "1px solid #d9d9d9"
-                      }}>
-                        <strong>Learning Objective:</strong> {selectedPlan.learningObjective}
+                      <div
+                        style={{
+                          color: "#666",
+                          fontSize: "13px",
+                          marginTop: "8px",
+                          padding: "8px",
+                          background: "white",
+                          borderRadius: "4px",
+                          border: "1px solid #d9d9d9",
+                        }}
+                      >
+                        <strong>Learning Objective:</strong>{" "}
+                        {selectedPlan.learningObjective}
                       </div>
                     </div>
                   </div>
@@ -371,7 +391,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                                     <div style={{ fontWeight: "500" }}>
                                       {type.label}
                                     </div>
-                                    <Text type="secondary" style={{ fontSize: "12px" }}>
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: "12px" }}
+                                    >
                                       {type.description} • {type.timeRange} •{" "}
                                       {type.questionRange}
                                     </Text>
@@ -405,7 +428,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                             <Text>{getSelectedAssessmentDetails().label}</Text>
                             <br />
                             <Text type="secondary" style={{ fontSize: "12px" }}>
-                              Recommended: {getSelectedAssessmentDetails().timeRange} •{" "}
+                              Recommended:{" "}
+                              {getSelectedAssessmentDetails().timeRange} •{" "}
                               {getSelectedAssessmentDetails().questionRange}
                             </Text>
                           </div>
@@ -472,8 +496,14 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                     }
                   >
                     {questionTypes.map((category) => (
-                      <div key={category.category} style={{ marginBottom: "16px" }}>
-                        <Text strong style={{ color: "#666", fontSize: "14px" }}>
+                      <div
+                        key={category.category}
+                        style={{ marginBottom: "16px" }}
+                      >
+                        <Text
+                          strong
+                          style={{ color: "#666", fontSize: "14px" }}
+                        >
                           {category.category}
                         </Text>
                         <Row gutter={[12, 12]} style={{ marginTop: "8px" }}>
@@ -493,12 +523,17 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                               >
                                 <div
                                   onClick={() =>
-                                    handleArrayToggle("questionTypes", type.value)
+                                    handleArrayToggle(
+                                      "questionTypes",
+                                      type.value
+                                    )
                                   }
                                   style={{
                                     padding: "10px",
                                     border: `2px solid ${
-                                      formData.questionTypes.includes(type.value)
+                                      formData.questionTypes.includes(
+                                        type.value
+                                      )
                                         ? "#1890ff"
                                         : "#d9d9d9"
                                     }`,
@@ -514,7 +549,9 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                                     position: "relative",
                                   }}
                                 >
-                                  {formData.questionTypes.includes(type.value) && (
+                                  {formData.questionTypes.includes(
+                                    type.value
+                                  ) && (
                                     <CheckCircleOutlined
                                       style={{
                                         position: "absolute",
@@ -533,7 +570,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                                     {type.icon}
                                   </div>
                                   <div
-                                    style={{ fontWeight: "500", fontSize: "13px" }}
+                                    style={{
+                                      fontWeight: "500",
+                                      fontSize: "13px",
+                                    }}
                                   >
                                     {type.label}
                                   </div>
@@ -593,7 +633,9 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       {englishSkills.map((skill) => (
                         <Col xs={12} sm={8} md={6} key={skill.value}>
                           <div
-                            onClick={() => handleArrayToggle("skills", skill.value)}
+                            onClick={() =>
+                              handleArrayToggle("skills", skill.value)
+                            }
                             style={{
                               padding: "10px",
                               border: `2px solid ${
@@ -621,7 +663,9 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                                 }}
                               />
                             )}
-                            <div style={{ fontSize: "18px", marginBottom: "4px" }}>
+                            <div
+                              style={{ fontSize: "18px", marginBottom: "4px" }}
+                            >
                               {skill.icon}
                             </div>
                             <div
@@ -652,7 +696,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                               onClose={() => handleArrayToggle("skills", skill)}
                             >
                               {getSkillIcon(skill)}{" "}
-                              {englishSkills.find((s) => s.value === skill)?.label}
+                              {
+                                englishSkills.find((s) => s.value === skill)
+                                  ?.label
+                              }
                             </Tag>
                           ))}
                         </Space>
@@ -784,7 +831,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       <Checkbox
                         checked={formData.includeInstructions}
                         onChange={(e) =>
-                          handleInputChange("includeInstructions", e.target.checked)
+                          handleInputChange(
+                            "includeInstructions",
+                            e.target.checked
+                          )
                         }
                       >
                         Include detailed instructions for students
@@ -792,7 +842,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       <Checkbox
                         checked={formData.includeAnswerKey}
                         onChange={(e) =>
-                          handleInputChange("includeAnswerKey", e.target.checked)
+                          handleInputChange(
+                            "includeAnswerKey",
+                            e.target.checked
+                          )
                         }
                       >
                         Generate answer key/marking scheme
@@ -811,7 +864,10 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       rows={4}
                       value={formData.additionalRequirement}
                       onChange={(e) =>
-                        handleInputChange("additionalRequirement", e.target.value)
+                        handleInputChange(
+                          "additionalRequirement",
+                          e.target.value
+                        )
                       }
                       placeholder="Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
                       maxLength={500}
@@ -923,7 +979,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                             <Text>
                               {
                                 literatureComponents.find(
-                                  (l) => l.value === formData.literatureComponent
+                                  (l) =>
+                                    l.value === formData.literatureComponent
                                 )?.label
                               }
                             </Text>

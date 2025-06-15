@@ -21,8 +21,8 @@ import {
   BulbOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import AssessmentModal from "../../components/Modal/AssesstmentModal";
-import LessonPlannerAssessmentModal from "../../components/Modal/LessonPlannerAssessmentModal";
+import AssessmentModal from "../../components/Modal/AssessmentCreative/AssesstmentModal";
+import LessonPlannerAssessmentModal from "../../components/Modal/AssessmentCreative/LessonPlannerAssessmentModal";
 import "./AssessmentPage.css";
 
 const { TabPane } = Tabs;

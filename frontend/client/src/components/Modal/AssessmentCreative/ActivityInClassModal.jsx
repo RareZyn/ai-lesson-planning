@@ -31,7 +31,7 @@ import {
   resourceOptions,
   timeDurationOptions,
   difficultyLevels,
-} from "../../data/activityTypesInClass";
+} from "../../../data/activityTypesInClass";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
