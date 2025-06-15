@@ -35,7 +35,7 @@ import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
 
 // Lesson-Based Assessment Modal
-import LessonSelectionModal from "../../components/Modal/LessonBasedAssessment/LessonSelectionModal";
+import LessonSelectionModal from "../../components/Modal/LessonBasedAssessment/LessonPlannerAssessmentModal";
 
 import "./AssessmentPage.css";
 

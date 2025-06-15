@@ -21,7 +21,7 @@ import {
 } from "@ant-design/icons";
 
 // Import backend services
-import { getAllClasses } from "../../../services/classService";
+// FIXED: Import the assessmentAPI for classes instead of classService
 import { assessmentAPI } from "../../../services/assessmentService";
 import { useUser } from "../../../context/UserContext";
 
@@ -65,14 +65,57 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     await Promise.all([fetchClasses(), fetchAvailableLessonPlans()]);
   };
 
+  // FIXED: Create a new function to fetch classes using assessmentAPI
   const fetchClasses = async () => {
     setClassesLoading(true);
     try {
-      const classesData = await getAllClasses();
+      console.log("Fetching classes for user:", userId);
+
+      if (!userId) {
+        console.error("No userId available");
+        setClasses([]);
+        return;
+      }
+
+      // FIXED: Use assessmentAPI instead of getAllClasses
+      // We'll create a direct API call here
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/classes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Classes API response:", data);
+
+      let classesData = [];
+      if (data && data.success && data.data) {
+        classesData = data.data;
+      } else if (Array.isArray(data)) {
+        classesData = data;
+      }
+
+      console.log("Processed classes data:", classesData);
       setClasses(Array.isArray(classesData) ? classesData : []);
+
+      if (classesData.length === 0) {
+        console.warn("No classes found for user");
+        message.info(
+          "No classes found. Please create a class first in Class Management."
+        );
+      } else {
+        console.log(`Found ${classesData.length} classes`);
+      }
     } catch (error) {
       console.error("Error fetching classes:", error);
-      message.error("Failed to fetch classes");
+      message.error(`Failed to fetch classes: ${error.message}`);
       setClasses([]);
     } finally {
       setClassesLoading(false);
@@ -418,6 +461,29 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         {getSelectedClassDetails().year}
                       </Text>
                     </div>
+                  </div>
+                )}
+
+                {/* FIXED: Show debug info for classes */}
+                {classesLoading && (
+                  <div style={{ textAlign: "center", padding: "10px" }}>
+                    <Text type="secondary">Loading classes...</Text>
+                  </div>
+                )}
+
+                {!classesLoading && classes.length === 0 && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      padding: "10px",
+                      background: "#fff7e6",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <Text type="warning">
+                      No classes found. Please create a class first in{" "}
+                      <strong>Class Management</strong>.
+                    </Text>
                   </div>
                 )}
               </Card>
