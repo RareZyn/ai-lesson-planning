@@ -93,7 +93,9 @@ const AssessmentPage = () => {
 
   // Load assessments on component mount and when filters change
   useEffect(() => {
-    if (userId) {
+    // Only load assessments when we have a valid userId and not loading
+    if (userId && !loading) {
+      console.log("Loading assessments for userId:", userId);
       loadAssessments();
     }
   }, [userId, filters, pagination.current, pagination.pageSize]);
