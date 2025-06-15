@@ -38,9 +38,9 @@ const router = createBrowserRouter([
       { path: "materials", element: <MaterialManagement /> },
       { path: "classes", element: <ClassManagement /> },
       { path: "planner", element: <MultiStepPlanner /> },
-      { path: "lessons/:id", element: <DisplayLessonPage /> },
-      { path: "classes/:classId", element: <ClassLessonsPage /> },
-      { path: "community", element: <Community /> },
+      {path:"community",element:<Community/>},
+      { path: "lessons/:id", element: <DisplayLessonPage />},
+      { path: "classes/:classId", element: <ClassLessonsPage />}
     ],
   },
   { path: "/", element: <LoginPage /> },

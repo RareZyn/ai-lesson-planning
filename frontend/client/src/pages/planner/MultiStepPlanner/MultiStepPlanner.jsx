@@ -103,7 +103,7 @@ const MultiStepPlanner = () => {
   return (
     <div className={styles.plannerContainer}>
       <header className={styles.plannerHeader}>
-        <h1>Create a New Lesson Plan</h1>
+        <h1>Generate a Lesson Plan</h1>
         <span>Date: {plannerDate.toLocaleDateString('en-US', {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         })}</span>

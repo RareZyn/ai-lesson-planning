@@ -1,7 +1,7 @@
 import React from "react";
-import RecentOpened from "./Home/RecentOpened";
-import AITools from "./Home/AITools";
-import RecentClasses from "./Home/RecentClasses";
+import RecentOpened from "../general/home/RecentOpened";
+import AITools from "../general/home/AITools";
+import RecentClasses from "../general/home/RecentClasses";
 // Remove Breadcrumb import - it's already in MainLayout
 
 const HomePage = () => {

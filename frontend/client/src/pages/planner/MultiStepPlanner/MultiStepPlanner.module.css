@@ -4,7 +4,8 @@
 }
 
 .plannerHeader {
-  margin: 0 auto 24px auto;
+  margin: 0 1rem 2rem 1rem;
+  text-align: center;
 }
 
 .plannerHeader h1 {
@@ -23,9 +24,11 @@
 .progressBar {
   display: flex;
   align-items: center;
-  max-width: 900px;
+  max-width: 600px;
   margin: 24px auto;
-  padding: 0 10%; /* Give some space on the edges */
+  padding: 0 10%;
+  /* Give some space on the edges */
+  justify-content: center;
 }
 
 .step {
@@ -88,37 +91,48 @@
 }
 
 .stepContent {
-  animation: fadeIn 0.5s ease;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stepContent h2 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 22px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
+
 .stepContent p {
-  margin-top: 0;
-  margin-bottom: 32px;
-  color: #666;
-  font-size: 15px;
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
 }
 
 /* --- Form Elements --- */
 .formGroup {
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
 }
 
 .formGroup label {
   display: block;
   font-weight: 600;
-  color: #555;
-  margin-bottom: 8px;
-  font-size: 14px;
+  color: #374151;
+  margin-bottom: 0.5rem;
 }
 
 .formGroup input,
@@ -159,23 +173,38 @@
   font-weight: 500;
   position: relative;
 }
-.orDivider::before, .orDivider::after {
-  content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #eee;
+
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #eee;
 }
-.orDivider::before { left: 0; }
-.orDivider::after { right: 0; }
+
+.orDivider::before {
+  left: 0;
+}
+
+.orDivider::after {
+  right: 0;
+}
 
 /* --- Navigation & Buttons --- */
 .navigation {
   margin-top: 40px;
   display: flex;
-  justify-content: space-between;
+  gap: 1rem;
   align-items: center;
   border-top: 1px solid #eee;
   padding-top: 24px;
 }
 
-.primaryButton, .secondaryButton, .generateButton {
+.primaryButton,
+.secondaryButton,
+.generateButton {
   padding: 10px 24px;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -189,6 +218,7 @@
   background-color: #5880f1;
   color: white;
 }
+
 .primaryButton:hover:not(:disabled) {
   background-color: #3a6bdb;
 }
@@ -198,6 +228,7 @@
   color: #555;
   border-color: #ddd;
 }
+
 .secondaryButton:hover:not(:disabled) {
   background-color: #f5f5f5;
   border-color: #ccc;
@@ -207,11 +238,14 @@
   background-color: #27ae60;
   color: white;
 }
+
 .generateButton:hover:not(:disabled) {
   background-color: #229954;
 }
 
-.primaryButton:disabled, .secondaryButton:disabled, .generateButton:disabled {
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.generateButton:disabled {
   background-color: #e0e0e0;
   color: #aaa;
   cursor: not-allowed;
@@ -224,4 +258,112 @@
   border: 1px solid #eee;
   padding: 20px;
   border-radius: 8px;
+}
+
+/* Modern styling for select dropdowns and inputs */
+.selectInput,
+.textInput {
+  /* Add .textInput to your <input> elements in other steps */
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+}
+
+.selectInput:focus,
+.textInput:focus {
+  outline: none;
+  border-color: #818cf8;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.selectInput:disabled {
+  background-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+
+/* --- Divider --- */
+/* --- Divider --- */
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #9ca3af;
+  font-weight: 500;
+  margin: 2rem 0;
+  justify-content: center;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex-grow: 1;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.orDivider span {
+  flex-shrink: 0;
+}
+
+
+/* --- Button Styling --- */
+.navigation {
+  display: flex;
+  justify-content: flex-end;
+  /* Aligns button to the right */
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.primaryButton,
+.secondaryButton,
+.secondaryButtonFullWidth {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.primaryButton {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.primaryButton:hover {
+  background-color: #4338ca;
+}
+
+.secondaryButton,
+.secondaryButtonFullWidth {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.secondaryButton:hover,
+.secondaryButtonFullWidth:hover {
+  background-color: #e5e7eb;
+}
+
+.secondaryButtonFullWidth {
+  width: 100%;
+  text-align: center;
 }

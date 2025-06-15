@@ -1,0 +1,66 @@
+.progressBarContainer {
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.progressBar {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* The gray background line */
+  background-color: #e9ecef;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  /* Your primary color */
+  background-color: #4f46e5; 
+  border-radius: 2px;
+  transition: width 0.4s ease-in-out;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #adb5bd; /* Inactive color */
+  transition: color 0.4s ease;
+}
+
+.step.active {
+  color: #4f46e5; /* Active color */
+}
+
+.stepNumber {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: white;
+  border: 2px solid #e9ecef; /* Inactive border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all 0.4s ease;
+}
+
+.step.active .stepNumber {
+  border-color: #4f46e5;
+  background-color: #4f46e5;
+  color: white;
+}
+
+.stepTitle {
+  position: absolute;
+  top: 40px; /* Position below the number */
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}

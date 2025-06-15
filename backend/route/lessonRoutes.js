@@ -7,7 +7,8 @@ const {
     getAllUserLessonPlans,
     getRecentLessonPlans,
     deleteLessonPlan,
-    getLessonPlansByClass
+    getLessonPlansByClass,
+    updateLessonPlan
 } = require('../controller/lessonController');
 
 // Middleware to protect routes (if needed)
@@ -25,6 +26,7 @@ router.get('/recent', getRecentLessonPlans);
 
 router.route('/:id')
     .get(getLessonPlanById)
+    .put(updateLessonPlan)
     .delete(deleteLessonPlan); // GET /api/lessons/:id
 
 router.get('/by-class/:classId', getLessonPlansByClass);

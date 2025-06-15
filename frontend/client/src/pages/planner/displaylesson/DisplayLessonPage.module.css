@@ -1,65 +1,94 @@
-.lessonContainer {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 1rem 2rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.7;
-    color: #333;
+/* --- Page Wrapper & Status --- */
+.pageWrapper {
+    background-color: #f9fafb;
+    padding: 1rem;
+    min-height: 100vh;
 }
 
-.statusContainer, .error {
+.statusContainer {
     text-align: center;
     padding: 4rem;
     font-size: 1.2rem;
-    color: #666;
+    color: #6b7280;
 }
-.error { color: #e74c3c; }
+
+.error {
+    color: #ef4444;
+}
+
+/* --- Main Layout --- */
+.mainLayout {
+    display: flex;
+    flex-direction: column-reverse;
+    /* Sidebar on top on mobile */
+    gap: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+
+    /* lg breakpoint */
+    .mainLayout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+/* --- Main Content (Left Column) --- */
+.mainContent {
+    flex: 1;
+    /* Takes up remaining space */
+    min-width: 0;
+    /* Prevents flexbox overflow */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
 .backButton {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    color: #3498db;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 20px;
-    padding: 0;
+    gap: 0.5rem;
+    color: #4b5563;
+    font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: color 0.2s ease;
 }
-.backButton:hover { text-decoration: underline; }
-.backIcon { font-size: 22px !important; }
+
+.backButton:hover {
+    color: #111827;
+}
 
 /* --- Header --- */
 .lessonHeader {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
+
 .lessonTitle {
-    font-size: 28px;
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 10px;
-    color: #2c3e50;
+    color: #111827;
+    margin-bottom: 0.25rem;
     line-height: 1.2;
 }
 
 .lessonMeta {
-    display: flex;
-    gap: 20px;
-    font-size: 16px;
-    color: #7f8c8d;
+    font-size: 1rem;
+    color: #6b7280;
 }
 
 .headerActions {
     display: flex;
     gap: 0.75rem;
     flex-shrink: 0;
+    padding-top: 0.25rem;
 }
 
 .actionButton {
@@ -67,7 +96,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid;
     border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
@@ -76,117 +105,295 @@
 }
 
 .editButton {
-    background-color: #f0f5ff;
-    color: #3a6bdb;
-    border-color: #b3c5ff;
+    background-color: #f9fafb;
+    color: #374151;
+    border-color: #d1d5db;
 }
-.editButton:hover { background-color: #e0eaff; }
+
+.editButton:hover {
+    background-color: #f3f4f6;
+}
 
 .deleteButton {
-    background-color: #fff0f0;
-    color: #e74c3c;
-    border-color: #ffb3b3;
-}
-.deleteButton:hover { background-color: #ffe0e0; }
-
-/* --- Parameters Section --- */
-.parametersSection {
-    margin-bottom: 30px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-    overflow: hidden;
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
 }
 
-.parametersHeader {
-    padding: 15px 20px;
-    cursor: pointer;
+.deleteButton:hover {
+    background-color: #fee2e2;
+}
+
+.saveButton {
+    background-color: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.saveButton:hover {
+    background-color: #dcfce7;
+}
+
+.saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cancelButton {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+.cancelButton:hover {
+    background-color: #e2e8f0;
+}
+
+/* --- Sidebar (Right Column) --- */
+.sidebar {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .sidebar {
+        width: 320px;
+        flex-shrink: 0;
+    }
+}
+
+.sidebarSticky {
+    position: sticky;
+    top: 1.5rem;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebarCard {
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 1.25rem;
+}
+
+.sidebarTitle {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #111827;
+    margin: 0 0 0.75rem 0;
+}
+
+.metaItem {
+    display: flex;
     align-items: center;
-}
-.parametersHeader:hover { background-color: #f1f3f5; }
-
-.parametersHeader h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #2c3e50;
-    font-weight: 500;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
 }
 
-.parametersContentWrapper {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-in-out;
+.metaItem svg {
+    color: #4f46e5;
+    font-size: 1.25rem;
 }
 
-.parametersContent { padding: 0 20px 20px 20px; }
+.sowFocus {
+    font-size: 0.9rem;
+    color: #6b7280;
+    padding-left: 2.25rem;
+    text-transform: capitalize;
+}
 
-.parametersList, .sowDetails ul {
+.sidebarCard p {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin: 0.5rem 0;
+}
+
+.sidebarCard p strong {
+    color: #1f2937;
+}
+
+/* Parameter List Styling */
+.paramSubList {
     list-style-type: none;
     padding: 0;
-    margin: 0;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #4b5563;
 }
-.parametersList > li {
-    padding: 6px 0;
-    font-size: 15px;
-    border-bottom: 1px solid #f1f3f5;
-}
-.parametersList > li:last-child { border-bottom: none; }
 
-.sowDetails {
-    background-color: #fff;
-    padding: 1rem !important;
+.paramSubList>li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.paramSubList>li:last-child {
+    border-bottom: none;
+}
+
+.paramSubList strong {
+    color: #111827;
+}
+
+.paramNestedObject {
+    background-color: #f9fafb;
+    padding: 0.75rem !important;
     margin-top: 0.5rem;
     border-radius: 6px;
-    border: 1px solid #dee2e6;
 }
-.sowDetails ul { margin-top: 0.5rem; }
-.sowDetails li { font-size: 0.9em; }
 
-.dropdownIcon {
-    transition: transform 0.4s ease;
-    font-size: 28px !important;
-    color: #868e96;
+.paramNestedObject>strong {
+    display: block;
+    margin-bottom: 0.5rem;
 }
-.dropdownIcon.open { transform: rotate(180deg); }
+
+.paramNestedObject .paramSubList {
+    margin-top: 0;
+}
+
+.paramNestedObject .paramSubList>li {
+    border-bottom: none;
+    padding: 0.2rem 0;
+}
 
 
-/* --- Main Lesson Content --- */
-.lessonContent {
-    background: white;
+/* --- Lesson Plan Content Blocks --- */
+.lessonBlock {
+    background-color: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+}
+
+.blockTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 1.25rem 0;
+}
+
+.blockTitle svg {
+    color: #4f46e5;
+}
+
+.lessonBlock p,
+.lessonBlock li {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #374151;
+}
+
+.lessonBlock ul {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+}
+
+.lessonBlock li {
+    margin-bottom: 0.5rem;
+}
+
+.activitySection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.activitySection:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.activitySection h4 {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: #1f2937;
+}
+
+/* Editable Textarea Styles */
+.editableTextarea {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.7;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #f9fafb;
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.editableTextarea:focus {
+    outline: none;
+    border-color: #818cf8;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* ... (all your existing CSS from the previous answer) ... */
+
+/* Add these styles for the export dropdown functionality */
+
+.exportContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.exportButton {
+    background-color: #f0fdfa;
+    color: #0f766e;
+    border-color: #99f6e4;
+}
+
+.exportButton:hover {
+    background-color: #ccfbf1;
+}
+
+.exportMenu {
+    position: absolute;
+    top: 100%;
+    /* Position below the button */
+    right: 0;
+    background-color: white;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    margin-top: 0.5rem;
+    width: 150px;
+    /* Set a fixed width */
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
-.lessonPhase {
-    padding: 25px;
-    border-bottom: 1px solid #eee;
+.exportMenu button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #374151;
+    transition: background-color 0.2s;
 }
-.lessonPhase:last-child { border-bottom: none; }
 
-.lessonPhase h2 {
-    color: #2c3e50;
-    margin: 0 0 20px 0;
-    font-size: 22px;
+.exportMenu button:hover {
+    background-color: #f3f4f6;
 }
 
-.phaseContent {
-    padding-left: 20px;
-    border-left: 3px solid #3498db;
-}
-.phaseContent ul {
-    list-style-type: disc;
-    padding-left: 20px;
-    margin: 0;
-}
-.phaseContent li { margin-bottom: 0.75rem; }
-
-.contentSection { margin-bottom: 1.5rem; }
-.contentSection:last-child { margin-bottom: 0; }
-.contentSection h4 {
-    font-size: 16px;
-    color: #2980b9;
-    margin: 0 0 8px 0;
-    font-weight: 600;
+.exportMenu svg {
+    color: #6b7280;
 }

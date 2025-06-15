@@ -116,3 +116,20 @@ export const getLessonPlansByClass = async (classId) => {
         throw new Error(error.response?.data?.message || 'Could not fetch lesson plans.');
     }
 };
+
+/**
+ * Updates the 'plan' part of a lesson plan document.
+ * @param {string} id - The ID of the lesson plan to update.
+ * @param {object} updatedPlan - The new 'plan' object.
+ * @returns {Promise<object>} The full, updated lesson plan document.
+ */
+export const updateLessonPlan = async (id, updatedPlan) => {
+    try {
+        // The data sent is an object with a 'plan' key, e.g., { plan: updatedPlan }
+        const response = await axios.put(`/api/lessons/${id}`, { plan: updatedPlan }, getAuthConfig());
+        return response.data.data;
+    } catch (error) {
+        console.error("Error updating lesson plan:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not update the lesson plan.');
+    }
+};

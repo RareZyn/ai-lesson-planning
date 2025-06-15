@@ -7,9 +7,9 @@ const { lessonPlanValidationSchema } = require('../utils/validationSchema'); // 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 exports.createLesson = async (req, res, next) => {
     try {
-        const { classId, sow, proficiencyLevel, hotsFocus, specificTopic, grade, additionalNotes } = req.body;
+        const { classId, sow, proficiencyLevel, activityType, hotsFocus, specificTopic, grade, additionalNotes } = req.body;
 
-        if (!classId || !sow || !proficiencyLevel || !hotsFocus || !specificTopic || !grade) {
+        if (!classId || !sow || !proficiencyLevel || !activityType || !hotsFocus || !specificTopic || !grade) {
             return res.status(400).json({
                 success: false,
                 message: "Missing required fields for lesson plan generation.",
@@ -28,9 +28,10 @@ exports.createLesson = async (req, res, next) => {
       - Specific Topic/Theme: "${specificTopic}"
       - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
       - Additional Notes: ${additionalNotes || 'None'}
+      - Type of Activity: ${activityType}
 
       Generate a creative and practical lesson plan based on the SoW's learning outline.
-      Do not include any formal assessment or homework.
+      Do not include any formal assessment, homework and specific materials or resources (Activities from textbook etc).
 
       The response MUST be a valid JSON object, without any surrounding text or markdown.
 
@@ -201,42 +202,35 @@ exports.getLessonPlanById = async (req, res, next) => {
 };
 
 
-// @desc    Update lesson
-// @access  Private (Admin/Teacher)
-exports.updateLesson = async (req, res) => {
+/**
+ * @desc    Update an existing lesson plan (specifically the 'plan' part)
+ * @route   PUT /api/lessons/:id
+ * @access  Private
+ */
+exports.updateLessonPlan = async (req, res, next) => {
     try {
-        const lesson = await LessonPlan.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        if (!lesson) {
-            return res.status(404).json({
-                success: false,
-                error: 'Lesson not found'
-            });
+        let lessonPlan = await LessonPlan.findById(req.params.id);
+
+        if (!lessonPlan) {
+            return res.status(404).json({ success: false, message: `Lesson plan not found with id of ${req.params.id}` });
         }
 
-        return res.status(200).json({
-            success: true,
-            data: lesson
-        });
-
-    } catch (err) {
-        console.error('Error updating lesson:', err);
-
-        // Mongoose validation errors
-        if (err.name === 'ValidationError') {
-            const messages = Object.values(err.errors).map(val => val.message);
-            return res.status(400).json({
-                success: false,
-                error: messages
-            });
+        // Make sure user is the lesson plan owner
+        if (lessonPlan.createdBy.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this lesson plan' });
         }
 
-        return res.status(500).json({
-            success: false,
-            error: 'Server error'
-        });
+        // We only allow the 'plan' field to be updated.
+        // This prevents accidental changes to parameters, classId, etc.
+        lessonPlan.plan = req.body.plan;
+        await lessonPlan.save();
+
+        res.status(200).json({ success: true, data: lessonPlan });
+    } catch (error) {
+        console.error("Error updating lesson plan:", error);
+        next(error);
     }
 };
-
 /**
  * @desc    Delete a lesson plan by its ID
  * @route   DELETE /api/lessons/:id
