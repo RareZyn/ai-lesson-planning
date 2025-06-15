@@ -1,11 +1,7 @@
-// backend/route/assessment.js - Simple routes without middleware
+// backend/route/assessment.js - Simplified with unified endpoint
 const express = require("express");
 const {
   fullLessonPlanner,
-  generateActivityAndRubric,
-  generateEssayAssessment,
-  generateTextbookActivity,
-  generateAssessment,
   generateFromLessonPlan,
   saveAssessment,
   getUserAssessments,
@@ -13,42 +9,23 @@ const {
   deleteAssessment,
   updateAssessment,
 } = require("../controller/aseessmentController");
+const { protect, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// =================================
-// LESSON-BASED ASSESSMENT GENERATION
-// =================================
-
-// Legacy lesson planner endpoint
-router.post("/fullLessonPlanner", fullLessonPlanner);
-
-// Individual assessment type generation endpoints
-router.post("/generateActivityAndRubric", generateActivityAndRubric);
-router.post("/generateEssayAssessment", generateEssayAssessment);
-router.post("/generateTextbookActivity", generateTextbookActivity);
-router.post("/generateAssessment", generateAssessment);
-
-// Unified lesson plan to assessment generation endpoint
-router.post("/generateFromLessonPlan", generateFromLessonPlan);
-
-// =================================
-// ASSESSMENT CRUD OPERATIONS
-// =================================
-
-// Create/Save assessment
-router.post("/save", saveAssessment);
+router.post("/generateFromLessonPlan", protect, generateFromLessonPlan);
+router.post("/save", protect, saveAssessment);
 
 // Get user's assessments with filtering and pagination
-router.get("/my-assessments", getUserAssessments);
+router.get("/my-assessments", protect, getUserAssessments);
 
 // Get specific assessment by ID
-router.get("/:id", getAssessmentById);
+router.get("/:id", protect, getAssessmentById);
 
 // Update assessment
-router.put("/:id", updateAssessment);
+router.put("/:id", protect, updateAssessment);
 
 // Delete assessment
-router.delete("/:id", deleteAssessment);
+router.delete("/:id", protect, deleteAssessment);
 
 module.exports = router;
