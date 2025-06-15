@@ -1,4 +1,4 @@
-//AssessmentLesson.jsx according to lesson planner
+//AssessmentLesson.jsx with proper loading screen
 import React, { useState } from "react";
 import {
   Card,
@@ -14,6 +14,7 @@ import {
   Divider,
   message,
   InputNumber,
+  Spin,
 } from "antd";
 import {
   FileTextOutlined,
@@ -21,6 +22,7 @@ import {
   EditOutlined,
   CheckCircleOutlined,
   BulbOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import {
   englishAssessmentTypes,
@@ -33,7 +35,12 @@ const { TextArea } = Input;
 const { Text } = Typography;
 const { Option } = Select;
 
-const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
+const AssessmentLesson = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedLessonPlan,
+}) => {
   const [formData, setFormData] = useState({
     assessmentType: "",
     questionTypes: [],
@@ -105,6 +112,56 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  // Loading overlay when generating assessment
+  if (loading) {
+    return (
+      <div className="modal-overlay">
+        <div
+          className="modal-content"
+          style={{ maxWidth: "500px", textAlign: "center" }}
+        >
+          <div style={{ padding: "60px 40px" }}>
+            <Spin
+              size="large"
+              indicator={
+                <LoadingOutlined
+                  style={{ fontSize: 48, color: "#1890ff" }}
+                  spin
+                />
+              }
+            />
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
+                Generating Assessment
+              </h3>
+              <p
+                style={{
+                  color: "#666",
+                  fontSize: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                Creating your customized assessment based on the lesson plan...
+              </p>
+              <div
+                style={{
+                  background: "#f0f8ff",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d4edda",
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: "14px" }}>
+                  This may take 30-60 seconds depending on the complexity
+                </Text>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
@@ -120,13 +177,39 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
             </div>
             <h3 className="modal-title">English Assessment Generator</h3>
           </div>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
           </button>
         </div>
 
         {/* Body */}
         <div className="modal-body">
+          {/* Show lesson plan info if available */}
+          {selectedLessonPlan && (
+            <div
+              style={{
+                marginBottom: "24px",
+                padding: "16px",
+                background: "#f6ffed",
+                borderRadius: "8px",
+                border: "1px solid #b7eb8f",
+              }}
+            >
+              <Text strong style={{ color: "#52c41a" }}>
+                Based on Lesson Plan:
+              </Text>
+              <Text style={{ marginLeft: "8px" }}>
+                {selectedLessonPlan.parameters?.specificTopic ||
+                  "Selected Lesson"}
+              </Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                {selectedLessonPlan.parameters?.grade || "Form 4"} •
+                {selectedLessonPlan.classId?.subject || "English"}
+              </Text>
+            </div>
+          )}
+
           <Row gutter={[16, 24]}>
             {/* Assessment Type */}
             <Col span={24}>
@@ -154,6 +237,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                   style={{ width: "100%" }}
                   size="large"
                   showSearch
+                  disabled={loading}
                   filterOption={(input, option) =>
                     option.children
                       .toLowerCase()
@@ -260,6 +344,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                           >
                             <div
                               onClick={() =>
+                                !loading &&
                                 handleArrayToggle("questionTypes", type.value)
                               }
                               style={{
@@ -270,7 +355,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                                     : "#d9d9d9"
                                 }`,
                                 borderRadius: "6px",
-                                cursor: "pointer",
+                                cursor: loading ? "not-allowed" : "pointer",
                                 background: formData.questionTypes.includes(
                                   type.value
                                 )
@@ -279,6 +364,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                                 transition: "all 0.2s ease",
                                 textAlign: "center",
                                 position: "relative",
+                                opacity: loading ? 0.6 : 1,
                               }}
                             >
                               {formData.questionTypes.includes(type.value) && (
@@ -324,8 +410,9 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                           <Tag
                             key={type}
                             color="blue"
-                            closable
+                            closable={!loading}
                             onClose={() =>
+                              !loading &&
                               handleArrayToggle("questionTypes", type)
                             }
                           >
@@ -367,6 +454,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                       }
                       style={{ width: "100%" }}
                       size="large"
+                      disabled={loading}
                     />
                   </Card>
                 </Col>
@@ -394,6 +482,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                       }
                       style={{ width: "100%" }}
                       size="large"
+                      disabled={loading}
                     >
                       {timeAllocation.map((time) => (
                         <Option key={time.value} value={time.value}>
@@ -421,6 +510,7 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                   placeholder="Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
                   maxLength={500}
                   showCount
+                  disabled={loading}
                 />
               </Card>
             </Col>
@@ -515,7 +605,13 @@ const AssessmentLesson = ({ isOpen, onClose, onSubmit }) => {
                 loading
               }
             >
-              {loading ? "⏳ Generating..." : "📝 Generate Assessment"}
+              {loading ? (
+                <>
+                  <LoadingOutlined spin /> Generating...
+                </>
+              ) : (
+                "📝 Generate Assessment"
+              )}
             </button>
           </div>
         </div>

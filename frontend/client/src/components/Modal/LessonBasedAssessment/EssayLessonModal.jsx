@@ -1,4 +1,4 @@
-//EssayLessonModal.jsx - according to lesson planner
+//EssayLessonModal.jsx with Loading Screen
 import React, { useState } from "react";
 import {
   Card,
@@ -8,15 +8,16 @@ import {
   Col,
   Typography,
   Tag,
-  Space,
   Select,
   message,
   Alert,
+  Spin,
 } from "antd";
 import {
   EditOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import "./ModalStyles.css";
 
@@ -107,6 +108,57 @@ const EssayLesson = ({
 
   if (!isOpen) return null;
 
+  // Loading overlay when generating essay assessment
+  if (loading) {
+    return (
+      <div className="modal-overlay">
+        <div
+          className="modal-content"
+          style={{ maxWidth: "500px", textAlign: "center" }}
+        >
+          <div style={{ padding: "60px 40px" }}>
+            <Spin
+              size="large"
+              indicator={
+                <LoadingOutlined
+                  style={{ fontSize: 48, color: "#1890ff" }}
+                  spin
+                />
+              }
+            />
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
+                Generating Essay Assessment
+              </h3>
+              <p
+                style={{
+                  color: "#666",
+                  fontSize: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                Creating your essay writing assessment based on the lesson
+                plan...
+              </p>
+              <div
+                style={{
+                  background: "#f0f8ff",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d4edda",
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: "14px" }}>
+                  Preparing writing prompts and evaluation criteria
+                </Text>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
@@ -122,7 +174,7 @@ const EssayLesson = ({
             </div>
             <h3 className="modal-title">Essay Writing Assessment</h3>
           </div>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
           </button>
         </div>
@@ -169,6 +221,7 @@ const EssayLesson = ({
                   onChange={(value) => handleInputChange("essayType", value)}
                   style={{ width: "100%" }}
                   size="large"
+                  disabled={loading}
                 >
                   {essayTypes.map((type) => (
                     <Option key={type.value} value={type.value}>
@@ -205,6 +258,7 @@ const EssayLesson = ({
                       }
                       style={{ width: "100%" }}
                       size="large"
+                      disabled={loading}
                     >
                       {wordCountOptions.map((option) => (
                         <Option key={option.value} value={option.value}>
@@ -236,6 +290,7 @@ const EssayLesson = ({
                       onChange={(value) => handleInputChange("duration", value)}
                       style={{ width: "100%" }}
                       size="large"
+                      disabled={loading}
                     >
                       {durationOptions.map((option) => (
                         <Option key={option.value} value={option.value}>
@@ -263,6 +318,7 @@ const EssayLesson = ({
                   placeholder="Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay assessment based on the selected lesson plan..."
                   maxLength={400}
                   showCount
+                  disabled={loading}
                 />
               </Card>
             </Col>
@@ -336,7 +392,13 @@ const EssayLesson = ({
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? "⏳ Generating..." : "📝 Generate Essay Assessment"}
+              {loading ? (
+                <>
+                  <LoadingOutlined spin /> Generating...
+                </>
+              ) : (
+                "📝 Generate Essay Assessment"
+              )}
             </button>
           </div>
         </div>

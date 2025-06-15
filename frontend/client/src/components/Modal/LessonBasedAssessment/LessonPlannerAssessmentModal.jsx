@@ -1,4 +1,4 @@
-// Fixed LessonPlannerAssessmentModal.jsx - Map activity types correctly
+// Fixed LessonPlannerAssessmentModal.jsx - Prevent timeout going back
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -64,6 +64,9 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   // Assessment details
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDescription, setAssessmentDescription] = useState("");
+
+  // FIXED: Add state to track if we're in the middle of generation to prevent premature close
+  const [isInGenerationFlow, setIsInGenerationFlow] = useState(false);
 
   // Load data when modal opens
   useEffect(() => {
@@ -154,6 +157,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       message.warning("Please select a lesson plan first");
       return;
     }
+    // FIXED: Set generation flow flag to prevent modal from closing
+    setIsInGenerationFlow(true);
     setShowActivityForm(true);
   };
 
@@ -240,6 +245,8 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
         }
 
         handleReset();
+        // FIXED: Only close when generation is complete
+        setIsInGenerationFlow(false);
         onClose();
       } else {
         throw new Error(response.message || "Failed to generate assessment");
@@ -253,6 +260,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       );
     } finally {
       setIsGenerating(false);
+      setIsInGenerationFlow(false); // FIXED: Always reset the flag
     }
   };
 
@@ -262,12 +270,22 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
     setShowActivityForm(false);
     setAssessmentTitle("");
     setAssessmentDescription("");
+    setIsInGenerationFlow(false); // FIXED: Reset generation flow flag
   };
 
+  // FIXED: Prevent closing during generation or when in generation flow
   const handleClose = () => {
-    if (!isGenerating) {
+    if (!isGenerating && !isInGenerationFlow) {
       handleReset();
       onClose();
+    }
+  };
+
+  // FIXED: Handle back button from activity form
+  const handleActivityFormClose = () => {
+    if (!isGenerating) {
+      setShowActivityForm(false);
+      setIsInGenerationFlow(false); // Allow closing again
     }
   };
 
@@ -349,7 +367,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
     const commonProps = {
       isOpen: true,
-      onClose: () => setShowActivityForm(false),
+      onClose: handleActivityFormClose, // FIXED: Use separate handler
       onSubmit: handleActivityFormSubmit,
       selectedLessonPlan: selectedLessonPlan,
       activityType: mappedActivityType, // Use mapped type
@@ -396,7 +414,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
           <button
             className="modal-close"
             onClick={handleClose}
-            disabled={isGenerating}
+            disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation flow
           >
             ×
           </button>
@@ -440,7 +458,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                     style={{ width: "100%" }}
                     loading={classesLoading}
                     allowClear
-                    disabled={isGenerating}
+                    disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
                   >
                     {classes.map((classItem) => (
                       <Option key={classItem._id} value={classItem._id}>
@@ -467,7 +485,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   </div>
                 )}
 
-                {/* FIXED: Enhanced debug info for classes */}
+                {/* Enhanced debug info for classes */}
                 {classesLoading && (
                   <div style={{ textAlign: "center", padding: "10px" }}>
                     <Text type="secondary">Loading classes...</Text>
@@ -490,7 +508,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   </div>
                 )}
 
-                {/* FIXED: Add debug information */}
+                {/* Add debug information */}
                 {process.env.NODE_ENV === "development" && (
                   <div
                     style={{
@@ -532,7 +550,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                     style={{ width: "100%" }}
                     loading={lessonPlansLoading}
                     showSearch
-                    disabled={isGenerating}
+                    disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
                     filterOption={(input, option) =>
                       option.children.props.children[0].props.children
                         .toLowerCase()
@@ -567,7 +585,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                             </Tag>
                           )}
                           <Tag color="cyan">
-                            {/* FIXED: Display mapped activity type */}
+                            {/* Display mapped activity type */}
                             {(
                               ACTIVITY_TYPE_MAPPING[
                                 selectedLessonPlan.parameters?.activityType
@@ -620,7 +638,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         value={assessmentTitle}
                         onChange={(e) => setAssessmentTitle(e.target.value)}
                         size="large"
-                        disabled={isGenerating}
+                        disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
                       />
                     </Col>
                     <Col span={24}>
@@ -640,7 +658,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         onChange={(e) =>
                           setAssessmentDescription(e.target.value)
                         }
-                        disabled={isGenerating}
+                        disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
                       />
                     </Col>
                   </Row>
@@ -656,7 +674,7 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               className="btn-reset"
               onClick={handleReset}
-              disabled={isGenerating}
+              disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
             >
               Reset All
             </button>
@@ -665,18 +683,20 @@ const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               className="btn-cancel"
               onClick={handleClose}
-              disabled={isGenerating}
+              disabled={isGenerating || isInGenerationFlow} // FIXED: Disable during generation
             >
               Cancel
             </button>
             <button
               className={`btn-submit ${!selectedLessonPlan ? "disabled" : ""} ${
-                isGenerating ? "loading" : ""
+                isGenerating || isInGenerationFlow ? "loading" : ""
               }`}
               onClick={handleProceedToForm}
-              disabled={!selectedLessonPlan || isGenerating}
+              disabled={
+                !selectedLessonPlan || isGenerating || isInGenerationFlow
+              } // FIXED: Disable during generation
             >
-              {isGenerating ? (
+              {isGenerating || isInGenerationFlow ? (
                 <>
                   <LoadingOutlined /> Generating...
                 </>

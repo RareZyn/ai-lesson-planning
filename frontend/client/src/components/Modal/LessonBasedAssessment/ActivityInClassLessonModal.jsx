@@ -1,4 +1,4 @@
-// Fixed ActivityInClassLessonModal.jsx - Change activityType to "activity"
+// Fixed ActivityInClassLessonModal.jsx with Loading Screen
 import React, { useState } from "react";
 import {
   Card,
@@ -15,6 +15,7 @@ import {
   Divider,
   message,
   Alert,
+  Spin,
 } from "antd";
 import {
   ThunderboltOutlined,
@@ -22,6 +23,7 @@ import {
   BookOutlined,
   BulbOutlined,
   ClockCircleOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import {
   classroomActivityTypes,
@@ -40,7 +42,7 @@ const ActivityInClassLesson = ({
   onClose,
   onSubmit,
   selectedLessonPlan,
-  activityType = "activity", // FIXED: Changed from "activityInClass" to "activity"
+  activityType = "activity",
 }) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
@@ -71,7 +73,7 @@ const ActivityInClassLesson = ({
       const submitData = {
         ...formData,
         selectedLessonPlan,
-        activityType: "activity", // FIXED: Always send "activity" as the main type
+        activityType: "activity", // Always send "activity" as the main type
       };
       await onSubmit(submitData);
       message.success("Activity settings submitted successfully!");
@@ -96,6 +98,56 @@ const ActivityInClassLesson = ({
 
   if (!isOpen) return null;
 
+  // Loading overlay when generating activity
+  if (loading) {
+    return (
+      <div className="modal-overlay">
+        <div
+          className="modal-content"
+          style={{ maxWidth: "500px", textAlign: "center" }}
+        >
+          <div style={{ padding: "60px 40px" }}>
+            <Spin
+              size="large"
+              indicator={
+                <LoadingOutlined
+                  style={{ fontSize: 48, color: "#1890ff" }}
+                  spin
+                />
+              }
+            />
+            <div style={{ marginTop: "24px" }}>
+              <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
+                Generating Activity
+              </h3>
+              <p
+                style={{
+                  color: "#666",
+                  fontSize: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                Creating your classroom activity based on the lesson plan...
+              </p>
+              <div
+                style={{
+                  background: "#f0f8ff",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d4edda",
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: "14px" }}>
+                  Setting up interactive learning experience
+                </Text>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
@@ -111,7 +163,7 @@ const ActivityInClassLesson = ({
             </div>
             <h3 className="modal-title">Activity in Class</h3>
           </div>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
           </button>
         </div>
@@ -157,6 +209,7 @@ const ActivityInClassLesson = ({
                     handleInputChange("studentArrangement", e.target.value)
                   }
                   style={{ width: "100%" }}
+                  disabled={loading}
                 >
                   <Row gutter={[16, 16]}>
                     {studentArrangementOptions.map((option) => (
@@ -168,6 +221,7 @@ const ActivityInClassLesson = ({
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
+                            opacity: loading ? 0.6 : 1,
                           }}
                         >
                           <div>
@@ -211,6 +265,7 @@ const ActivityInClassLesson = ({
                     handleInputChange("resourceUsage", e.target.value)
                   }
                   style={{ width: "100%" }}
+                  disabled={loading}
                 >
                   <Row gutter={[16, 16]}>
                     {resourceOptions.map((option) => (
@@ -222,6 +277,7 @@ const ActivityInClassLesson = ({
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
+                            opacity: loading ? 0.6 : 1,
                           }}
                         >
                           <div>
@@ -267,6 +323,7 @@ const ActivityInClassLesson = ({
                   size="large"
                   showSearch
                   allowClear
+                  disabled={loading}
                   filterOption={(input, option) =>
                     option.children
                       .toLowerCase()
@@ -328,6 +385,7 @@ const ActivityInClassLesson = ({
                   style={{ width: "100%" }}
                   size="large"
                   allowClear
+                  disabled={loading}
                 >
                   {timeDurationOptions.map((option) => (
                     <Option key={option.value} value={option.value}>
@@ -353,6 +411,7 @@ const ActivityInClassLesson = ({
                   placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
                   maxLength={300}
                   showCount
+                  disabled={loading}
                 />
               </Card>
             </Col>
@@ -426,9 +485,16 @@ const ActivityInClassLesson = ({
             marginTop: "20px",
           }}
         >
-          <Button onClick={handleReset}>Reset</Button>
-          <Button type="primary" loading={loading} onClick={handleSubmit}>
-            Submit Activity
+          <Button onClick={handleReset} disabled={loading}>
+            Reset
+          </Button>
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={handleSubmit}
+            icon={loading ? <LoadingOutlined /> : null}
+          >
+            {loading ? "Generating..." : "Submit Activity"}
           </Button>
         </div>
       </div>
