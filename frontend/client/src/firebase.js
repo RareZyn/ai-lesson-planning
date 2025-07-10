@@ -9,14 +9,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
-} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -30,7 +24,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Add additional Google scopes if needed
@@ -39,7 +32,6 @@ googleProvider.addScope("profile");
 
 export {
   auth,
-  db,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -47,8 +39,5 @@ export {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
+  sendPasswordResetEmail,
 };

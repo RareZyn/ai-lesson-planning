@@ -1,4 +1,4 @@
-// controllers/authController.js - Fixed version with better error handling
+// controllers/authController.js 
 const User = require("../model/User");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
@@ -46,7 +46,8 @@ exports.register = async (req, res) => {
       });
     }
 
-    const { name, email, password, schoolName, firebaseUid } = req.body;
+    const { name, email, password, schoolName, firebaseUid, geminiApiKey } =
+      req.body;
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -64,6 +65,7 @@ exports.register = async (req, res) => {
       password,
       schoolName,
       firebaseUid, // Link to Firebase user
+      geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
     });
 
     sendTokenResponse(user, 201, res, "Registration successful");
@@ -147,7 +149,8 @@ exports.login = async (req, res) => {
 // @access  Public
 exports.googleAuth = async (req, res) => {
   try {
-    const { googleId, email, name, avatar, schoolName } = req.body;
+    const { googleId, email, name, avatar, schoolName, geminiApiKey } =
+      req.body;
 
     if (!googleId || !email) {
       return res.status(400).json({
@@ -166,6 +169,7 @@ exports.googleAuth = async (req, res) => {
         // Link Google account to existing user
         user.googleId = googleId;
         if (avatar) user.avatar = avatar;
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
         user.lastLogin = new Date();
         await user.save();
       } else {
@@ -183,13 +187,15 @@ exports.googleAuth = async (req, res) => {
           schoolName,
           googleId,
           avatar: avatar || "",
+          geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
           isEmailVerified: true, // Assume Google emails are verified
           // No password for Google users
         });
       }
     } else {
-      // Update last login for existing Google user
+      // Update last login and API key for existing Google user
       user.lastLogin = new Date();
+      if (geminiApiKey) user.geminiApiKey = geminiApiKey;
       await user.save();
     }
 
@@ -209,7 +215,7 @@ exports.googleAuth = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
 
     if (!user) {
       return res.status(404).json({
@@ -218,9 +224,13 @@ exports.getMe = async (req, res) => {
       });
     }
 
+    // Include decrypted API key status (not the actual key)
+    const userResponse = user.toJSON();
+    userResponse.hasGeminiApiKey = !!user.geminiApiKey;
+
     res.status(200).json({
       success: true,
-      user,
+      user: userResponse,
     });
   } catch (error) {
     console.error("Get user error:", error);
@@ -237,7 +247,7 @@ exports.getMe = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, schoolName } = req.body;
+    const { name, schoolName, geminiApiKey } = req.body;
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -250,6 +260,7 @@ exports.updateProfile = async (req, res) => {
     // Update fields if provided
     if (name) user.name = name;
     if (schoolName) user.schoolName = schoolName;
+    if (geminiApiKey !== undefined) user.geminiApiKey = geminiApiKey; // Allow empty string to remove key
 
     await user.save();
 
@@ -334,6 +345,70 @@ exports.changePassword = async (req, res) => {
   }
 };
 
+// @desc    Get Gemini API key
+// @route   GET /api/auth/gemini-key
+// @access  Private
+exports.getGeminiApiKey = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const apiKey = user.getGeminiApiKey();
+
+    res.status(200).json({
+      success: true,
+      hasApiKey: !!apiKey,
+      apiKey: apiKey || "",
+    });
+  } catch (error) {
+    console.error("Get API key error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error getting API key",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// @desc    Update Gemini API key
+// @route   PUT /api/auth/gemini-key
+// @access  Private
+exports.updateGeminiApiKey = async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.geminiApiKey = apiKey || "";
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "API key updated successfully",
+      hasApiKey: !!apiKey,
+    });
+  } catch (error) {
+    console.error("Update API key error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error updating API key",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 /**
  * @desc    Find or create MongoDB user from Firebase user data
  * @route   POST /api/auth/firebase-user
@@ -343,7 +418,8 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
   try {
     console.log("Firebase user sync request received:", req.body);
 
-    const { firebaseUid, email, name, displayName, photoURL } = req.body;
+    const { firebaseUid, email, name, displayName, photoURL, geminiApiKey } =
+      req.body;
 
     // Enhanced validation with better error messages
     if (!firebaseUid) {
@@ -392,6 +468,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
         user.lastLogin = new Date();
         if (photoURL) user.avatar = photoURL;
         if (displayName && !user.name) user.name = displayName;
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
         await user.save();
         console.log("Successfully updated existing user");
       } else {
@@ -408,6 +485,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
           lastLogin: new Date(),
           avatar: photoURL || "",
           schoolName: "", // Will be set later by user
+          geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
           isActive: true,
         });
         console.log("Successfully created new user:", user._id);
@@ -419,6 +497,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
       if (photoURL && photoURL !== user.avatar) {
         user.avatar = photoURL;
       }
+      if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
       await user.save();
       console.log("Successfully updated existing Firebase user");
     }
@@ -436,6 +515,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
       avatar: user.avatar || "",
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
+      hasGeminiApiKey: !!user.geminiApiKey,
     };
 
     console.log("Sending successful response for user:", user._id);

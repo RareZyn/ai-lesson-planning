@@ -1,4 +1,4 @@
-// src/pages/auth/LoginPage.jsx
+// src/pages/auth/LoginPage.jsx 
 import React, { useState } from "react";
 import { Form, Input, Button, Checkbox, message, Modal } from "antd";
 import {
@@ -14,9 +14,8 @@ import {
   signInWithPopup,
   googleProvider,
 } from "../../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../firebase";
 import { authAPI } from "../../services/api";
+import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "./LoginPage.css";
 
 const LoginPage = () => {
@@ -34,39 +33,28 @@ const LoginPage = () => {
 
     setModalLoading(true);
     try {
-      // 1. Create user document in Firestore
-      const userRef = doc(db, "users", pendingGoogleUser.uid);
-      await setDoc(userRef, {
+      // Register user in MongoDB backend via Google OAuth
+      const response = await authAPI.googleAuth({
+        googleId: pendingGoogleUser.uid,
         email: pendingGoogleUser.email,
         name: values.name,
         schoolName: values.schoolName,
-        createdAt: serverTimestamp(),
-        roles: ["teacher"],
-        lastLogin: serverTimestamp(),
+        avatar: pendingGoogleUser.photoURL || "",
+        geminiApiKey: values.geminiApiKey || "",
       });
 
-      // 2. Register user in MongoDB backend via Google OAuth
-      try {
-        await authAPI.googleAuth({
-          googleId: pendingGoogleUser.uid,
-          email: pendingGoogleUser.email,
-          name: values.name,
-          schoolName: values.schoolName,
-          avatar: pendingGoogleUser.photoURL || "",
+      if (response.success) {
+        console.log("✅ Google user registered successfully");
+        message.success("Google login successful!");
+        navigate(location.state?.from?.pathname || "/app/", {
+          replace: true,
         });
-        console.log("✅ Google user registered in MongoDB backend");
-      } catch (backendError) {
-        console.error("⚠️ Backend Google auth failed:", backendError);
-        message.warning("Account created but some features may be limited");
+        setModalVisible(false);
+      } else {
+        throw new Error(response.message || "Registration failed");
       }
-
-      message.success("Google login successful!");
-      navigate(location.state?.from?.pathname || "/app/", {
-        replace: true,
-      });
-      setModalVisible(false);
     } catch (error) {
-      console.error("Error creating user document:", error);
+      console.error("Error completing registration:", error);
       message.error("Failed to complete registration");
     } finally {
       setModalLoading(false);
@@ -79,45 +67,51 @@ const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      // Check if user document exists in Firestore
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
+      // Check if user exists in MongoDB
+      try {
+        // Try to authenticate with MongoDB
+        const response = await authAPI.findOrCreateFirebaseUser({
+          firebaseUid: user.uid,
+          email: user.email,
+          name: user.displayName || "",
+          displayName: user.displayName || "",
+          photoURL: user.photoURL || "",
+        });
 
-      if (!userDoc.exists()) {
-        // New user - show modal to collect additional info. This flow works correctly.
+        if (response.success && response.user) {
+          // Check if user has required fields (schoolName)
+          if (!response.user.schoolName) {
+            // New user or incomplete profile - show modal
+            setPendingGoogleUser(user);
+            form.setFieldsValue({
+              name: user.displayName || "",
+            });
+            setModalVisible(true);
+          } else {
+            // Existing user with complete profile
+            console.log("✅ Existing Google user logged in successfully");
+            message.success("Google login successful!");
+            navigate(location.state?.from?.pathname || "/app/", {
+              replace: true,
+            });
+          }
+        } else {
+          throw new Error(response.message || "Authentication failed");
+        }
+      } catch (error) {
+        console.error("MongoDB sync error:", error);
+
+        // If user doesn't exist in MongoDB, show registration modal
         setPendingGoogleUser(user);
         form.setFieldsValue({
           name: user.displayName || "",
         });
         setModalVisible(true);
-      } else {
-        // --- THIS IS THE CORRECTED LOGIC ---
-        // Existing Firestore user - ensure backend is synced.
-        
-        // Get the data from the Firestore document
-        const firestoreData = userDoc.data();
-
-        // Call the backend with ALL necessary data, including schoolName from Firestore.
-        await authAPI.googleAuth({
-          googleId: user.uid,
-          email: user.email,
-          name: user.displayName || firestoreData.name, // Prefer live display name, fallback to stored name
-          schoolName: firestoreData.schoolName, // **THE FIX IS HERE**
-          avatar: user.photoURL || "",
-        });
-
-        console.log("✅ Existing Google user synced with MongoDB backend");
-        
-        message.success("Google login successful!");
-        navigate(location.state?.from?.pathname || "/app/", {
-          replace: true,
-        });
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
       let errorMessage = "Failed to sign in with Google.";
-      if(error.response) {
-        // Use the specific error message from the backend if available
+      if (error.response) {
         errorMessage = error.response.data.message || errorMessage;
       }
       message.error(errorMessage);
@@ -132,25 +126,31 @@ const LoginPage = () => {
       // 1. Sign in with Firebase
       await signInWithEmailAndPassword(auth, values.email, values.password);
 
-      // 2. Try to login to backend as well
+      // 2. Login to MongoDB backend
       try {
-        await authAPI.login({
+        const response = await authAPI.login({
           email: values.email,
           password: values.password,
         });
-        console.log("✅ User logged in to MongoDB backend");
-      } catch (backendError) {
-        console.error("⚠️ Backend login failed:", backendError);
-        // Don't prevent Firebase login if backend fails
-        message.warning("Logged in but some features may be limited");
-      }
 
-      message.success("Login successful!");
-      navigate(location.state?.from?.pathname || "/app/", {
-        replace: true,
-      });
+        if (response.success) {
+          console.log("✅ User logged in successfully");
+          message.success("Login successful!");
+          navigate(location.state?.from?.pathname || "/app/", {
+            replace: true,
+          });
+        } else {
+          throw new Error(response.message || "Login failed");
+        }
+      } catch (backendError) {
+        console.error("❌ Backend login failed:", backendError);
+        // Sign out from Firebase if backend login fails
+        await auth.signOut();
+        throw backendError;
+      }
     } catch (error) {
-      message.error(error.message);
+      console.error("Login error:", error);
+      message.error(error.message || "Login failed!");
     } finally {
       setLoading(false);
     }
@@ -278,6 +278,7 @@ const LoginPage = () => {
           setPendingGoogleUser(null);
         }}
         footer={null}
+        width={600}
         destroyOnClose
       >
         <p className="text-muted mb-4">
@@ -312,6 +313,16 @@ const LoginPage = () => {
               size="large"
             />
           </Form.Item>
+
+          {/* Gemini API Key Input */}
+          <GeminiApiKeyInput
+            required={false}
+            showInstructions={true}
+            formItemProps={{
+              label: "Gemini API Key (Optional)",
+              extra: "You can add this later in your profile settings",
+            }}
+          />
 
           <Form.Item className="mb-0">
             <Button

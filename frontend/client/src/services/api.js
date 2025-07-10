@@ -58,12 +58,14 @@ export const authAPI = {
     }
     return response.data;
   },
+
   findOrCreateFirebaseUser: async (firebaseUserData) => {
     console.log("Sending Firebase user data:", firebaseUserData);
     const response = await api.post("/auth/firebase-user", firebaseUserData);
     console.log("Received response:", response.data);
     return response.data;
   },
+
   // Google OAuth
   googleAuth: async (googleData) => {
     const response = await api.post("/auth/google", googleData);
@@ -88,6 +90,18 @@ export const authAPI = {
   // Change password
   changePassword: async (passwordData) => {
     const response = await api.put("/auth/password", passwordData);
+    return response.data;
+  },
+
+  // Get Gemini API key
+  getGeminiApiKey: async () => {
+    const response = await api.get("/auth/gemini-key");
+    return response.data;
+  },
+
+  // Update Gemini API key
+  updateGeminiApiKey: async (apiKey) => {
+    const response = await api.put("/auth/gemini-key", { apiKey });
     return response.data;
   },
 

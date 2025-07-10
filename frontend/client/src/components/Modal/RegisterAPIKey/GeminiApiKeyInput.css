@@ -1,0 +1,64 @@
+/* src/components/GeminiApiKeyInput.css */
+.gemini-instructions {
+  background-color: #f0f2f5;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.gemini-instructions h5 {
+  color: #1890ff;
+  margin-bottom: 15px;
+}
+
+.instruction-list {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+.instruction-list li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.gemini-instructions-collapse {
+  margin-bottom: 20px;
+}
+
+.gemini-instructions-collapse .ant-collapse-header {
+  padding: 8px 0 !important;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.instruction-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.instruction-header:hover {
+  color: #40a9ff;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .gemini-instructions {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .gemini-instructions h5 {
+    color: #40a9ff;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+  .gemini-instructions {
+    padding: 15px;
+  }
+
+  .instruction-list {
+    padding-left: 15px;
+  }
+}
