@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { authAPI } from "../services/api";
+import { auth, signOut } from "../firebase";
 
 const UserContext = createContext();
 
@@ -157,7 +158,7 @@ export const UserProvider = ({ children }) => {
 
       // Sign out from Firebase
       try {
-        await auth.signOut();
+        await signOut(auth);
       } catch (error) {
         console.error("Firebase signout error:", error);
       }
