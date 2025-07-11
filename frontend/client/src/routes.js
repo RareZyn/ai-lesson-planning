@@ -1,4 +1,4 @@
-// src/routes.js - Updated with correct assessment routes
+// src/routes.js
 import { createBrowserRouter } from "react-router-dom";
 import AssessmentPage from "./pages/assesstment/AssessmentPage";
 import ActivityViewerPage from "./pages/assesstment/ActivityViewerPage"; // Corrected import
@@ -18,35 +18,43 @@ import Community from "./pages/community/Community";
 import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      path: "/app",
+      element: (
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { path: "", element: <HomePage /> },
+
+        // Assessment routes - corrected
+        { path: "assessment", element: <AssessmentPage /> },
+        { path: "assessment/activity/:id", element: <ActivityViewerPage /> },
+        { path: "assessment/rubric/:id", element: <RubricViewerPage /> },
+
+        { path: "downloads", element: <FileDownloadPage /> },
+        { path: "lessons", element: <MyLessons /> },
+        { path: "materials", element: <MaterialManagement /> },
+        { path: "classes", element: <ClassManagement /> },
+        { path: "planner", element: <MultiStepPlanner /> },
+        { path: "community", element: <Community /> },
+        { path: "lessons/:id", element: <DisplayLessonPage /> },
+        { path: "classes/:classId", element: <ClassLessonsPage /> },
+      ],
+    },
+    { path: "/", element: <LoginPage /> },
+    { path: "/register", element: <RegisterPage /> },
+    { path: "/unauthorized", element: <UnauthorizedPage /> },
+  ],
   {
-    path: "/app",
-    element: (
-      <ProtectedRoute>
-        <MainLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { path: "", element: <HomePage /> },
-
-      // Assessment routes - corrected
-      { path: "assessment", element: <AssessmentPage /> },
-      { path: "assessment/activity/:id", element: <ActivityViewerPage /> },
-      { path: "assessment/rubric/:id", element: <RubricViewerPage /> },
-
-      { path: "downloads", element: <FileDownloadPage /> },
-      { path: "lessons", element: <MyLessons /> },
-      { path: "materials", element: <MaterialManagement /> },
-      { path: "classes", element: <ClassManagement /> },
-      { path: "planner", element: <MultiStepPlanner /> },
-      { path: "community", element: <Community /> },
-      { path: "lessons/:id", element: <DisplayLessonPage /> },
-      { path: "classes/:classId", element: <ClassLessonsPage /> },
-    ],
-  },
-  { path: "/", element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
-  { path: "/unauthorized", element: <UnauthorizedPage /> },
-]);
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  }
+);
 
 export default router;

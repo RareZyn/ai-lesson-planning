@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx - Fixed navigation and debugging
+// src/pages/assessment/AssessmentPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -39,7 +39,6 @@ import LessonSelectionModal from "../../components/Modal/LessonBasedAssessment/L
 
 import "./AssessmentPage.css";
 
-const { TabPane } = Tabs;
 const { Search } = Input;
 const { Option } = Select;
 
@@ -94,7 +93,6 @@ const AssessmentPage = () => {
       setLessonPlans(Array.isArray(lessonPlansData) ? lessonPlansData : []);
       setClasses(Array.isArray(classesData) ? classesData : []);
     } catch (error) {
-      console.error("Error loading initial data:", error);
       message.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -117,11 +115,6 @@ const AssessmentPage = () => {
       const assessmentsWithLessonPlans = assessmentResponse.success
         ? assessmentResponse.data || []
         : [];
-
-      console.log(
-        "Loaded assessments with lesson plans:",
-        assessmentsWithLessonPlans
-      );
 
       // Create a map of lesson plan IDs to their assessments
       const lessonPlanAssessmentMap = {};
@@ -190,10 +183,8 @@ const AssessmentPage = () => {
         }
       }
 
-      console.log("Final lesson plan rows:", filteredRows);
       setAssessments(filteredRows);
     } catch (error) {
-      console.error("Error loading lesson-based data:", error);
       message.error("Failed to load lesson plans and assessments");
     } finally {
       setLoading(false);
@@ -212,7 +203,6 @@ const AssessmentPage = () => {
         setAssessments(response.data || []);
       }
     } catch (error) {
-      console.error("Error loading standalone assessments:", error);
       message.error("Failed to load assessments");
     } finally {
       setLoading(false);
@@ -233,8 +223,6 @@ const AssessmentPage = () => {
     try {
       setLoading(true);
 
-      console.log("Received assessment data:", data);
-
       message.success("Assessment created successfully!");
       setIsLessonSelectionModalVisible(false);
 
@@ -243,20 +231,14 @@ const AssessmentPage = () => {
 
       // Enhanced navigation with better error handling
       if (data.data?._id) {
-        console.log("Navigating to assessment with ID:", data.data._id);
-
         // Wait a moment for the data to be saved
         setTimeout(() => {
           navigate(`/app/assessment/activity/${data.data._id}`);
         }, 500);
       } else {
-        console.warn(
-          "No assessment ID found in response, showing list instead"
-        );
         message.info("Assessment created successfully! Check the list below.");
       }
     } catch (error) {
-      console.error("Error creating assessment:", error);
       message.error("Failed to create assessment");
     } finally {
       setLoading(false);
@@ -265,8 +247,6 @@ const AssessmentPage = () => {
 
   // Enhanced view activity handler with better error handling
   const handleViewActivity = (record) => {
-    console.log("View activity clicked for record:", record);
-
     if (
       record.assessmentStatus === "generated" &&
       record.assessments?.length > 0
@@ -279,28 +259,18 @@ const AssessmentPage = () => {
           a.generatedContent?.assessmentHTML
       );
 
-      console.log("Found assessment with activity:", assessmentWithActivity);
-
       if (assessmentWithActivity) {
-        console.log(
-          "Navigating to activity viewer with ID:",
-          assessmentWithActivity._id
-        );
         navigate(`/app/assessment/activity/${assessmentWithActivity._id}`);
       } else {
-        console.warn("No assessment with activity content found");
         message.warning("No activity content available for this assessment");
       }
     } else {
-      console.warn("No assessment activity available for this lesson plan");
       message.warning("No assessment activity available for this lesson plan");
     }
   };
 
   // Enhanced view rubric handler
   const handleViewRubric = (record) => {
-    console.log("View rubric clicked for record:", record);
-
     if (
       record.assessmentStatus === "generated" &&
       record.assessments?.length > 0
@@ -313,20 +283,12 @@ const AssessmentPage = () => {
           a.generatedContent?.answerKeyHTML
       );
 
-      console.log("Found assessment with rubric:", assessmentWithRubric);
-
       if (assessmentWithRubric) {
-        console.log(
-          "Navigating to rubric viewer with ID:",
-          assessmentWithRubric._id
-        );
         navigate(`/app/assessment/rubric/${assessmentWithRubric._id}`);
       } else {
-        console.warn("No assessment with rubric content found");
         message.warning("No rubric/answer key available for this assessment");
       }
     } else {
-      console.warn("No assessment rubric available for this lesson plan");
       message.warning("No assessment rubric available for this lesson plan");
     }
   };
@@ -348,7 +310,6 @@ const AssessmentPage = () => {
             message.success("Assessment(s) deleted successfully");
             loadLessonBasedData(); // Refresh the list
           } catch (error) {
-            console.error("Error deleting assessment:", error);
             message.error("Failed to delete assessment(s)");
           }
         },
@@ -533,6 +494,91 @@ const AssessmentPage = () => {
     </Option>
   ));
 
+  // Define tab items for the new Tabs API
+  const tabItems = [
+    {
+      key: "lesson-based",
+      label: (
+        <span>
+          <BookOutlined />
+          From Lesson Plans
+        </span>
+      ),
+      children: (
+        <div className="tab-content">
+          <div className="filters-section">
+            <div className="filters-row">
+              <Search
+                placeholder="Search lesson plans..."
+                allowClear
+                style={{ width: 300 }}
+                prefix={<SearchOutlined />}
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+              />
+              <Select
+                placeholder="Filter by class"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.classId}
+                onChange={(value) => handleFilterChange("classId", value)}
+              >
+                {classOptions}
+              </Select>
+              <Select
+                placeholder="Filter by status"
+                style={{ width: 150 }}
+                allowClear
+                value={filters.status}
+                onChange={(value) => handleFilterChange("status", value)}
+              >
+                <Option value="Generated">Generated</Option>
+                <Option value="Not Generated">Not Generated</Option>
+              </Select>
+            </div>
+          </div>
+
+          <Spin spinning={loading}>
+            <Table
+              columns={lessonBasedColumns}
+              dataSource={assessments}
+              rowKey="_id"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `Total ${total} lesson plans`,
+              }}
+              className="assessment-table"
+            />
+          </Spin>
+        </div>
+      ),
+    },
+    {
+      key: "standalone",
+      label: (
+        <span>
+          <BulbOutlined />
+          Standalone Assessment
+        </span>
+      ),
+      children: (
+        <div className="tab-content">
+          <div style={{ textAlign: "center", padding: "60px 20px" }}>
+            <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+            <h3 style={{ color: "#666", marginTop: 16 }}>
+              Standalone Assessments
+            </h3>
+            <p style={{ color: "#999" }}>
+              Create assessments without lesson plans - Coming Soon!
+            </p>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="assessment-page">
       <div className="page-header">
@@ -562,90 +608,8 @@ const AssessmentPage = () => {
           onChange={setActiveTab}
           size="large"
           className="assessment-tabs"
-        >
-          <TabPane
-            tab={
-              <span>
-                <BookOutlined />
-                From Lesson Plans
-              </span>
-            }
-            key="lesson-based"
-          >
-            <div className="tab-content">
-              <div className="filters-section">
-                <div className="filters-row">
-                  <Search
-                    placeholder="Search lesson plans..."
-                    allowClear
-                    style={{ width: 300 }}
-                    prefix={<SearchOutlined />}
-                    value={filters.search}
-                    onChange={(e) =>
-                      handleFilterChange("search", e.target.value)
-                    }
-                  />
-                  <Select
-                    placeholder="Filter by class"
-                    style={{ width: 200 }}
-                    allowClear
-                    value={filters.classId}
-                    onChange={(value) => handleFilterChange("classId", value)}
-                  >
-                    {classOptions}
-                  </Select>
-                  <Select
-                    placeholder="Filter by status"
-                    style={{ width: 150 }}
-                    allowClear
-                    value={filters.status}
-                    onChange={(value) => handleFilterChange("status", value)}
-                  >
-                    <Option value="Generated">Generated</Option>
-                    <Option value="Not Generated">Not Generated</Option>
-                  </Select>
-                </div>
-              </div>
-
-              <Spin spinning={loading}>
-                <Table
-                  columns={lessonBasedColumns}
-                  dataSource={assessments}
-                  rowKey="_id"
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total) => `Total ${total} lesson plans`,
-                  }}
-                  className="assessment-table"
-                />
-              </Spin>
-            </div>
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <BulbOutlined />
-                Standalone Assessment
-              </span>
-            }
-            key="standalone"
-          >
-            <div className="tab-content">
-              <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-                <h3 style={{ color: "#666", marginTop: 16 }}>
-                  Standalone Assessments
-                </h3>
-                <p style={{ color: "#999" }}>
-                  Create assessments without lesson plans - Coming Soon!
-                </p>
-              </div>
-            </div>
-          </TabPane>
-        </Tabs>
+          items={tabItems}
+        />
       </Card>
 
       {/* Lesson-Based Assessment Modal */}

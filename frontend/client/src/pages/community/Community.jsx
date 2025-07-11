@@ -1,4 +1,4 @@
-// src/pages/community/Community.jsx - Updated with bookmark functionality
+// src/pages/community/Community.jsx 
 import React, { useState, useEffect } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
@@ -14,7 +14,6 @@ import "./Community.css";
 
 const { Search } = Input;
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 const Community = () => {
   const { user, userId, isAuthenticated } = useUser();
@@ -377,6 +376,29 @@ const Community = () => {
     );
   };
 
+  // Define tab items for the new Tabs API
+  const tabItems = [
+    {
+      key: "discover",
+      label: "Discover Lessons",
+      children: renderLessons(),
+    },
+    {
+      key: "myCollection",
+      label: `My Collection ${
+        bookmarkedLessons.length > 0 ? `(${bookmarkedLessons.length})` : ""
+      }`,
+      children: renderLessons(),
+      disabled: !isAuthenticated,
+    },
+    {
+      key: "myShared",
+      label: "My Shared Lessons",
+      children: renderLessons(),
+      disabled: !isAuthenticated,
+    },
+  ];
+
   return (
     <div className="community-container">
       {/* Header */}
@@ -469,33 +491,14 @@ const Community = () => {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - Updated to use items prop */}
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         className="community-tabs"
         size="large"
-      >
-        <TabPane tab="Discover Lessons" key="discover">
-          {renderLessons()}
-        </TabPane>
-        <TabPane
-          tab={`My Collection ${
-            bookmarkedLessons.length > 0 ? `(${bookmarkedLessons.length})` : ""
-          }`}
-          key="myCollection"
-          disabled={!isAuthenticated}
-        >
-          {renderLessons()}
-        </TabPane>
-        <TabPane
-          tab="My Shared Lessons"
-          key="myShared"
-          disabled={!isAuthenticated}
-        >
-          {renderLessons()}
-        </TabPane>
-      </Tabs>
+        items={tabItems}
+      />
 
       {/* Upload Modal */}
       <UploadLessonModal

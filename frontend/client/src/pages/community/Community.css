@@ -43,6 +43,33 @@
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
+/* Fix for button icon spacing */
+.ant-btn > .anticon + span,
+.ant-btn > span + .anticon {
+  margin-left: 8px;
+}
+
+/* Ensure proper icon alignment in buttons */
+.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Specific fix for empty state buttons */
+.empty-state .ant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state .ant-btn .anticon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0;
+}
+
 /* Filters Section */
 .filters-section {
   margin-bottom: 2rem;

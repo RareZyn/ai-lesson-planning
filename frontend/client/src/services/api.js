@@ -60,9 +60,14 @@ export const authAPI = {
   },
 
   findOrCreateFirebaseUser: async (firebaseUserData) => {
-    console.log("Sending Firebase user data:", firebaseUserData);
     const response = await api.post("/auth/firebase-user", firebaseUserData);
-    console.log("Received response:", response.data);
+
+
+    // Store the JWT token if provided
+    if (response.data.token) {
+      localStorage.setItem("authToken", response.data.token);
+    }
+
     return response.data;
   },
 

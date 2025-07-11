@@ -468,7 +468,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
         user.lastLogin = new Date();
         if (photoURL) user.avatar = photoURL;
         if (displayName && !user.name) user.name = displayName;
-        if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey;
         await user.save();
         console.log("Successfully updated existing user");
       } else {
@@ -480,12 +480,12 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
           firebaseUid,
           email: email.toLowerCase(),
           name: userName,
-          roles: ["teacher"], // Default role
-          isEmailVerified: true, // Assume Firebase users are verified
+          roles: ["teacher"],
+          isEmailVerified: true,
           lastLogin: new Date(),
           avatar: photoURL || "",
-          schoolName: "", // Will be set later by user
-          geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
+          schoolName: "",
+          geminiApiKey: geminiApiKey || "",
           isActive: true,
         });
         console.log("Successfully created new user:", user._id);
@@ -497,34 +497,14 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
       if (photoURL && photoURL !== user.avatar) {
         user.avatar = photoURL;
       }
-      if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
+      if (geminiApiKey) user.geminiApiKey = geminiApiKey;
       await user.save();
       console.log("Successfully updated existing Firebase user");
     }
 
-    // Return consistent user object
-    const userResponse = {
-      _id: user._id,
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      roles: user.roles,
-      firebaseUid: user.firebaseUid,
-      schoolName: user.schoolName || "",
-      lastLogin: user.lastLogin,
-      avatar: user.avatar || "",
-      isActive: user.isActive,
-      isEmailVerified: user.isEmailVerified,
-      hasGeminiApiKey: !!user.geminiApiKey,
-    };
-
-    console.log("Sending successful response for user:", user._id);
-
-    res.status(200).json({
-      success: true,
-      message: "Firebase user synced successfully",
-      user: userResponse,
-    });
+    // Use sendTokenResponse to generate and send JWT token
+    sendTokenResponse(user, 200, res, "Firebase user synced successfully");
+    
   } catch (error) {
     console.error("Error in findOrCreateFirebaseUser:", error);
 

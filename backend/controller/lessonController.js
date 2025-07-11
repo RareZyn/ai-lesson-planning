@@ -1,23 +1,62 @@
-
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const LessonPlan = require('../model/lesson');
-const { lessonPlanValidationSchema } = require('../utils/validationSchema'); // Import your new validation schema
+const LessonPlan = require("../model/lesson");
+const User = require("../model/User");
+const { lessonPlanValidationSchema } = require("../utils/validationSchema");
 
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 exports.createLesson = async (req, res, next) => {
-    try {
-        const { classId, sow, proficiencyLevel, activityType, hotsFocus, specificTopic, grade, additionalNotes } = req.body;
+  try {
+    const {
+      classId,
+      sow,
+      proficiencyLevel,
+      activityType,
+      hotsFocus,
+      specificTopic,
+      grade,
+      additionalNotes,
+    } = req.body;
 
-        if (!classId || !sow || !proficiencyLevel || !activityType || !hotsFocus || !specificTopic || !grade) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields for lesson plan generation.",
-            });
-        }
+    if (
+      !classId ||
+      !sow ||
+      !proficiencyLevel ||
+      !activityType ||
+      !hotsFocus ||
+      !specificTopic ||
+      !grade
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for lesson plan generation.",
+      });
+    }
 
-        // --- The prompt remains the same ---
-        const prompt = `
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
+    // Initialize Gemini with the user's API key
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+    // --- The prompt remains the same ---
+    const prompt = `
       You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class.
 
       Here is the official SoW data to base the plan on:
@@ -27,7 +66,7 @@ exports.createLesson = async (req, res, next) => {
       - Class Proficiency Level: ${proficiencyLevel}
       - Specific Topic/Theme: "${specificTopic}"
       - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
-      - Additional Notes: ${additionalNotes || 'None'}
+      - Additional Notes: ${additionalNotes || "None"}
       - Type of Activity: ${activityType}
 
       Generate a creative and practical lesson plan based on the SoW's learning outline.
@@ -68,66 +107,105 @@ exports.createLesson = async (req, res, next) => {
       }
     `;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-        let generatedPlan;
-        try {
-            const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            generatedPlan = JSON.parse(cleanedText);
-        } catch (parseError) {
-            console.error("Failed to parse Gemini response as JSON. Raw text:", text);
-            throw new Error("The AI response was not in a valid JSON format.");
-        }
+      let generatedPlan;
+      try {
+        const cleanedText = text
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim();
+        generatedPlan = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error(
+          "Failed to parse Gemini response as JSON. Raw text:",
+          text
+        );
+        throw new Error("The AI response was not in a valid JSON format.");
+      }
 
-        console.log("Generated Lesson Plan:", generatedPlan);
-        // --- NEW: VALIDATION STEP ---
-        const { error, value } = lessonPlanValidationSchema.validate(generatedPlan);
+      console.log("Generated Lesson Plan:", generatedPlan);
+      // --- NEW: VALIDATION STEP ---
+      const { error, value } =
+        lessonPlanValidationSchema.validate(generatedPlan);
 
-        if (error) {
-            // If validation fails, log the details and throw a specific error.
-            console.error('Joi Validation Error:', error.details);
-            // The error message will be something like "Success criteria are required."
-            throw new Error(`AI response failed validation: ${error.details[0].message}`);
-        }
-        // --- END OF VALIDATION STEP ---
+      if (error) {
+        // If validation fails, log the details and throw a specific error.
+        console.error("Joi Validation Error:", error.details);
+        // The error message will be something like "Success criteria are required."
+        throw new Error(
+          `AI response failed validation: ${error.details[0].message}`
+        );
+      }
+      // --- END OF VALIDATION STEP ---
 
-        // If validation passes, 'value' is the validated (and potentially type-coerced) data.
-        // It's good practice to use 'value' from here on.
-        res.status(200).json({
-            success: true,
-            data: value,
+      // If validation passes, 'value' is the validated (and potentially type-coerced) data.
+      // It's good practice to use 'value' from here on.
+      res.status(200).json({
+        success: true,
+        data: value,
+      });
+    } catch (geminiError) {
+      console.error("Gemini AI generation error:", geminiError.message);
+
+      // Check if it's an API key related error
+      if (
+        geminiError.message.includes("API_KEY") ||
+        geminiError.message.includes("401") ||
+        geminiError.message.includes("Invalid API key")
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Invalid Gemini API key. Please check your API key in profile settings.",
         });
+      }
 
-    } catch (error) {
-        console.error("Gemini AI generation error:", error.message);
-        res.status(500).json({
-            success: false,
-            message: error.message || "An error occurred while generating the lesson plan.",
+      // Check if it's a quota error
+      if (
+        geminiError.message.includes("quota") ||
+        geminiError.message.includes("429")
+      ) {
+        return res.status(429).json({
+          success: false,
+          message:
+            "Gemini API quota exceeded. Please try again later or check your API limits.",
         });
+      }
+
+      throw geminiError;
     }
+  } catch (error) {
+    console.error("Lesson generation error:", error.message);
+    res.status(500).json({
+      success: false,
+      message:
+        error.message || "An error occurred while generating the lesson plan.",
+    });
+  }
 };
+
 // @desc    Get all lessons
 // @access  Private (Admin/Teacher)
 exports.getLessons = async (req, res) => {
-    try {
-        const lessons = await Lesson.find().populate('createdBy', 'name');
-        return res.status(200).json({
-            success: true,
-            data: lessons
-        });
-
-    } catch (err) {
-        console.error('Error getting lessons:', err);
-        return res.status(500).json({
-            success: false,
-            error: 'Server error'
-        });
-    }
+  try {
+    const lessons = await Lesson.find().populate("createdBy", "name");
+    return res.status(200).json({
+      success: true,
+      data: lessons,
+    });
+  } catch (err) {
+    console.error("Error getting lessons:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
 };
-
 
 /**
  * @desc    Save a new, user-confirmed lesson plan
@@ -135,36 +213,39 @@ exports.getLessons = async (req, res) => {
  * @access  Private
  */
 exports.saveLessonPlan = async (req, res, next) => {
-    try {
-        req.body.createdBy = req.user.id;
+  try {
+    req.body.createdBy = req.user.id;
 
-        // The classId is inside the parameters object
-        const classId = req.body.parameters?.classId;
-        if (!classId) {
-            return res.status(400).json({ success: false, message: "Class ID is missing in parameters." });
-        }
-
-        // Create a new lesson plan document in the database
-        const lessonPlan = await LessonPlan.create({
-            createdBy: req.body.createdBy,
-            classId: classId,
-            lessonDate: req.body.date,
-            parameters: req.body.parameters,
-            plan: req.body.plan
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Lesson plan saved successfully!",
-            data: lessonPlan // Return the newly created document
-        });
-    } catch (error) {
-        console.error("Error saving lesson plan:", error);
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred while saving the lesson plan.",
-        });
+    // The classId is inside the parameters object
+    const classId = req.body.parameters?.classId;
+    if (!classId) {
+      return res.status(400).json({
+        success: false,
+        message: "Class ID is missing in parameters.",
+      });
     }
+
+    // Create a new lesson plan document in the database
+    const lessonPlan = await LessonPlan.create({
+      createdBy: req.body.createdBy,
+      classId: classId,
+      lessonDate: req.body.date,
+      parameters: req.body.parameters,
+      plan: req.body.plan,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Lesson plan saved successfully!",
+      data: lessonPlan, // Return the newly created document
+    });
+  } catch (error) {
+    console.error("Error saving lesson plan:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while saving the lesson plan.",
+    });
+  }
 };
 
 /**
@@ -173,34 +254,39 @@ exports.saveLessonPlan = async (req, res, next) => {
  * @access  Private
  */
 exports.getLessonPlanById = async (req, res, next) => {
-    try {
-        const lessonPlan = await LessonPlan.findById(req.params.id)
-            .populate('classId', 'className grade'); // Optional: get class name and grade
+  try {
+    const lessonPlan = await LessonPlan.findById(req.params.id).populate(
+      "classId",
+      "className grade"
+    ); // Optional: get class name and grade
 
-
-        if (!lessonPlan) {
-            return res.status(404).json({ success: false, message: `Lesson plan not found with id of ${req.params.id}` });
-        }
-
-        // Optional: Check if the user is authorized to view this plan
-        if (lessonPlan.createdBy.toString() !== req.user.id) {
-            return res.status(401).json({ success: false, message: "Not authorized to view this lesson plan" });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: lessonPlan
-        });
-
-    } catch (error) {
-        console.error("Error getting lesson plan:", error);
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred while retrieving the lesson plan.",
-        });
+    if (!lessonPlan) {
+      return res.status(404).json({
+        success: false,
+        message: `Lesson plan not found with id of ${req.params.id}`,
+      });
     }
-};
 
+    // Optional: Check if the user is authorized to view this plan
+    if (lessonPlan.createdBy.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to view this lesson plan",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: lessonPlan,
+    });
+  } catch (error) {
+    console.error("Error getting lesson plan:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving the lesson plan.",
+    });
+  }
+};
 
 /**
  * @desc    Update an existing lesson plan (specifically the 'plan' part)
@@ -208,28 +294,34 @@ exports.getLessonPlanById = async (req, res, next) => {
  * @access  Private
  */
 exports.updateLessonPlan = async (req, res, next) => {
-    try {
-        let lessonPlan = await LessonPlan.findById(req.params.id);
+  try {
+    let lessonPlan = await LessonPlan.findById(req.params.id);
 
-        if (!lessonPlan) {
-            return res.status(404).json({ success: false, message: `Lesson plan not found with id of ${req.params.id}` });
-        }
-
-        // Make sure user is the lesson plan owner
-        if (lessonPlan.createdBy.toString() !== req.user.id) {
-            return res.status(401).json({ success: false, message: 'Not authorized to update this lesson plan' });
-        }
-
-        // We only allow the 'plan' field to be updated.
-        // This prevents accidental changes to parameters, classId, etc.
-        lessonPlan.plan = req.body.plan;
-        await lessonPlan.save();
-
-        res.status(200).json({ success: true, data: lessonPlan });
-    } catch (error) {
-        console.error("Error updating lesson plan:", error);
-        next(error);
+    if (!lessonPlan) {
+      return res.status(404).json({
+        success: false,
+        message: `Lesson plan not found with id of ${req.params.id}`,
+      });
     }
+
+    // Make sure user is the lesson plan owner
+    if (lessonPlan.createdBy.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to update this lesson plan",
+      });
+    }
+
+    // We only allow the 'plan' field to be updated.
+    // This prevents accidental changes to parameters, classId, etc.
+    lessonPlan.plan = req.body.plan;
+    await lessonPlan.save();
+
+    res.status(200).json({ success: true, data: lessonPlan });
+  } catch (error) {
+    console.error("Error updating lesson plan:", error);
+    next(error);
+  }
 };
 /**
  * @desc    Delete a lesson plan by its ID
@@ -237,36 +329,35 @@ exports.updateLessonPlan = async (req, res, next) => {
  * @access  Private
  */
 exports.deleteLessonPlan = async (req, res, next) => {
-    try {
-        const lessonPlan = await LessonPlan.findById(req.params.id);
+  try {
+    const lessonPlan = await LessonPlan.findById(req.params.id);
 
-        if (!lessonPlan) {
-            return res.status(404).json({
-                success: false,
-                message: `Lesson plan not found with id of ${req.params.id}`
-            });
-        }
-
-        // Make sure user is the lesson plan owner
-        if (lessonPlan.createdBy.toString() !== req.user.id) {
-            return res.status(401).json({
-                success: false,
-                message: 'Not authorized to delete this lesson plan'
-            });
-        }
-
-        // In Mongoose 6+, 'remove()' is deprecated. Use 'deleteOne()'.
-        await lessonPlan.deleteOne();
-
-        res.status(200).json({
-            success: true,
-            data: {} // Return an empty object on successful deletion
-        });
-
-    } catch (error) {
-        console.error("Error in deleteLessonPlan:", error);
-        next(error);
+    if (!lessonPlan) {
+      return res.status(404).json({
+        success: false,
+        message: `Lesson plan not found with id of ${req.params.id}`,
+      });
     }
+
+    // Make sure user is the lesson plan owner
+    if (lessonPlan.createdBy.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to delete this lesson plan",
+      });
+    }
+
+    // In Mongoose 6+, 'remove()' is deprecated. Use 'deleteOne()'.
+    await lessonPlan.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      data: {}, // Return an empty object on successful deletion
+    });
+  } catch (error) {
+    console.error("Error in deleteLessonPlan:", error);
+    next(error);
+  }
 };
 
 /**
@@ -275,27 +366,27 @@ exports.deleteLessonPlan = async (req, res, next) => {
  * @access  Private
  */
 exports.getAllUserLessonPlans = async (req, res, next) => {
-    try {
-        const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
-            .populate({
-                path: 'classId',
-                select: 'className subject' // Specify which fields you want from the Class model
-            })
-            .sort({ lessonDate: -1 });
+  try {
+    const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
+      .populate({
+        path: "classId",
+        select: "className subject", // Specify which fields you want from the Class model
+      })
+      .sort({ lessonDate: -1 });
 
-        console.log(`Fetched ${lessonPlans.length} lesson plans for user ${req.user.id}`);
-        res.status(200).json({
-            success: true,
-            count: lessonPlans.length,
-            data: lessonPlans
-        });
+    console.log(
+      `Fetched ${lessonPlans.length} lesson plans for user ${req.user.id}`
+    );
+    res.status(200).json({
+      success: true,
+      count: lessonPlans.length,
+      data: lessonPlans,
+    });
+  } catch (error) {
+    console.error("Error fetching user's lesson plans:", error); // Log the error for debugging
 
-    } catch (error) {
-
-        console.error("Error fetching user's lesson plans:", error); // Log the error for debugging
-
-        next(error);
-    }
+    next(error);
+  }
 };
 
 /**
@@ -304,27 +395,25 @@ exports.getAllUserLessonPlans = async (req, res, next) => {
  * @access  Private
  */
 exports.getRecentLessonPlans = async (req, res, next) => {
-    try {
-        const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
-            .populate({
-                path: 'classId',
-                select: 'className subject'
-            })
-            .sort({ updatedAt: -1 })
-            .limit(5);
+  try {
+    const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
+      .populate({
+        path: "classId",
+        select: "className subject",
+      })
+      .sort({ updatedAt: -1 })
+      .limit(5);
 
-        res.status(200).json({
-            success: true,
-            count: lessonPlans.length,
-            data: lessonPlans
-        });
-
-    } catch (error) {
-        console.error("Error fetching recent lesson plans:", error);
-        next(error);
-    }
+    res.status(200).json({
+      success: true,
+      count: lessonPlans.length,
+      data: lessonPlans,
+    });
+  } catch (error) {
+    console.error("Error fetching recent lesson plans:", error);
+    next(error);
+  }
 };
-
 
 // ... (your other controller functions like saveLessonPlan, etc.) ...
 
@@ -334,31 +423,30 @@ exports.getRecentLessonPlans = async (req, res, next) => {
  * @access  Private
  */
 exports.getLessonPlansByClass = async (req, res, next) => {
-    try {
-        const { classId } = req.params;
+  try {
+    const { classId } = req.params;
 
-        // Ensure user can only fetch their own lessons for that class
-        const lessonPlans = await LessonPlan.find({
-            createdBy: req.user.id,
-            classId: classId
-        })
-            .populate({
-                path: 'classId',
-                select: 'className subject'
-            })
-            .sort({ lessonDate: -1 });
+    // Ensure user can only fetch their own lessons for that class
+    const lessonPlans = await LessonPlan.find({
+      createdBy: req.user.id,
+      classId: classId,
+    })
+      .populate({
+        path: "classId",
+        select: "className subject",
+      })
+      .sort({ lessonDate: -1 });
 
-        // Note: It's okay if this returns an empty array, so no 404 check is needed here.
-        // The frontend will handle the "no lessons found" case.
+    // Note: It's okay if this returns an empty array, so no 404 check is needed here.
+    // The frontend will handle the "no lessons found" case.
 
-        res.status(200).json({
-            success: true,
-            count: lessonPlans.length,
-            data: lessonPlans
-        });
-
-    } catch (error) {
-        console.error("Error fetching lesson plans by class:", error);
-        next(error); // Pass to global error handler
-    }
+    res.status(200).json({
+      success: true,
+      count: lessonPlans.length,
+      data: lessonPlans,
+    });
+  } catch (error) {
+    console.error("Error fetching lesson plans by class:", error);
+    next(error); // Pass to global error handler
+  }
 };

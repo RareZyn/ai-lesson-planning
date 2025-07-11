@@ -1,4 +1,4 @@
-// src/pages/auth/LoginPage.jsx 
+// src/pages/auth/LoginPage.jsx
 import React, { useState } from "react";
 import { Form, Input, Button, Checkbox, message, Modal } from "antd";
 import {
@@ -44,7 +44,6 @@ const LoginPage = () => {
       });
 
       if (response.success) {
-        console.log("✅ Google user registered successfully");
         message.success("Google login successful!");
         navigate(location.state?.from?.pathname || "/app/", {
           replace: true,
@@ -89,7 +88,6 @@ const LoginPage = () => {
             setModalVisible(true);
           } else {
             // Existing user with complete profile
-            console.log("✅ Existing Google user logged in successfully");
             message.success("Google login successful!");
             navigate(location.state?.from?.pathname || "/app/", {
               replace: true,
@@ -134,7 +132,6 @@ const LoginPage = () => {
         });
 
         if (response.success) {
-          console.log("✅ User logged in successfully");
           message.success("Login successful!");
           navigate(location.state?.from?.pathname || "/app/", {
             replace: true,
@@ -162,6 +159,11 @@ const LoginPage = () => {
     } else if (tab === "login") {
       navigate("/");
     }
+  };
+
+  const handleForgotPassword = () => {
+    // Add forgot password logic here
+    message.info("Forgot password functionality coming soon!");
   };
 
   return (
@@ -232,15 +234,21 @@ const LoginPage = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>Remember me</Checkbox>
               </Form.Item>
-              <a
+              <button
+                type="button"
                 className="login-form-forgot"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault(); /* Add forgot password logic */
+                onClick={handleForgotPassword}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  padding: 0,
                 }}
               >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </Form.Item>
 
