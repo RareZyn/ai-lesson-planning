@@ -1,4 +1,4 @@
-// backend/controller/sowController.js - Fixed version
+// backend/controller/sowController.js 
 const sow = require("../model/Sow");
 
 const createSow = async (req, res) => {
@@ -50,6 +50,118 @@ const createSow = async (req, res) => {
   }
 };
 
+// NEW: Batch upload controller
+const createSowBatch = async (req, res) => {
+  try {
+    const { form, lessons } = req.body;
+
+    // --- Step 1: Validation ---
+    if (!form || !lessons) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Please provide both "form" and "lessons" array in the request body.',
+      });
+    }
+
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '"lessons" must be a non-empty array.',
+      });
+    }
+
+    // Validate each lesson has required fields
+    const invalidLessons = lessons.filter(
+      (lesson, index) => !lesson.lessonNo || !lesson.focus
+    );
+
+    if (invalidLessons.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Some lessons are missing required fields like "lessonNo" or "focus".',
+        invalidLessons: invalidLessons,
+      });
+    }
+
+    // Check for duplicate lessonNo in the input
+    const lessonNumbers = lessons.map((l) => l.lessonNo);
+    const uniqueLessonNumbers = [...new Set(lessonNumbers)];
+
+    if (lessonNumbers.length !== uniqueLessonNumbers.length) {
+      return res.status(400).json({
+        success: false,
+        error: "Duplicate lesson numbers found in the input.",
+      });
+    }
+
+    // --- Step 2: Process each lesson ---
+    let successCount = 0;
+    let updateCount = 0;
+    let errors = [];
+
+    // First, find or create the SOW document for this form
+    let sowDoc = await sow.findOne({ form: form });
+
+    if (!sowDoc) {
+      // Create new document if it doesn't exist
+      sowDoc = await sow.create({ form: form, lessons: [] });
+    }
+
+    // Process each lesson
+    for (const lessonData of lessons) {
+      try {
+        // Check if lesson with this lessonNo already exists
+        const existingLessonIndex = sowDoc.lessons.findIndex(
+          (lesson) => lesson.lessonNo === lessonData.lessonNo
+        );
+
+        if (existingLessonIndex !== -1) {
+          // Update existing lesson
+          sowDoc.lessons[existingLessonIndex] = lessonData;
+          updateCount++;
+        } else {
+          // Add new lesson
+          sowDoc.lessons.push(lessonData);
+          successCount++;
+        }
+      } catch (error) {
+        errors.push({
+          lessonNo: lessonData.lessonNo,
+          error: error.message,
+        });
+      }
+    }
+
+    // Sort lessons by lessonNo to maintain order
+    sowDoc.lessons.sort((a, b) => a.lessonNo - b.lessonNo);
+
+    // Save the updated document
+    await sowDoc.save();
+
+    res.status(201).json({
+      success: true,
+      message: `Batch upload completed for ${form}`,
+      summary: {
+        totalProcessed: lessons.length,
+        newLessons: successCount,
+        updatedLessons: updateCount,
+        errors: errors.length,
+      },
+      errors: errors.length > 0 ? errors : undefined,
+      totalLessonsInForm: sowDoc.lessons.length,
+    });
+  } catch (err) {
+    console.error("Batch upload error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: "Server Error",
+    });
+  }
+};
+
 const getSowByGrade = async (req, res) => {
   try {
     // Decode the URL parameter to handle spaces and special characters
@@ -82,5 +194,6 @@ const getSowByGrade = async (req, res) => {
 
 module.exports = {
   createSow,
+  createSowBatch,
   getSowByGrade,
 };

@@ -1,4 +1,4 @@
-/* src/components/Card/LessonCard.css - Updated for lesson plan data */
+/* src/components/Card/LessonCard.css - Updated for gradient backgrounds */
 
 .lesson-card {
   border-radius: 12px;
@@ -33,15 +33,29 @@
   margin: 8px 0;
 }
 
-/* Card Cover */
+/* Card Cover with Gradient */
 .card-cover {
   position: relative;
   height: 160px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   flex-direction: column;
   color: white;
   overflow: hidden;
+  /* Gradient will be applied inline via style prop */
+}
+
+.gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.2)
+  );
+  pointer-events: none;
 }
 
 .subject-banner {
@@ -54,9 +68,10 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.2);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
 }
 
 .lesson-preview {
@@ -65,6 +80,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .lesson-preview h3 {
@@ -77,17 +94,19 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .lesson-preview p {
   margin: 0;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* Card Content */
@@ -191,7 +210,6 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-
 }
 
 .lesson-detail-modal.ant-modal .ant-modal-header {
@@ -232,7 +250,6 @@
 
 .lesson-detail-modal .modal-content {
   padding: 20px;
-
 }
 
 /* Ensure modal doesn't exceed viewport */
@@ -556,6 +573,6 @@
   }
 }
 
-.ant-modal-body{
+.ant-modal-body {
   overflow: hidden;
 }

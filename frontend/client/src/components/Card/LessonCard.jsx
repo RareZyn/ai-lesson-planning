@@ -1,4 +1,3 @@
-// src/components/Card/LessonCard.jsx - Updated with working bookmark functionality
 import React, { useState, useEffect } from "react";
 import { Card, Tag, Button, Avatar, Tooltip, Modal } from "antd";
 import {
@@ -38,6 +37,35 @@ const LessonCard = ({
     setIsLiked(lesson.communityData?.hasUserLiked || false);
     setIsBookmarked(lesson.isBookmarked || false);
   }, [lesson.communityData?.hasUserLiked, lesson.isBookmarked]);
+
+  // Array of gradient combinations for lesson cards
+  const gradientColors = [
+    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
+    "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+    "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+    "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
+    "linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)",
+    "linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)",
+    "linear-gradient(135deg, #fddb92 0%, #d1fdff 100%)",
+    "linear-gradient(135deg, #9890e3 0%, #b1f4cf 100%)",
+    "linear-gradient(135deg, #ebc0fd 0%, #d9ded8 100%)",
+    "linear-gradient(135deg, #96e6a1 0%, #d4fc79 100%)",
+  ];
+
+  // Function to get a consistent gradient for each lesson
+  const getGradientForLesson = (lessonId) => {
+    if (!lessonId) return gradientColors[0];
+    // Use lesson ID to generate a consistent index
+    const hash = lessonId
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return gradientColors[hash % gradientColors.length];
+  };
 
   const handleLike = (e) => {
     e.stopPropagation();
@@ -145,6 +173,9 @@ const LessonCard = ({
   const authorSchool = lesson.createdBy?.schoolName || "";
   const isOwnLesson = lesson.createdBy?._id === currentUserId;
 
+  // Get gradient for this lesson
+  const gradient = getGradientForLesson(lesson._id);
+
   return (
     <>
       <Card
@@ -152,13 +183,9 @@ const LessonCard = ({
         hoverable
         onClick={handleCardClick}
         cover={
-          <div className="card-cover">
-            <div
-              className="subject-banner"
-              style={{ backgroundColor: getGradeColor(displayGrade) }}
-            >
-              {displayGrade}
-            </div>
+          <div className="card-cover" style={{ background: gradient }}>
+            <div className="gradient-overlay"></div>
+            <div className="subject-banner">{displayGrade}</div>
             <div className="lesson-preview">
               <h3>{displayTitle}</h3>
               <p>{displayDescription}</p>
