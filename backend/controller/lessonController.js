@@ -370,7 +370,7 @@ exports.getAllUserLessonPlans = async (req, res, next) => {
     const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
       .populate({
         path: "classId",
-        select: "className subject", // Specify which fields you want from the Class model
+        select: "className subject grade", // Add 'grade' here
       })
       .sort({ lessonDate: -1 });
 
@@ -383,8 +383,7 @@ exports.getAllUserLessonPlans = async (req, res, next) => {
       data: lessonPlans,
     });
   } catch (error) {
-    console.error("Error fetching user's lesson plans:", error); // Log the error for debugging
-
+    console.error("Error fetching user's lesson plans:", error);
     next(error);
   }
 };
@@ -399,7 +398,7 @@ exports.getRecentLessonPlans = async (req, res, next) => {
     const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
       .populate({
         path: "classId",
-        select: "className subject",
+        select: "className subject grade", // Add 'grade' here
       })
       .sort({ updatedAt: -1 })
       .limit(5);
@@ -426,19 +425,15 @@ exports.getLessonPlansByClass = async (req, res, next) => {
   try {
     const { classId } = req.params;
 
-    // Ensure user can only fetch their own lessons for that class
     const lessonPlans = await LessonPlan.find({
       createdBy: req.user.id,
       classId: classId,
     })
       .populate({
         path: "classId",
-        select: "className subject",
+        select: "className subject grade", // Add 'grade' here
       })
       .sort({ lessonDate: -1 });
-
-    // Note: It's okay if this returns an empty array, so no 404 check is needed here.
-    // The frontend will handle the "no lessons found" case.
 
     res.status(200).json({
       success: true,
@@ -447,6 +442,6 @@ exports.getLessonPlansByClass = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error fetching lesson plans by class:", error);
-    next(error); // Pass to global error handler
+    next(error);
   }
 };

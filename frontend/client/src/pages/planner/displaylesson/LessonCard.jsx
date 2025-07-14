@@ -50,6 +50,17 @@ const LessonCard = ({ lesson, isRecent = false }) => {
   // Extract lesson information with fallbacks
   const subject = lesson.classId?.subject || "General";
   const className = lesson.classId?.className || "Unknown Class";
+  const grade =
+    lesson.classId?.grade ||
+    lesson.parameters?.formLevel ||
+    lesson.parameters?.grade ||
+    "";
+
+  // Format the class display with grade and className
+  const classDisplay =
+    grade && className !== "Unknown Class"
+      ? `${grade} ${className}`
+      : className;
 
   // Use the SOW topic as a fallback for the title if specificTopic is empty
   const title =
@@ -82,7 +93,7 @@ const LessonCard = ({ lesson, isRecent = false }) => {
         <h3 className={styles.cardTitle} title={title}>
           {title}
         </h3>
-        <p className={styles.cardGrade}>{className}</p>
+        <p className={styles.cardGrade}>{classDisplay}</p>
         {isRecent && lesson.updatedAt && (
           <p className={styles.cardMeta}>
             Opened {formatRelativeDate(lesson.updatedAt)}

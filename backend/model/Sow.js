@@ -1,34 +1,107 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-// It's good practice to define schemas for sub-documents (like lessons)
-const LessonSchema = new mongoose.Schema({
+// Complete schema for lessons with all fields
+const LessonSchema = new mongoose.Schema(
+  {
     lessonNo: {
-        type: Number,
-        required: [true, 'Lesson number is required']
+      type: Number,
+      required: [true, "Lesson number is required"],
+      min: 1,
     },
     focus: {
-        type: String,
-        required: [true, 'Lesson focus is required'],
-        trim: true
+      type: String,
+      required: [true, "Lesson focus is required"],
+      trim: true,
     },
-    // Add other fields for your lesson here
-    // e.g., objective: String, activities: [String], etc.
-});
+    theme: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    topic: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    contentStandard: {
+      main: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      comp: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+    },
+    learningStandard: {
+      main: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      comp: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+    },
+    learningOutline: {
+      pre: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      during: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      post: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+    },
+    differentiationStrategy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    cce: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+  },
+  {
+    // This ensures that fields not defined in the schema are still saved
+    strict: false,
+  }
+);
 
 // The main schema for the Scheme of Work
-const SowSchema = new mongoose.Schema({
+const SowSchema = new mongoose.Schema(
+  {
     form: {
-        type: String,
-        required: [true, 'Form is required'],
-        unique: true, // Ensures you only have one document per form, e.g., one "Form 5"
-        trim: true
+      type: String,
+      required: [true, "Form is required"],
+      unique: true, // Ensures you only have one document per form
+      trim: true,
     },
-    lessons: [LessonSchema] // An array of lessons, each following the LessonSchema
-}, { timestamps: true });
+    lessons: [LessonSchema], // An array of lessons
+  },
+  {
+    timestamps: true,
+    // This allows the main document to accept fields not in the schema
+    strict: false,
+  }
+);
 
+// Create indexes for better query performance
+SowSchema.index({ form: 1 });
+SowSchema.index({ "lessons.lessonNo": 1 });
 
-// --- THIS IS THE MOST IMPORTANT PART ---
-// You create the model AND export it in a single line.
-// This ensures that any file requiring this module gets the Model,
-// which has the .find(), .findOne(), etc. methods.
-module.exports = mongoose.model('Sow', SowSchema);
+module.exports = mongoose.model("Sow", SowSchema);

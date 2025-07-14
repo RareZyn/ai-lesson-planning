@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "./RecentOpened.css";
 import { getRecentLessonPlans } from "../../../services/lessonService";
 import { getGradientForId } from "../../../utils/gradientColors";
-import AddIcon from "@mui/icons-material/Add";
 
 const RecentOpened = () => {
   const navigate = useNavigate();
@@ -108,11 +107,18 @@ const RecentOpened = () => {
         {recentItems.map((item) => {
           // Extract lesson information
           const className = item.classId?.className || "Unknown Class";
+          const grade = item.classId?.grade || "";
           const title =
             item.parameters?.specificTopic ||
             item.parameters?.sow?.topic ||
             item.title ||
             "Untitled Lesson";
+
+          // Format the class display with grade and className
+          const classDisplay =
+            grade && className !== "Unknown Class"
+              ? `${grade} ${className}`
+              : className;
 
           // Get consistent gradient based on lesson ID
           const gradient = getGradientForId(item._id);
@@ -139,7 +145,7 @@ const RecentOpened = () => {
                 <h3 className="card-title-overlay">{title}</h3>
               </div>
               <div className="card-content">
-                <p className="card-grade">{className}</p>
+                <p className="card-grade">{classDisplay}</p>
                 <p className="card-meta">
                   Opened {formatRelativeDate(item.updatedAt)}
                 </p>
@@ -147,27 +153,6 @@ const RecentOpened = () => {
             </div>
           );
         })}
-
-        {/* Show add lesson card if no recent items or less than 4 items */}
-        {recentItems.length < 4 && (
-          <div
-            className="add-lesson-card"
-            onClick={handleCreateLessonClick}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                handleCreateLessonClick();
-              }
-            }}
-            aria-label="Create new lesson"
-          >
-            <div className="add-icon-wrapper">
-              <AddIcon />
-            </div>
-            <span>Create New Lesson</span>
-          </div>
-        )}
       </div>
     );
   };

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import styles from './MultiStepPlanner.module.css';
-import { getSow } from '../../../services/sowService';
+import React, { useState, useEffect } from "react";
+import styles from "./MultiStepPlanner.module.css";
+import { getSow } from "../../../services/sowService";
 
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [sowLessons, setSowLessons] = useState([]);
@@ -25,10 +25,6 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         const lessons = response?.lessons || [];
         if (lessons.length > 0) {
           setSowLessons(lessons);
-          // Auto-fill topic from SOW if a lesson is already selected and topic is empty
-          if (data.sow?.topic && !data.specificTopic) {
-            updateData('specificTopic', data.sow.topic);
-          }
         } else {
           setError(
             `No lessons found for ${data.grade}. Please check if SOW data exists.`
@@ -60,7 +56,13 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // --- UPDATED VALIDATION ---
-    if (!data.sow?.lessonNo || !data.specificTopic || !data.activityType || !data.proficiencyLevel || !data.hotsFocus) {
+    if (
+      !data.sow?.lessonNo ||
+      !data.specificTopic ||
+      !data.activityType ||
+      !data.proficiencyLevel ||
+      !data.hotsFocus
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -79,30 +81,37 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           <select
             id="lessonNumber"
             name="lessonNumber"
-            value={data.sow?.lessonNo || ''}
+            value={data.sow?.lessonNo || ""}
             onChange={(e) => {
               const selectedValue = e.target.value;
               const selectedLesson = sowLessons.find(
                 (lesson) => lesson.lessonNo.toString() === selectedValue
               );
-              updateData('sow', selectedLesson || {});
-              // Also update the topic field with the SOW topic when a lesson is selected
-              if (selectedLesson) {
-                updateData('specificTopic', selectedLesson.topic);
+              updateData("sow", selectedLesson || {});
+              // Always update the topic field with the SOW topic when a lesson is selected
+              // This allows the user to see the default topic but still edit it if needed
+              if (selectedLesson && selectedLesson.topic) {
+                updateData("specificTopic", selectedLesson.topic);
               }
             }}
             disabled={isLoading}
             required
           >
-            <option value="" disabled>-- Select Lesson --</option>
+            <option value="" disabled>
+              -- Select Lesson --
+            </option>
             {isLoading && <option disabled>Loading lessons...</option>}
             {error && <option disabled>Error: {error}</option>}
-            {!isLoading && !error && sowLessons.length === 0 && <option disabled>No lessons available for {data.grade}</option>}
-            {!isLoading && !error && sowLessons.map(lesson => (
-              <option key={lesson.lessonNo} value={lesson.lessonNo}>
-                Lesson {lesson.lessonNo} - {lesson.topic} ({lesson.focus})
-              </option>
-            ))}
+            {!isLoading && !error && sowLessons.length === 0 && (
+              <option disabled>No lessons available for {data.grade}</option>
+            )}
+            {!isLoading &&
+              !error &&
+              sowLessons.map((lesson) => (
+                <option key={lesson.lessonNo} value={lesson.lessonNo}>
+                  Lesson {lesson.lessonNo} - {lesson.topic} ({lesson.focus})
+                </option>
+              ))}
           </select>
 
           {/* Show additional info about current grade and loading state */}
@@ -113,35 +122,45 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             {isLoading && " - Loading..."}
           </small>
         </div>
-        
+
         {/* --- FIELD 2 (NEW ORDER): Specific Topic / Lesson Title --- */}
         <div className={styles.formGroup}>
-          <label htmlFor="specificTopic">Lesson Title (Specific Topic or Context)</label>
+          <label htmlFor="specificTopic">
+            Lesson Title (Specific Topic or Context)
+          </label>
           <input
             type="text"
             id="specificTopic"
             name="specificTopic"
-            value={data.specificTopic || ''}
-            onChange={(e) => updateData('specificTopic', e.target.value)}
+            value={data.specificTopic || ""}
+            onChange={(e) => updateData("specificTopic", e.target.value)}
             placeholder="e.g., 'The life of Nicol David'"
             required
           />
+          <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
+            This field is auto-populated from the SOW topic but you can
+            customize it
+          </small>
         </div>
 
         {/* --- FIELD 3 (NEW): Activity Format --- */}
         <div className={styles.formGroup}>
           <label htmlFor="activityType">Primary Activity Format</label>
-          <select 
-            id="activityType" 
-            name="activityType" 
-            value={data.activityType || ''} 
-            onChange={(e) => updateData('activityType', e.target.value)} 
+          <select
+            id="activityType"
+            name="activityType"
+            value={data.activityType || ""}
+            onChange={(e) => updateData("activityType", e.target.value)}
             required
           >
-            <option value="" disabled>-- Select a format --</option>
+            <option value="" disabled>
+              -- Select a format --
+            </option>
             <option value="textbook">Textbook-based Activity</option>
             <option value="essay">Essay Writing</option>
-            <option value="activityInClass">In-class Activity (e.g., group work, presentation)</option>
+            <option value="activityInClass">
+              In-class Activity (e.g., group work, presentation)
+            </option>
             <option value="assessment">Assessment / Test</option>
           </select>
         </div>

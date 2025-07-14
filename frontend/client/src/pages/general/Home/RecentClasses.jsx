@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./RecentClasses.css";
 import { getRecentClasses } from "../../../services/classService";
-import { School, Subject, CalendarToday } from "@mui/icons-material";
+import { School, Subject, CalendarToday, Padding } from "@mui/icons-material";
 
 const RecentClasses = () => {
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ const RecentClasses = () => {
                 <div className="image-overlay"></div>
                 <div className="subject-badge">{classItem.subject}</div>
               </div>
-              <div className="card-body">
+              <div className="card-body" style={{padding: '10px'}}>
                 <h3 className="class-name">
                   {classItem.grade} {classItem.className}
                 </h3>
