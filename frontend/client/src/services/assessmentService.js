@@ -46,14 +46,9 @@ apiClient.interceptors.response.use(
   }
 );
 
-/**
- * Assessment API Service for lesson plan-based assessments
- */
+
 export const assessmentAPI = {
-  /**
-   * Main function: Generate assessment from lesson plan data
-   * This matches the backend controller's generateFromLessonPlan endpoint
-   */
+
   generateFromLessonPlan: async (lessonPlanData, activityFormData) => {
     try {
       console.log("Starting assessment generation with data:", {

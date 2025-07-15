@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const LessonPlan = require("../model/lesson");
+const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
 const { lessonPlanValidationSchema } = require("../utils/validationSchema");
 
@@ -413,8 +413,6 @@ exports.getRecentLessonPlans = async (req, res, next) => {
     next(error);
   }
 };
-
-// ... (your other controller functions like saveLessonPlan, etc.) ...
 
 /**
  * @desc    Get all lesson plans for a specific class

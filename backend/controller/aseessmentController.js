@@ -755,7 +755,7 @@ You must return exactly two blocks of HTML content:
 - Title and lesson info (Lesson name, subject, theme, topic)
 - Fields for Student Name, Class, and Teacher Name
 - Reference to the specific textbook page(s)
-- Clear pre-, during-, and post-activity tasks based on provided outline
+- Give the question and activity of the textbook based on the lesson topic
 - An open-ended task or reflective question aligned to textbook goals
 - A creative note or prompt (e.g., reflection, group discussion, or journal)
 
