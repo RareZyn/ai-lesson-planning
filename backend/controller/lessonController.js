@@ -10,6 +10,7 @@ exports.createLesson = async (req, res, next) => {
       sow,
       proficiencyLevel,
       activityType,
+      activityConfiguration,
       hotsFocus,
       specificTopic,
       grade,
@@ -68,6 +69,15 @@ exports.createLesson = async (req, res, next) => {
       - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
       - Additional Notes: ${additionalNotes || "None"}
       - Type of Activity: ${activityType}
+      ${
+        activityConfiguration
+          ? `- Activity Configuration: ${JSON.stringify(
+              activityConfiguration,
+              null,
+              2
+            )}`
+          : ""
+      }
 
       Generate a creative and practical lesson plan based on the SoW's learning outline.
       Do not include any formal assessment, homework and specific materials or resources (Activities from textbook etc).

@@ -129,7 +129,8 @@ if (mongoose.models.LessonPlan) {
           },
           activityType: {
             type: String,
-            enum: ["assessment", "essay", "textbook", "activity"],
+            enum: ["textbook", "essay", "activity", "assessment"],
+            default: "activity",
           },
           generatedAt: {
             type: Date,
@@ -164,6 +165,10 @@ if (mongoose.models.LessonPlan) {
         activityType: {
           type: String,
           trim: true,
+        },
+        activityConfiguration: {
+          type: mongoose.Schema.Types.Mixed,
+          default: null,
         },
         additionalNotes: {
           type: String,
@@ -312,19 +317,7 @@ if (mongoose.models.LessonPlan) {
     },
     {
       timestamps: true,
-      // Add virtual fields and transform options
-      toJSON: {
-        virtuals: true,
-        transform: function (doc, ret) {
-          // Don't include sensitive information in JSON output
-          if (ret.communityData && ret.communityData.likedBy) {
-            ret.communityData.likedByCount = ret.communityData.likedBy.length;
-            // Don't expose the actual user IDs unless specifically needed
-            delete ret.communityData.likedBy;
-          }
-          return ret;
-        },
-      },
+      toJSON: { virtuals: true },
       toObject: { virtuals: true },
     }
   );

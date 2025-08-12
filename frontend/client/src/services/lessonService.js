@@ -17,7 +17,11 @@ export const generateLesson = async (formData) => {
   try {
     const response = await axios.post(
       "/api/lessons",
-      formData,
+      {
+        ...formData,
+        activityType: formData.activityType,
+        activityConfiguration: formData.activityConfiguration,
+      },
       getAuthConfig()
     );
     return response.data.data;
@@ -41,23 +45,19 @@ export const generateLesson = async (formData) => {
 export const saveLessonPlan = async (finalPlanData) => {
   try {
     // Ensure we include the activity configuration in the saved data
-    const lessonPlanData = {
-      ...finalPlanData,
-      // Make sure activityConfiguration is included at the top level
-      activityConfiguration:
-        finalPlanData.parameters?.activityConfiguration || null,
-      // Include the activity type for easy access
-      activityType: finalPlanData.parameters?.activityType || null,
-    };
-
-    console.log(
-      "Saving lesson plan with activity configuration:",
-      lessonPlanData
-    );
-
     const response = await axios.post(
       "/api/lessons/save",
-      lessonPlanData,
+      {
+        ...finalPlanData,
+        // Ensure activity configuration is included at both levels
+        parameters: {
+          ...finalPlanData.parameters,
+          activityType: finalPlanData.activityType,
+          activityConfiguration: finalPlanData.activityConfiguration,
+        },
+        activityType: finalPlanData.activityType,
+        activityConfiguration: finalPlanData.activityConfiguration,
+      },
       getAuthConfig()
     );
     return response.data; // The backend returns { success: true, data: newLessonPlan }
