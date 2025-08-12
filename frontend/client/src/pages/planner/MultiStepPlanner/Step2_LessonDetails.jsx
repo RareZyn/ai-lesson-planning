@@ -63,7 +63,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     fetchSowLessons();
   }, [data.grade]);
 
-  // Check if activity has been configured when activity type changes
+  // Check if activity has been configured when activity type or configuration changes
   useEffect(() => {
     if (data.activityType && data.activityConfiguration) {
       setHasConfiguredActivity(true);
@@ -78,7 +78,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     updateData("activityConfiguration", null);
     setHasConfiguredActivity(false);
 
-    // Open the appropriate modal
+    // Open the appropriate modal for configuration
     setActiveModal(activityType);
   };
 
@@ -86,14 +86,17 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     console.log("Modal data received:", modalData);
 
     // Save the activity configuration to the lesson plan data
-    updateData("activityConfiguration", {
+    const activityConfig = {
       type: data.activityType,
       parameters: modalData,
       configuredAt: new Date().toISOString(),
-    });
+    };
 
+    updateData("activityConfiguration", activityConfig);
     setHasConfiguredActivity(true);
     setActiveModal(null);
+
+    console.log("Activity configuration saved:", activityConfig);
   };
 
   const handleModalClose = () => {
@@ -138,6 +141,40 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       assessment: "Assessment / Test",
     };
     return labels[type] || type;
+  };
+
+  const getConfigurationSummary = () => {
+    if (!data.activityConfiguration?.parameters) return "Not configured";
+
+    const params = data.activityConfiguration.parameters;
+    const type = data.activityType;
+
+    switch (type) {
+      case "essay":
+        return `${params.essayType || "Unknown type"} essay, ${
+          params.wordCount || "Unknown length"
+        }, ${params.duration || "Unknown duration"}`;
+
+      case "assessment":
+        return `${params.assessmentType || "Unknown type"}, ${
+          params.numberOfQuestions || 0
+        } questions, ${params.timeAllocation || "Unknown"} minutes`;
+
+      case "activityInClass":
+        return `${params.studentArrangement || "Unknown arrangement"}, ${
+          params.resourceUsage || "Unknown resources"
+        }, ${params.duration || "Unknown duration"}`;
+
+      case "textbook":
+        return `Textbook activity${
+          params.additionalRequirement
+            ? ` - ${params.additionalRequirement.substring(0, 50)}...`
+            : ""
+        }`;
+
+      default:
+        return "Configured";
+    }
   };
 
   return (
@@ -232,22 +269,37 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             <option value="assessment">Assessment / Test</option>
           </select>
 
-          {/* Show configuration status */}
+          {/* Show configuration status and summary */}
           {data.activityType && (
-            <div style={{ marginTop: "8px" }}>
+            <div style={{ marginTop: "12px" }}>
               {hasConfiguredActivity ? (
                 <div
                   style={{
-                    color: "#52c41a",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
+                    padding: "12px",
+                    backgroundColor: "#f6ffed",
+                    border: "1px solid #b7eb8f",
+                    borderRadius: "6px",
                   }}
                 >
-                  <span>
-                    ✓ {getActivityTypeLabel(data.activityType)} configured
-                  </span>
+                  <div
+                    style={{
+                      color: "#52c41a",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    ✓ {getActivityTypeLabel(data.activityType)} Configured
+                  </div>
+                  <div
+                    style={{
+                      color: "#666",
+                      fontSize: "12px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {getConfigurationSummary()}
+                  </div>
                   <button
                     type="button"
                     onClick={handleReconfigureActivity}
@@ -255,17 +307,26 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                       background: "none",
                       border: "1px solid #d9d9d9",
                       borderRadius: "4px",
-                      padding: "2px 8px",
+                      padding: "4px 12px",
                       fontSize: "12px",
                       cursor: "pointer",
                       color: "#666",
                     }}
                   >
-                    Reconfigure
+                    Reconfigure Settings
                   </button>
                 </div>
               ) : (
-                <div style={{ color: "#fa8c16", fontSize: "14px" }}>
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#fff7e6",
+                    border: "1px solid #ffd591",
+                    borderRadius: "6px",
+                    color: "#fa8c16",
+                    fontSize: "14px",
+                  }}
+                >
                   ⚠ Please configure your{" "}
                   {getActivityTypeLabel(data.activityType)} settings
                 </div>
@@ -334,15 +395,15 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         </div>
       </form>
 
-      {/* Render Modals */}
+      {/* Render Modals - All set to lesson planning mode */}
       {activeModal === "activityInClass" && (
         <ActivityInClassModal
           isOpen={true}
           onClose={handleModalClose}
           onSubmit={handleModalSubmit}
-          selectedLessonPlan={null} // Not needed in lesson planning context
+          selectedLessonPlan={null}
           activityType="activity"
-          isLessonPlanningMode={true} // Flag to indicate this is for lesson planning
+          isLessonPlanningMode={true}
           existingConfiguration={data.activityConfiguration?.parameters}
         />
       )}

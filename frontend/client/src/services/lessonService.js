@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const getAuthConfig = () => ({
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-    }
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+  },
 });
 
 /**
@@ -14,30 +14,59 @@ const getAuthConfig = () => ({
  * @returns {Promise<object>} The newly generated lesson plan object.
  */
 export const generateLesson = async (formData) => {
-    try {
-        const response = await axios.post('/api/lessons', formData, getAuthConfig());
-        return response.data.data;
-    } catch (error) {
-        console.error('Error generating lesson plan:', error.response?.data?.message || error.message);
-        // Re-throw a more user-friendly error
-        throw new Error(error.response?.data?.message || "Failed to communicate with the server.");
-    }
+  try {
+    const response = await axios.post(
+      "/api/lessons",
+      formData,
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error generating lesson plan:",
+      error.response?.data?.message || error.message
+    );
+    // Re-throw a more user-friendly error
+    throw new Error(
+      error.response?.data?.message || "Failed to communicate with the server."
+    );
+  }
 };
 
 /**
- * Saves the final lesson plan to the database.
- * @param {object} finalPlanData - The complete object with parameters and plan.
+ * Saves the final lesson plan to the database with activity configuration.
+ * @param {object} finalPlanData - The complete object with parameters, plan, and activity configuration.
  * @returns {Promise<object>} The saved lesson plan document from the backend.
  */
 export const saveLessonPlan = async (finalPlanData) => {
-    try {
-        // This calls POST /api/lessons
-        const response = await axios.post('/api/lessons/save', finalPlanData, getAuthConfig());
-        return response.data; // The backend returns { success: true, data: newLessonPlan }
-    } catch (error) {
-        console.error("Error saving lesson plan:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Failed to save the lesson plan.');
-    }
+  try {
+    // Ensure we include the activity configuration in the saved data
+    const lessonPlanData = {
+      ...finalPlanData,
+      // Make sure activityConfiguration is included at the top level
+      activityConfiguration:
+        finalPlanData.parameters?.activityConfiguration || null,
+      // Include the activity type for easy access
+      activityType: finalPlanData.parameters?.activityType || null,
+    };
+
+    console.log(
+      "Saving lesson plan with activity configuration:",
+      lessonPlanData
+    );
+
+    const response = await axios.post(
+      "/api/lessons/save",
+      lessonPlanData,
+      getAuthConfig()
+    );
+    return response.data; // The backend returns { success: true, data: newLessonPlan }
+  } catch (error) {
+    console.error("Error saving lesson plan:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Failed to save the lesson plan."
+    );
+  }
 };
 
 /**
@@ -46,14 +75,16 @@ export const saveLessonPlan = async (finalPlanData) => {
  * @returns {Promise<object>} The detailed lesson plan object.
  */
 export const getLessonPlanById = async (id) => {
-    try {
-        // This calls GET /api/lessons/:id
-        const response = await axios.get(`/api/lessons/${id}`, getAuthConfig());
-        return response.data.data; // The plan is nested in the 'data' property
-    } catch (error) {
-        console.error("Error fetching lesson plan:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not fetch the lesson plan.');
-    }
+  try {
+    // This calls GET /api/lessons/:id
+    const response = await axios.get(`/api/lessons/${id}`, getAuthConfig());
+    return response.data.data; // The plan is nested in the 'data' property
+  } catch (error) {
+    console.error("Error fetching lesson plan:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Could not fetch the lesson plan."
+    );
+  }
 };
 
 /**
@@ -61,14 +92,16 @@ export const getLessonPlanById = async (id) => {
  * @returns {Promise<Array>} A promise that resolves to an array of lesson plans.
  */
 export const getAllLessonPlans = async () => {
-     try {
-        // This calls GET /api/lessons/:id
-        const response = await axios.get(`/api/lessons`, getAuthConfig());
-        return response.data.data; // The plan is nested in the 'data' property
-    } catch (error) {
-        console.error("Error fetching lesson plan:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not fetch the lesson plan.');
-    }
+  try {
+    // This calls GET /api/lessons
+    const response = await axios.get(`/api/lessons`, getAuthConfig());
+    return response.data.data; // The plans are nested in the 'data' property
+  } catch (error) {
+    console.error("Error fetching lesson plans:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Could not fetch the lesson plans."
+    );
+  }
 };
 
 /**
@@ -76,14 +109,16 @@ export const getAllLessonPlans = async () => {
  * @returns {Promise<Array>} A promise that resolves to an array of up to 5 lesson plans.
  */
 export const getRecentLessonPlans = async () => {
-    try {
-        // This calls GET /api/lessons/recent
-        const response = await axios.get('/api/lessons/recent', getAuthConfig());
-        return response.data.data; // The plan is nested in the 'data' property
-    } catch (error) {
-        console.error("Error fetching recent lesson plans:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not fetch recent lessons.');
-    }
+  try {
+    // This calls GET /api/lessons/recent
+    const response = await axios.get("/api/lessons/recent", getAuthConfig());
+    return response.data.data; // The plans are nested in the 'data' property
+  } catch (error) {
+    console.error("Error fetching recent lesson plans:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Could not fetch recent lessons."
+    );
+  }
 };
 
 /**
@@ -92,14 +127,16 @@ export const getRecentLessonPlans = async () => {
  * @returns {Promise<object>}
  */
 export const deleteLessonPlan = async (id) => {
-    try {
-        // For DELETE requests, the config is also the second argument
-        const response = await axios.delete(`/api/lessons/${id}`, getAuthConfig());
-        return response.data;
-    } catch (error) {
-        console.error("Error deleting lesson plan:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not delete the lesson plan.');
-    }
+  try {
+    // For DELETE requests, the config is also the second argument
+    const response = await axios.delete(`/api/lessons/${id}`, getAuthConfig());
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting lesson plan:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Could not delete the lesson plan."
+    );
+  }
 };
 
 /**
@@ -108,13 +145,21 @@ export const deleteLessonPlan = async (id) => {
  * @returns {Promise<Array>}
  */
 export const getLessonPlansByClass = async (classId) => {
-    try {
-        const response = await axios.get(`/api/lessons/by-class/${classId}`, getAuthConfig());
-        return response.data.data;
-    } catch (error) {
-        console.error("Error fetching lesson plans by class:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not fetch lesson plans.');
-    }
+  try {
+    const response = await axios.get(
+      `/api/lessons/by-class/${classId}`,
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error fetching lesson plans by class:",
+      error.response?.data
+    );
+    throw new Error(
+      error.response?.data?.message || "Could not fetch lesson plans."
+    );
+  }
 };
 
 /**
@@ -124,12 +169,95 @@ export const getLessonPlansByClass = async (classId) => {
  * @returns {Promise<object>} The full, updated lesson plan document.
  */
 export const updateLessonPlan = async (id, updatedPlan) => {
-    try {
-        // The data sent is an object with a 'plan' key, e.g., { plan: updatedPlan }
-        const response = await axios.put(`/api/lessons/${id}`, { plan: updatedPlan }, getAuthConfig());
-        return response.data.data;
-    } catch (error) {
-        console.error("Error updating lesson plan:", error.response?.data);
-        throw new Error(error.response?.data?.message || 'Could not update the lesson plan.');
-    }
+  try {
+    // The data sent is an object with a 'plan' key, e.g., { plan: updatedPlan }
+    const response = await axios.put(
+      `/api/lessons/${id}`,
+      { plan: updatedPlan },
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("Error updating lesson plan:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message || "Could not update the lesson plan."
+    );
+  }
+};
+
+/**
+ * Updates the activity configuration of a lesson plan.
+ * @param {string} id - The ID of the lesson plan to update.
+ * @param {object} activityConfiguration - The new activity configuration object.
+ * @returns {Promise<object>} The full, updated lesson plan document.
+ */
+export const updateLessonPlanActivityConfig = async (
+  id,
+  activityConfiguration
+) => {
+  try {
+    const response = await axios.put(
+      `/api/lessons/${id}/activity-config`,
+      {
+        activityConfiguration,
+      },
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error updating lesson plan activity configuration:",
+      error.response?.data
+    );
+    throw new Error(
+      error.response?.data?.message ||
+        "Could not update the activity configuration."
+    );
+  }
+};
+
+/**
+ * Get lesson plans that have activity configurations for assessment creation
+ * @returns {Promise<Array>} A promise that resolves to an array of lesson plans with activity configurations.
+ */
+export const getLessonPlansWithActivityConfig = async () => {
+  try {
+    const response = await axios.get(
+      "/api/lessons/with-activity-config",
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error fetching lesson plans with activity config:",
+      error.response?.data
+    );
+    throw new Error(
+      error.response?.data?.message ||
+        "Could not fetch lesson plans with activity configurations."
+    );
+  }
+};
+
+/**
+ * Get lesson plans without assessments (for assessment creation)
+ * @returns {Promise<Array>} A promise that resolves to an array of lesson plans without assessments.
+ */
+export const getLessonPlansWithoutAssessments = async () => {
+  try {
+    const response = await axios.get(
+      "/api/lessons/without-assessments",
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error fetching lesson plans without assessments:",
+      error.response?.data
+    );
+    throw new Error(
+      error.response?.data?.message ||
+        "Could not fetch lesson plans without assessments."
+    );
+  }
 };
