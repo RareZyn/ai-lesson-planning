@@ -1,5 +1,5 @@
-//EssayLessonModal.jsx with Loading Screen
-import React, { useState } from "react";
+//Updated EssayLessonModal.jsx with lesson planning mode support
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Button,
@@ -31,6 +31,8 @@ const EssayLesson = ({
   onSubmit,
   selectedLessonPlan,
   activityType = "essay",
+  isLessonPlanningMode = false, // NEW: Flag to indicate lesson planning mode
+  existingConfiguration = null, // NEW: Existing configuration data
 }) => {
   const [formData, setFormData] = useState({
     essayType: "descriptive",
@@ -65,6 +67,19 @@ const EssayLesson = ({
     { value: "120 minutes", label: "120 minutes" },
   ];
 
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        essayType: existingConfiguration.essayType || "descriptive",
+        wordCount: existingConfiguration.wordCount || "200-300 words",
+        duration: existingConfiguration.duration || "60 minutes",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -81,13 +96,28 @@ const EssayLesson = ({
 
     setLoading(true);
     try {
-      const submitData = {
-        ...formData,
-        selectedLessonPlan,
-        activityType,
-      };
-      await onSubmit(submitData);
-      message.success("Essay settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "essay", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Essay configuration saved successfully!");
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          selectedLessonPlan,
+          activityType,
+        };
+        await onSubmit(submitData);
+        message.success("Essay settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -128,7 +158,9 @@ const EssayLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Essay Assessment
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : "Generating Essay Assessment"}
               </h3>
               <p
                 style={{
@@ -137,8 +169,9 @@ const EssayLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your essay writing assessment based on the lesson
-                plan...
+                {isLessonPlanningMode
+                  ? "Saving your essay configuration for the lesson plan..."
+                  : "Creating your essay writing assessment based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -149,7 +182,9 @@ const EssayLesson = ({
                 }}
               >
                 <Text type="secondary" style={{ fontSize: "14px" }}>
-                  Preparing writing prompts and evaluation criteria
+                  {isLessonPlanningMode
+                    ? "Configuring essay parameters"
+                    : "Preparing writing prompts and evaluation criteria"}
                 </Text>
               </div>
             </div>
@@ -172,7 +207,11 @@ const EssayLesson = ({
             <div className="modal-icon">
               <EditOutlined />
             </div>
-            <h3 className="modal-title">Essay Writing Assessment</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure Essay Writing"
+                : "Essay Writing Assessment"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -181,8 +220,19 @@ const EssayLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Selected Lesson Plan Info */}
-          {selectedLessonPlan && (
+          {/* Info Alert for lesson planning mode */}
+          {isLessonPlanningMode && (
+            <Alert
+              message="Configure Essay Writing Activity"
+              description="Set up the parameters for your essay writing activity. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Selected Lesson Plan Info - only show in assessment mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
             <Alert
               message={`Based on Lesson Plan: ${
                 selectedLessonPlan.parameters?.specificTopic ||
@@ -315,7 +365,11 @@ const EssayLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay assessment based on the selected lesson plan..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay activity..."
+                      : "Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay assessment based on the selected lesson plan..."
+                  }
                   maxLength={400}
                   showCount
                   disabled={loading}
@@ -354,7 +408,7 @@ const EssayLesson = ({
                     <br />
                     <Tag color="orange">{formData.duration}</Tag>
                   </Col>
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
                       <Text strong style={{ color: "#666" }}>
                         Based on Lesson:
@@ -363,6 +417,17 @@ const EssayLesson = ({
                       <Text>
                         {selectedLessonPlan.parameters?.specificTopic ||
                           "Selected Lesson Plan"}
+                      </Text>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <Text strong style={{ color: "#666" }}>
+                        Configuration Mode:
+                      </Text>
+                      <br />
+                      <Text>
+                        This configuration will be saved with your lesson plan
                       </Text>
                     </Col>
                   )}
@@ -394,8 +459,11 @@ const EssayLesson = ({
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Generating...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode ? "Saving..." : "Generating..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📝 Save Configuration"
               ) : (
                 "📝 Generate Essay Assessment"
               )}

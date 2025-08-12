@@ -2,10 +2,20 @@ import React, { useState, useEffect } from "react";
 import styles from "./MultiStepPlanner.module.css";
 import { getSow } from "../../../services/sowService";
 
+// Import all the modal components
+import ActivityInClassModal from "../../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
+import EssayModal from "../../../components/Modal/LessonBasedAssessment/EssayLessonModal";
+import AssessmentModal from "../../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
+import TextBookModal from "../../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
+
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [sowLessons, setSowLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // State for modal management
+  const [activeModal, setActiveModal] = useState(null);
+  const [hasConfiguredActivity, setHasConfiguredActivity] = useState(false);
 
   useEffect(() => {
     if (!data.grade) {
@@ -53,9 +63,53 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     fetchSowLessons();
   }, [data.grade]);
 
+  // Check if activity has been configured when activity type changes
+  useEffect(() => {
+    if (data.activityType && data.activityConfiguration) {
+      setHasConfiguredActivity(true);
+    } else {
+      setHasConfiguredActivity(false);
+    }
+  }, [data.activityType, data.activityConfiguration]);
+
+  const handleActivityTypeChange = (activityType) => {
+    updateData("activityType", activityType);
+    // Clear previous configuration when changing activity type
+    updateData("activityConfiguration", null);
+    setHasConfiguredActivity(false);
+
+    // Open the appropriate modal
+    setActiveModal(activityType);
+  };
+
+  const handleModalSubmit = (modalData) => {
+    console.log("Modal data received:", modalData);
+
+    // Save the activity configuration to the lesson plan data
+    updateData("activityConfiguration", {
+      type: data.activityType,
+      parameters: modalData,
+      configuredAt: new Date().toISOString(),
+    });
+
+    setHasConfiguredActivity(true);
+    setActiveModal(null);
+  };
+
+  const handleModalClose = () => {
+    setActiveModal(null);
+  };
+
+  const handleReconfigureActivity = () => {
+    if (data.activityType) {
+      setActiveModal(data.activityType);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // --- UPDATED VALIDATION ---
+
+    // Validation
     if (
       !data.sow?.lessonNo ||
       !data.specificTopic ||
@@ -66,7 +120,24 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       alert("Please fill in all required fields.");
       return;
     }
+
+    // Check if activity has been configured
+    if (!hasConfiguredActivity) {
+      alert("Please configure your selected activity type before proceeding.");
+      return;
+    }
+
     onNext();
+  };
+
+  const getActivityTypeLabel = (type) => {
+    const labels = {
+      textbook: "Textbook-based Activity",
+      essay: "Essay Writing",
+      activityInClass: "In-class Activity",
+      assessment: "Assessment / Test",
+    };
+    return labels[type] || type;
   };
 
   return (
@@ -75,7 +146,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       <p>Fill in the core details based on the KSSM Scheme of Work.</p>
 
       <form onSubmit={handleSubmit}>
-        {/* --- FIELD 1: Lesson from SOW --- */}
+        {/* Lesson from SOW */}
         <div className={styles.formGroup}>
           <label htmlFor="lessonNumber">Lesson from Scheme of Work</label>
           <select
@@ -88,8 +159,6 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                 (lesson) => lesson.lessonNo.toString() === selectedValue
               );
               updateData("sow", selectedLesson || {});
-              // Always update the topic field with the SOW topic when a lesson is selected
-              // This allows the user to see the default topic but still edit it if needed
               if (selectedLesson && selectedLesson.topic) {
                 updateData("specificTopic", selectedLesson.topic);
               }
@@ -114,7 +183,6 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
               ))}
           </select>
 
-          {/* Show additional info about current grade and loading state */}
           <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
             {data.grade
               ? `Looking for lessons in ${data.grade}`
@@ -123,7 +191,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </small>
         </div>
 
-        {/* --- FIELD 2 (NEW ORDER): Specific Topic / Lesson Title --- */}
+        {/* Specific Topic */}
         <div className={styles.formGroup}>
           <label htmlFor="specificTopic">
             Lesson Title (Specific Topic or Context)
@@ -143,14 +211,14 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </small>
         </div>
 
-        {/* --- FIELD 3 (NEW): Activity Format --- */}
+        {/* Activity Format - Updated with modal integration */}
         <div className={styles.formGroup}>
           <label htmlFor="activityType">Primary Activity Format</label>
           <select
             id="activityType"
             name="activityType"
             value={data.activityType || ""}
-            onChange={(e) => updateData("activityType", e.target.value)}
+            onChange={(e) => handleActivityTypeChange(e.target.value)}
             required
           >
             <option value="" disabled>
@@ -163,9 +231,50 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             </option>
             <option value="assessment">Assessment / Test</option>
           </select>
+
+          {/* Show configuration status */}
+          {data.activityType && (
+            <div style={{ marginTop: "8px" }}>
+              {hasConfiguredActivity ? (
+                <div
+                  style={{
+                    color: "#52c41a",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span>
+                    ✓ {getActivityTypeLabel(data.activityType)} configured
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleReconfigureActivity}
+                    style={{
+                      background: "none",
+                      border: "1px solid #d9d9d9",
+                      borderRadius: "4px",
+                      padding: "2px 8px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      color: "#666",
+                    }}
+                  >
+                    Reconfigure
+                  </button>
+                </div>
+              ) : (
+                <div style={{ color: "#fa8c16", fontSize: "14px" }}>
+                  ⚠ Please configure your{" "}
+                  {getActivityTypeLabel(data.activityType)} settings
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* --- FIELD 4: Proficiency Level --- */}
+        {/* Proficiency Level */}
         <div className={styles.formGroup}>
           <label htmlFor="proficiencyLevel">Class Proficiency Level</label>
           <select
@@ -190,7 +299,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </select>
         </div>
 
-        {/* --- FIELD 5: HOTS Focus --- */}
+        {/* HOTS Focus */}
         <div className={styles.formGroup}>
           <label htmlFor="hotsFocus">HOTS Focus</label>
           <select
@@ -210,6 +319,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </select>
         </div>
 
+        {/* Navigation */}
         <div className={styles.navigation}>
           <button
             type="button"
@@ -223,6 +333,53 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </button>
         </div>
       </form>
+
+      {/* Render Modals */}
+      {activeModal === "activityInClass" && (
+        <ActivityInClassModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null} // Not needed in lesson planning context
+          activityType="activity"
+          isLessonPlanningMode={true} // Flag to indicate this is for lesson planning
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "essay" && (
+        <EssayModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          activityType="essay"
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "textbook" && (
+        <TextBookModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "assessment" && (
+        <AssessmentModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
     </div>
   );
 };

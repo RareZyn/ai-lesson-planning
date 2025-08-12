@@ -1,5 +1,5 @@
-// Fixed ActivityInClassLessonModal.jsx with Loading Screen
-import React, { useState } from "react";
+// Updated ActivityInClassLessonModal.jsx with lesson planning mode support
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Radio,
@@ -43,6 +43,8 @@ const ActivityInClassLesson = ({
   onSubmit,
   selectedLessonPlan,
   activityType = "activity",
+  isLessonPlanningMode = false, // NEW: Flag to indicate lesson planning mode
+  existingConfiguration = null, // NEW: Existing configuration data
 }) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
@@ -53,6 +55,21 @@ const ActivityInClassLesson = ({
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        studentArrangement:
+          existingConfiguration.studentArrangement || "small_group",
+        resourceUsage: existingConfiguration.resourceUsage || "classroom_only",
+        activityType: existingConfiguration.activityType || "",
+        duration: existingConfiguration.duration || "",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -70,13 +87,28 @@ const ActivityInClassLesson = ({
 
     setLoading(true);
     try {
-      const submitData = {
-        ...formData,
-        selectedLessonPlan,
-        activityType: "activity", // Always send "activity" as the main type
-      };
-      await onSubmit(submitData);
-      message.success("Activity settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "activityInClass", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Activity configuration saved successfully!");
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          selectedLessonPlan,
+          activityType: "activity", // Always send "activity" as the main type
+        };
+        await onSubmit(submitData);
+        message.success("Activity settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -118,7 +150,9 @@ const ActivityInClassLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Activity
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : "Generating Activity"}
               </h3>
               <p
                 style={{
@@ -127,7 +161,9 @@ const ActivityInClassLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your classroom activity based on the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your activity configuration for the lesson plan..."
+                  : "Creating your classroom activity based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -138,7 +174,9 @@ const ActivityInClassLesson = ({
                 }}
               >
                 <Text type="secondary" style={{ fontSize: "14px" }}>
-                  Setting up interactive learning experience
+                  {isLessonPlanningMode
+                    ? "Configuring activity parameters"
+                    : "Setting up interactive learning experience"}
                 </Text>
               </div>
             </div>
@@ -161,7 +199,11 @@ const ActivityInClassLesson = ({
             <div className="modal-icon">
               <ThunderboltOutlined />
             </div>
-            <h3 className="modal-title">Activity in Class</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure Activity in Class"
+                : "Activity in Class"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -170,8 +212,19 @@ const ActivityInClassLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Selected Lesson Plan Info */}
-          {selectedLessonPlan && (
+          {/* Info Alert for lesson planning mode */}
+          {isLessonPlanningMode && (
+            <Alert
+              message="Configure In-Class Activity"
+              description="Set up the parameters for your in-class activity. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Selected Lesson Plan Info - only show in assessment mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
             <Alert
               message={`Based on Lesson Plan: ${
                 selectedLessonPlan.title || "Selected Lesson"
@@ -408,7 +461,11 @@ const ActivityInClassLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity..."
+                      : "Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
+                  }
                   maxLength={300}
                   showCount
                   disabled={loading}
@@ -460,13 +517,24 @@ const ActivityInClassLesson = ({
                       <Tag color="orange">{formData.duration}</Tag>
                     </Col>
                   )}
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
                       <Text strong style={{ color: "#666" }}>
                         Based on Lesson:
                       </Text>
                       <br />
                       <Text>{selectedLessonPlan.title}</Text>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <Text strong style={{ color: "#666" }}>
+                        Configuration Mode:
+                      </Text>
+                      <br />
+                      <Text>
+                        This configuration will be saved with your lesson plan
+                      </Text>
                     </Col>
                   )}
                 </Row>
@@ -494,7 +562,13 @@ const ActivityInClassLesson = ({
             onClick={handleSubmit}
             icon={loading ? <LoadingOutlined /> : null}
           >
-            {loading ? "Generating..." : "Submit Activity"}
+            {loading
+              ? isLessonPlanningMode
+                ? "Saving..."
+                : "Generating..."
+              : isLessonPlanningMode
+              ? "Save Configuration"
+              : "Submit Activity"}
           </Button>
         </div>
       </div>

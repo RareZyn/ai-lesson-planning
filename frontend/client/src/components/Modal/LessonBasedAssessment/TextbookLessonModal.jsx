@@ -1,17 +1,34 @@
-//TextBookModal.jsx with Loading Screen
-import React, { useState } from "react";
+//Updated TextbookLessonModal.jsx with lesson planning mode support
+import React, { useState, useEffect } from "react";
 import { Card, Input, Row, Col, message, Spin } from "antd";
 import { BookOutlined, LoadingOutlined } from "@ant-design/icons";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
 
-const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
+const TextBookLesson = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedLessonPlan,
+  isLessonPlanningMode = false, // NEW: Flag to indicate lesson planning mode
+  existingConfiguration = null, // NEW: Existing configuration data
+}) => {
   const [formData, setFormData] = useState({
     additionalRequirement: "",
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -23,8 +40,24 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await onSubmit(formData);
-      message.success("Textbook activity submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "textbook", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Textbook activity configuration saved successfully!");
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = formData;
+        await onSubmit(submitData);
+        message.success("Textbook activity submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -62,7 +95,9 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Textbook Activity
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : "Generating Textbook Activity"}
               </h3>
               <p
                 style={{
@@ -71,7 +106,9 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                   marginBottom: "16px",
                 }}
               >
-                Creating your textbook-based activity from the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your textbook activity configuration for the lesson plan..."
+                  : "Creating your textbook-based activity from the lesson plan..."}
               </p>
               <div
                 style={{
@@ -82,7 +119,9 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                 }}
               >
                 <div style={{ fontSize: "14px", color: "#666" }}>
-                  📚 Aligning with curriculum standards
+                  {isLessonPlanningMode
+                    ? "📚 Configuring textbook activity parameters"
+                    : "📚 Aligning with curriculum standards"}
                 </div>
               </div>
             </div>
@@ -105,7 +144,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             <div className="modal-icon">
               <BookOutlined />
             </div>
-            <h3 className="modal-title">English Textbook Activity</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure English Textbook Activity"
+                : "English Textbook Activity"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -114,8 +157,36 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
 
         {/* Body */}
         <div className="modal-body">
-          {/* Show lesson plan info if available */}
-          {selectedLessonPlan && (
+          {/* Info Alert for lesson planning mode */}
+          {isLessonPlanningMode && (
+            <div
+              style={{
+                marginBottom: "24px",
+                padding: "16px",
+                background: "#e6f7ff",
+                borderRadius: "8px",
+                border: "1px solid #91d5ff",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 600,
+                  color: "#1890ff",
+                  marginBottom: "4px",
+                }}
+              >
+                Configure Textbook Activity
+              </div>
+              <div style={{ fontSize: "14px", color: "#666" }}>
+                Set up the parameters for your textbook-based activity. This
+                configuration will be saved with your lesson plan and used when
+                generating assessments later.
+              </div>
+            </div>
+          )}
+
+          {/* Show lesson plan info if available and not in lesson planning mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
             <div
               style={{
                 marginBottom: "24px",
@@ -155,7 +226,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter your requirements, instructions, or notes for this textbook activity..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter your requirements, instructions, or notes for this textbook activity. This will be used when generating assessments based on this lesson plan..."
+                      : "Enter your requirements, instructions, or notes for this textbook activity..."
+                  }
                   maxLength={500}
                   showCount
                   disabled={loading}
@@ -172,9 +247,10 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                     color: "#666",
                   }}
                 >
-                  <strong>💡 Tip:</strong> Specify page numbers, exercises, or
-                  specific textbook sections you'd like to focus on. The AI will
-                  generate activities that complement your lesson objectives.
+                  <strong>💡 Tip:</strong>
+                  {isLessonPlanningMode
+                    ? " Specify page numbers, exercises, or specific textbook sections you'd like to focus on. This configuration will be saved and used when generating assessments later."
+                    : " Specify page numbers, exercises, or specific textbook sections you'd like to focus on. The AI will generate activities that complement your lesson objectives."}
                 </div>
               </Card>
             </Col>
@@ -203,7 +279,7 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                       English Textbook
                     </div>
                   </Col>
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
                       <div
                         style={{
@@ -217,6 +293,22 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                       <div style={{ color: "#333" }}>
                         {selectedLessonPlan.parameters?.specificTopic ||
                           "Selected Lesson Plan"}
+                      </div>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        Configuration Mode:
+                      </div>
+                      <div style={{ color: "#333" }}>
+                        This configuration will be saved with your lesson plan
                       </div>
                     </Col>
                   )}
@@ -248,8 +340,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Submitting...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode ? "Saving..." : "Submitting..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📚 Save Configuration"
               ) : (
                 "📚 Submit Activity"
               )}

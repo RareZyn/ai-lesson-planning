@@ -1,5 +1,5 @@
-//AssessmentLesson.jsx with proper loading screen
-import React, { useState } from "react";
+//Updated AssessmentLesson.jsx with lesson planning mode support
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Button,
@@ -40,6 +40,8 @@ const AssessmentLesson = ({
   onClose,
   onSubmit,
   selectedLessonPlan,
+  isLessonPlanningMode = false, // NEW: Flag to indicate lesson planning mode
+  existingConfiguration = null, // NEW: Existing configuration data
 }) => {
   const [formData, setFormData] = useState({
     assessmentType: "",
@@ -50,6 +52,20 @@ const AssessmentLesson = ({
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        assessmentType: existingConfiguration.assessmentType || "",
+        questionTypes: existingConfiguration.questionTypes || [],
+        numberOfQuestions: existingConfiguration.numberOfQuestions || 20,
+        timeAllocation: existingConfiguration.timeAllocation || "60",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -81,8 +97,24 @@ const AssessmentLesson = ({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
-      message.success("Assessment settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "assessment", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Assessment configuration saved successfully!");
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = formData;
+        await onSubmit(submitData);
+        message.success("Assessment settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -132,7 +164,9 @@ const AssessmentLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Assessment
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : "Generating Assessment"}
               </h3>
               <p
                 style={{
@@ -141,7 +175,9 @@ const AssessmentLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your customized assessment based on the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your assessment configuration for the lesson plan..."
+                  : "Creating your customized assessment based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -152,7 +188,9 @@ const AssessmentLesson = ({
                 }}
               >
                 <Text type="secondary" style={{ fontSize: "14px" }}>
-                  This may take 30-60 seconds depending on the complexity
+                  {isLessonPlanningMode
+                    ? "Configuring assessment parameters"
+                    : "This may take 30-60 seconds depending on the complexity"}
                 </Text>
               </div>
             </div>
@@ -175,7 +213,11 @@ const AssessmentLesson = ({
             <div className="modal-icon">
               <FileTextOutlined />
             </div>
-            <h3 className="modal-title">English Assessment Generator</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure English Assessment"
+                : "English Assessment Generator"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -184,8 +226,32 @@ const AssessmentLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Show lesson plan info if available */}
-          {selectedLessonPlan && (
+          {/* Info Alert for lesson planning mode */}
+          {isLessonPlanningMode && (
+            <div
+              style={{
+                marginBottom: "24px",
+                padding: "16px",
+                background: "#e6f7ff",
+                borderRadius: "8px",
+                border: "1px solid #91d5ff",
+              }}
+            >
+              <Text strong style={{ color: "#1890ff" }}>
+                Configure Assessment Parameters
+              </Text>
+              <div
+                style={{ marginTop: "4px", fontSize: "14px", color: "#666" }}
+              >
+                Set up the parameters for your assessment. This configuration
+                will be saved with your lesson plan and used when generating
+                assessments later.
+              </div>
+            </div>
+          )}
+
+          {/* Show lesson plan info if available and not in lesson planning mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
             <div
               style={{
                 marginBottom: "24px",
@@ -507,7 +573,11 @@ const AssessmentLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                      : "Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                  }
                   maxLength={500}
                   showCount
                   disabled={loading}
@@ -574,6 +644,17 @@ const AssessmentLesson = ({
                         {formData.questionTypes.length} types selected
                       </Text>
                     </Col>
+                    {isLessonPlanningMode && (
+                      <Col span={24}>
+                        <Text strong style={{ color: "#666" }}>
+                          Configuration Mode:
+                        </Text>
+                        <br />
+                        <Text>
+                          This configuration will be saved with your lesson plan
+                        </Text>
+                      </Col>
+                    )}
                   </Row>
                 </Card>
               </Col>
@@ -607,8 +688,11 @@ const AssessmentLesson = ({
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Generating...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode ? "Saving..." : "Generating..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📝 Save Configuration"
               ) : (
                 "📝 Generate Assessment"
               )}
