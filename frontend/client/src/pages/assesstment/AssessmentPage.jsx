@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx
+// src/pages/assessment/AssessmentPage.jsx - Updated to remove create button and add row-level generate buttons
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -25,6 +25,7 @@ import {
   BulbOutlined,
   SearchOutlined,
   FileExclamationOutlined,
+  ThunderboltOutlined, // For generate assessment icon
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -33,9 +34,6 @@ import { getAllLessonPlans } from "../../services/lessonService";
 import { getAllClasses } from "../../services/classService";
 import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
-
-// Lesson-Based Assessment Modal
-import LessonSelectionModal from "../../components/Modal/LessonBasedAssessment/LessonPlannerAssessmentModal";
 
 import "./AssessmentPage.css";
 
@@ -48,10 +46,7 @@ const AssessmentPage = () => {
 
   const [activeTab, setActiveTab] = useState("lesson-based");
   const [loading, setLoading] = useState(false);
-
-  // Lesson-Based Assessment Modal State
-  const [isLessonSelectionModalVisible, setIsLessonSelectionModalVisible] =
-    useState(false);
+  const [generatingAssessment, setGeneratingAssessment] = useState(null); // Track which row is generating
 
   // Data states
   const [lessonPlans, setLessonPlans] = useState([]);
@@ -209,40 +204,108 @@ const AssessmentPage = () => {
     }
   };
 
-  // Handle create assessment button click
-  const handleCreateAssessment = () => {
-    if (activeTab === "lesson-based") {
-      setIsLessonSelectionModalVisible(true);
-    } else {
-      message.info("Standalone assessment creation coming soon!");
+  // NEW: Handle generate assessment for a specific lesson plan
+  const handleGenerateAssessment = async (record) => {
+    try {
+      setGeneratingAssessment(record._id);
+
+      // Check if assessment already exists
+      if (record.assessmentStatus === "generated") {
+        Modal.confirm({
+          title: "Assessment Already Exists",
+          content: `An assessment already exists for "${record.title}". Do you want to create another one or view the existing assessment?`,
+          okText: "Create Another",
+          cancelText: "View Existing",
+          onOk: () => {
+            generateNewAssessment(record);
+          },
+          onCancel: () => {
+            handleViewActivity(record);
+          },
+        });
+        return;
+      }
+
+      await generateNewAssessment(record);
+    } catch (error) {
+      message.error("Failed to generate assessment");
+      console.error("Generate assessment error:", error);
+    } finally {
+      setGeneratingAssessment(null);
     }
   };
 
-  // Handle lesson-based assessment submission
-  const handleLessonBasedSubmit = async (data) => {
+  // NEW: Generate new assessment based on lesson plan
+  const generateNewAssessment = async (record) => {
     try {
-      setLoading(true);
+      // Prepare lesson plan data
+      const lessonPlanData = {
+        lessonPlanId: record._id,
+        classId: record.classId?._id || record.classId,
+        lesson: record.title,
+        subject: record.classId?.subject || record.parameters?.subject,
+        theme: record.parameters?.sow?.theme || record.parameters?.theme,
+        topic: record.parameters?.specificTopic || record.title,
+        grade: record.parameters?.grade || record.classId?.grade,
+        contentStandard: {
+          main: record.parameters?.sow?.contentStandard?.main || "",
+          component: record.parameters?.sow?.contentStandard?.comp || "",
+        },
+        learningStandard: {
+          main: record.parameters?.sow?.learningStandard?.main || "",
+          component: record.parameters?.sow?.learningStandard?.comp || "",
+        },
+        learningOutline: {
+          pre: record.parameters?.sow?.learningOutline?.pre || "",
+          during: record.parameters?.sow?.learningOutline?.during || "",
+          post: record.parameters?.sow?.learningOutline?.post || "",
+        },
+        assessmentTitle: `${record.title} - Assessment`,
+        assessmentDescription: record.plan?.learningObjective || "",
+      };
 
-      message.success("Assessment created successfully!");
-      setIsLessonSelectionModalVisible(false);
+      // Use the activity configuration from the lesson plan
+      const activityFormData = {
+        activityType: record.parameters?.activityType || "activity",
+        ...record.parameters?.activityConfiguration?.parameters,
+        configuredFor: record.parameters?.activityConfiguration?.configuredFor,
+      };
 
-      // Refresh the lesson plans list to show updated status
-      loadLessonBasedData();
+      console.log("Generating assessment with:", {
+        lessonPlanData,
+        activityFormData,
+      });
 
-      // Enhanced navigation with better error handling
-      if (data.data?._id) {
-        // Wait a moment for the data to be saved
-        setTimeout(() => {
-          navigate(`/app/assessment/activity/${data.data._id}`);
-        }, 500);
+      // Call the API to generate assessment
+      const response = await assessmentAPI.generateFromLessonPlan(
+        lessonPlanData,
+        activityFormData
+      );
+
+      if (response.success) {
+        message.success("Assessment generated successfully!");
+
+        // Refresh the lesson plans list to show updated status
+        await loadLessonBasedData();
+
+        // Navigate to view the generated assessment
+        if (response.data?._id) {
+          setTimeout(() => {
+            navigate(`/app/assessment/activity/${response.data._id}`);
+          }, 1000);
+        }
       } else {
-        message.info("Assessment created successfully! Check the list below.");
+        throw new Error(response.message || "Failed to generate assessment");
       }
     } catch (error) {
-      message.error("Failed to create assessment");
-    } finally {
-      setLoading(false);
+      console.error("Error generating assessment:", error);
+      throw error;
     }
+  };
+
+  // Handle create assessment button click - only for standalone assessments
+  const handleCreateStandaloneAssessment = () => {
+    message.info("Standalone assessment creation coming soon!");
   };
 
   // Enhanced view activity handler with better error handling
@@ -327,7 +390,7 @@ const AssessmentPage = () => {
     }));
   };
 
-  // Enhanced columns for lesson-based view with better action handling
+  // Enhanced columns for lesson-based view with generate assessment button
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
@@ -352,6 +415,10 @@ const AssessmentPage = () => {
               </>
             )}
             <Tag color="purple">{record.activityType}</Tag>
+            {/* Show if activity configuration exists */}
+            {record.parameters?.activityConfiguration && (
+              <Tag color="cyan">Configured</Tag>
+            )}
           </div>
         </div>
       ),
@@ -435,7 +502,7 @@ const AssessmentPage = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 150,
+      width: 200,
       render: (_, record) => {
         // Enhanced action button logic
         const hasStudentContent = record.assessments?.some(
@@ -451,8 +518,34 @@ const AssessmentPage = () => {
             a.generatedContent?.answerKeyHTML
         );
 
+        const isGenerating = generatingAssessment === record._id;
+        const hasActivityConfig = record.parameters?.activityConfiguration;
+
         return (
           <Space>
+            {/* Generate Assessment Button */}
+            <Button
+              type={
+                record.assessmentStatus === "not_generated"
+                  ? "primary"
+                  : "default"
+              }
+              icon={<ThunderboltOutlined />}
+              size="small"
+              loading={isGenerating}
+              onClick={() => handleGenerateAssessment(record)}
+              disabled={!hasActivityConfig || isGenerating}
+              title={
+                !hasActivityConfig
+                  ? "Activity configuration required"
+                  : record.assessmentStatus === "generated"
+                  ? "Generate another assessment"
+                  : "Generate assessment"
+              }
+            >
+              {isGenerating ? "Generating..." : "Generate"}
+            </Button>
+
             {hasStudentContent && (
               <Button
                 type="text"
@@ -565,6 +658,19 @@ const AssessmentPage = () => {
       ),
       children: (
         <div className="tab-content">
+          {/* Create Assessment Button - Only for standalone assessments */}
+          <div style={{ marginBottom: "24px", textAlign: "right" }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              size="large"
+              onClick={handleCreateStandaloneAssessment}
+              className="create-btn"
+            >
+              Create Standalone Assessment
+            </Button>
+          </div>
+
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
             <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
             <h3 style={{ color: "#666", marginTop: 16 }}>
@@ -587,18 +693,11 @@ const AssessmentPage = () => {
             <h2>
               <FileTextOutlined /> Assessment Management
             </h2>
-            <p>Create and manage assessments for your classes</p>
+            <p>
+              Generate assessments from lesson plans or create standalone
+              assessments
+            </p>
           </div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="large"
-            onClick={handleCreateAssessment}
-            className="create-btn"
-            loading={loading}
-          >
-            Create Assessment
-          </Button>
         </div>
       </div>
 
@@ -611,13 +710,6 @@ const AssessmentPage = () => {
           items={tabItems}
         />
       </Card>
-
-      {/* Lesson-Based Assessment Modal */}
-      <LessonSelectionModal
-        isOpen={isLessonSelectionModalVisible}
-        onClose={() => setIsLessonSelectionModalVisible(false)}
-        onSubmit={handleLessonBasedSubmit}
-      />
     </div>
   );
 };
