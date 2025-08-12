@@ -1,10 +1,8 @@
-// Fixed backend/controller/assessmentController.js - Properly handle different content types
-const OpenAI = require("openai");
+// Fixed backend/controller/assessmentController.js - Updated to use Gemini and return JSON instead of HTML
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const User = require("../model/User");
 
 // Activity type mapping to ensure valid enum values
 const ACTIVITY_TYPE_MAPPING = {
@@ -35,17 +33,17 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// FIXED: Properly structure generated content based on activity type
+// UPDATED: Structure generated content based on activity type (now expects JSON instead of HTML)
 const structureGeneratedContent = (generatedContent, activityType) => {
   console.log("Structuring content for activity type:", activityType);
   console.log("Raw generated content:", Object.keys(generatedContent));
 
   // Initialize the content structure
   const structuredContent = {
-    activityHTML: null,
-    rubricHTML: null,
-    assessmentHTML: null,
-    answerKeyHTML: null,
+    activityContent: null,
+    rubricContent: null,
+    assessmentContent: null,
+    answerKeyContent: null,
     hasStudentContent: false,
     hasTeacherContent: false,
     generatedAt: new Date(),
@@ -54,15 +52,17 @@ const structureGeneratedContent = (generatedContent, activityType) => {
   // Map content based on activity type
   switch (activityType) {
     case "assessment":
-      // For assessments: student content = assessmentHTML, teacher content = answerKeyHTML
-      structuredContent.assessmentHTML =
-        generatedContent.assessmentHTML || null;
-      structuredContent.answerKeyHTML = generatedContent.answerKeyHTML || null;
-      structuredContent.hasStudentContent = !!generatedContent.assessmentHTML;
-      structuredContent.hasTeacherContent = !!generatedContent.answerKeyHTML;
+      // For assessments: student content = assessmentContent, teacher content = answerKeyContent
+      structuredContent.assessmentContent =
+        generatedContent.assessmentContent || null;
+      structuredContent.answerKeyContent =
+        generatedContent.answerKeyContent || null;
+      structuredContent.hasStudentContent =
+        !!generatedContent.assessmentContent;
+      structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
       console.log("Assessment content structured:", {
-        hasAssessmentHTML: !!structuredContent.assessmentHTML,
-        hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
+        hasAssessmentContent: !!structuredContent.assessmentContent,
+        hasAnswerKeyContent: !!structuredContent.answerKeyContent,
       });
       break;
 
@@ -70,14 +70,15 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     case "textbook":
     case "activity":
     default:
-      // For other types: student content = activityHTML, teacher content = rubricHTML
-      structuredContent.activityHTML = generatedContent.activityHTML || null;
-      structuredContent.rubricHTML = generatedContent.rubricHTML || null;
-      structuredContent.hasStudentContent = !!generatedContent.activityHTML;
-      structuredContent.hasTeacherContent = !!generatedContent.rubricHTML;
+      // For other types: student content = activityContent, teacher content = rubricContent
+      structuredContent.activityContent =
+        generatedContent.activityContent || null;
+      structuredContent.rubricContent = generatedContent.rubricContent || null;
+      structuredContent.hasStudentContent = !!generatedContent.activityContent;
+      structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
       console.log("Activity content structured:", {
-        hasActivityHTML: !!structuredContent.activityHTML,
-        hasRubricHTML: !!structuredContent.rubricHTML,
+        hasActivityContent: !!structuredContent.activityContent,
+        hasRubricContent: !!structuredContent.rubricContent,
       });
       break;
   }
@@ -121,6 +122,27 @@ const generateFromLessonPlan = async (req, res) => {
       });
     }
 
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
     let generatedContent;
 
     // Route to appropriate generation function based on activity type
@@ -135,6 +157,7 @@ const generateFromLessonPlan = async (req, res) => {
           theme,
           topic,
           activityType: "activity",
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -148,6 +171,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -161,6 +185,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -174,6 +199,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -191,6 +217,7 @@ const generateFromLessonPlan = async (req, res) => {
           theme,
           topic,
           activityType: "activity",
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -284,6 +311,29 @@ const generateFromLessonPlan = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in generateFromLessonPlan:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Error generating assessment from lesson plan",
@@ -400,216 +450,209 @@ const getUserAssessmentsFiltered = async (req, res) => {
   }
 };
 
-// Helper functions for different assessment types
+// Helper functions for different assessment types - UPDATED to use Gemini and return JSON
 const generateActivityContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML student activities and teacher rubrics for classroom assessments.",
-      },
-      {
-        role: "user",
-        content: buildActivityPrompt(data),
-      },
-    ],
-  });
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
-  );
+  const result = await model.generateContent(buildActivityPrompt(data));
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
+  }
+
+  // Validate required fields
+  if (!generatedContent.activityContent || !generatedContent.rubricContent) {
+    throw new Error("Missing required content fields in AI response");
   }
 
   return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
   };
 };
 
 const generateEssayContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML student activities and teacher rubrics for KSSM English essay assessments.",
-      },
-      {
-        role: "user",
-        content: buildEssayPrompt(data),
-      },
-    ],
-  });
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
-  );
+  const result = await model.generateContent(buildEssayPrompt(data));
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
   }
 
   return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
   };
 };
 
 const generateTextbookContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML classroom textbook-based activities and teacher rubrics for the Malaysian curriculum.",
-      },
-      {
-        role: "user",
-        content: buildTextbookPrompt(data),
-      },
-    ],
-  });
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
-  );
+  const result = await model.generateContent(buildTextbookPrompt(data));
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
   }
 
   return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
   };
 };
 
-// FIXED: Assessment content generation - return proper field names
+// UPDATED: Assessment content generation - return proper field names and use Gemini
 const generateAssessmentContent = async (data) => {
   console.log("Generating assessment content with data:", data);
 
   const numberOfQuestions = data.numberOfQuestions || 20;
   console.log(`Generating assessment with ${numberOfQuestions} questions`);
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    temperature: 0.7, // Slight creativity for question variety
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert assessment creator for English language evaluation. You MUST generate exactly ${numberOfQuestions} questions as requested. Do not stop until all ${numberOfQuestions} questions are complete. Each question should be numbered clearly and include proper formatting.`,
-      },
-      {
-        role: "user",
-        content: buildAssessmentPrompt(data),
-      },
-    ],
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.7,
+    },
   });
 
-  const output = response.choices[0].message.content;
-  console.log("Raw AI output length:", output.length);
-  console.log("Raw AI output preview:", output.substring(0, 500) + "...");
+  try {
+    const result = await model.generateContent(buildAssessmentPrompt(data));
+    const response = await result.response;
+    const text = response.text();
 
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
-  );
+    console.log("Raw AI output length:", text.length);
+    console.log("Raw AI output preview:", text.substring(0, 500) + "...");
 
-  if (!match || match.length < 3) {
-    console.error("Failed to parse AI response. Full output:", output);
-    throw new Error(
-      "Invalid response format from AI - could not extract HTML blocks"
-    );
+    let generatedContent;
+    try {
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      generatedContent = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+      throw new Error("The AI response was not in a valid JSON format.");
+    }
+
+    // Validate required fields for assessment
+    if (
+      !generatedContent.assessmentContent ||
+      !generatedContent.answerKeyContent
+    ) {
+      console.error("Missing required assessment fields:", generatedContent);
+      throw new Error(
+        "Missing required assessment content fields in AI response"
+      );
+    }
+
+    const result_content = {
+      assessmentContent: generatedContent.assessmentContent,
+      answerKeyContent: generatedContent.answerKeyContent,
+    };
+
+    console.log(`Generated content analysis:`, {
+      assessmentContent: result_content.assessmentContent
+        ? "Generated"
+        : "Missing",
+      answerKeyContent: result_content.answerKeyContent
+        ? "Generated"
+        : "Missing",
+    });
+
+    return result_content;
+  } catch (error) {
+    console.error("Error in generateAssessmentContent:", error);
+
+    // Try one more time with a more explicit prompt if first attempt fails
+    if (!error.message.includes("retry")) {
+      console.log("Retrying assessment generation with enhanced prompt...");
+      return await retryAssessmentGeneration(data, numberOfQuestions);
+    }
+
+    throw error;
   }
-
-  const result = {
-    assessmentHTML: match[1].trim(),
-    answerKeyHTML: match[2].trim(),
-  };
-
-  // Verify question count in generated content
-  const questionMatches = [
-    result.assessmentHTML.match(/<(?:div|p|li)[^>]*>\s*\d+\.\s*/gi),
-    result.assessmentHTML.match(/\b\d+\.\s+[A-Z]/g),
-    result.assessmentHTML.match(/<h[3-6][^>]*>Question\s+\d+/gi),
-    result.assessmentHTML.match(/Question\s+\d+:/gi),
-  ].filter(Boolean);
-
-  const detectedQuestions =
-    questionMatches.length > 0
-      ? Math.max(...questionMatches.map((m) => m.length))
-      : 0;
-
-  console.log(`Generated content analysis:`, {
-    assessmentHTML: result.assessmentHTML ? "Generated" : "Missing",
-    answerKeyHTML: result.answerKeyHTML ? "Generated" : "Missing",
-    assessmentLength: result.assessmentHTML.length,
-    answerKeyLength: result.answerKeyHTML.length,
-    detectedQuestions: detectedQuestions,
-    requestedQuestions: numberOfQuestions,
-  });
-
-  if (detectedQuestions < numberOfQuestions) {
-    console.warn(
-      `⚠️  Generated ${detectedQuestions} questions but ${numberOfQuestions} were requested. Regenerating...`
-    );
-
-    // Try one more time with a more explicit prompt
-    return await retryAssessmentGeneration(data, numberOfQuestions);
-  }
-
-  return result;
 };
 
-// ADDED: Retry function for when question count is insufficient
+// UPDATED: Retry function for when assessment generation fails
 const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   console.log(
     `Retrying assessment generation with emphasis on ${numberOfQuestions} questions`
   );
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    temperature: 0.5,
-    messages: [
-      {
-        role: "system",
-        content: `You are creating an assessment with EXACTLY ${numberOfQuestions} questions. This is critical - you must not stop until you have generated all ${numberOfQuestions} questions. Count as you go: Question 1, Question 2, etc., up to Question ${numberOfQuestions}.`,
-      },
-      {
-        role: "user",
-        content: buildEnhancedAssessmentPrompt(data, numberOfQuestions),
-      },
-    ],
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.5,
+    },
   });
 
-  const output = response.choices[0].message.content;
-  console.log("Retry attempt - AI output length:", output.length);
-
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
+  const result = await model.generateContent(
+    buildEnhancedAssessmentPrompt(data, numberOfQuestions)
   );
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    console.error("Retry failed to parse AI response. Full output:", output);
-    throw new Error("Retry failed - Invalid response format from AI");
+  console.log("Retry attempt - AI output length:", text.length);
+
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Retry failed to parse Gemini response. Full output:", text);
+    const retryError = new Error(
+      "Retry failed - Invalid response format from AI"
+    );
+    retryError.message += " (retry)";
+    throw retryError;
   }
 
   return {
-    assessmentHTML: match[1].trim(),
-    answerKeyHTML: match[2].trim(),
+    assessmentContent: generatedContent.assessmentContent,
+    answerKeyContent: generatedContent.answerKeyContent,
   };
 };
 
-// Helper functions to build prompts (keeping the existing ones)
+// Helper functions to build prompts - UPDATED to request JSON instead of HTML
 const buildActivityPrompt = (data) => {
   return `
 # Identity
@@ -618,10 +661,10 @@ You are an AI assistant helping to generate creative and pedagogically sound in-
 
 # Instructions
 
-You must generate two HTML outputs:
+You must generate a JSON response with two main fields:
 
-1. 🎓 Student Activity Sheet (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
+1. 🎓 Student Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -662,10 +705,71 @@ Generate an in-class activity that incorporates:
 
 # Output Format
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+Return a JSON object with this exact structure:
 
-Do not include anything else. Just the two clean HTML blocks, no explanations.
+{
+  "activityContent": {
+    "title": "Activity Title",
+    "description": "Brief description of the activity",
+    "duration": "${data.duration || "30-45 minutes"}",
+    "materials": ["List", "of", "materials"],
+    "instructions": [
+      "Step 1: Clear instruction",
+      "Step 2: Another instruction",
+      "Step 3: Final instruction"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    },
+    "activities": [
+      {
+        "section": "Introduction",
+        "tasks": ["Task 1", "Task 2"]
+      },
+      {
+        "section": "Main Activity", 
+        "tasks": ["Task 1", "Task 2", "Task 3"]
+      },
+      {
+        "section": "Conclusion",
+        "tasks": ["Task 1", "Task 2"]
+      }
+    ]
+  },
+  "rubricContent": {
+    "title": "Assessment Rubric",
+    "description": "Rubric for evaluating student performance",
+    "criteria": [
+      {
+        "category": "Content Understanding",
+        "excellent": "Clear demonstration of understanding",
+        "good": "Good understanding with minor gaps", 
+        "satisfactory": "Basic understanding shown",
+        "needsImprovement": "Limited understanding evident",
+        "points": 5
+      },
+      {
+        "category": "Participation",
+        "excellent": "Active participation throughout",
+        "good": "Good participation with occasional engagement",
+        "satisfactory": "Moderate participation",
+        "needsImprovement": "Minimal participation",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points", 
+      "satisfactory": "13-17 points",
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
@@ -673,34 +777,14 @@ const buildEssayPrompt = (data) => {
   return `
 # Identity
 
-You are an AI assistant that creates HTML-based student essay tasks and teacher grading rubrics based on Malaysian KSSM curriculum lesson plans. All outputs must follow a professional, styled, printable A4-friendly layout.
+You are an AI assistant that creates student essay tasks and teacher grading rubrics based on Malaysian KSSM curriculum lesson plans. All outputs must be in JSON format.
 
 # Instructions
 
-You must return exactly two blocks of HTML content:
+You must return a JSON object with two main fields:
 
-1. 🎓 Student Essay Activity Sheet (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
-
-Both must:
-- Be ready to print on A4 size
-- Be visually clear, with headings, sections, and consistent fonts
-- Use modern styling (e.g., clean layout, color headers, table borders for rubrics)
-
-## Student Essay Activity Guidelines
-- Include fields for Student Name, Class, and Teacher Name
-- Provide a clear title and engaging prompt related to the lesson topic
-- Include bullet points under instructions explaining what to write
-- Add a large text box for the essay (at least 600px height)
-- Include a note to students about tone, grammar, and proofreading
-- Word count requirement: ${data.wordCount || "200-300 words"}
-- Duration: ${data.duration || "60 minutes"}
-
-## Teacher Rubric Guidelines
-- Create a 5-column rubric table with: Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Improvement (1–2)
-- Include categories like Content, Organization, Tone, Language Use, and Creativity
-- Add a total score summary and grading scale (e.g., 23–25 = Excellent)
-- Use styled borders, background colors for headers, and even-row shading
+1. 📘 Student Essay Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -722,7 +806,6 @@ Both must:
     "during": "${data.learningOutline?.during || ""}",
     "post": "${data.learningOutline?.post || ""}"
   },
-  "activityType": "essay",
   "essayType": "${data.essayType || "descriptive"}",
   "wordCount": "${data.wordCount || "200-300 words"}",
   "duration": "${data.duration || "60 minutes"}",
@@ -731,10 +814,75 @@ Both must:
 
 # Output Format
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+Return a JSON object with this exact structure:
 
-Do not include anything else. Just the raw HTMLs.
+{
+  "activityContent": {
+    "title": "Essay Writing Task",
+    "essayType": "${data.essayType || "descriptive"}",
+    "topic": "Essay topic based on lesson",
+    "prompt": "Engaging essay prompt related to the lesson",
+    "instructions": [
+      "Clear instruction 1",
+      "Clear instruction 2",
+      "Clear instruction 3"
+    ],
+    "requirements": {
+      "wordCount": "${data.wordCount || "200-300 words"}",
+      "duration": "${data.duration || "60 minutes"}",
+      "format": "Standard essay format"
+    },
+    "guidelines": [
+      "Use proper grammar and spelling",
+      "Organize ideas clearly",
+      "Support points with examples"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    }
+  },
+  "rubricContent": {
+    "title": "Essay Assessment Rubric",
+    "description": "Rubric for evaluating essay performance",
+    "criteria": [
+      {
+        "category": "Content",
+        "excellent": "Ideas are clear, well-developed, and relevant",
+        "good": "Ideas are clear with good development",
+        "satisfactory": "Ideas are present but need more development",
+        "needsImprovement": "Ideas are unclear or irrelevant",
+        "points": 5
+      },
+      {
+        "category": "Organization",
+        "excellent": "Clear structure with logical flow",
+        "good": "Good structure with minor issues",
+        "satisfactory": "Basic structure present",
+        "needsImprovement": "Poor organization",
+        "points": 5
+      },
+      {
+        "category": "Language Use",
+        "excellent": "Excellent grammar and vocabulary",
+        "good": "Good language with minor errors",
+        "satisfactory": "Adequate language use",
+        "needsImprovement": "Frequent language errors",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points",
+      "satisfactory": "13-17 points", 
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
@@ -742,27 +890,14 @@ const buildTextbookPrompt = (data) => {
   return `
 # Identity
 
-You are an AI assistant that generates printable HTML-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. This request is for a **Textbook-Based Activity**.
+You are an AI assistant that generates textbook-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. Return JSON format only.
 
 # Instructions
 
-You must return exactly two blocks of HTML content:
+You must return a JSON object with two main fields:
 
-1. 📘 Student Activity Sheet – Textbook Based (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
-
-### Student Activity Sheet Must Include:
-- Title and lesson info (Lesson name, subject, theme, topic)
-- Fields for Student Name, Class, and Teacher Name
-- Reference to the specific textbook page(s)
-- Give the question and activity of the textbook based on the lesson topic
-- An open-ended task or reflective question aligned to textbook goals
-- A creative note or prompt (e.g., reflection, group discussion, or journal)
-
-### Teacher Rubric Must Include:
-- A 5-column scoring table: Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Improvement (1–2)
-- Criteria: Understanding, Participation, Communication, Collaboration, Creativity
-- Total score summary and simple grading scale
+1. 📘 Student Textbook Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -784,20 +919,95 @@ You must return exactly two blocks of HTML content:
     "during": "${data.learningOutline?.during || ""}",
     "post": "${data.learningOutline?.post || ""}"
   },
-  "activityType": "textbook",
   "additionalRequirement": "${data.additionalRequirement || ""}"
 }
 
 # Output Format
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+Return a JSON object with this exact structure:
 
-No extra explanation. Just two valid HTML blocks.
+{
+  "activityContent": {
+    "title": "Textbook-Based Activity",
+    "description": "Activity based on textbook content",
+    "textbookReference": {
+      "pages": "Pages X-Y",
+      "chapter": "Chapter name",
+      "section": "Section title"
+    },
+    "preActivity": [
+      "Preview task 1",
+      "Preview task 2"
+    ],
+    "mainActivity": [
+      "Main textbook task 1",
+      "Main textbook task 2", 
+      "Main textbook task 3"
+    ],
+    "postActivity": [
+      "Follow-up task 1",
+      "Reflection task 2"
+    ],
+    "questions": [
+      {
+        "type": "comprehension",
+        "question": "Question based on textbook content"
+      },
+      {
+        "type": "analysis", 
+        "question": "Analysis question"
+      }
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    }
+  },
+  "rubricContent": {
+    "title": "Textbook Activity Assessment Rubric",
+    "description": "Rubric for evaluating textbook-based activity performance",
+    "criteria": [
+      {
+        "category": "Understanding",
+        "excellent": "Clear understanding of textbook content",
+        "good": "Good understanding with minor gaps",
+        "satisfactory": "Basic understanding shown",
+        "needsImprovement": "Limited understanding evident",
+        "points": 5
+      },
+      {
+        "category": "Participation",
+        "excellent": "Active participation in all activities",
+        "good": "Good participation throughout",
+        "satisfactory": "Moderate participation",
+        "needsImprovement": "Minimal participation",
+        "points": 5
+      },
+      {
+        "category": "Communication",
+        "excellent": "Clear and effective communication",
+        "good": "Good communication skills",
+        "satisfactory": "Adequate communication",
+        "needsImprovement": "Poor communication",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points",
+      "satisfactory": "13-17 points",
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
-// FIXED: Assessment prompt to generate proper content
+// UPDATED: Assessment prompt to generate JSON content
 const buildAssessmentPrompt = (data) => {
   const numberOfQuestions = data.numberOfQuestions || 20;
   const questionTypes = Array.isArray(data.questionTypes)
@@ -809,7 +1019,7 @@ const buildAssessmentPrompt = (data) => {
 
 You must create a complete English assessment with exactly ${numberOfQuestions} questions based on the lesson "${
     data.lesson || "English Lesson"
-  }".
+  }" and return it in JSON format.
 
 ## Assessment Details:
 - Subject: ${data.subject || "English"}  
@@ -834,93 +1044,74 @@ You must create a complete English assessment with exactly ${numberOfQuestions} 
 
 ## Output Requirements:
 
-Generate TWO HTML blocks:
+Generate a JSON object with this exact structure:
 
-**Block 1: STUDENT ASSESSMENT PAPER**
-\`\`\`html
-<!-- STUDENT ASSESSMENT -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>${data.lesson || "English Assessment"}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .question { margin: 20px 0; padding: 10px; border-left: 3px solid #007acc; }
-        .answer-space { border-bottom: 1px solid #ccc; margin: 10px 0; height: 20px; }
-        .instructions { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>${data.lesson || "English Assessment"}</h1>
-        <p>Subject: ${data.subject || "English"} | Time: ${
-    data.timeAllocation || "60 minutes"
-  } | Total Questions: ${numberOfQuestions}</p>
-        <p>Name: _________________ Class: _____________ Date: _____________</p>
-    </div>
-    
-    <div class="instructions">
-        <h3>Instructions:</h3>
-        <ul>
-            <li>Read all questions carefully before answering</li>
-            <li>Answer ALL ${numberOfQuestions} questions</li>
-            <li>Write clearly and legibly</li>
-            <li>Manage your time wisely</li>
-        </ul>
-    </div>
+{
+  "assessmentContent": {
+    "title": "${data.lesson || "English Assessment"}",
+    "subject": "${data.subject || "English"}",
+    "timeAllocation": "${data.timeAllocation || "60 minutes"}",
+    "totalQuestions": ${numberOfQuestions},
+    "instructions": [
+      "Read all questions carefully before answering",
+      "Answer ALL ${numberOfQuestions} questions",
+      "Write clearly and legibly",
+      "Manage your time wisely"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    },
+    "questions": [
+      {
+        "questionNumber": 1,
+        "type": "multiple_choice",
+        "question": "Question text here",
+        "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+        "points": 2
+      },
+      {
+        "questionNumber": 2,
+        "type": "short_answer",
+        "question": "Question text here",
+        "answerSpace": "3 lines",
+        "points": 5
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "ANSWER KEY - ${data.lesson || "English Assessment"}",
+    "totalQuestions": ${numberOfQuestions},
+    "totalPoints": "Calculate based on questions",
+    "answers": [
+      {
+        "questionNumber": 1,
+        "correctAnswer": "B) Option 2",
+        "points": 2,
+        "markingNotes": "Accept equivalent answers"
+      },
+      {
+        "questionNumber": 2,
+        "correctAnswer": "Sample correct answer",
+        "points": 5,
+        "markingNotes": "Look for key points: point1, point2, point3"
+      }
+    ],
+    "gradingScale": {
+      "excellent": "90-100%",
+      "good": "75-89%",
+      "satisfactory": "60-74%",
+      "needsImprovement": "Below 60%"
+    }
+  }
+}
 
-    <!-- Generate all ${numberOfQuestions} questions here -->
-    <div class="question">
-        <h4>Question 1:</h4>
-        <!-- Question content -->
-    </div>
-    
-    <!-- Continue for ALL ${numberOfQuestions} questions -->
-    
-</body>
-</html>
-\`\`\`
-
-**Block 2: TEACHER ANSWER KEY**
-\`\`\`html  
-<!-- TEACHER ANSWER KEY -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Answer Key - ${data.lesson || "English Assessment"}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .answer { margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px; }
-        .points { color: #007acc; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>ANSWER KEY</h1>
-        <h2>${data.lesson || "English Assessment"}</h2>
-        <p>Total Questions: ${numberOfQuestions} | Answer Key & Marking Guide</p>
-    </div>
-
-    <!-- Provide answers for all ${numberOfQuestions} questions -->
-    <div class="answer">
-        <h4>Question 1: <span class="points">[X points]</span></h4>
-        <p><strong>Answer:</strong> [Correct answer]</p>
-        <p><strong>Marking notes:</strong> [Guidance for teachers]</p>
-    </div>
-    
-    <!-- Continue for ALL ${numberOfQuestions} questions -->
-    
-</body>
-</html>
-\`\`\`
-
-Remember: You MUST generate exactly ${numberOfQuestions} questions. Count them as you write to ensure you reach the required number.
+Remember: You MUST generate exactly ${numberOfQuestions} questions in the questions array. Count them as you write to ensure you reach the required number.
 `;
 };
 
-// ADDED: Enhanced prompt for retry attempts
+// UPDATED: Enhanced prompt for retry attempts
 const buildEnhancedAssessmentPrompt = (data, numberOfQuestions) => {
   return `
 # URGENT: Generate EXACTLY ${numberOfQuestions} Questions
@@ -944,21 +1135,24 @@ ${Array.from(
   }
 
 ## Template Structure:
-Generate TWO complete HTML documents:
+Generate a JSON object with assessmentContent containing ALL ${numberOfQuestions} questions and answerKeyContent with answers to ALL ${numberOfQuestions} questions.
 
-1. **STUDENT ASSESSMENT** with ALL ${numberOfQuestions} questions numbered clearly
-2. **TEACHER ANSWER KEY** with answers to ALL ${numberOfQuestions} questions
-
-Start with:
-\`\`\`html
-<!-- STUDENT ASSESSMENT -->
-[Complete HTML with ${numberOfQuestions} questions]
-\`\`\`
-
-\`\`\`html  
-<!-- TEACHER ANSWER KEY -->
-[Complete answer key for ${numberOfQuestions} questions]
-\`\`\`
+Structure:
+{
+  "assessmentContent": {
+    "title": "${data.lesson || "English Assessment"}",
+    "totalQuestions": ${numberOfQuestions},
+    "questions": [
+      // ALL ${numberOfQuestions} questions here
+    ]
+  },
+  "answerKeyContent": {
+    "title": "Answer Key",
+    "answers": [
+      // Answers for ALL ${numberOfQuestions} questions here  
+    ]
+  }
+}
 
 DO NOT STOP until you have written Question ${numberOfQuestions}!
 `;
@@ -1021,8 +1215,14 @@ const saveAssessment = async (req, res) => {
       tags: tags || [],
       notes: notes || "",
       status: generatedContent ? "Generated" : "Draft",
-      hasActivity: !!(generatedContent && generatedContent.activityHTML),
-      hasRubric: !!(generatedContent && generatedContent.rubricHTML),
+      hasActivity: !!(
+        generatedContent &&
+        (generatedContent.activityContent || generatedContent.assessmentContent)
+      ),
+      hasRubric: !!(
+        generatedContent &&
+        (generatedContent.rubricContent || generatedContent.answerKeyContent)
+      ),
     });
 
     // Populate the response

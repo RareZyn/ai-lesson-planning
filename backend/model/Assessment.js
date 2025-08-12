@@ -1,4 +1,4 @@
-// backend/model/Assessment.js - Updated to support all content types
+// backend/model/Assessment.js - Updated to support JSON content instead of HTML
 const mongoose = require("mongoose");
 
 const AssessmentSchema = new mongoose.Schema(
@@ -69,25 +69,23 @@ const AssessmentSchema = new mongoose.Schema(
       },
     ],
 
-    // UPDATED: Generated content from AI - supports all content types
+
     generatedContent: {
-      // For activity, essay, textbook types
-      activityHTML: {
-        type: String,
+      activityContent: {
+        type: mongoose.Schema.Types.Mixed,
         default: null,
       },
-      rubricHTML: {
-        type: String,
+      rubricContent: {
+        type: mongoose.Schema.Types.Mixed, 
         default: null,
       },
 
-      // For assessment type
-      assessmentHTML: {
-        type: String,
+      assessmentContent: {
+        type: mongoose.Schema.Types.Mixed, 
         default: null,
       },
-      answerKeyHTML: {
-        type: String,
+      answerKeyContent: {
+        type: mongoose.Schema.Types.Mixed,
         default: null,
       },
 
@@ -105,13 +103,12 @@ const AssessmentSchema = new mongoose.Schema(
         default: Date.now,
       },
 
-      // Raw AI response data (for debugging)
+
       aiResponse: {
         type: mongoose.Schema.Types.Mixed,
       },
     },
 
-    // Original lesson plan data snapshot (for reference)
     lessonPlanSnapshot: {
       title: String,
       subject: String,
@@ -194,18 +191,18 @@ AssessmentSchema.methods.recordUsage = function () {
   return this.save();
 };
 
-// UPDATED: Instance method to mark content generated based on activity type
+// UPDATED: Instance method to mark content generated based on activity type (now handles JSON)
 AssessmentSchema.methods.markContentGenerated = function (
   studentContent,
   teacherContent,
   activityType
 ) {
   if (activityType === "assessment") {
-    this.generatedContent.assessmentHTML = studentContent;
-    this.generatedContent.answerKeyHTML = teacherContent;
+    this.generatedContent.assessmentContent = studentContent;
+    this.generatedContent.answerKeyContent = teacherContent;
   } else {
-    this.generatedContent.activityHTML = studentContent;
-    this.generatedContent.rubricHTML = teacherContent;
+    this.generatedContent.activityContent = studentContent;
+    this.generatedContent.rubricContent = teacherContent;
   }
 
   this.generatedContent.hasStudentContent = !!studentContent;
@@ -238,17 +235,17 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .sort({ createdAt: -1 });
 };
 
-// UPDATED: Pre-save middleware to update status and flags
+// UPDATED: Pre-save middleware to update status and flags (now handles JSON content)
 AssessmentSchema.pre("save", function (next) {
   // Update hasActivity and hasRubric based on content availability
   const content = this.generatedContent;
 
   if (this.activityType === "assessment") {
-    this.hasActivity = !!content.assessmentHTML;
-    this.hasRubric = !!content.answerKeyHTML;
+    this.hasActivity = !!content.assessmentContent;
+    this.hasRubric = !!content.answerKeyContent;
   } else {
-    this.hasActivity = !!content.activityHTML;
-    this.hasRubric = !!content.rubricHTML;
+    this.hasActivity = !!content.activityContent;
+    this.hasRubric = !!content.rubricContent;
   }
 
   // Update status based on content availability
