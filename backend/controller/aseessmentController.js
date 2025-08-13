@@ -2064,6 +2064,262 @@ const updateAssessment = async (req, res) => {
   }
 };
 
+
+const regenerateAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+    const { lessonPlanData, activityFormData } = req.body;
+
+    console.log("Regenerating assessment:", {
+      assessmentId,
+      lessonPlanData,
+      activityFormData,
+    });
+
+    // Find the existing assessment
+    const existingAssessment = await Assessment.findById(assessmentId);
+
+    if (!existingAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (existingAssessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to regenerate this assessment",
+      });
+    }
+
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
+    // Extract activity type and validate mapping
+    const rawActivityType = activityFormData.activityType || existingAssessment.activityType;
+    const activityType = validateAndMapActivityType(rawActivityType);
+
+    console.log(
+      `Regenerating with activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
+
+    let generatedContent;
+
+    // Route to appropriate generation function based on activity type
+    switch (activityType) {
+      case "activity":
+        generatedContent = await generateActivityContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+          activityType: "activity",
+        });
+        break;
+
+      case "essay":
+        generatedContent = await generateEssayContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      case "textbook":
+        generatedContent = await generateTextbookContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      case "assessment":
+        generatedContent = await generateAssessmentContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      default:
+        console.warn(
+          `Unhandled activity type for regeneration: ${activityType}, falling back to activity`
+        );
+        generatedContent = await generateActivityContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+          activityType: "activity",
+        });
+        break;
+    }
+
+    console.log("Generated new content for regeneration:", Object.keys(generatedContent));
+
+    // Structure the new content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType
+    );
+
+    console.log("Structured regenerated content:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
+
+    // Update the existing assessment with new content and metadata
+    const updateData = {
+      // Update title to indicate regeneration
+      title: lessonPlanData.assessmentTitle || existingAssessment.title + " (Regenerated)",
+      description: lessonPlanData.assessmentDescription || existingAssessment.description,
+      
+      // Update activity type if changed
+      activityType: activityType,
+      
+      // Replace the generated content entirely
+      generatedContent: structuredContent,
+      
+      // Update lesson plan snapshot if provided
+      ...(lessonPlanData.contentStandard && {
+        lessonPlanSnapshot: {
+          title: lessonPlanData.lesson,
+          subject: lessonPlanData.subject,
+          grade: lessonPlanData.grade,
+          contentStandard: lessonPlanData.contentStandard,
+          learningStandard: lessonPlanData.learningStandard,
+          learningOutline: lessonPlanData.learningOutline,
+        },
+      }),
+      
+      // Update status and flags
+      status: "Generated",
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
+      
+      // Update usage tracking
+      usageCount: existingAssessment.usageCount + 1,
+      lastUsed: new Date(),
+      
+      // Add regeneration metadata
+      regeneratedAt: new Date(),
+      regenerationCount: (existingAssessment.regenerationCount || 0) + 1,
+      
+      // Preserve original creation date if this is the first regeneration
+      ...(!(existingAssessment.regenerationCount > 0) && {
+        originalCreatedAt: existingAssessment.createdAt,
+      }),
+    };
+
+    console.log("Updating assessment with data:", {
+      id: assessmentId,
+      newTitle: updateData.title,
+      hasNewActivity: updateData.hasActivity,
+      hasNewRubric: updateData.hasRubric,
+      regenerationCount: updateData.regenerationCount,
+    });
+
+    // Update the assessment
+    const updatedAssessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate({
+      path: "lessonPlanId",
+      select: "parameters plan",
+    }).populate({
+      path: "classId",
+      select: "className grade subject",
+    }).populate({
+      path: "createdBy",
+      select: "name",
+    });
+
+    if (!updatedAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Failed to update assessment",
+      });
+    }
+
+    console.log("Assessment successfully regenerated:", {
+      id: updatedAssessment._id,
+      title: updatedAssessment.title,
+      hasActivity: updatedAssessment.hasActivity,
+      hasRubric: updatedAssessment.hasRubric,
+      regenerationCount: updatedAssessment.regenerationCount,
+    });
+
+    // Return the updated assessment
+    res.status(200).json({
+      success: true,
+      message: "Assessment regenerated successfully",
+      data: updatedAssessment,
+      generatedContent: updatedAssessment.generatedContent,
+    });
+
+  } catch (error) {
+    console.error("Error in regenerateAssessment:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Error regenerating assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// Update the module.exports at the end of the file
 module.exports = {
   generateFromLessonPlan,
   saveAssessment,
@@ -2073,4 +2329,5 @@ module.exports = {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
+  regenerateAssessment, 
 };

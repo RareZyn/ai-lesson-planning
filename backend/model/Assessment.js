@@ -181,6 +181,16 @@ const AssessmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    regeneratedAt: {
+      type: Date,
+    },
+    regenerationCount: {
+      type: Number,
+      default: 0,
+    },
+    originalCreatedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

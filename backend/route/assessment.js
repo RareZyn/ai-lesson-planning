@@ -1,4 +1,4 @@
-// backend/route/assessment.js - Add new route
+// backend/route/assessment.js - Add regeneration route
 const express = require("express");
 const {
   generateFromLessonPlan,
@@ -9,6 +9,7 @@ const {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
+  regenerateAssessment, // NEW: Add regeneration method
 } = require("../controller/aseessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
@@ -20,7 +21,7 @@ router.post("/save", protect, saveAssessment);
 // Get user's assessments with filtering and pagination
 router.get("/my-assessments", protect, getUserAssessmentsFiltered);
 
-// NEW: Get lesson plans without assessments
+// Get lesson plans without assessments
 router.get("/available-lessons", protect, getLessonPlansWithoutAssessments);
 
 // Get specific assessment by ID
@@ -28,6 +29,9 @@ router.get("/:id", protect, getAssessmentById);
 
 // Update assessment
 router.put("/:id", protect, updateAssessment);
+
+// Regenerate assessment with new configuration
+router.put("/:id/regenerate", protect, regenerateAssessment);
 
 // Delete assessment
 router.delete("/:id", protect, deleteAssessment);

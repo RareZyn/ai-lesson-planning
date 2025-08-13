@@ -785,4 +785,44 @@ export const assessmentUtils = {
   },
 };
 
+/**
+ * Regenerate assessment content for existing assessment
+ * This replaces the existing assessment instead of creating a new one
+ */
+regenerateAssessment: async (assessmentId, regenerationData) => {
+  try {
+    console.log("Regenerating assessment:", {
+      assessmentId,
+      regenerationData,
+    });
+
+    const response = await apiClient.put(
+      `/assessment/${assessmentId}/regenerate`,
+      regenerationData
+    );
+
+    console.log("Regeneration response:", response.data);
+
+    return {
+      success: true,
+      data: response.data.data, // The updated assessment
+      generatedContent: response.data.generatedContent,
+      message: response.data.message || "Assessment regenerated successfully",
+    };
+  } catch (error) {
+    console.error("Error regenerating assessment:", error);
+
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to regenerate assessment";
+
+    return {
+      success: false,
+      message: errorMessage,
+      error: error.response?.data || error,
+    };
+  }
+};
+
 export default assessmentAPI;

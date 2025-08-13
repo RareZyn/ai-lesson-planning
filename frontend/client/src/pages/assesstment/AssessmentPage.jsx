@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx - Updated to remove create button and add row-level generate buttons
+// src/pages/assessment/AssessmentPage.jsx 
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -25,7 +25,8 @@ import {
   BulbOutlined,
   SearchOutlined,
   FileExclamationOutlined,
-  ThunderboltOutlined, // For generate assessment icon
+  ThunderboltOutlined,
+  RedoOutlined, // For regenerate icon
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +35,12 @@ import { getAllLessonPlans } from "../../services/lessonService";
 import { getAllClasses } from "../../services/classService";
 import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
+
+// Import modals
+import ActivityInClassLessonModal from "../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
+import EssayLessonModal from "../../components/Modal/LessonBasedAssessment/EssayLessonModal";
+import AssessmentLessonModal from "../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
+import TextbookLessonModal from "../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
 
 import "./AssessmentPage.css";
 
@@ -46,7 +53,13 @@ const AssessmentPage = () => {
 
   const [activeTab, setActiveTab] = useState("lesson-based");
   const [loading, setLoading] = useState(false);
-  const [generatingAssessment, setGeneratingAssessment] = useState(null); // Track which row is generating
+  const [generatingAssessment, setGeneratingAssessment] = useState(null);
+
+  // Modal states for regeneration
+  const [regenerateModalOpen, setRegenerateModalOpen] = useState(false);
+  const [regenerateModalType, setRegenerateModalType] = useState(null);
+  const [regeneratingLessonPlan, setRegeneratingLessonPlan] = useState(null);
+  const [existingAssessment, setExistingAssessment] = useState(null);
 
   // Data states
   const [lessonPlans, setLessonPlans] = useState([]);
@@ -222,23 +235,6 @@ const AssessmentPage = () => {
         return;
       }
 
-      // Check if assessment already exists
-      if (record.assessmentStatus === "generated") {
-        Modal.confirm({
-          title: "Assessment Already Exists",
-          content: `An assessment already exists for "${record.title}". Do you want to create another one or view the existing assessment?`,
-          okText: "Create Another",
-          cancelText: "View Existing",
-          onOk: () => {
-            generateNewAssessment(record);
-          },
-          onCancel: () => {
-            handleViewActivity(record);
-          },
-        });
-        return;
-      }
-
       await generateNewAssessment(record);
     } catch (error) {
       message.error("Failed to generate assessment");
@@ -246,6 +242,144 @@ const AssessmentPage = () => {
     } finally {
       setGeneratingAssessment(null);
     }
+  };
+
+  // NEW: Handle regenerate assessment button click
+  const handleRegenerateAssessment = (record) => {
+    // Get the activity type from the lesson plan configuration
+    const activityConfig = record.parameters?.activityConfiguration;
+    const activityType =
+      activityConfig?.type || record.parameters?.activityType;
+
+    if (!activityType) {
+      message.error("Cannot determine activity type for regeneration");
+      return;
+    }
+
+    // Get the existing assessment (take the first one)
+    const existingAssmt = record.assessments?.[0];
+    if (!existingAssmt) {
+      message.error("No existing assessment found to regenerate");
+      return;
+    }
+
+    // Set up modal states
+    setRegeneratingLessonPlan(record);
+    setExistingAssessment(existingAssmt);
+    setRegenerateModalType(activityType);
+    setRegenerateModalOpen(true);
+  };
+
+  // NEW: Handle modal submission for regeneration
+  const handleRegenerateModalSubmit = async (formData) => {
+    try {
+      setGeneratingAssessment(regeneratingLessonPlan._id);
+
+      // Prepare lesson plan data
+      const lessonPlanData = {
+        lessonPlanId: regeneratingLessonPlan._id,
+        classId:
+          regeneratingLessonPlan.classId?._id || regeneratingLessonPlan.classId,
+        lesson: regeneratingLessonPlan.title,
+        subject:
+          regeneratingLessonPlan.classId?.subject ||
+          regeneratingLessonPlan.parameters?.subject ||
+          "English",
+        theme:
+          regeneratingLessonPlan.parameters?.sow?.theme ||
+          regeneratingLessonPlan.parameters?.theme,
+        topic:
+          regeneratingLessonPlan.parameters?.specificTopic ||
+          regeneratingLessonPlan.title,
+        grade:
+          regeneratingLessonPlan.parameters?.grade ||
+          regeneratingLessonPlan.classId?.grade,
+        contentStandard: {
+          main:
+            regeneratingLessonPlan.parameters?.sow?.contentStandard?.main || "",
+          component:
+            regeneratingLessonPlan.parameters?.sow?.contentStandard?.comp || "",
+        },
+        learningStandard: {
+          main:
+            regeneratingLessonPlan.parameters?.sow?.learningStandard?.main ||
+            "",
+          component:
+            regeneratingLessonPlan.parameters?.sow?.learningStandard?.comp ||
+            "",
+        },
+        learningOutline: {
+          pre:
+            regeneratingLessonPlan.parameters?.sow?.learningOutline?.pre || "",
+          during:
+            regeneratingLessonPlan.parameters?.sow?.learningOutline?.during ||
+            "",
+          post:
+            regeneratingLessonPlan.parameters?.sow?.learningOutline?.post || "",
+        },
+        assessmentTitle: `${regeneratingLessonPlan.title} - Assessment (Regenerated)`,
+        assessmentDescription:
+          regeneratingLessonPlan.plan?.learningObjective || "",
+      };
+
+      // Use the new form data for regeneration
+      const activityFormData = {
+        activityType: regenerateModalType,
+        ...formData,
+        configuredFor: regenerateModalType,
+      };
+
+      console.log("Regenerating assessment with data:", {
+        lessonPlanData,
+        activityFormData,
+        existingAssessmentId: existingAssessment._id,
+      });
+
+      // Call the regeneration API endpoint
+      const response = await assessmentAPI.regenerateAssessment(
+        existingAssessment._id,
+        {
+          lessonPlanData,
+          activityFormData,
+        }
+      );
+
+      if (response.success) {
+        message.success("Assessment regenerated successfully!");
+
+        // Close modal and reset states
+        handleCloseRegenerateModal();
+
+        // Refresh the lesson plans list
+        await loadLessonBasedData();
+
+        // Navigate to view the regenerated assessment
+        if (response.data?._id) {
+          setTimeout(() => {
+            navigate(`/app/assessment/${response.data._id}`);
+          }, 1000);
+        }
+      } else {
+        throw new Error(response.message || "Failed to regenerate assessment");
+      }
+    } catch (error) {
+      console.error("Error regenerating assessment:", error);
+      message.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to regenerate assessment"
+      );
+    } finally {
+      setGeneratingAssessment(null);
+    }
+  };
+
+  // NEW: Close regenerate modal and reset states
+  const handleCloseRegenerateModal = () => {
+    setRegenerateModalOpen(false);
+    setRegenerateModalType(null);
+    setRegeneratingLessonPlan(null);
+    setExistingAssessment(null);
   };
 
   const generateNewAssessment = async (record) => {
@@ -318,6 +452,7 @@ const AssessmentPage = () => {
       throw error;
     }
   };
+
   // Handle create assessment button click - only for standalone assessments
   const handleCreateStandaloneAssessment = () => {
     message.info("Standalone assessment creation coming soon!");
@@ -407,7 +542,7 @@ const AssessmentPage = () => {
     }));
   };
 
-  // Enhanced columns for lesson-based view with generate assessment button
+  // Enhanced columns for lesson-based view with generate/regenerate assessment button
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
@@ -519,7 +654,7 @@ const AssessmentPage = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 220,
       render: (_, record) => {
         // Enhanced action button logic
         const hasStudentContent = record.assessments?.some(
@@ -537,31 +672,43 @@ const AssessmentPage = () => {
 
         const isGenerating = generatingAssessment === record._id;
         const hasActivityConfig = record.parameters?.activityConfiguration;
+        const hasAssessments = record.assessmentStatus === "generated";
 
         return (
           <Space>
-            {/* Generate Assessment Button */}
-            <Button
-              type={
-                record.assessmentStatus === "not_generated"
-                  ? "primary"
-                  : "default"
-              }
-              icon={<ThunderboltOutlined />}
-              size="small"
-              loading={isGenerating}
-              onClick={() => handleGenerateAssessment(record)}
-              disabled={!hasActivityConfig || isGenerating}
-              title={
-                !hasActivityConfig
-                  ? "Activity configuration required"
-                  : record.assessmentStatus === "generated"
-                  ? "Generate another assessment"
-                  : "Generate assessment"
-              }
-            >
-              {isGenerating ? "Generating..." : "Generate"}
-            </Button>
+            {/* Generate/Regenerate Assessment Button */}
+            {!hasAssessments ? (
+              // Generate button for lesson plans without assessments
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                size="small"
+                loading={isGenerating}
+                onClick={() => handleGenerateAssessment(record)}
+                disabled={!hasActivityConfig || isGenerating}
+                title={
+                  !hasActivityConfig
+                    ? "Activity configuration required"
+                    : "Generate assessment"
+                }
+              >
+                {isGenerating ? "Generating..." : "Generate"}
+              </Button>
+            ) : (
+              // Regenerate button for lesson plans with assessments
+              <Button
+                type="default"
+                icon={<RedoOutlined />}
+                size="small"
+                loading={isGenerating}
+                onClick={() => handleRegenerateAssessment(record)}
+                disabled={!hasActivityConfig || isGenerating}
+                title="Regenerate assessment with new settings"
+                style={{ borderColor: "#fa8c16", color: "#fa8c16" }}
+              >
+                {isGenerating ? "Regenerating..." : "Regenerate"}
+              </Button>
+            )}
 
             {hasStudentContent && (
               <Button
@@ -603,6 +750,42 @@ const AssessmentPage = () => {
       {cls.className} - {cls.grade}
     </Option>
   ));
+
+  // NEW: Render the appropriate regeneration modal
+  const renderRegenerateModal = () => {
+    if (
+      !regenerateModalOpen ||
+      !regenerateModalType ||
+      !regeneratingLessonPlan
+    ) {
+      return null;
+    }
+
+    const commonProps = {
+      isOpen: regenerateModalOpen,
+      onClose: handleCloseRegenerateModal,
+      onSubmit: handleRegenerateModalSubmit,
+      selectedLessonPlan: regeneratingLessonPlan,
+      activityType: regenerateModalType,
+      existingConfiguration:
+        regeneratingLessonPlan.parameters?.activityConfiguration?.parameters,
+      isRegenerateMode: true, // NEW: Flag to indicate regeneration mode
+      existingAssessment: existingAssessment, // Pass existing assessment data
+    };
+
+    switch (regenerateModalType) {
+      case "assessment":
+        return <AssessmentLessonModal {...commonProps} />;
+      case "essay":
+        return <EssayLessonModal {...commonProps} />;
+      case "textbook":
+        return <TextbookLessonModal {...commonProps} />;
+      case "activity":
+        return <ActivityInClassLessonModal {...commonProps} />;
+      default:
+        return <ActivityInClassLessonModal {...commonProps} />;
+    }
+  };
 
   // Define tab items for the new Tabs API
   const tabItems = [
@@ -727,6 +910,8 @@ const AssessmentPage = () => {
           items={tabItems}
         />
       </Card>
+
+      {renderRegenerateModal()}
     </div>
   );
 };

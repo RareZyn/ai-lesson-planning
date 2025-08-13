@@ -38,6 +38,16 @@ const TextBookLesson = ({
   };
 
   const handleSubmit = async () => {
+    // Validation
+    if (!formData.assessmentType) {
+      message.warning("Please select an assessment type");
+      return;
+    }
+
+    if (formData.questionTypes.length === 0) {
+      message.warning("Please select at least one question type");
+    }
+
     setLoading(true);
     try {
       let submitData;
@@ -46,16 +56,27 @@ const TextBookLesson = ({
         // For lesson planning mode, return configuration data
         submitData = {
           ...formData,
-          configuredFor: "textbook", // Identifier for the configuration type
+          configuredFor: "assessment",
         };
 
         await onSubmit(submitData);
-        message.success("Textbook activity configuration saved successfully!");
+        message.success("Assessment configuration saved successfully!");
+      } else if (isRegenerateMode) {
+        // NEW: For regeneration mode, submit new configuration
+        submitData = {
+          ...formData,
+          activityType: "assessment",
+          isRegeneration: true,
+          existingAssessmentId: existingAssessment?._id,
+        };
+
+        await onSubmit(submitData);
+        // Success message will be handled by parent component
       } else {
         // For assessment generation mode (existing functionality)
         submitData = formData;
         await onSubmit(submitData);
-        message.success("Textbook activity submitted successfully!");
+        message.success("Assessment settings submitted successfully!");
       }
 
       onClose();
@@ -97,6 +118,8 @@ const TextBookLesson = ({
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
                 {isLessonPlanningMode
                   ? "Saving Configuration"
+                  : isRegenerateMode
+                  ? "Regenerating Textbook Activity"
                   : "Generating Textbook Activity"}
               </h3>
               <p
@@ -108,6 +131,8 @@ const TextBookLesson = ({
               >
                 {isLessonPlanningMode
                   ? "Saving your textbook activity configuration for the lesson plan..."
+                  : isRegenerateMode
+                  ? "Regenerating your textbook activity with new settings..."
                   : "Creating your textbook-based activity from the lesson plan..."}
               </p>
               <div
@@ -147,6 +172,8 @@ const TextBookLesson = ({
             <h3 className="modal-title">
               {isLessonPlanningMode
                 ? "Configure English Textbook Activity"
+                : isRegenerateMode
+                ? "Regenerate English Textbook Activity"
                 : "English Textbook Activity"}
             </h3>
           </div>
@@ -338,15 +365,26 @@ const TextBookLesson = ({
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? (
-                <>
-                  <LoadingOutlined spin />{" "}
-                  {isLessonPlanningMode ? "Saving..." : "Submitting..."}
-                </>
-              ) : isLessonPlanningMode ? (
-                "📚 Save Configuration"
-              ) : (
-                "📚 Submit Activity"
+              {loading
+                ? isLessonPlanningMode
+                  ? "Saving..."
+                  : isRegenerateMode
+                  ? "Regenerating..."
+                  : "Generating..."
+                : isLessonPlanningMode
+                ? "📝 Save Configuration"
+                : isRegenerateMode
+                ? "🔄 Regenerate Assessment"
+                : "📝 Generate Assessment"}
+
+              {isRegenerateMode && (
+                <Alert
+                  message="Regenerate Assessment"
+                  description={`Update the settings for "${selectedLessonPlan?.title}" assessment. The existing assessment will be replaced with a new one based on your updated configuration.`}
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 24 }}
+                />
               )}
             </button>
           </div>
