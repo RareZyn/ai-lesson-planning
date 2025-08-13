@@ -204,10 +204,23 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Handle generate assessment for a specific lesson plan
   const handleGenerateAssessment = async (record) => {
     try {
       setGeneratingAssessment(record._id);
+
+      // Check if lesson plan has activity configuration
+      if (!record.parameters?.activityConfiguration) {
+        Modal.confirm({
+          title: "Activity Configuration Required",
+          content: `This lesson plan "${record.title}" doesn't have activity configuration. You need to configure the activity type first in the lesson planner before generating assessments.`,
+          okText: "Go to Lesson Planner",
+          cancelText: "Cancel",
+          onOk: () => {
+            navigate("/app/lesson-planner");
+          },
+        });
+        return;
+      }
 
       // Check if assessment already exists
       if (record.assessmentStatus === "generated") {
@@ -235,15 +248,18 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Generate new assessment based on lesson plan
   const generateNewAssessment = async (record) => {
     try {
+      // Use the activity configuration from the lesson plan
+      const activityConfig = record.parameters?.activityConfiguration;
+
       // Prepare lesson plan data
       const lessonPlanData = {
         lessonPlanId: record._id,
         classId: record.classId?._id || record.classId,
         lesson: record.title,
-        subject: record.classId?.subject || record.parameters?.subject,
+        subject:
+          record.classId?.subject || record.parameters?.subject || "English",
         theme: record.parameters?.sow?.theme || record.parameters?.theme,
         topic: record.parameters?.specificTopic || record.title,
         grade: record.parameters?.grade || record.classId?.grade,
@@ -264,14 +280,14 @@ const AssessmentPage = () => {
         assessmentDescription: record.plan?.learningObjective || "",
       };
 
-      // Use the activity configuration from the lesson plan
+      // Use the saved activity configuration instead of opening modal
       const activityFormData = {
-        activityType: record.parameters?.activityType || "activity",
-        ...record.parameters?.activityConfiguration?.parameters,
-        configuredFor: record.parameters?.activityConfiguration?.configuredFor,
+        activityType: activityConfig.type,
+        ...activityConfig.parameters,
+        configuredFor: activityConfig.configuredFor,
       };
 
-      console.log("Generating assessment with:", {
+      console.log("Generating assessment with saved configuration:", {
         lessonPlanData,
         activityFormData,
       });
@@ -302,7 +318,6 @@ const AssessmentPage = () => {
       throw error;
     }
   };
-
   // Handle create assessment button click - only for standalone assessments
   const handleCreateStandaloneAssessment = () => {
     message.info("Standalone assessment creation coming soon!");

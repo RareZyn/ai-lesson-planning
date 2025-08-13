@@ -33,7 +33,6 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// UPDATED: Structure generated content based on activity type (now expects JSON instead of HTML)
 const structureGeneratedContent = (generatedContent, activityType) => {
   console.log("Structuring content for activity type:", activityType);
   console.log("Raw generated content:", Object.keys(generatedContent));
@@ -44,6 +43,11 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     rubricContent: null,
     assessmentContent: null,
     answerKeyContent: null,
+    // Add HTML versions for frontend compatibility
+    activityHTML: null,
+    rubricHTML: null,
+    assessmentHTML: null,
+    answerKeyHTML: null,
     hasStudentContent: false,
     hasTeacherContent: false,
     generatedAt: new Date(),
@@ -57,12 +61,27 @@ const structureGeneratedContent = (generatedContent, activityType) => {
         generatedContent.assessmentContent || null;
       structuredContent.answerKeyContent =
         generatedContent.answerKeyContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.assessmentContent) {
+        structuredContent.assessmentHTML = convertAssessmentToHTML(
+          structuredContent.assessmentContent
+        );
+      }
+      if (structuredContent.answerKeyContent) {
+        structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
+          structuredContent.answerKeyContent
+        );
+      }
+
       structuredContent.hasStudentContent =
         !!generatedContent.assessmentContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
       console.log("Assessment content structured:", {
         hasAssessmentContent: !!structuredContent.assessmentContent,
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
+        hasAssessmentHTML: !!structuredContent.assessmentHTML,
+        hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
       break;
 
@@ -74,16 +93,332 @@ const structureGeneratedContent = (generatedContent, activityType) => {
       structuredContent.activityContent =
         generatedContent.activityContent || null;
       structuredContent.rubricContent = generatedContent.rubricContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.activityContent) {
+        structuredContent.activityHTML = convertActivityToHTML(
+          structuredContent.activityContent,
+          activityType
+        );
+      }
+      if (structuredContent.rubricContent) {
+        structuredContent.rubricHTML = convertRubricToHTML(
+          structuredContent.rubricContent
+        );
+      }
+
       structuredContent.hasStudentContent = !!generatedContent.activityContent;
       structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
       console.log("Activity content structured:", {
         hasActivityContent: !!structuredContent.activityContent,
         hasRubricContent: !!structuredContent.rubricContent,
+        hasActivityHTML: !!structuredContent.activityHTML,
+        hasRubricHTML: !!structuredContent.rubricHTML,
       });
       break;
   }
 
   return structuredContent;
+};
+
+const convertActivityToHTML = (activityContent, activityType) => {
+  if (!activityContent) return null;
+  
+  let html = `
+    <div class="activity-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="activity-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${activityContent.title || 'Activity'}</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+      </div>
+  `;
+
+  if (activityContent.description) {
+    html += `<div class="activity-description" style="margin-bottom: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px;">
+      <p style="margin: 0;"><strong>Description:</strong> ${activityContent.description}</p>
+    </div>`;
+  }
+
+  if (activityContent.duration) {
+    html += `<p style="margin-bottom: 15px;"><strong>Duration:</strong> ${activityContent.duration}</p>`;
+  }
+
+  if (activityContent.materials && activityContent.materials.length > 0) {
+    html += `<div class="materials" style="margin-bottom: 20px;">
+      <h3 style="color: #52c41a;">Materials Needed:</h3>
+      <ul>`;
+    activityContent.materials.forEach(material => {
+      html += `<li>${material}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (activityContent.instructions && activityContent.instructions.length > 0) {
+    html += `<div class="instructions" style="margin-bottom: 25px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ol style="padding-left: 20px;">`;
+    activityContent.instructions.forEach(instruction => {
+      html += `<li style="margin-bottom: 8px;">${instruction}</li>`;
+    });
+    html += `</ol></div>`;
+  }
+
+  // Activity-specific content based on type
+  switch (activityType) {
+    case 'essay':
+      if (activityContent.prompt) {
+        html += `<div class="essay-prompt" style="margin-bottom: 20px; padding: 20px; background: #fff7e6; border: 2px solid #ffa940; border-radius: 8px;">
+          <h3 style="color: #fa8c16;">Essay Prompt:</h3>
+          <p style="font-size: 16px; font-weight: 500;">${activityContent.prompt}</p>
+        </div>`;
+      }
+      if (activityContent.requirements) {
+        html += `<div class="requirements" style="margin-bottom: 20px;">
+          <h3 style="color: #1890ff;">Requirements:</h3>
+          <ul>
+            <li><strong>Word Count:</strong> ${activityContent.requirements.wordCount}</li>
+            <li><strong>Duration:</strong> ${activityContent.requirements.duration}</li>
+            <li><strong>Format:</strong> ${activityContent.requirements.format}</li>
+          </ul>
+        </div>`;
+      }
+      if (activityContent.guidelines && activityContent.guidelines.length > 0) {
+        html += `<div class="guidelines" style="margin-bottom: 20px;">
+          <h3 style="color: #722ed1;">Guidelines:</h3>
+          <ul>`;
+        activityContent.guidelines.forEach(guideline => {
+          html += `<li>${guideline}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      break;
+      
+    case 'activity':
+      if (activityContent.activities && activityContent.activities.length > 0) {
+        activityContent.activities.forEach(section => {
+          html += `<div class="activity-section" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${section.section}</h3>
+            <ol style="padding-left: 20px;">`;
+          section.tasks.forEach(task => {
+            html += `<li style="margin-bottom: 10px;">${task}</li>`;
+          });
+          html += `</ol></div>`;
+        });
+      }
+      break;
+      
+    case 'textbook':
+      if (activityContent.textbookReference) {
+        html += `<div class="textbook-reference" style="margin-bottom: 20px; padding: 15px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
+          <h3 style="color: #52c41a;">Textbook Reference:</h3>
+          <p><strong>Pages:</strong> ${activityContent.textbookReference.pages}</p>
+          <p><strong>Chapter:</strong> ${activityContent.textbookReference.chapter}</p>
+          ${activityContent.textbookReference.section ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>` : ''}
+        </div>`;
+      }
+      
+      if (activityContent.preActivity && activityContent.preActivity.length > 0) {
+        html += `<div class="pre-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #1890ff;">Pre-Activity Tasks:</h3>
+          <ol>`;
+        activityContent.preActivity.forEach(task => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+      
+      if (activityContent.mainActivity && activityContent.mainActivity.length > 0) {
+        html += `<div class="main-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #fa8c16;">Main Activity Tasks:</h3>
+          <ol>`;
+        activityContent.mainActivity.forEach(task => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+      
+      if (activityContent.postActivity && activityContent.postActivity.length > 0) {
+        html += `<div class="post-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #722ed1;">Post-Activity Tasks:</h3>
+          <ol>`;
+        activityContent.postActivity.forEach(task => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+      
+      if (activityContent.questions && activityContent.questions.length > 0) {
+        html += `<div class="questions" style="margin-bottom: 20px;">
+          <h3 style="color: #eb2f96;">Questions:</h3>`;
+        activityContent.questions.forEach((question, index) => {
+          html += `<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
+            <p><strong>Question ${index + 1} (${question.type}):</strong> ${question.question}</p>
+            <div style="height: 60px; border: 1px solid #d9d9d9; margin-top: 10px; background: #fafafa;"></div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+      break;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertAssessmentToHTML = (assessmentContent) => {
+  if (!assessmentContent) return null;
+  
+  let html = `
+    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${assessmentContent.title || 'Assessment'}</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Time Allocation:</strong> ${assessmentContent.timeAllocation || '60 minutes'}</p>
+          <p style="margin: 0;"><strong>Total Questions:</strong> ${assessmentContent.totalQuestions || 'N/A'}</p>
+        </div>
+      </div>
+  `;
+
+  if (assessmentContent.instructions) {
+    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    assessmentContent.instructions.forEach(instruction => {
+      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (assessmentContent.questions && assessmentContent.questions.length > 0) {
+    html += `<div class="questions">`;
+    assessmentContent.questions.forEach(question => {
+      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+        <h4 style="color: #262626; margin-bottom: 10px;">Question ${question.questionNumber} (${question.points} ${question.points === 1 ? 'point' : 'points'})</h4>
+        <p style="font-size: 16px; margin-bottom: 15px;">${question.question}</p>`;
+        
+      if (question.type === 'multiple_choice' && question.options) {
+        html += `<div class="options" style="margin-left: 20px;">`;
+        question.options.forEach(option => {
+          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+        });
+        html += `</div>`;
+      } else if (question.answerSpace) {
+        const height = question.answerSpace === '3 lines' ? '80px' : 
+                     question.answerSpace === '5 lines' ? '120px' : '60px';
+        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      } else {
+        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      }
+      
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertRubricToHTML = (rubricContent) => {
+  if (!rubricContent) return null;
+  
+  let html = `
+    <div class="rubric-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.5;">
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${rubricContent.title || 'Assessment Rubric'}</h1>
+      ${rubricContent.description ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>` : ''}
+  `;
+
+  if (rubricContent.criteria && rubricContent.criteria.length > 0) {
+    html += `
+      <table class="rubric-table" border="1" cellpadding="12" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <thead>
+          <tr style="background-color: #52c41a; color: white;">
+            <th style="text-align: left; font-weight: bold;">Criteria</th>
+            <th style="text-align: center; font-weight: bold;">Excellent</th>
+            <th style="text-align: center; font-weight: bold;">Good</th>
+            <th style="text-align: center; font-weight: bold;">Satisfactory</th>
+            <th style="text-align: center; font-weight: bold;">Needs Improvement</th>
+            <th style="text-align: center; font-weight: bold;">Points</th>
+          </tr>
+        </thead>
+        <tbody>`;
+        
+    rubricContent.criteria.forEach((criterion, index) => {
+      const bgColor = index % 2 === 0 ? '#f6ffed' : '#ffffff';
+      html += `
+        <tr style="background-color: ${bgColor};">
+          <td style="font-weight: bold; vertical-align: top;">${criterion.category}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.excellent}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.good}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.satisfactory}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.needsImprovement}</td>
+          <td style="text-align: center; font-weight: bold; vertical-align: top;">${criterion.points}</td>
+        </tr>`;
+    });
+    
+    html += `
+        </tbody>
+      </table>
+      <div class="grading-info" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+        <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Information</h3>
+        <p><strong>Total Points:</strong> ${rubricContent.totalPoints || 'N/A'}</p>`;
+        
+    if (rubricContent.gradingScale) {
+      html += `<h4 style="margin-top: 15px; color: #1890ff;">Grading Scale:</h4><ul style="margin: 0; padding-left: 20px;">`;
+      Object.entries(rubricContent.gradingScale).forEach(([level, range]) => {
+        html += `<li><strong>${level.charAt(0).toUpperCase() + level.slice(1)}:</strong> ${range}</li>`;
+      });
+      html += `</ul>`;
+    }
+    
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertAnswerKeyToHTML = (answerKeyContent) => {
+  if (!answerKeyContent) return null;
+  
+  let html = `
+    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${answerKeyContent.title || 'Answer Key'}</h1>
+      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p><strong>Total Questions:</strong> ${answerKeyContent.totalQuestions || 'N/A'}</p>
+        <p style="margin: 0;"><strong>Total Points:</strong> ${answerKeyContent.totalPoints || 'N/A'}</p>
+      </div>
+  `;
+
+  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
+    html += `<div class="answers">`;
+    answerKeyContent.answers.forEach(answer => {
+      html += `
+        <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+          <h3 style="color: #262626; margin-bottom: 10px;">Question ${answer.questionNumber} (${answer.points} ${answer.points === 1 ? 'point' : 'points'})</h3>
+          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${answer.correctAnswer}</p>
+          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${answer.markingNotes}</p>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (answerKeyContent.gradingScale) {
+    html += `<div class="grading-scale" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+      <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Scale:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
+      html += `<li><strong>${level.charAt(0).toUpperCase() + level.slice(1)}:</strong> ${range}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  html += `</div>`;
+  return html;
 };
 
 const generateFromLessonPlan = async (req, res) => {
