@@ -307,7 +307,7 @@ const AssessmentPage = () => {
         // Navigate to view the generated assessment
         if (response.data?._id) {
           setTimeout(() => {
-            navigate(`/app/assessment/activity/${response.data._id}`);
+            navigate(`/app/assessment/${response.data._id}`);
           }, 1000);
         }
       } else {
@@ -338,7 +338,7 @@ const AssessmentPage = () => {
       );
 
       if (assessmentWithActivity) {
-        navigate(`/app/assessment/activity/${assessmentWithActivity._id}`);
+        navigate(`/app/assessment/${assessmentWithActivity._id}`);
       } else {
         message.warning("No activity content available for this assessment");
       }
@@ -362,7 +362,9 @@ const AssessmentPage = () => {
       );
 
       if (assessmentWithRubric) {
-        navigate(`/app/assessment/rubric/${assessmentWithRubric._id}`);
+        navigate(
+          `/app/assessment/${assessmentWithRubric._id}/${assessmentWithRubric._id}`
+        );
       } else {
         message.warning("No rubric/answer key available for this assessment");
       }

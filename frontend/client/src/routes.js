@@ -32,8 +32,8 @@ const router = createBrowserRouter(
 
         // Assessment routes - corrected
         { path: "assessment", element: <AssessmentPage /> },
-        { path: "assessment/activity/:id", element: <ActivityViewerPage /> },
-        { path: "assessment/rubric/:id", element: <RubricViewerPage /> },
+        { path: "assessment/:id", element: <ActivityViewerPage /> },
+        { path: "assessment/:id/:id", element: <RubricViewerPage /> },
 
         { path: "downloads", element: <FileDownloadPage /> },
         { path: "lessons", element: <MyLessons /> },

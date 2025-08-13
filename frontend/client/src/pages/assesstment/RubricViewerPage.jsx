@@ -575,7 +575,7 @@ const RubricViewerPage = () => {
 
   const handleViewActivity = () => {
     if (hasStudentContent()) {
-      navigate(`/app/assessment/activity/${id}`);
+      navigate(`/app/assessment/${id}`);
     } else {
       message.warning(
         `No ${getStudentContentName().toLowerCase()} available for this assessment.`

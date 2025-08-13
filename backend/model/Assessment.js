@@ -1,4 +1,3 @@
-// backend/model/Assessment.js - Updated to support JSON content instead of HTML
 const mongoose = require("mongoose");
 
 const AssessmentSchema = new mongoose.Schema(
@@ -69,23 +68,41 @@ const AssessmentSchema = new mongoose.Schema(
       },
     ],
 
-
+    // FIXED: Improved generatedContent schema with explicit HTML fields
     generatedContent: {
+      // JSON Content Fields
       activityContent: {
         type: mongoose.Schema.Types.Mixed,
         default: null,
       },
       rubricContent: {
-        type: mongoose.Schema.Types.Mixed, 
+        type: mongoose.Schema.Types.Mixed,
         default: null,
       },
-
       assessmentContent: {
-        type: mongoose.Schema.Types.Mixed, 
+        type: mongoose.Schema.Types.Mixed,
         default: null,
       },
       answerKeyContent: {
         type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+
+      // CRITICAL: Explicitly define HTML fields as String type
+      activityHTML: {
+        type: String,
+        default: null,
+      },
+      rubricHTML: {
+        type: String,
+        default: null,
+      },
+      assessmentHTML: {
+        type: String,
+        default: null,
+      },
+      answerKeyHTML: {
+        type: String,
         default: null,
       },
 
@@ -103,7 +120,7 @@ const AssessmentSchema = new mongoose.Schema(
         default: Date.now,
       },
 
-
+      // Legacy field for backwards compatibility
       aiResponse: {
         type: mongoose.Schema.Types.Mixed,
       },
@@ -241,11 +258,11 @@ AssessmentSchema.pre("save", function (next) {
   const content = this.generatedContent;
 
   if (this.activityType === "assessment") {
-    this.hasActivity = !!content.assessmentContent;
-    this.hasRubric = !!content.answerKeyContent;
+    this.hasActivity = !!(content.assessmentContent || content.assessmentHTML);
+    this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
   } else {
-    this.hasActivity = !!content.activityContent;
-    this.hasRubric = !!content.rubricContent;
+    this.hasActivity = !!(content.activityContent || content.activityHTML);
+    this.hasRubric = !!(content.rubricContent || content.rubricHTML);
   }
 
   // Update status based on content availability

@@ -569,7 +569,7 @@ const ActivityViewerPage = () => {
 
   const handleViewRubric = () => {
     if (hasTeacherContent()) {
-      navigate(`/app/assessment/rubric/${id}`);
+      navigate(`/app/assessment/${id}/${id}`);
     } else {
       message.warning(
         `No ${

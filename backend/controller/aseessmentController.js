@@ -64,19 +64,30 @@ const structureGeneratedContent = (generatedContent, activityType) => {
 
       // Convert JSON to HTML for frontend
       if (structuredContent.assessmentContent) {
+        console.log("Converting assessmentContent to HTML...");
         structuredContent.assessmentHTML = convertAssessmentToHTML(
           structuredContent.assessmentContent
         );
+        console.log(
+          "Assessment HTML generated:",
+          !!structuredContent.assessmentHTML
+        );
       }
       if (structuredContent.answerKeyContent) {
+        console.log("Converting answerKeyContent to HTML...");
         structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
           structuredContent.answerKeyContent
+        );
+        console.log(
+          "Answer Key HTML generated:",
+          !!structuredContent.answerKeyHTML
         );
       }
 
       structuredContent.hasStudentContent =
         !!generatedContent.assessmentContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
+
       console.log("Assessment content structured:", {
         hasAssessmentContent: !!structuredContent.assessmentContent,
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
@@ -94,21 +105,40 @@ const structureGeneratedContent = (generatedContent, activityType) => {
         generatedContent.activityContent || null;
       structuredContent.rubricContent = generatedContent.rubricContent || null;
 
-      // Convert JSON to HTML for frontend
+      // Convert JSON to HTML for frontend - THIS WAS THE ISSUE!
       if (structuredContent.activityContent) {
-        structuredContent.activityHTML = convertActivityToHTML(
+        console.log("Converting activityContent to HTML...");
+        const htmlResult = convertActivityToHTML(
           structuredContent.activityContent,
           activityType
         );
+        structuredContent.activityHTML = htmlResult;
+        console.log(
+          "Activity HTML generated:",
+          !!structuredContent.activityHTML
+        );
+        console.log(
+          "Activity HTML preview:",
+          htmlResult ? htmlResult.substring(0, 200) + "..." : "NULL"
+        );
       }
+
       if (structuredContent.rubricContent) {
-        structuredContent.rubricHTML = convertRubricToHTML(
+        console.log("Converting rubricContent to HTML...");
+        const rubricHtmlResult = convertRubricToHTML(
           structuredContent.rubricContent
+        );
+        structuredContent.rubricHTML = rubricHtmlResult;
+        console.log("Rubric HTML generated:", !!structuredContent.rubricHTML);
+        console.log(
+          "Rubric HTML preview:",
+          rubricHtmlResult ? rubricHtmlResult.substring(0, 200) + "..." : "NULL"
         );
       }
 
       structuredContent.hasStudentContent = !!generatedContent.activityContent;
       structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
+
       console.log("Activity content structured:", {
         hasActivityContent: !!structuredContent.activityContent,
         hasRubricContent: !!structuredContent.rubricContent,
@@ -118,16 +148,25 @@ const structureGeneratedContent = (generatedContent, activityType) => {
       break;
   }
 
+  console.log("Final structured content keys:", Object.keys(structuredContent));
+  console.log("Final HTML content status:", {
+    activityHTML: !!structuredContent.activityHTML,
+    rubricHTML: !!structuredContent.rubricHTML,
+    assessmentHTML: !!structuredContent.assessmentHTML,
+    answerKeyHTML: !!structuredContent.answerKeyHTML,
+  });
+
   return structuredContent;
 };
-
 const convertActivityToHTML = (activityContent, activityType) => {
   if (!activityContent) return null;
-  
+
   let html = `
     <div class="activity-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
       <div class="activity-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${activityContent.title || 'Activity'}</h1>
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          activityContent.title || "Activity"
+        }</h1>
         <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
           <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
         </div>
@@ -148,7 +187,7 @@ const convertActivityToHTML = (activityContent, activityType) => {
     html += `<div class="materials" style="margin-bottom: 20px;">
       <h3 style="color: #52c41a;">Materials Needed:</h3>
       <ul>`;
-    activityContent.materials.forEach(material => {
+    activityContent.materials.forEach((material) => {
       html += `<li>${material}</li>`;
     });
     html += `</ul></div>`;
@@ -158,7 +197,7 @@ const convertActivityToHTML = (activityContent, activityType) => {
     html += `<div class="instructions" style="margin-bottom: 25px;">
       <h3 style="color: #fa8c16;">Instructions:</h3>
       <ol style="padding-left: 20px;">`;
-    activityContent.instructions.forEach(instruction => {
+    activityContent.instructions.forEach((instruction) => {
       html += `<li style="margin-bottom: 8px;">${instruction}</li>`;
     });
     html += `</ol></div>`;
@@ -166,7 +205,7 @@ const convertActivityToHTML = (activityContent, activityType) => {
 
   // Activity-specific content based on type
   switch (activityType) {
-    case 'essay':
+    case "essay":
       if (activityContent.prompt) {
         html += `<div class="essay-prompt" style="margin-bottom: 20px; padding: 20px; background: #fff7e6; border: 2px solid #ffa940; border-radius: 8px;">
           <h3 style="color: #fa8c16;">Essay Prompt:</h3>
@@ -187,73 +226,92 @@ const convertActivityToHTML = (activityContent, activityType) => {
         html += `<div class="guidelines" style="margin-bottom: 20px;">
           <h3 style="color: #722ed1;">Guidelines:</h3>
           <ul>`;
-        activityContent.guidelines.forEach(guideline => {
+        activityContent.guidelines.forEach((guideline) => {
           html += `<li>${guideline}</li>`;
         });
         html += `</ul></div>`;
       }
       break;
-      
-    case 'activity':
+
+    case "activity":
       if (activityContent.activities && activityContent.activities.length > 0) {
-        activityContent.activities.forEach(section => {
+        activityContent.activities.forEach((section) => {
           html += `<div class="activity-section" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
             <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${section.section}</h3>
             <ol style="padding-left: 20px;">`;
-          section.tasks.forEach(task => {
+          section.tasks.forEach((task) => {
             html += `<li style="margin-bottom: 10px;">${task}</li>`;
           });
           html += `</ol></div>`;
         });
       }
       break;
-      
-    case 'textbook':
+
+    case "textbook":
       if (activityContent.textbookReference) {
         html += `<div class="textbook-reference" style="margin-bottom: 20px; padding: 15px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
           <h3 style="color: #52c41a;">Textbook Reference:</h3>
-          <p><strong>Pages:</strong> ${activityContent.textbookReference.pages}</p>
-          <p><strong>Chapter:</strong> ${activityContent.textbookReference.chapter}</p>
-          ${activityContent.textbookReference.section ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>` : ''}
+          <p><strong>Pages:</strong> ${
+            activityContent.textbookReference.pages
+          }</p>
+          <p><strong>Chapter:</strong> ${
+            activityContent.textbookReference.chapter
+          }</p>
+          ${
+            activityContent.textbookReference.section
+              ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>`
+              : ""
+          }
         </div>`;
       }
-      
-      if (activityContent.preActivity && activityContent.preActivity.length > 0) {
+
+      if (
+        activityContent.preActivity &&
+        activityContent.preActivity.length > 0
+      ) {
         html += `<div class="pre-activity" style="margin-bottom: 20px;">
           <h3 style="color: #1890ff;">Pre-Activity Tasks:</h3>
           <ol>`;
-        activityContent.preActivity.forEach(task => {
+        activityContent.preActivity.forEach((task) => {
           html += `<li>${task}</li>`;
         });
         html += `</ol></div>`;
       }
-      
-      if (activityContent.mainActivity && activityContent.mainActivity.length > 0) {
+
+      if (
+        activityContent.mainActivity &&
+        activityContent.mainActivity.length > 0
+      ) {
         html += `<div class="main-activity" style="margin-bottom: 20px;">
           <h3 style="color: #fa8c16;">Main Activity Tasks:</h3>
           <ol>`;
-        activityContent.mainActivity.forEach(task => {
+        activityContent.mainActivity.forEach((task) => {
           html += `<li>${task}</li>`;
         });
         html += `</ol></div>`;
       }
-      
-      if (activityContent.postActivity && activityContent.postActivity.length > 0) {
+
+      if (
+        activityContent.postActivity &&
+        activityContent.postActivity.length > 0
+      ) {
         html += `<div class="post-activity" style="margin-bottom: 20px;">
           <h3 style="color: #722ed1;">Post-Activity Tasks:</h3>
           <ol>`;
-        activityContent.postActivity.forEach(task => {
+        activityContent.postActivity.forEach((task) => {
           html += `<li>${task}</li>`;
         });
         html += `</ol></div>`;
       }
-      
+
       if (activityContent.questions && activityContent.questions.length > 0) {
         html += `<div class="questions" style="margin-bottom: 20px;">
           <h3 style="color: #eb2f96;">Questions:</h3>`;
         activityContent.questions.forEach((question, index) => {
           html += `<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
-            <p><strong>Question ${index + 1} (${question.type}):</strong> ${question.question}</p>
+            <p><strong>Question ${index + 1} (${question.type}):</strong> ${
+            question.question
+          }</p>
             <div style="height: 60px; border: 1px solid #d9d9d9; margin-top: 10px; background: #fafafa;"></div>
           </div>`;
         });
@@ -268,17 +326,23 @@ const convertActivityToHTML = (activityContent, activityType) => {
 
 const convertAssessmentToHTML = (assessmentContent) => {
   if (!assessmentContent) return null;
-  
+
   let html = `
     <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
       <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${assessmentContent.title || 'Assessment'}</h1>
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          assessmentContent.title || "Assessment"
+        }</h1>
         <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
           <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
         </div>
         <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Time Allocation:</strong> ${assessmentContent.timeAllocation || '60 minutes'}</p>
-          <p style="margin: 0;"><strong>Total Questions:</strong> ${assessmentContent.totalQuestions || 'N/A'}</p>
+          <p><strong>Time Allocation:</strong> ${
+            assessmentContent.timeAllocation || "60 minutes"
+          }</p>
+          <p style="margin: 0;"><strong>Total Questions:</strong> ${
+            assessmentContent.totalQuestions || "N/A"
+          }</p>
         </div>
       </div>
   `;
@@ -287,7 +351,7 @@ const convertAssessmentToHTML = (assessmentContent) => {
     html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
       <h3 style="color: #fa8c16;">Instructions:</h3>
       <ul style="margin: 0; padding-left: 20px;">`;
-    assessmentContent.instructions.forEach(instruction => {
+    assessmentContent.instructions.forEach((instruction) => {
       html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
     });
     html += `</ul></div>`;
@@ -295,25 +359,35 @@ const convertAssessmentToHTML = (assessmentContent) => {
 
   if (assessmentContent.questions && assessmentContent.questions.length > 0) {
     html += `<div class="questions">`;
-    assessmentContent.questions.forEach(question => {
+    assessmentContent.questions.forEach((question) => {
       html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-        <h4 style="color: #262626; margin-bottom: 10px;">Question ${question.questionNumber} (${question.points} ${question.points === 1 ? 'point' : 'points'})</h4>
-        <p style="font-size: 16px; margin-bottom: 15px;">${question.question}</p>`;
-        
-      if (question.type === 'multiple_choice' && question.options) {
+        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
+          question.questionNumber
+        } (${question.points} ${
+        question.points === 1 ? "point" : "points"
+      })</h4>
+        <p style="font-size: 16px; margin-bottom: 15px;">${
+          question.question
+        }</p>`;
+
+      if (question.type === "multiple_choice" && question.options) {
         html += `<div class="options" style="margin-left: 20px;">`;
-        question.options.forEach(option => {
+        question.options.forEach((option) => {
           html += `<p style="margin-bottom: 8px;">${option}</p>`;
         });
         html += `</div>`;
       } else if (question.answerSpace) {
-        const height = question.answerSpace === '3 lines' ? '80px' : 
-                     question.answerSpace === '5 lines' ? '120px' : '60px';
+        const height =
+          question.answerSpace === "3 lines"
+            ? "80px"
+            : question.answerSpace === "5 lines"
+            ? "120px"
+            : "60px";
         html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
       } else {
         html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
       }
-      
+
       html += `</div>`;
     });
     html += `</div>`;
@@ -325,11 +399,17 @@ const convertAssessmentToHTML = (assessmentContent) => {
 
 const convertRubricToHTML = (rubricContent) => {
   if (!rubricContent) return null;
-  
+
   let html = `
     <div class="rubric-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.5;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${rubricContent.title || 'Assessment Rubric'}</h1>
-      ${rubricContent.description ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>` : ''}
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${
+        rubricContent.title || "Assessment Rubric"
+      }</h1>
+      ${
+        rubricContent.description
+          ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>`
+          : ""
+      }
   `;
 
   if (rubricContent.criteria && rubricContent.criteria.length > 0) {
@@ -346,9 +426,9 @@ const convertRubricToHTML = (rubricContent) => {
           </tr>
         </thead>
         <tbody>`;
-        
+
     rubricContent.criteria.forEach((criterion, index) => {
-      const bgColor = index % 2 === 0 ? '#f6ffed' : '#ffffff';
+      const bgColor = index % 2 === 0 ? "#f6ffed" : "#ffffff";
       html += `
         <tr style="background-color: ${bgColor};">
           <td style="font-weight: bold; vertical-align: top;">${criterion.category}</td>
@@ -359,22 +439,26 @@ const convertRubricToHTML = (rubricContent) => {
           <td style="text-align: center; font-weight: bold; vertical-align: top;">${criterion.points}</td>
         </tr>`;
     });
-    
+
     html += `
         </tbody>
       </table>
       <div class="grading-info" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
         <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Information</h3>
-        <p><strong>Total Points:</strong> ${rubricContent.totalPoints || 'N/A'}</p>`;
-        
+        <p><strong>Total Points:</strong> ${
+          rubricContent.totalPoints || "N/A"
+        }</p>`;
+
     if (rubricContent.gradingScale) {
       html += `<h4 style="margin-top: 15px; color: #1890ff;">Grading Scale:</h4><ul style="margin: 0; padding-left: 20px;">`;
       Object.entries(rubricContent.gradingScale).forEach(([level, range]) => {
-        html += `<li><strong>${level.charAt(0).toUpperCase() + level.slice(1)}:</strong> ${range}</li>`;
+        html += `<li><strong>${
+          level.charAt(0).toUpperCase() + level.slice(1)
+        }:</strong> ${range}</li>`;
       });
       html += `</ul>`;
     }
-    
+
     html += `</div>`;
   }
 
@@ -384,24 +468,36 @@ const convertRubricToHTML = (rubricContent) => {
 
 const convertAnswerKeyToHTML = (answerKeyContent) => {
   if (!answerKeyContent) return null;
-  
+
   let html = `
     <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${answerKeyContent.title || 'Answer Key'}</h1>
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${
+        answerKeyContent.title || "Answer Key"
+      }</h1>
       <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <p><strong>Total Questions:</strong> ${answerKeyContent.totalQuestions || 'N/A'}</p>
-        <p style="margin: 0;"><strong>Total Points:</strong> ${answerKeyContent.totalPoints || 'N/A'}</p>
+        <p><strong>Total Questions:</strong> ${
+          answerKeyContent.totalQuestions || "N/A"
+        }</p>
+        <p style="margin: 0;"><strong>Total Points:</strong> ${
+          answerKeyContent.totalPoints || "N/A"
+        }</p>
       </div>
   `;
 
   if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
     html += `<div class="answers">`;
-    answerKeyContent.answers.forEach(answer => {
+    answerKeyContent.answers.forEach((answer) => {
       html += `
         <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-          <h3 style="color: #262626; margin-bottom: 10px;">Question ${answer.questionNumber} (${answer.points} ${answer.points === 1 ? 'point' : 'points'})</h3>
-          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${answer.correctAnswer}</p>
-          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${answer.markingNotes}</p>
+          <h3 style="color: #262626; margin-bottom: 10px;">Question ${
+            answer.questionNumber
+          } (${answer.points} ${answer.points === 1 ? "point" : "points"})</h3>
+          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${
+            answer.correctAnswer
+          }</p>
+          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${
+            answer.markingNotes
+          }</p>
         </div>`;
     });
     html += `</div>`;
@@ -412,7 +508,9 @@ const convertAnswerKeyToHTML = (answerKeyContent) => {
       <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Scale:</h3>
       <ul style="margin: 0; padding-left: 20px;">`;
     Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
-      html += `<li><strong>${level.charAt(0).toUpperCase() + level.slice(1)}:</strong> ${range}</li>`;
+      html += `<li><strong>${
+        level.charAt(0).toUpperCase() + level.slice(1)
+      }:</strong> ${range}</li>`;
     });
     html += `</ul></div>`;
   }
@@ -616,9 +714,53 @@ const generateFromLessonPlan = async (req, res) => {
     console.log("Assessment data to save:", assessmentData);
 
     const assessment = await Assessment.create(assessmentData);
+    console.log("BEFORE SAVING - Structured content HTML status:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
 
-    console.log("Assessment created successfully:", assessment._id);
-    console.log("Saved generatedContent:", assessment.generatedContent);
+    // Log the structured content keys to see what's included
+    console.log(
+      "BEFORE SAVING - Structured content keys:",
+      Object.keys(structuredContent)
+    );
+
+    // Log HTML content length if it exists
+    if (structuredContent.activityHTML) {
+      console.log(
+        "BEFORE SAVING - Activity HTML length:",
+        structuredContent.activityHTML.length
+      );
+      console.log(
+        "BEFORE SAVING - Activity HTML preview:",
+        structuredContent.activityHTML.substring(0, 300)
+      );
+    } else {
+      console.log("BEFORE SAVING - Activity HTML is NULL/UNDEFINED");
+    }
+
+    if (structuredContent.rubricHTML) {
+      console.log(
+        "BEFORE SAVING - Rubric HTML length:",
+        structuredContent.rubricHTML.length
+      );
+    } else {
+      console.log("BEFORE SAVING - Rubric HTML is NULL/UNDEFINED");
+    }
+
+    // Most importantly, log what we're actually saving to the database
+    console.log(
+      "ASSESSMENT DATA generatedContent keys:",
+      Object.keys(assessmentData.generatedContent)
+    );
+    console.log("ASSESSMENT DATA HTML status:", {
+      activityHTML: !!assessmentData.generatedContent.activityHTML,
+      rubricHTML: !!assessmentData.generatedContent.rubricHTML,
+      assessmentHTML: !!assessmentData.generatedContent.assessmentHTML,
+      answerKeyHTML: !!assessmentData.generatedContent.answerKeyHTML,
+    });
 
     // Update lesson plan status
     try {
@@ -1704,12 +1846,41 @@ const getAssessmentById = async (req, res) => {
       });
     }
 
-    console.log("Returning assessment:", {
+    console.log("Raw assessment from database:", {
       id: assessment._id,
-      generatedContent: assessment.generatedContent,
-      hasActivity: assessment.hasActivity,
-      hasRubric: assessment.hasRubric,
+      generatedContentKeys: Object.keys(assessment.generatedContent || {}),
+      htmlStatus: {
+        activityHTML: assessment.generatedContent?.activityHTML
+          ? "EXISTS"
+          : "MISSING",
+        rubricHTML: assessment.generatedContent?.rubricHTML
+          ? "EXISTS"
+          : "MISSING",
+        assessmentHTML: assessment.generatedContent?.assessmentHTML
+          ? "EXISTS"
+          : "MISSING",
+        answerKeyHTML: assessment.generatedContent?.answerKeyHTML
+          ? "EXISTS"
+          : "MISSING",
+      },
+      htmlLengths: {
+        activityHTML: assessment.generatedContent?.activityHTML?.length || 0,
+        rubricHTML: assessment.generatedContent?.rubricHTML?.length || 0,
+        assessmentHTML:
+          assessment.generatedContent?.assessmentHTML?.length || 0,
+        answerKeyHTML: assessment.generatedContent?.answerKeyHTML?.length || 0,
+      },
     });
+
+    // If HTML exists, log a preview
+    if (assessment.generatedContent?.activityHTML) {
+      console.log(
+        "ActivityHTML preview:",
+        assessment.generatedContent.activityHTML.substring(0, 100) + "..."
+      );
+    } else {
+      console.log("ActivityHTML is NULL/UNDEFINED in database");
+    }
 
     res.status(200).json({
       success: true,
