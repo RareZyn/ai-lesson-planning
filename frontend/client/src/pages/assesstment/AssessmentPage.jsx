@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx 
+// src/pages/assessment/AssessmentPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -110,9 +110,11 @@ const AssessmentPage = () => {
   const loadLessonBasedData = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Loading lesson-based data with filters:", filters);
 
       // Get all lesson plans for the user
       const allLessonPlans = await getAllLessonPlans();
+      console.log("📚 All lesson plans loaded:", allLessonPlans.length);
 
       // Get all assessments that have lesson plans
       const assessmentResponse = await assessmentAPI.getUserAssessments({
@@ -123,6 +125,10 @@ const AssessmentPage = () => {
       const assessmentsWithLessonPlans = assessmentResponse.success
         ? assessmentResponse.data || []
         : [];
+      console.log(
+        "📝 Assessments with lesson plans:",
+        assessmentsWithLessonPlans.length
+      );
 
       // Create a map of lesson plan IDs to their assessments
       const lessonPlanAssessmentMap = {};
@@ -139,13 +145,18 @@ const AssessmentPage = () => {
           lessonPlanAssessmentMap[lessonPlanId].push(assessment);
         }
       });
+      console.log(
+        "🗺️ Assessment map created:",
+        Object.keys(lessonPlanAssessmentMap).length,
+        "lesson plans have assessments"
+      );
 
       // Transform lesson plans into displayable format with assessment status
       const lessonPlanRows = allLessonPlans.map((lessonPlan) => {
         const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
         const hasAssessments = assessments.length > 0;
 
-        return {
+        const row = {
           ...lessonPlan,
           assessmentStatus: hasAssessments ? "generated" : "not_generated",
           assessments: assessments,
@@ -158,41 +169,109 @@ const AssessmentPage = () => {
           updatedAt: lessonPlan.updatedAt,
           status: hasAssessments ? "Generated" : "Not Generated",
         };
+
+        return row;
+      });
+
+      console.log("📊 Transformed rows:", {
+        total: lessonPlanRows.length,
+        generated: lessonPlanRows.filter(
+          (r) => r.assessmentStatus === "generated"
+        ).length,
+        notGenerated: lessonPlanRows.filter(
+          (r) => r.assessmentStatus === "not_generated"
+        ).length,
       });
 
       // Apply filters to lesson plans
       let filteredRows = lessonPlanRows;
+      console.log("🔍 Starting filtering with", filteredRows.length, "rows");
 
+      // Search filter
       if (filters.search) {
+        const beforeCount = filteredRows.length;
         filteredRows = filteredRows.filter(
           (row) =>
             row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
             row.description.toLowerCase().includes(filters.search.toLowerCase())
         );
+        console.log(
+          "🔍 Search filter applied:",
+          beforeCount,
+          "→",
+          filteredRows.length
+        );
       }
 
+      // Class filter
       if (filters.classId) {
+        const beforeCount = filteredRows.length;
         filteredRows = filteredRows.filter(
           (row) =>
             row.classId?._id === filters.classId ||
             row.classId === filters.classId
         );
+        console.log(
+          "🏫 Class filter applied:",
+          beforeCount,
+          "→",
+          filteredRows.length
+        );
       }
 
+      // Status filter - ENHANCED DEBUG
       if (filters.status) {
+        const beforeCount = filteredRows.length;
+        console.log("📊 Status filter details:", {
+          filterValue: filters.status,
+          rowsBeforeFilter: beforeCount,
+          sampleRows: filteredRows.slice(0, 3).map((r) => ({
+            title: r.title,
+            assessmentStatus: r.assessmentStatus,
+            status: r.status,
+          })),
+        });
+
         if (filters.status === "Generated") {
-          filteredRows = filteredRows.filter(
-            (row) => row.assessmentStatus === "generated"
-          );
+          filteredRows = filteredRows.filter((row) => {
+            const match = row.assessmentStatus === "generated";
+            console.log(
+              "✅ Checking row:",
+              row.title,
+              "assessmentStatus:",
+              row.assessmentStatus,
+              "match:",
+              match
+            );
+            return match;
+          });
         } else if (filters.status === "Not Generated") {
-          filteredRows = filteredRows.filter(
-            (row) => row.assessmentStatus === "not_generated"
-          );
+          filteredRows = filteredRows.filter((row) => {
+            const match = row.assessmentStatus === "not_generated";
+            console.log(
+              "❌ Checking row:",
+              row.title,
+              "assessmentStatus:",
+              row.assessmentStatus,
+              "match:",
+              match
+            );
+            return match;
+          });
         }
+
+        console.log(
+          "📊 Status filter applied:",
+          beforeCount,
+          "→",
+          filteredRows.length
+        );
       }
 
+      console.log("✅ Final result:", filteredRows.length, "rows to display");
       setAssessments(filteredRows);
     } catch (error) {
+      console.error("❌ Error in loadLessonBasedData:", error);
       message.error("Failed to load lesson plans and assessments");
     } finally {
       setLoading(false);
