@@ -1,4 +1,4 @@
-// frontend/client/src/data/activityTypesInClass.js
+// frontend/client/src/data/activityTypesInClass.js - Updated with missing exports
 export const classroomActivityTypes = [
   {
     category: "Reading & Comprehension",
@@ -111,12 +111,36 @@ export const resourceOptions = [
 ];
 
 export const timeDurationOptions = [
-  { value: "15 minutes", label: "15 minutes" },
-  { value: "20 minutes", label: "20 minutes" },
-  { value: "30 minutes", label: "30 minutes" },
-  { value: "45 minutes", label: "45 minutes" },
-  { value: "60 minutes", label: "60 minutes" },
-  { value: "90 minutes", label: "90 minutes" },
+  {
+    value: "15 minutes",
+    label: "15 minutes",
+    description: "Quick warm-up or review activity",
+  },
+  {
+    value: "20 minutes",
+    label: "20 minutes",
+    description: "Short focused activity",
+  },
+  {
+    value: "30 minutes",
+    label: "30 minutes",
+    description: "Standard activity duration",
+  },
+  {
+    value: "45 minutes",
+    label: "45 minutes",
+    description: "Extended activity session",
+  },
+  {
+    value: "60 minutes",
+    label: "60 minutes",
+    description: "Full period activity",
+  },
+  {
+    value: "90 minutes",
+    label: "90 minutes",
+    description: "Double period or block schedule",
+  },
 ];
 
 export const bloomTaxonomyLevels = [
@@ -179,7 +203,7 @@ export const difficultyLevels = [
   },
 ];
 
-// 2. Add to frontend/client/src/data/englishAssessmentTypes.js
+// Additional exports for standalone assessments
 export const englishForms = [
   { value: "form1", label: "Form 1" },
   { value: "form2", label: "Form 2" },

@@ -1,4 +1,4 @@
-// src/services/assessmentService.js - Complete updated service with direct lesson plan assessment generation
+// src/services/assessmentService.js - Fixed version without syntax errors
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -253,215 +253,218 @@ export const assessmentAPI = {
     }
   },
 
-// Additional service functions for standalone assessments
-// Add these to your existing assessmentService.js file
+  /**
+   * Create standalone assessment (without lesson plan)
+   */
+  createStandaloneAssessment: async (assessmentData) => {
+    try {
+      console.log("Creating standalone assessment with data:", assessmentData);
 
-/**
- * Create standalone assessment (without lesson plan)
- */
-createStandaloneAssessment: async (assessmentData) => {
-  try {
-    console.log("Creating standalone assessment with data:", assessmentData);
+      // Prepare the request data for standalone assessment
+      const requestData = {
+        // Core required fields
+        activityType: assessmentData.activityType,
+        grade: assessmentData.grade,
+        subject: assessmentData.subject,
 
-    // Prepare the request data for standalone assessment
-    const requestData = {
-      // Core required fields
-      activityType: assessmentData.activityType,
-      grade: assessmentData.grade,
-      subject: assessmentData.subject,
-      
-      // Optional class information
-      classId: assessmentData.classId || null,
-      className: assessmentData.className || null,
-      
-      // Assessment metadata
-      assessmentTitle: assessmentData.assessmentTitle || `${assessmentData.subject} ${assessmentData.activityType} - ${assessmentData.grade}`,
-      assessmentDescription: assessmentData.assessmentDescription || `Standalone ${assessmentData.activityType} assessment`,
-      
-      // Mark as standalone
-      isStandalone: true,
-      hasLessonPlan: false,
-      
-      // Activity-specific configuration
-      activityConfiguration: {
-        type: assessmentData.activityType,
-        parameters: assessmentData,
-        configuredAt: new Date().toISOString(),
-        configuredFor: assessmentData.activityType,
-      },
-      
-      // Pass through all form data
-      ...assessmentData,
-    };
+        // Optional class information
+        classId: assessmentData.classId || null,
+        className: assessmentData.className || null,
 
-    console.log("Prepared standalone assessment data:", requestData);
+        // Assessment metadata
+        assessmentTitle:
+          assessmentData.assessmentTitle ||
+          `${assessmentData.subject} ${assessmentData.activityType} - ${assessmentData.grade}`,
+        assessmentDescription:
+          assessmentData.assessmentDescription ||
+          `Standalone ${assessmentData.activityType} assessment`,
 
-    // Call the backend endpoint for standalone assessment creation
-    const response = await apiClient.post(
-      "/assessment/standalone",
-      requestData
-    );
+        // Mark as standalone
+        isStandalone: true,
+        hasLessonPlan: false,
 
-    console.log("Standalone assessment response:", response.data);
+        // Activity-specific configuration
+        activityConfiguration: {
+          type: assessmentData.activityType,
+          parameters: assessmentData,
+          configuredAt: new Date().toISOString(),
+          configuredFor: assessmentData.activityType,
+        },
 
-    return {
-      success: true,
-      data: response.data.data, // The saved assessment
-      generatedContent: response.data.generatedContent,
-      message: response.data.message || "Standalone assessment created successfully",
-    };
-  } catch (error) {
-    console.error("Error creating standalone assessment:", error);
+        // Pass through all form data
+        ...assessmentData,
+      };
 
-    // Enhanced error handling
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create standalone assessment";
+      console.log("Prepared standalone assessment data:", requestData);
 
-    return {
-      success: false,
-      message: errorMessage,
-      error: error.response?.data || error,
-    };
-  }
-},
+      // Call the backend endpoint for standalone assessment creation
+      const response = await apiClient.post(
+        "/assessment/standalone",
+        requestData
+      );
 
-/**
- * Get user's standalone assessments (assessments without lesson plans)
- */
-getStandaloneAssessments: async (params = {}) => {
-  try {
-    const response = await apiClient.get("/assessment/standalone", {
-      params: {
-        ...params,
-        hasLessonPlan: "false", // Ensure we only get standalone assessments
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching standalone assessments:", error);
-    throw error;
-  }
-},
+      console.log("Standalone assessment response:", response.data);
 
-/**
- * Update standalone assessment
- */
-updateStandaloneAssessment: async (assessmentId, updateData) => {
-  try {
-    const response = await apiClient.put(
-      `/assessment/standalone/${assessmentId}`,
-      updateData
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error updating standalone assessment:", error);
-    throw error;
-  }
-},
+      return {
+        success: true,
+        data: response.data.data, // The saved assessment
+        generatedContent: response.data.generatedContent,
+        message:
+          response.data.message || "Standalone assessment created successfully",
+      };
+    } catch (error) {
+      console.error("Error creating standalone assessment:", error);
 
-/**
- * Clone standalone assessment
- */
-cloneStandaloneAssessment: async (assessmentId, newTitle = null) => {
-  try {
-    const response = await apiClient.post(
-      `/assessment/standalone/${assessmentId}/clone`,
-      {
-        newTitle,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error cloning standalone assessment:", error);
-    throw error;
-  }
-},
+      // Enhanced error handling
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create standalone assessment";
 
-/**
- * Generate preview for standalone assessment before creating
- */
-previewStandaloneAssessment: async (assessmentData) => {
-  try {
-    const response = await apiClient.post(
-      "/assessment/standalone/preview",
-      assessmentData
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error generating standalone assessment preview:", error);
-    throw error;
-  }
-},
+      return {
+        success: false,
+        message: errorMessage,
+        error: error.response?.data || error,
+      };
+    }
+  },
 
-/**
- * Get standalone assessment templates by activity type
- */
-getStandaloneTemplates: async (activityType, grade = null, subject = null) => {
-  try {
-    const response = await apiClient.get("/assessment/standalone/templates", {
-      params: {
-        activityType,
-        grade,
-        subject,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching standalone templates:", error);
-    throw error;
-  }
-},
+  /**
+   * Get user's standalone assessments (assessments without lesson plans)
+   */
+  getStandaloneAssessments: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/assessment/standalone", {
+        params: {
+          ...params,
+          hasLessonPlan: "false", // Ensure we only get standalone assessments
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching standalone assessments:", error);
+      throw error;
+    }
+  },
 
-/**
- * Save standalone assessment as template
- */
-saveStandaloneAsTemplate: async (assessmentId, templateData) => {
-  try {
-    const response = await apiClient.post(
-      `/assessment/standalone/${assessmentId}/template`,
-      templateData
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error saving standalone assessment as template:", error);
-    throw error;
-  }
-},
+  /**
+   * Update standalone assessment
+   */
+  updateStandaloneAssessment: async (assessmentId, updateData) => {
+    try {
+      const response = await apiClient.put(
+        `/assessment/standalone/${assessmentId}`,
+        updateData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating standalone assessment:", error);
+      throw error;
+    }
+  },
 
-/**
- * Bulk create standalone assessments
- */
-bulkCreateStandaloneAssessments: async (assessmentDataList) => {
-  try {
-    const response = await apiClient.post(
-      "/assessment/standalone/bulk",
-      {
+  /**
+   * Clone standalone assessment
+   */
+  cloneStandaloneAssessment: async (assessmentId, newTitle = null) => {
+    try {
+      const response = await apiClient.post(
+        `/assessment/standalone/${assessmentId}/clone`,
+        {
+          newTitle,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error cloning standalone assessment:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Generate preview for standalone assessment before creating
+   */
+  previewStandaloneAssessment: async (assessmentData) => {
+    try {
+      const response = await apiClient.post(
+        "/assessment/standalone/preview",
+        assessmentData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error generating standalone assessment preview:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get standalone assessment templates by activity type
+   */
+  getStandaloneTemplates: async (
+    activityType,
+    grade = null,
+    subject = null
+  ) => {
+    try {
+      const response = await apiClient.get("/assessment/standalone/templates", {
+        params: {
+          activityType,
+          grade,
+          subject,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching standalone templates:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Save standalone assessment as template
+   */
+  saveStandaloneAsTemplate: async (assessmentId, templateData) => {
+    try {
+      const response = await apiClient.post(
+        `/assessment/standalone/${assessmentId}/template`,
+        templateData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error saving standalone assessment as template:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bulk create standalone assessments
+   */
+  bulkCreateStandaloneAssessments: async (assessmentDataList) => {
+    try {
+      const response = await apiClient.post("/assessment/standalone/bulk", {
         assessments: assessmentDataList,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error bulk creating standalone assessments:", error);
-    throw error;
-  }
-},
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error bulk creating standalone assessments:", error);
+      throw error;
+    }
+  },
 
-/**
- * Get standalone assessment statistics
- */
-getStandaloneAssessmentStats: async (filters = {}) => {
-  try {
-    const response = await apiClient.get("/assessment/standalone/stats", {
-      params: filters,
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching standalone assessment stats:", error);
-    throw error;
-  }
-},
+  /**
+   * Get standalone assessment statistics
+   */
+  getStandaloneAssessmentStats: async (filters = {}) => {
+    try {
+      const response = await apiClient.get("/assessment/standalone/stats", {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching standalone assessment stats:", error);
+      throw error;
+    }
+  },
 
   /**
    * Get user's assessments with filtering and pagination
@@ -583,16 +586,39 @@ getStandaloneAssessmentStats: async (filters = {}) => {
   /**
    * Regenerate assessment content for existing assessment
    */
-  regenerateAssessment: async (assessmentId, newConfiguration = {}) => {
+  regenerateAssessment: async (assessmentId, regenerationData) => {
     try {
-      const response = await apiClient.post(
+      console.log("Regenerating assessment:", {
+        assessmentId,
+        regenerationData,
+      });
+
+      const response = await apiClient.put(
         `/assessment/${assessmentId}/regenerate`,
-        newConfiguration
+        regenerationData
       );
-      return response.data;
+
+      console.log("Regeneration response:", response.data);
+
+      return {
+        success: true,
+        data: response.data.data, // The updated assessment
+        generatedContent: response.data.generatedContent,
+        message: response.data.message || "Assessment regenerated successfully",
+      };
     } catch (error) {
       console.error("Error regenerating assessment:", error);
-      throw error;
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to regenerate assessment";
+
+      return {
+        success: false,
+        message: errorMessage,
+        error: error.response?.data || error,
+      };
     }
   },
 
@@ -977,46 +1003,6 @@ export const assessmentUtils = {
       configuration: activityConfig,
     };
   },
-};
-
-/**
- * Regenerate assessment content for existing assessment
- * This replaces the existing assessment instead of creating a new one
- */
-regenerateAssessment: async (assessmentId, regenerationData) => {
-  try {
-    console.log("Regenerating assessment:", {
-      assessmentId,
-      regenerationData,
-    });
-
-    const response = await apiClient.put(
-      `/assessment/${assessmentId}/regenerate`,
-      regenerationData
-    );
-
-    console.log("Regeneration response:", response.data);
-
-    return {
-      success: true,
-      data: response.data.data, // The updated assessment
-      generatedContent: response.data.generatedContent,
-      message: response.data.message || "Assessment regenerated successfully",
-    };
-  } catch (error) {
-    console.error("Error regenerating assessment:", error);
-
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to regenerate assessment";
-
-    return {
-      success: false,
-      message: errorMessage,
-      error: error.response?.data || error,
-    };
-  }
 };
 
 export default assessmentAPI;

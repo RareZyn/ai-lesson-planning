@@ -1,4 +1,4 @@
-// frontend/client/src/data/englishAssessmentTypes.js
+// frontend/client/src/data/englishAssessmentTypes.js - Updated with missing exports
 export const englishAssessmentTypes = [
   {
     category: "Formative Assessments",
@@ -169,10 +169,108 @@ export const questionTypes = [
 ];
 
 export const timeAllocation = [
-  { value: "15", label: "15 minutes" },
-  { value: "30", label: "30 minutes" },
-  { value: "45", label: "45 minutes" },
-  { value: "60", label: "60 minutes" },
-  { value: "90", label: "90 minutes" },
-  { value: "120", label: "120 minutes" },
+  { value: "15", label: "15 minutes", description: "Quick assessment" },
+  { value: "30", label: "30 minutes", description: "Short test" },
+  { value: "45", label: "45 minutes", description: "Standard assessment" },
+  { value: "60", label: "60 minutes", description: "Full period" },
+  { value: "90", label: "90 minutes", description: "Extended assessment" },
+  { value: "120", label: "120 minutes", description: "Major examination" },
+];
+
+// NEW EXPORTS - Added missing exports
+export const englishForms = [
+  { value: "form1", label: "Form 1" },
+  { value: "form2", label: "Form 2" },
+  { value: "form3", label: "Form 3" },
+  { value: "form4", label: "Form 4" },
+  { value: "form5", label: "Form 5" },
+];
+
+export const englishSkills = [
+  {
+    value: "reading",
+    label: "Reading",
+    icon: "📖",
+    color: "#1890ff",
+    description: "Reading comprehension and analysis",
+  },
+  {
+    value: "writing",
+    label: "Writing",
+    icon: "✍️",
+    color: "#52c41a",
+    description: "Written communication and composition",
+  },
+  {
+    value: "listening",
+    label: "Listening",
+    icon: "👂",
+    color: "#fa8c16",
+    description: "Audio comprehension and understanding",
+  },
+  {
+    value: "speaking",
+    label: "Speaking",
+    icon: "🗣️",
+    color: "#722ed1",
+    description: "Oral communication and presentation",
+  },
+  {
+    value: "grammar",
+    label: "Grammar",
+    icon: "📝",
+    color: "#eb2f96",
+    description: "Language structure and rules",
+  },
+  {
+    value: "vocabulary",
+    label: "Vocabulary",
+    icon: "📚",
+    color: "#13c2c2",
+    description: "Word knowledge and usage",
+  },
+];
+
+export const difficultyLevels = [
+  {
+    value: "beginner",
+    label: "Beginner",
+    color: "#52c41a",
+    description: "Basic level for new learners",
+  },
+  {
+    value: "intermediate",
+    label: "Intermediate",
+    color: "#fa8c16",
+    description: "Moderate difficulty level",
+  },
+  {
+    value: "advanced",
+    label: "Advanced",
+    color: "#f5222d",
+    description: "Challenging level for skilled learners",
+  },
+];
+
+export const literatureComponents = [
+  {
+    value: "poetry",
+    label: "Poetry",
+    description: "Poems and poetic analysis",
+  },
+  {
+    value: "prose",
+    label: "Prose",
+    description: "Short stories and novels",
+  },
+  {
+    value: "drama",
+    label: "Drama",
+    description: "Plays and dramatic works",
+  },
+  {
+    value: "non_fiction",
+    label: "Non-Fiction",
+    description: "Essays and informational texts",
+  },
 ];
