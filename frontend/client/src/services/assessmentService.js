@@ -253,21 +253,215 @@ export const assessmentAPI = {
     }
   },
 
-  /**
-   * Create standalone assessment (without lesson plan)
-   */
-  createStandaloneAssessment: async (assessmentData) => {
-    try {
-      const response = await apiClient.post(
-        "/assessment/standalone",
-        assessmentData
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error creating standalone assessment:", error);
-      throw error;
-    }
-  },
+// Additional service functions for standalone assessments
+// Add these to your existing assessmentService.js file
+
+/**
+ * Create standalone assessment (without lesson plan)
+ */
+createStandaloneAssessment: async (assessmentData) => {
+  try {
+    console.log("Creating standalone assessment with data:", assessmentData);
+
+    // Prepare the request data for standalone assessment
+    const requestData = {
+      // Core required fields
+      activityType: assessmentData.activityType,
+      grade: assessmentData.grade,
+      subject: assessmentData.subject,
+      
+      // Optional class information
+      classId: assessmentData.classId || null,
+      className: assessmentData.className || null,
+      
+      // Assessment metadata
+      assessmentTitle: assessmentData.assessmentTitle || `${assessmentData.subject} ${assessmentData.activityType} - ${assessmentData.grade}`,
+      assessmentDescription: assessmentData.assessmentDescription || `Standalone ${assessmentData.activityType} assessment`,
+      
+      // Mark as standalone
+      isStandalone: true,
+      hasLessonPlan: false,
+      
+      // Activity-specific configuration
+      activityConfiguration: {
+        type: assessmentData.activityType,
+        parameters: assessmentData,
+        configuredAt: new Date().toISOString(),
+        configuredFor: assessmentData.activityType,
+      },
+      
+      // Pass through all form data
+      ...assessmentData,
+    };
+
+    console.log("Prepared standalone assessment data:", requestData);
+
+    // Call the backend endpoint for standalone assessment creation
+    const response = await apiClient.post(
+      "/assessment/standalone",
+      requestData
+    );
+
+    console.log("Standalone assessment response:", response.data);
+
+    return {
+      success: true,
+      data: response.data.data, // The saved assessment
+      generatedContent: response.data.generatedContent,
+      message: response.data.message || "Standalone assessment created successfully",
+    };
+  } catch (error) {
+    console.error("Error creating standalone assessment:", error);
+
+    // Enhanced error handling
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create standalone assessment";
+
+    return {
+      success: false,
+      message: errorMessage,
+      error: error.response?.data || error,
+    };
+  }
+},
+
+/**
+ * Get user's standalone assessments (assessments without lesson plans)
+ */
+getStandaloneAssessments: async (params = {}) => {
+  try {
+    const response = await apiClient.get("/assessment/standalone", {
+      params: {
+        ...params,
+        hasLessonPlan: "false", // Ensure we only get standalone assessments
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching standalone assessments:", error);
+    throw error;
+  }
+},
+
+/**
+ * Update standalone assessment
+ */
+updateStandaloneAssessment: async (assessmentId, updateData) => {
+  try {
+    const response = await apiClient.put(
+      `/assessment/standalone/${assessmentId}`,
+      updateData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating standalone assessment:", error);
+    throw error;
+  }
+},
+
+/**
+ * Clone standalone assessment
+ */
+cloneStandaloneAssessment: async (assessmentId, newTitle = null) => {
+  try {
+    const response = await apiClient.post(
+      `/assessment/standalone/${assessmentId}/clone`,
+      {
+        newTitle,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error cloning standalone assessment:", error);
+    throw error;
+  }
+},
+
+/**
+ * Generate preview for standalone assessment before creating
+ */
+previewStandaloneAssessment: async (assessmentData) => {
+  try {
+    const response = await apiClient.post(
+      "/assessment/standalone/preview",
+      assessmentData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error generating standalone assessment preview:", error);
+    throw error;
+  }
+},
+
+/**
+ * Get standalone assessment templates by activity type
+ */
+getStandaloneTemplates: async (activityType, grade = null, subject = null) => {
+  try {
+    const response = await apiClient.get("/assessment/standalone/templates", {
+      params: {
+        activityType,
+        grade,
+        subject,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching standalone templates:", error);
+    throw error;
+  }
+},
+
+/**
+ * Save standalone assessment as template
+ */
+saveStandaloneAsTemplate: async (assessmentId, templateData) => {
+  try {
+    const response = await apiClient.post(
+      `/assessment/standalone/${assessmentId}/template`,
+      templateData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error saving standalone assessment as template:", error);
+    throw error;
+  }
+},
+
+/**
+ * Bulk create standalone assessments
+ */
+bulkCreateStandaloneAssessments: async (assessmentDataList) => {
+  try {
+    const response = await apiClient.post(
+      "/assessment/standalone/bulk",
+      {
+        assessments: assessmentDataList,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error bulk creating standalone assessments:", error);
+    throw error;
+  }
+},
+
+/**
+ * Get standalone assessment statistics
+ */
+getStandaloneAssessmentStats: async (filters = {}) => {
+  try {
+    const response = await apiClient.get("/assessment/standalone/stats", {
+      params: filters,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching standalone assessment stats:", error);
+    throw error;
+  }
+},
 
   /**
    * Get user's assessments with filtering and pagination

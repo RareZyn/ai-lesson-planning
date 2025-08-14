@@ -118,3 +118,140 @@ export const timeDurationOptions = [
   { value: "60 minutes", label: "60 minutes" },
   { value: "90 minutes", label: "90 minutes" },
 ];
+
+export const bloomTaxonomyLevels = [
+  {
+    level: "Remember",
+    description: "Recall facts and basic concepts",
+    color: "#ff4d4f",
+    keywords: ["define", "list", "recall", "recognize", "state"],
+  },
+  {
+    level: "Understand",
+    description: "Explain ideas or concepts",
+    color: "#fa8c16",
+    keywords: ["explain", "describe", "interpret", "summarize", "classify"],
+  },
+  {
+    level: "Apply",
+    description: "Use information in new situations",
+    color: "#fadb14",
+    keywords: ["apply", "demonstrate", "solve", "use", "implement"],
+  },
+  {
+    level: "Analyze",
+    description: "Draw connections among ideas",
+    color: "#52c41a",
+    keywords: ["analyze", "compare", "contrast", "examine", "distinguish"],
+  },
+  {
+    level: "Evaluate",
+    description: "Justify a stand or decision",
+    color: "#1890ff",
+    keywords: ["evaluate", "judge", "defend", "assess", "critique"],
+  },
+  {
+    level: "Create",
+    description: "Produce new or original work",
+    color: "#722ed1",
+    keywords: ["create", "design", "compose", "plan", "construct"],
+  },
+];
+
+export const difficultyLevels = [
+  {
+    value: "beginner",
+    label: "Beginner",
+    color: "#52c41a",
+    description: "Basic level for new learners",
+  },
+  {
+    value: "intermediate",
+    label: "Intermediate",
+    color: "#fa8c16",
+    description: "Moderate difficulty level",
+  },
+  {
+    value: "advanced",
+    label: "Advanced",
+    color: "#f5222d",
+    description: "Challenging level for skilled learners",
+  },
+];
+
+// 2. Add to frontend/client/src/data/englishAssessmentTypes.js
+export const englishForms = [
+  { value: "form1", label: "Form 1" },
+  { value: "form2", label: "Form 2" },
+  { value: "form3", label: "Form 3" },
+  { value: "form4", label: "Form 4" },
+  { value: "form5", label: "Form 5" },
+];
+
+export const englishSkills = [
+  {
+    value: "reading",
+    label: "Reading",
+    icon: "📖",
+    color: "#1890ff",
+    description: "Reading comprehension and analysis",
+  },
+  {
+    value: "writing",
+    label: "Writing",
+    icon: "✍️",
+    color: "#52c41a",
+    description: "Written communication and composition",
+  },
+  {
+    value: "listening",
+    label: "Listening",
+    icon: "👂",
+    color: "#fa8c16",
+    description: "Audio comprehension and understanding",
+  },
+  {
+    value: "speaking",
+    label: "Speaking",
+    icon: "🗣️",
+    color: "#722ed1",
+    description: "Oral communication and presentation",
+  },
+  {
+    value: "grammar",
+    label: "Grammar",
+    icon: "📝",
+    color: "#eb2f96",
+    description: "Language structure and rules",
+  },
+  {
+    value: "vocabulary",
+    label: "Vocabulary",
+    icon: "📚",
+    color: "#13c2c2",
+    description: "Word knowledge and usage",
+  },
+];
+
+export const literatureComponents = [
+  {
+    value: "poetry",
+    label: "Poetry",
+    description: "Poems and poetic analysis",
+  },
+  {
+    value: "prose",
+    label: "Prose",
+    description: "Short stories and novels",
+  },
+  {
+    value: "drama",
+    label: "Drama",
+    description: "Plays and dramatic works",
+  },
+  {
+    value: "non_fiction",
+    label: "Non-Fiction",
+    description: "Essays and informational texts",
+  },
+];

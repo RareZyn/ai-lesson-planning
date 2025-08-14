@@ -1,4 +1,4 @@
-// FIXED: src/pages/assessment/AssessmentPage.jsx - Corrected filter logic
+// UPDATED: src/pages/assessment/AssessmentPage.jsx - Added standalone assessment functionality
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -36,11 +36,18 @@ import { getAllClasses } from "../../services/classService";
 import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
 
-// Import modals
+// Import modals for lesson-based assessments
 import ActivityInClassLessonModal from "../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
 import EssayLessonModal from "../../components/Modal/LessonBasedAssessment/EssayLessonModal";
 import AssessmentLessonModal from "../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
 import TextbookLessonModal from "../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
+
+// Import modals for standalone assessments
+import StandAloneAssessmentModal from "../../components/Modal/StandaloneAssessment/StandAloneAssessmentModal";
+import ActivityInClassStandaloneModal from "../../components/Modal/StandaloneAssessment/ActivityInClassStandaloneModal";
+import AssessmentStandaloneModal from "../../components/Modal/StandaloneAssessment/AssessmentStandaloneModal";
+import EssayStandaloneModal from "../../components/Modal/StandaloneAssessment/EssayStandaloneModal";
+import TextbookStandaloneModal from "../../components/Modal/StandaloneAssessment/TextbookStandaloneModal";
 
 import "./AssessmentPage.css";
 
@@ -55,11 +62,19 @@ const AssessmentPage = () => {
   const [loading, setLoading] = useState(false);
   const [generatingAssessment, setGeneratingAssessment] = useState(null);
 
-  // Modal states for regeneration
+  // Modal states for regeneration (lesson-based)
   const [regenerateModalOpen, setRegenerateModalOpen] = useState(false);
   const [regenerateModalType, setRegenerateModalType] = useState(null);
   const [regeneratingLessonPlan, setRegeneratingLessonPlan] = useState(null);
   const [existingAssessment, setExistingAssessment] = useState(null);
+
+  // Modal states for standalone assessments
+  const [standaloneModalOpen, setStandaloneModalOpen] = useState(false);
+  const [standaloneActivityModalOpen, setStandaloneActivityModalOpen] =
+    useState(false);
+  const [standaloneActivityType, setStandaloneActivityType] = useState(null);
+  const [standaloneAssessmentData, setStandaloneAssessmentData] =
+    useState(null);
 
   // Data states
   const [lessonPlans, setLessonPlans] = useState([]);
@@ -525,9 +540,92 @@ const AssessmentPage = () => {
     }
   };
 
-  // Handle create assessment button click - only for standalone assessments
+  // NEW: Handle create standalone assessment button click
   const handleCreateStandaloneAssessment = () => {
-    message.info("Standalone assessment creation coming soon!");
+    setStandaloneModalOpen(true);
+  };
+
+  // NEW: Handle standalone activity selection
+  const handleStandaloneActivitySelect = (activityType, assessmentData) => {
+    console.log("Selected standalone activity:", {
+      activityType,
+      assessmentData,
+    });
+
+    setStandaloneActivityType(activityType);
+    setStandaloneAssessmentData(assessmentData);
+    setStandaloneModalOpen(false);
+    setStandaloneActivityModalOpen(true);
+  };
+
+  // NEW: Handle standalone activity modal submission
+  const handleStandaloneActivitySubmit = async (formData) => {
+    try {
+      setLoading(true);
+
+      console.log("Submitting standalone assessment:", {
+        assessmentData: standaloneAssessmentData,
+        formData,
+        activityType: standaloneActivityType,
+      });
+
+      // Prepare the data for standalone assessment creation
+      const standaloneData = {
+        ...standaloneAssessmentData,
+        ...formData,
+        activityType: standaloneActivityType,
+        isStandalone: true,
+        assessmentTitle: `${standaloneAssessmentData.subject} ${standaloneActivityType} - ${standaloneAssessmentData.grade}`,
+        assessmentDescription:
+          formData.additionalRequirement ||
+          `Standalone ${standaloneActivityType} assessment`,
+      };
+
+      // Call the standalone assessment API
+      const response = await assessmentAPI.createStandaloneAssessment(
+        standaloneData
+      );
+
+      if (response.success) {
+        message.success("Standalone assessment created successfully!");
+
+        // Close modal and reset states
+        handleCloseStandaloneModals();
+
+        // Refresh the standalone assessments list
+        if (activeTab === "standalone") {
+          await loadStandaloneAssessments();
+        }
+
+        // Navigate to view the created assessment
+        if (response.data?._id) {
+          setTimeout(() => {
+            navigate(`/app/assessment/${response.data._id}`);
+          }, 1000);
+        }
+      } else {
+        throw new Error(
+          response.message || "Failed to create standalone assessment"
+        );
+      }
+    } catch (error) {
+      console.error("Error creating standalone assessment:", error);
+      message.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create standalone assessment"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // NEW: Close standalone modals and reset states
+  const handleCloseStandaloneModals = () => {
+    setStandaloneModalOpen(false);
+    setStandaloneActivityModalOpen(false);
+    setStandaloneActivityType(null);
+    setStandaloneAssessmentData(null);
   };
 
   // Enhanced view activity handler with better error handling
@@ -814,6 +912,121 @@ const AssessmentPage = () => {
     },
   ];
 
+  // Standalone assessments columns
+  const standaloneColumns = [
+    {
+      title: "Assessment",
+      key: "assessment",
+      width: 250,
+      render: (_, record) => (
+        <div>
+          <div className="assessment-title">{record.title}</div>
+          <div className="assessment-description">{record.description}</div>
+          <div className="assessment-meta">
+            <Tag color="blue">{record.activityType?.toUpperCase()}</Tag>
+            <Tag color="green">{record.grade}</Tag>
+            <Tag color="purple">{record.subject}</Tag>
+            <Tag color="orange">Standalone</Tag>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Class Info",
+      key: "classInfo",
+      width: 150,
+      render: (_, record) => (
+        <div>
+          <div style={{ fontWeight: 500 }}>{record.className || "General"}</div>
+          <div style={{ fontSize: "12px", color: "#666" }}>
+            {record.grade} • {record.subject}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Content Available",
+      key: "content",
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          {record.hasActivity && (
+            <Tag
+              color="blue"
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate(`/app/assessment/${record._id}`)}
+            >
+              Activity
+            </Tag>
+          )}
+          {record.hasRubric && (
+            <Tag
+              color="green"
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                navigate(`/app/assessment/${record._id}/${record._id}`)
+              }
+            >
+              Rubric
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: "Created",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 120,
+      render: (date) => new Date(date).toLocaleDateString("en-GB"),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 180,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => navigate(`/app/assessment/${record._id}`)}
+            title="View Assessment"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => message.info("Edit functionality coming soon")}
+            title="Edit Assessment"
+          />
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            size="small"
+            danger
+            onClick={() => {
+              Modal.confirm({
+                title: "Delete Assessment",
+                content: `Are you sure you want to delete "${record.title}"?`,
+                onOk: async () => {
+                  try {
+                    await assessmentAPI.deleteAssessment(record._id);
+                    message.success("Assessment deleted successfully");
+                    loadStandaloneAssessments();
+                  } catch (error) {
+                    message.error("Failed to delete assessment");
+                  }
+                },
+              });
+            }}
+            title="Delete Assessment"
+          />
+        </Space>
+      ),
+    },
+  ];
+
   // Filter options for classes
   const classOptions = classes.map((cls) => (
     <Option key={cls._id} value={cls._id}>
@@ -854,6 +1067,33 @@ const AssessmentPage = () => {
         return <ActivityInClassLessonModal {...commonProps} />;
       default:
         return <ActivityInClassLessonModal {...commonProps} />;
+    }
+  };
+
+  // NEW: Render the appropriate standalone activity modal
+  const renderStandaloneActivityModal = () => {
+    if (!standaloneActivityModalOpen || !standaloneActivityType) {
+      return null;
+    }
+
+    const commonProps = {
+      isOpen: standaloneActivityModalOpen,
+      onClose: handleCloseStandaloneModals,
+      onSubmit: handleStandaloneActivitySubmit,
+      assessmentData: standaloneAssessmentData,
+    };
+
+    switch (standaloneActivityType) {
+      case "activity":
+        return <ActivityInClassStandaloneModal {...commonProps} />;
+      case "assessment":
+        return <AssessmentStandaloneModal {...commonProps} />;
+      case "essay":
+        return <EssayStandaloneModal {...commonProps} />;
+      case "textbook":
+        return <TextbookStandaloneModal {...commonProps} />;
+      default:
+        return <ActivityInClassStandaloneModal {...commonProps} />;
     }
   };
 
@@ -931,15 +1171,66 @@ const AssessmentPage = () => {
             </Button>
           </div>
 
-          <div style={{ textAlign: "center", padding: "60px 20px" }}>
-            <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-            <h3 style={{ color: "#666", marginTop: 16 }}>
-              Standalone Assessments
-            </h3>
-            <p style={{ color: "#999" }}>
-              Create assessments without lesson plans - Coming Soon!
-            </p>
+          <div className="filters-section">
+            <div className="filters-row">
+              <Search
+                placeholder="Search standalone assessments..."
+                allowClear
+                style={{ width: 300 }}
+                prefix={<SearchOutlined />}
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+              />
+              <Select
+                placeholder="Filter by activity type"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.activityType}
+                onChange={(value) => handleFilterChange("activityType", value)}
+              >
+                <Option value="activity">Activity in Class</Option>
+                <Option value="assessment">Assessment</Option>
+                <Option value="essay">Essay</Option>
+                <Option value="textbook">Textbook</Option>
+              </Select>
+            </div>
           </div>
+
+          <Spin spinning={loading}>
+            <Table
+              columns={standaloneColumns}
+              dataSource={assessments}
+              rowKey="_id"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `Total ${total} standalone assessments`,
+              }}
+              className="assessment-table"
+              locale={{
+                emptyText: (
+                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                    <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                    <h3 style={{ color: "#666", marginTop: 16 }}>
+                      No Standalone Assessments
+                    </h3>
+                    <p style={{ color: "#999" }}>
+                      Create your first standalone assessment to get started
+                    </p>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={handleCreateStandaloneAssessment}
+                      style={{ marginTop: 16 }}
+                    >
+                      Create Assessment
+                    </Button>
+                  </div>
+                ),
+              }}
+            />
+          </Spin>
         </div>
       ),
     },
@@ -971,7 +1262,18 @@ const AssessmentPage = () => {
         />
       </Card>
 
+      {/* Regeneration Modal for Lesson-based assessments */}
       {renderRegenerateModal()}
+
+      {/* Standalone Assessment Modals */}
+      <StandAloneAssessmentModal
+        isOpen={standaloneModalOpen}
+        onClose={handleCloseStandaloneModals}
+        onActivitySelect={handleStandaloneActivitySelect}
+      />
+
+      {/* Standalone Activity Modal */}
+      {renderStandaloneActivityModal()}
     </div>
   );
 };

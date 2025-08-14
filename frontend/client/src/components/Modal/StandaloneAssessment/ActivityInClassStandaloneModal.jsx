@@ -1,3 +1,4 @@
+// Updated ActivityInClassStandaloneModal.jsx with enhanced features for standalone assessments
 import React, { useState } from "react";
 import {
   Card,
@@ -13,6 +14,7 @@ import {
   Select,
   Divider,
   message,
+  Alert,
 } from "antd";
 import {
   ThunderboltOutlined,
@@ -23,6 +25,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   CheckCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import {
   bloomTaxonomyLevels,
@@ -38,14 +41,21 @@ const { TextArea } = Input;
 const { Text } = Typography;
 const { Option } = Select;
 
-const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
+const ActivityInClassStandaloneModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  assessmentData,
+}) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
     resourceUsage: "classroom_only",
-    bloomTaxonomy: [],
+    bloomTaxonomy: ["apply"], // Default to one level for standalone
     activityType: "",
-    duration: "",
-    difficultyLevel: "",
+    duration: "30-45 minutes",
+    difficultyLevel: "intermediate",
+    learningObjectives: "",
+    specificTopic: "",
     additionalRequirement: "",
   });
 
@@ -68,7 +78,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const handleSubmit = async () => {
-    // Validation
+    // Enhanced validation for standalone assessments
     if (!formData.studentArrangement || !formData.resourceUsage) {
       message.warning("Please fill in all required fields");
       return;
@@ -79,9 +89,28 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
       return;
     }
 
+    if (!formData.specificTopic.trim()) {
+      message.warning("Please specify a topic for the activity");
+      return;
+    }
+
     setLoading(true);
     try {
-      await onSubmit(formData);
+      // Enhanced data preparation for standalone assessment
+      const submitData = {
+        ...formData,
+        ...assessmentData, // Include grade, subject, class info
+        activityType: "activity",
+        isStandalone: true,
+        assessmentTitle: `${formData.specificTopic} - Activity in Class (${assessmentData.grade})`,
+        assessmentDescription:
+          formData.learningObjectives ||
+          `Interactive classroom activity for ${formData.specificTopic}`,
+      };
+
+      console.log("Submitting standalone activity data:", submitData);
+
+      await onSubmit(submitData);
       message.success("Activity settings submitted successfully!");
       onClose();
     } catch (error) {
@@ -96,10 +125,12 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
     setFormData({
       studentArrangement: "small_group",
       resourceUsage: "classroom_only",
-      bloomTaxonomy: [],
+      bloomTaxonomy: ["apply"],
       activityType: "",
-      duration: "",
-      difficultyLevel: "",
+      duration: "30-45 minutes",
+      difficultyLevel: "intermediate",
+      learningObjectives: "",
+      specificTopic: "",
       additionalRequirement: "",
     });
   };
@@ -116,7 +147,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "800px" }}
+        style={{ maxWidth: "900px" }}
       >
         {/* Standardized Header */}
         <div className="modal-header">
@@ -124,7 +155,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
             <div className="modal-icon">
               <ThunderboltOutlined />
             </div>
-            <h3 className="modal-title">Activity in Class</h3>
+            <h3 className="modal-title">Create Activity in Class</h3>
           </div>
           <button className="modal-close" onClick={onClose}>
             ×
@@ -133,7 +164,84 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
 
         {/* Body */}
         <div className="modal-body">
+          {/* Assessment Info Alert */}
+          <Alert
+            message="Standalone Activity Assessment"
+            description={`Creating an interactive classroom activity for ${
+              assessmentData?.subject || "your subject"
+            } - ${assessmentData?.grade || "Grade"} ${
+              assessmentData?.className ? `(${assessmentData.className})` : ""
+            }`}
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+            style={{ marginBottom: 24 }}
+          />
+
           <Row gutter={[16, 24]}>
+            {/* Topic and Learning Objectives */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <BulbOutlined style={{ color: "#fa8c16" }} />
+                    <span>Activity Topic & Objectives</span>
+                  </div>
+                }
+              >
+                <Row gutter={16}>
+                  <Col span={24} style={{ marginBottom: 16 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Specific Topic *
+                    </label>
+                    <Input
+                      placeholder="Enter the specific topic for this activity (e.g., 'Photosynthesis Process', 'Past Tense Verbs')"
+                      value={formData.specificTopic}
+                      onChange={(e) =>
+                        handleInputChange("specificTopic", e.target.value)
+                      }
+                      size="large"
+                      maxLength={100}
+                    />
+                  </Col>
+                  <Col span={24}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Learning Objectives (Optional)
+                    </label>
+                    <TextArea
+                      rows={3}
+                      placeholder="What should students learn or achieve from this activity?"
+                      value={formData.learningObjectives}
+                      onChange={(e) =>
+                        handleInputChange("learningObjectives", e.target.value)
+                      }
+                      maxLength={300}
+                      showCount
+                    />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+
             {/* Student Arrangement */}
             <Col span={24}>
               <Card
@@ -157,6 +265,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     handleInputChange("studentArrangement", e.target.value)
                   }
                   style={{ width: "100%" }}
+                  disabled={loading}
                 >
                   <Row gutter={[16, 16]}>
                     {studentArrangementOptions.map((option) => (
@@ -168,6 +277,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
+                            opacity: loading ? 0.6 : 1,
                           }}
                         >
                           <div>
@@ -211,6 +321,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     handleInputChange("resourceUsage", e.target.value)
                   }
                   style={{ width: "100%" }}
+                  disabled={loading}
                 >
                   <Row gutter={[16, 16]}>
                     {resourceOptions.map((option) => (
@@ -222,6 +333,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                             height: "auto",
                             padding: "12px",
                             textAlign: "left",
+                            opacity: loading ? 0.6 : 1,
                           }}
                         >
                           <div>
@@ -242,7 +354,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
               </Card>
             </Col>
 
-            {/* Activity Type */}
+            {/* Activity Type Selection */}
             <Col span={24}>
               <Card
                 size="small"
@@ -255,7 +367,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                     }}
                   >
                     <BulbOutlined style={{ color: "#fa8c16" }} />
-                    <span>Activity Type (Optional)</span>
+                    <span>Specific Activity Type (Optional)</span>
                   </div>
                 }
               >
@@ -267,6 +379,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                   size="large"
                   showSearch
                   allowClear
+                  disabled={loading}
                   filterOption={(input, option) =>
                     option.children
                       .toLowerCase()
@@ -358,7 +471,7 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                         }}
                       >
                         <BarChartOutlined style={{ color: "#eb2f96" }} />
-                        <span>Difficulty</span>
+                        <span>Difficulty Level</span>
                       </div>
                     }
                   >
@@ -507,15 +620,107 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
                 title="Additional Requirements & Notes (Optional)"
               >
                 <TextArea
-                  rows={3}
+                  rows={4}
                   value={formData.additionalRequirement}
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity..."
-                  maxLength={300}
+                  placeholder="Enter specific instructions, materials needed, assessment criteria, or any special considerations for this standalone activity..."
+                  maxLength={400}
                   showCount
                 />
+              </Card>
+            </Col>
+
+            {/* Summary */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title="Activity Summary"
+                style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
+              >
+                <Row gutter={[16, 8]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Subject & Grade:
+                    </Text>
+                    <br />
+                    <Tag color="blue">
+                      {assessmentData?.subject || "Subject"} -{" "}
+                      {assessmentData?.grade || "Grade"}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Topic:
+                    </Text>
+                    <br />
+                    <Text>{formData.specificTopic || "Not specified"}</Text>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Student Setup:
+                    </Text>
+                    <br />
+                    <Tag color="purple">
+                      {formData.studentArrangement.replace("_", " ")}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Resources:
+                    </Text>
+                    <br />
+                    <Tag color="green">
+                      {formData.resourceUsage.replace("_", " ")}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Duration:
+                    </Text>
+                    <br />
+                    <Tag color="orange">{formData.duration}</Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Difficulty:
+                    </Text>
+                    <br />
+                    <Tag color="red">{formData.difficultyLevel}</Tag>
+                  </Col>
+                  {formData.activityType && (
+                    <Col xs={24} sm={12} md={8}>
+                      <Text strong style={{ color: "#666" }}>
+                        Activity Type:
+                      </Text>
+                      <br />
+                      <Tag color="cyan">{formData.activityType}</Tag>
+                    </Col>
+                  )}
+                  {assessmentData?.className && (
+                    <Col xs={24} sm={12} md={8}>
+                      <Text strong style={{ color: "#666" }}>
+                        Class:
+                      </Text>
+                      <br />
+                      <Text>{assessmentData.className}</Text>
+                    </Col>
+                  )}
+                  <Col span={24}>
+                    <Text strong style={{ color: "#666" }}>
+                      Bloom's Taxonomy:
+                    </Text>
+                    <br />
+                    <Space wrap>
+                      {formData.bloomTaxonomy.map((level) => (
+                        <Tag key={level} color={getBloomTagColor(level)}>
+                          {level}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </Col>
+                </Row>
               </Card>
             </Col>
           </Row>
@@ -539,9 +744,13 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               className={`btn-submit ${loading ? "loading" : ""}`}
               onClick={handleSubmit}
-              disabled={formData.bloomTaxonomy.length === 0 || loading}
+              disabled={
+                formData.bloomTaxonomy.length === 0 ||
+                !formData.specificTopic.trim() ||
+                loading
+              }
             >
-              {loading ? "⏳ Creating..." : "✨ Create Activity"}
+              {loading ? "⏳ Creating..." : "✨ Create Standalone Activity"}
             </button>
           </div>
         </div>
@@ -550,4 +759,4 @@ const ActivityInClassModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-export default ActivityInClassModal;
+export default ActivityInClassStandaloneModal;
