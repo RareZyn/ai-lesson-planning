@@ -470,23 +470,26 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Handle create standalone assessment button click
   const handleCreateStandaloneAssessment = () => {
     setStandaloneModalOpen(true);
   };
 
-  // NEW: Handle standalone activity selection
   const handleStandaloneActivitySelect = (activityType, assessmentData) => {
+    console.log("🎯 Activity selected:", { activityType, assessmentData });
+
     setStandaloneActivityType(activityType);
     setStandaloneAssessmentData(assessmentData);
-    setStandaloneModalOpen(false);
-    setStandaloneActivityModalOpen(true);
+    setStandaloneModalOpen(false); // Close first modal
+    setStandaloneActivityModalOpen(true); // Open activity modal
   };
 
-  // NEW: Handle standalone activity modal submission
   const handleStandaloneActivitySubmit = async (formData) => {
     try {
       setLoading(true);
+      console.log("📝 Submitting standalone activity:", {
+        formData,
+        standaloneAssessmentData,
+      });
 
       // Prepare the data for standalone assessment creation
       const standaloneData = {
@@ -499,6 +502,8 @@ const AssessmentPage = () => {
           formData.additionalRequirement ||
           `Standalone ${standaloneActivityType} assessment`,
       };
+
+      console.log("🔄 Calling API with:", standaloneData);
 
       // Call the standalone assessment API
       const response = await assessmentAPI.createStandaloneAssessment(
@@ -528,7 +533,7 @@ const AssessmentPage = () => {
         );
       }
     } catch (error) {
-      console.error("Error creating standalone assessment:", error);
+      console.error("❌ Error creating standalone assessment:", error);
       message.error(
         error.response?.data?.message ||
           error.message ||
@@ -539,8 +544,8 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Close standalone modals and reset states
   const handleCloseStandaloneModals = () => {
+    console.log("🔒 Closing standalone modals");
     setStandaloneModalOpen(false);
     setStandaloneActivityModalOpen(false);
     setStandaloneActivityType(null);
@@ -988,9 +993,13 @@ const AssessmentPage = () => {
         return <ActivityInClassLessonModal {...commonProps} />;
     }
   };
-
-  // NEW: Render the appropriate standalone activity modal
   const renderStandaloneActivityModal = () => {
+    console.log("🎭 Rendering standalone activity modal:", {
+      isOpen: standaloneActivityModalOpen,
+      activityType: standaloneActivityType,
+      hasAssessmentData: !!standaloneAssessmentData,
+    });
+
     if (!standaloneActivityModalOpen || !standaloneActivityType) {
       return null;
     }
@@ -1002,6 +1011,8 @@ const AssessmentPage = () => {
       assessmentData: standaloneAssessmentData,
     };
 
+    console.log("🔧 Modal props:", commonProps);
+
     switch (standaloneActivityType) {
       case "activity":
         return <ActivityInClassStandaloneModal {...commonProps} />;
@@ -1012,6 +1023,7 @@ const AssessmentPage = () => {
       case "textbook":
         return <TextbookStandaloneModal {...commonProps} />;
       default:
+        console.warn("⚠️ Unknown activity type:", standaloneActivityType);
         return <ActivityInClassStandaloneModal {...commonProps} />;
     }
   };

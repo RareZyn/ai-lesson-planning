@@ -29,7 +29,6 @@ const { Text, Title } = Typography;
 
 const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   const [formData, setFormData] = useState({
-    grade: "",
     classId: "",
     subject: "",
   });
@@ -37,15 +36,6 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showActivityOptions, setShowActivityOptions] = useState(false);
-
-  // Grade options
-  const gradeOptions = [
-    { value: "form1", label: "Form 1" },
-    { value: "form2", label: "Form 2" },
-    { value: "form3", label: "Form 3" },
-    { value: "form4", label: "Form 4" },
-    { value: "form5", label: "Form 5" },
-  ];
 
   // Subject options
   const subjectOptions = [
@@ -117,7 +107,6 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
 
   const resetForm = () => {
     setFormData({
-      grade: "",
       classId: "",
       subject: "",
     });
@@ -130,7 +119,7 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
       [field]: value,
     }));
 
-    // Auto-populate subject if class is selected
+    // Auto-populate subject and grade if class is selected
     if (field === "classId" && value) {
       const selectedClass = classes.find((cls) => cls._id === value);
       if (selectedClass && selectedClass.subject) {
@@ -143,8 +132,9 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   };
 
   const handleProceed = () => {
-    if (!formData.grade || !formData.subject) {
-      message.warning("Please select grade and subject");
+    // FIXED: Only require subject, not grade
+    if (!formData.subject) {
+      message.warning("Please select a subject");
       return;
     }
     setShowActivityOptions(true);
@@ -153,17 +143,23 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   const handleActivitySelect = (activityType) => {
     const selectedClass = classes.find((cls) => cls._id === formData.classId);
 
+    // FIXED: Create assessment data with class info, derive grade from selected class
     const assessmentData = {
-      grade: formData.grade,
       classId: formData.classId,
       className: selectedClass?.className || "",
+      grade: selectedClass?.grade || "General", // Use class grade or "General"
       subject: formData.subject,
       activityType: activityType,
       isStandalone: true,
     };
 
+    console.log("🚀 Calling onActivitySelect with:", {
+      activityType,
+      assessmentData,
+    });
+
+    // FIXED: Call the parent callback
     onActivitySelect(activityType, assessmentData);
-    onClose();
   };
 
   const handleBack = () => {
@@ -184,11 +180,6 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
     return subject ? subject.label : formData.subject;
   };
 
-  const getGradeLabel = () => {
-    const grade = gradeOptions.find((g) => g.value === formData.grade);
-    return grade ? grade.label : formData.grade;
-  };
-
   return (
     <Modal
       title={
@@ -205,11 +196,11 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
       className="creative-options-modal"
     >
       {!showActivityOptions ? (
-        // Step 1: Grade, Class, and Subject Selection
+        // Step 1: Class and Subject Selection (REMOVED GRADE)
         <div>
           <Alert
             message="Setup Assessment Parameters"
-            description="Select the grade level, class, and subject for your standalone assessment. This will help generate targeted content for your students."
+            description="Select the class and subject for your standalone assessment. This will help generate targeted content for your students."
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
@@ -217,40 +208,6 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
 
           <Spin spinning={loading}>
             <Row gutter={[24, 24]}>
-              {/* Grade Selection */}
-              <Col span={24}>
-                <Card
-                  size="small"
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <FormOutlined style={{ color: "#1890ff" }} />
-                      <span>Select Grade Level</span>
-                    </div>
-                  }
-                  style={{ borderRadius: "8px" }}
-                >
-                  <Select
-                    placeholder="Choose grade level"
-                    value={formData.grade}
-                    onChange={(value) => handleInputChange("grade", value)}
-                    style={{ width: "100%" }}
-                    size="large"
-                  >
-                    {gradeOptions.map((grade) => (
-                      <Option key={grade.value} value={grade.value}>
-                        {grade.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Card>
-              </Col>
-
               {/* Class Selection */}
               <Col span={24}>
                 <Card
@@ -325,7 +282,7 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
                       }}
                     >
                       <BookOutlined style={{ color: "#fa8c16" }} />
-                      <span>Select Subject</span>
+                      <span>Select Subject *</span>
                     </div>
                   }
                   style={{ borderRadius: "8px" }}
@@ -353,8 +310,8 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
               </Col>
             </Row>
 
-            {/* Summary Card */}
-            {(formData.grade || formData.subject) && (
+            {/* Summary Card - UPDATED */}
+            {formData.subject && (
               <Card
                 style={{
                   marginTop: "24px",
@@ -367,18 +324,18 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
                 <Row gutter={[16, 8]}>
                   <Col xs={24} sm={8}>
                     <Text strong style={{ color: "#666" }}>
-                      Grade Level:
+                      Subject:
                     </Text>
                     <div style={{ color: "#1890ff", fontWeight: 500 }}>
-                      {formData.grade ? getGradeLabel() : "Not selected"}
+                      {getSubjectLabel()}
                     </div>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Text strong style={{ color: "#666" }}>
-                      Subject:
+                      Grade:
                     </Text>
                     <div style={{ color: "#1890ff", fontWeight: 500 }}>
-                      {formData.subject ? getSubjectLabel() : "Not selected"}
+                      {getSelectedClass()?.grade || "General"}
                     </div>
                   </Col>
                   <Col xs={24} sm={8}>
@@ -413,7 +370,7 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
               type="primary"
               size="large"
               onClick={handleProceed}
-              disabled={!formData.grade || !formData.subject}
+              disabled={!formData.subject} // FIXED: Only require subject
             >
               Proceed to Activity Selection
             </Button>
@@ -424,7 +381,9 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
         <div>
           <Alert
             message="Choose Activity Type"
-            description={`Create a ${getSubjectLabel()} assessment for ${getGradeLabel()}${
+            description={`Create a ${getSubjectLabel()} assessment for ${
+              getSelectedClass()?.grade || "General"
+            }${
               formData.classId ? ` - ${getSelectedClass()?.className}` : ""
             }. Select the type of activity you want to generate.`}
             type="success"
@@ -438,7 +397,10 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
                 <Card
                   hoverable
                   className="creative-option-card"
-                  onClick={() => handleActivitySelect(activity.key)}
+                  onClick={() => {
+                    console.log("🎯 Activity card clicked:", activity.key);
+                    handleActivitySelect(activity.key);
+                  }}
                   style={{
                     height: "180px",
                     border: `2px solid ${activity.color}20`,
