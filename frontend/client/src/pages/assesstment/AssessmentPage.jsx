@@ -1,4 +1,4 @@
-// src/pages/assessment/AssessmentPage.jsx
+// FIXED: src/pages/assessment/AssessmentPage.jsx - Corrected filter logic
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -26,7 +26,7 @@ import {
   SearchOutlined,
   FileExclamationOutlined,
   ThunderboltOutlined,
-  RedoOutlined, // For regenerate icon
+  RedoOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -107,6 +107,7 @@ const AssessmentPage = () => {
     }
   };
 
+  // FIXED: Completely rewritten loadLessonBasedData function
   const loadLessonBasedData = async () => {
     try {
       setLoading(true);
@@ -145,20 +146,18 @@ const AssessmentPage = () => {
           lessonPlanAssessmentMap[lessonPlanId].push(assessment);
         }
       });
-      console.log(
-        "🗺️ Assessment map created:",
-        Object.keys(lessonPlanAssessmentMap).length,
-        "lesson plans have assessments"
-      );
 
-      // Transform lesson plans into displayable format with assessment status
-      const lessonPlanRows = allLessonPlans.map((lessonPlan) => {
+      // FIXED: Transform lesson plans with correct assessment status logic
+      let lessonPlanRows = allLessonPlans.map((lessonPlan) => {
         const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
         const hasAssessments = assessments.length > 0;
 
+        // CRITICAL FIX: Determine assessment status correctly
+        const assessmentStatus = hasAssessments ? "generated" : "not_generated";
+
         const row = {
           ...lessonPlan,
-          assessmentStatus: hasAssessments ? "generated" : "not_generated",
+          assessmentStatus: assessmentStatus, // This is the key field for filtering
           assessments: assessments,
           hasActivity: assessments.some((a) => a.hasActivity),
           hasRubric: assessments.some((a) => a.hasRubric),
@@ -167,13 +166,13 @@ const AssessmentPage = () => {
           activityType: lessonPlan.parameters?.activityType || "lesson",
           createdAt: lessonPlan.createdAt,
           updatedAt: lessonPlan.updatedAt,
-          status: hasAssessments ? "Generated" : "Not Generated",
+          status: hasAssessments ? "Generated" : "Not Generated", // Display status
         };
 
         return row;
       });
 
-      console.log("📊 Transformed rows:", {
+      console.log("📊 Initial transformation:", {
         total: lessonPlanRows.length,
         generated: lessonPlanRows.filter(
           (r) => r.assessmentStatus === "generated"
@@ -183,9 +182,8 @@ const AssessmentPage = () => {
         ).length,
       });
 
-      // Apply filters to lesson plans
-      let filteredRows = lessonPlanRows;
-      console.log("🔍 Starting filtering with", filteredRows.length, "rows");
+      // FIXED: Apply filters correctly with proper logging
+      let filteredRows = [...lessonPlanRows]; // Create a copy
 
       // Search filter
       if (filters.search) {
@@ -219,45 +217,29 @@ const AssessmentPage = () => {
         );
       }
 
-      // Status filter - ENHANCED DEBUG
+      // CRITICAL FIX: Status filter logic
       if (filters.status) {
         const beforeCount = filteredRows.length;
         console.log("📊 Status filter details:", {
           filterValue: filters.status,
           rowsBeforeFilter: beforeCount,
-          sampleRows: filteredRows.slice(0, 3).map((r) => ({
+          sampleStatuses: filteredRows.slice(0, 5).map((r) => ({
             title: r.title,
             assessmentStatus: r.assessmentStatus,
             status: r.status,
+            hasAssessments: r.assessments?.length || 0,
           })),
         });
 
+        // FIXED: Use the correct field and values for filtering
         if (filters.status === "Generated") {
-          filteredRows = filteredRows.filter((row) => {
-            const match = row.assessmentStatus === "generated";
-            console.log(
-              "✅ Checking row:",
-              row.title,
-              "assessmentStatus:",
-              row.assessmentStatus,
-              "match:",
-              match
-            );
-            return match;
-          });
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "generated"
+          );
         } else if (filters.status === "Not Generated") {
-          filteredRows = filteredRows.filter((row) => {
-            const match = row.assessmentStatus === "not_generated";
-            console.log(
-              "❌ Checking row:",
-              row.title,
-              "assessmentStatus:",
-              row.assessmentStatus,
-              "match:",
-              match
-            );
-            return match;
-          });
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "not_generated"
+          );
         }
 
         console.log(
@@ -265,6 +247,17 @@ const AssessmentPage = () => {
           beforeCount,
           "→",
           filteredRows.length
+        );
+
+        // Debug: Log the filtered results
+        console.log(
+          "📊 Filtered rows sample:",
+          filteredRows.slice(0, 3).map((r) => ({
+            title: r.title,
+            assessmentStatus: r.assessmentStatus,
+            status: r.status,
+            assessmentCount: r.assessments?.length || 0,
+          }))
         );
       }
 
@@ -621,7 +614,6 @@ const AssessmentPage = () => {
     }));
   };
 
-  // Enhanced columns for lesson-based view with generate/regenerate assessment button
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
@@ -646,7 +638,6 @@ const AssessmentPage = () => {
               </>
             )}
             <Tag color="purple">{record.activityType}</Tag>
-            {/* Show if activity configuration exists */}
             {record.parameters?.activityConfiguration && (
               <Tag color="cyan">Configured</Tag>
             )}
@@ -728,7 +719,7 @@ const AssessmentPage = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       width: 120,
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (date) => new Date(date).toLocaleDateString("en-GB"),
     },
     {
       title: "Actions",
@@ -848,8 +839,8 @@ const AssessmentPage = () => {
       activityType: regenerateModalType,
       existingConfiguration:
         regeneratingLessonPlan.parameters?.activityConfiguration?.parameters,
-      isRegenerateMode: true, // NEW: Flag to indicate regeneration mode
-      existingAssessment: existingAssessment, // Pass existing assessment data
+      isRegenerateMode: true,
+      existingAssessment: existingAssessment,
     };
 
     switch (regenerateModalType) {
@@ -896,16 +887,6 @@ const AssessmentPage = () => {
                 onChange={(value) => handleFilterChange("classId", value)}
               >
                 {classOptions}
-              </Select>
-              <Select
-                placeholder="Filter by status"
-                style={{ width: 150 }}
-                allowClear
-                value={filters.status}
-                onChange={(value) => handleFilterChange("status", value)}
-              >
-                <Option value="Generated">Generated</Option>
-                <Option value="Not Generated">Not Generated</Option>
               </Select>
             </div>
           </div>
