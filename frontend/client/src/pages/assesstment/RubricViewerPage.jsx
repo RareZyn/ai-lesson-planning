@@ -334,40 +334,24 @@ const RubricViewerPage = () => {
   // Enhanced getStudentContent function with JSON fallback
   const getStudentContent = () => {
     if (!assessment?.generatedContent) {
-      console.log("No generated content available");
       return null;
     }
 
     const { activityHTML, assessmentHTML, activityContent, assessmentContent } =
       assessment.generatedContent;
 
-    console.log(
-      "Getting student content for activityType:",
-      assessment.activityType
-    );
-    console.log("Available content:", {
-      activityHTML: activityHTML ? "Present" : "Missing",
-      assessmentHTML: assessmentHTML ? "Present" : "Missing",
-      activityContent: activityContent ? "Present (JSON)" : "Missing",
-      assessmentContent: assessmentContent ? "Present (JSON)" : "Missing",
-    });
-
     // For assessment type, prefer assessmentHTML, fallback to assessmentContent
     if (assessment.activityType === "assessment") {
       if (assessmentHTML) {
-        console.log("Returning existing assessmentHTML");
         return assessmentHTML;
       } else if (assessmentContent) {
-        console.log("Converting assessmentContent JSON to HTML");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else {
       // For other types, prefer activityHTML, fallback to activityContent
       if (activityHTML) {
-        console.log("Returning existing activityHTML");
         return activityHTML;
       } else if (activityContent) {
-        console.log("Converting activityContent JSON to HTML");
         return convertActivityContentToHTML(
           activityContent,
           assessment.activityType
@@ -385,17 +369,11 @@ const RubricViewerPage = () => {
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    console.log(
-      "Getting teacher content for activityType:",
-      assessment.activityType
-    );
-
     // For assessment type, prefer answerKeyHTML, fallback to answerKeyContent
     if (assessment.activityType === "assessment") {
       if (answerKeyHTML) {
         return answerKeyHTML;
       } else if (answerKeyContent) {
-        console.log("Converting answerKeyContent JSON to HTML");
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
@@ -403,7 +381,6 @@ const RubricViewerPage = () => {
       if (rubricHTML) {
         return rubricHTML;
       } else if (rubricContent) {
-        console.log("Converting rubricContent JSON to HTML");
         return convertRubricContentToHTML(rubricContent);
       }
     }

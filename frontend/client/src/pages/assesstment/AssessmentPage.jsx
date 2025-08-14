@@ -126,11 +126,9 @@ const AssessmentPage = () => {
   const loadLessonBasedData = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Loading lesson-based data with filters:", filters);
 
       // Get all lesson plans for the user
       const allLessonPlans = await getAllLessonPlans();
-      console.log("📚 All lesson plans loaded:", allLessonPlans.length);
 
       // Get all assessments that have lesson plans
       const assessmentResponse = await assessmentAPI.getUserAssessments({
@@ -141,11 +139,6 @@ const AssessmentPage = () => {
       const assessmentsWithLessonPlans = assessmentResponse.success
         ? assessmentResponse.data || []
         : [];
-      console.log(
-        "📝 Assessments with lesson plans:",
-        assessmentsWithLessonPlans.length
-      );
-
       // Create a map of lesson plan IDs to their assessments
       const lessonPlanAssessmentMap = {};
       assessmentsWithLessonPlans.forEach((assessment) => {
@@ -187,16 +180,6 @@ const AssessmentPage = () => {
         return row;
       });
 
-      console.log("📊 Initial transformation:", {
-        total: lessonPlanRows.length,
-        generated: lessonPlanRows.filter(
-          (r) => r.assessmentStatus === "generated"
-        ).length,
-        notGenerated: lessonPlanRows.filter(
-          (r) => r.assessmentStatus === "not_generated"
-        ).length,
-      });
-
       // FIXED: Apply filters correctly with proper logging
       let filteredRows = [...lessonPlanRows]; // Create a copy
 
@@ -208,12 +191,6 @@ const AssessmentPage = () => {
             row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
             row.description.toLowerCase().includes(filters.search.toLowerCase())
         );
-        console.log(
-          "🔍 Search filter applied:",
-          beforeCount,
-          "→",
-          filteredRows.length
-        );
       }
 
       // Class filter
@@ -224,27 +201,11 @@ const AssessmentPage = () => {
             row.classId?._id === filters.classId ||
             row.classId === filters.classId
         );
-        console.log(
-          "🏫 Class filter applied:",
-          beforeCount,
-          "→",
-          filteredRows.length
-        );
       }
 
       // CRITICAL FIX: Status filter logic
       if (filters.status) {
         const beforeCount = filteredRows.length;
-        console.log("📊 Status filter details:", {
-          filterValue: filters.status,
-          rowsBeforeFilter: beforeCount,
-          sampleStatuses: filteredRows.slice(0, 5).map((r) => ({
-            title: r.title,
-            assessmentStatus: r.assessmentStatus,
-            status: r.status,
-            hasAssessments: r.assessments?.length || 0,
-          })),
-        });
 
         // FIXED: Use the correct field and values for filtering
         if (filters.status === "Generated") {
@@ -256,27 +217,7 @@ const AssessmentPage = () => {
             (row) => row.assessmentStatus === "not_generated"
           );
         }
-
-        console.log(
-          "📊 Status filter applied:",
-          beforeCount,
-          "→",
-          filteredRows.length
-        );
-
-        // Debug: Log the filtered results
-        console.log(
-          "📊 Filtered rows sample:",
-          filteredRows.slice(0, 3).map((r) => ({
-            title: r.title,
-            assessmentStatus: r.assessmentStatus,
-            status: r.status,
-            assessmentCount: r.assessments?.length || 0,
-          }))
-        );
       }
-
-      console.log("✅ Final result:", filteredRows.length, "rows to display");
       setAssessments(filteredRows);
     } catch (error) {
       console.error("❌ Error in loadLessonBasedData:", error);
@@ -416,12 +357,6 @@ const AssessmentPage = () => {
         configuredFor: regenerateModalType,
       };
 
-      console.log("Regenerating assessment with data:", {
-        lessonPlanData,
-        activityFormData,
-        existingAssessmentId: existingAssessment._id,
-      });
-
       // Call the regeneration API endpoint
       const response = await assessmentAPI.regenerateAssessment(
         existingAssessment._id,
@@ -508,11 +443,6 @@ const AssessmentPage = () => {
         configuredFor: activityConfig.configuredFor,
       };
 
-      console.log("Generating assessment with saved configuration:", {
-        lessonPlanData,
-        activityFormData,
-      });
-
       // Call the API to generate assessment
       const response = await assessmentAPI.generateFromLessonPlan(
         lessonPlanData,
@@ -547,11 +477,6 @@ const AssessmentPage = () => {
 
   // NEW: Handle standalone activity selection
   const handleStandaloneActivitySelect = (activityType, assessmentData) => {
-    console.log("Selected standalone activity:", {
-      activityType,
-      assessmentData,
-    });
-
     setStandaloneActivityType(activityType);
     setStandaloneAssessmentData(assessmentData);
     setStandaloneModalOpen(false);
@@ -562,12 +487,6 @@ const AssessmentPage = () => {
   const handleStandaloneActivitySubmit = async (formData) => {
     try {
       setLoading(true);
-
-      console.log("Submitting standalone assessment:", {
-        assessmentData: standaloneAssessmentData,
-        formData,
-        activityType: standaloneActivityType,
-      });
 
       // Prepare the data for standalone assessment creation
       const standaloneData = {

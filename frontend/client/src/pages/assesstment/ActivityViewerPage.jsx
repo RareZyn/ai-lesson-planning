@@ -316,14 +316,6 @@ const ActivityViewerPage = () => {
         const { activityHTML, assessmentHTML, rubricHTML, answerKeyHTML } =
           response.data.generatedContent || {};
 
-        console.log("Content availability:", {
-          activityHTML: !!activityHTML,
-          assessmentHTML: !!assessmentHTML,
-          rubricHTML: !!rubricHTML,
-          answerKeyHTML: !!answerKeyHTML,
-          activityType: response.data.activityType,
-        });
-
         // Check for student content based on activity type
         const hasStudentContent = getStudentContentFromData(response.data);
 
@@ -363,40 +355,24 @@ const ActivityViewerPage = () => {
 
   const getStudentContent = () => {
     if (!assessment?.generatedContent) {
-      console.log("No generated content available");
       return null;
     }
 
     const { activityHTML, assessmentHTML, activityContent, assessmentContent } =
       assessment.generatedContent;
 
-    console.log(
-      "Getting student content for activityType:",
-      assessment.activityType
-    );
-    console.log("Available content:", {
-      activityHTML: activityHTML ? "Present" : "Missing",
-      assessmentHTML: assessmentHTML ? "Present" : "Missing",
-      activityContent: activityContent ? "Present (JSON)" : "Missing",
-      assessmentContent: assessmentContent ? "Present (JSON)" : "Missing",
-    });
-
     // For assessment type, prefer assessmentHTML, fallback to assessmentContent
     if (assessment.activityType === "assessment") {
       if (assessmentHTML) {
-        console.log("Returning existing assessmentHTML");
         return assessmentHTML;
       } else if (assessmentContent) {
-        console.log("Converting assessmentContent JSON to HTML");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else {
       // For other types, prefer activityHTML, fallback to activityContent
       if (activityHTML) {
-        console.log("Returning existing activityHTML");
         return activityHTML;
       } else if (activityContent) {
-        console.log("Converting activityContent JSON to HTML");
         return convertActivityContentToHTML(
           activityContent,
           assessment.activityType
@@ -414,17 +390,11 @@ const ActivityViewerPage = () => {
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    console.log(
-      "Getting teacher content for activityType:",
-      assessment.activityType
-    );
-
     // For assessment type, prefer answerKeyHTML, fallback to answerKeyContent
     if (assessment.activityType === "assessment") {
       if (answerKeyHTML) {
         return answerKeyHTML;
       } else if (answerKeyContent) {
-        console.log("Converting answerKeyContent JSON to HTML");
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
@@ -432,7 +402,6 @@ const ActivityViewerPage = () => {
       if (rubricHTML) {
         return rubricHTML;
       } else if (rubricContent) {
-        console.log("Converting rubricContent JSON to HTML");
         return convertRubricContentToHTML(rubricContent);
       }
     }
@@ -444,7 +413,6 @@ const ActivityViewerPage = () => {
   const hasTeacherContent = () => {
     const teacherContent = getTeacherContent();
     const hasContent = !!teacherContent;
-    console.log("Has teacher content:", hasContent);
     return hasContent;
   };
 

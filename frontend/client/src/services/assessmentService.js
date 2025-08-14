@@ -53,10 +53,6 @@ export const assessmentAPI = {
    */
   generateFromLessonPlan: async (lessonPlanData, activityFormData) => {
     try {
-      console.log("Starting assessment generation with data:", {
-        lessonPlanData,
-        activityFormData,
-      });
 
       // Prepare the request data to match backend controller expectations
       const requestData = {
@@ -96,15 +92,11 @@ export const assessmentAPI = {
         ...activityFormData,
       };
 
-      console.log("Prepared request data:", requestData);
-
       // Call the backend endpoint for direct generation
       const response = await apiClient.post(
         "/assessment/generateFromLessonPlan",
         requestData
       );
-
-      console.log("Backend response:", response.data);
 
       return {
         success: true,
@@ -258,8 +250,6 @@ export const assessmentAPI = {
    */
   createStandaloneAssessment: async (assessmentData) => {
     try {
-      console.log("Creating standalone assessment with data:", assessmentData);
-
       // Prepare the request data for standalone assessment
       const requestData = {
         // Core required fields
@@ -294,17 +284,11 @@ export const assessmentAPI = {
         // Pass through all form data
         ...assessmentData,
       };
-
-      console.log("Prepared standalone assessment data:", requestData);
-
       // Call the backend endpoint for standalone assessment creation
       const response = await apiClient.post(
         "/assessment/standalone",
         requestData
       );
-
-      console.log("Standalone assessment response:", response.data);
-
       return {
         success: true,
         data: response.data.data, // The saved assessment
@@ -588,18 +572,10 @@ export const assessmentAPI = {
    */
   regenerateAssessment: async (assessmentId, regenerationData) => {
     try {
-      console.log("Regenerating assessment:", {
-        assessmentId,
-        regenerationData,
-      });
-
       const response = await apiClient.put(
         `/assessment/${assessmentId}/regenerate`,
         regenerationData
       );
-
-      console.log("Regeneration response:", response.data);
-
       return {
         success: true,
         data: response.data.data, // The updated assessment
