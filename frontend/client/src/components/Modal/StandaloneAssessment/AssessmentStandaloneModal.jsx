@@ -50,12 +50,11 @@ const AssessmentStandaloneModal = ({
   assessmentData,
 }) => {
   const [formData, setFormData] = useState({
-    form: assessmentData?.grade || "form4",
     assessmentType: "",
     questionTypes: [],
     skills: ["reading"], // Default skill for standalone
-    difficultyLevel: "intermediate",
-    numberOfQuestions: 20,
+    difficultyLevel: "Intermediate",
+    numberOfQuestions: 10,
     timeAllocation: "60",
     includeInstructions: true,
     includeAnswerKey: true,
@@ -140,8 +139,8 @@ const AssessmentStandaloneModal = ({
       assessmentType: "",
       questionTypes: [],
       skills: ["reading"],
-      difficultyLevel: "intermediate",
-      numberOfQuestions: 20,
+      difficultyLevel: "Intermediate",
+      numberOfQuestions: 10,
       timeAllocation: "60",
       includeInstructions: true,
       includeAnswerKey: true,

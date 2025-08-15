@@ -50,10 +50,10 @@ const ActivityInClassStandaloneModal = ({
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
     resourceUsage: "classroom_only",
-    bloomTaxonomy: ["apply"], // Default to one level for standalone
+    bloomTaxonomy: ["apply"], 
     activityType: "",
     duration: "30-45 minutes",
-    difficultyLevel: "intermediate",
+    difficultyLevel: "Intermediate",
     learningObjectives: "",
     specificTopic: "",
     additionalRequirement: "",
@@ -128,7 +128,7 @@ const ActivityInClassStandaloneModal = ({
       bloomTaxonomy: ["apply"],
       activityType: "",
       duration: "30-45 minutes",
-      difficultyLevel: "intermediate",
+      difficultyLevel: "Intermediate",
       learningObjectives: "",
       specificTopic: "",
       additionalRequirement: "",

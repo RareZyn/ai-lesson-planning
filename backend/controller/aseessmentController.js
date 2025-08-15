@@ -1,4 +1,4 @@
-// Fixed backend/controller/assessmentController.js - Updated to use Gemini and return JSON instead of HTML
+// Enhanced backend/controller/assessmentController.js - Added standalone assessment support
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
@@ -33,6 +33,7 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
+// [Previous structureGeneratedContent function remains the same]
 const structureGeneratedContent = (generatedContent, activityType) => {
   console.log("Structuring content for activity type:", activityType);
   console.log("Raw generated content:", Object.keys(generatedContent));
@@ -105,7 +106,7 @@ const structureGeneratedContent = (generatedContent, activityType) => {
         generatedContent.activityContent || null;
       structuredContent.rubricContent = generatedContent.rubricContent || null;
 
-      // Convert JSON to HTML for frontend - THIS WAS THE ISSUE!
+      // Convert JSON to HTML for frontend
       if (structuredContent.activityContent) {
         console.log("Converting activityContent to HTML...");
         const htmlResult = convertActivityToHTML(
@@ -117,10 +118,6 @@ const structureGeneratedContent = (generatedContent, activityType) => {
           "Activity HTML generated:",
           !!structuredContent.activityHTML
         );
-        console.log(
-          "Activity HTML preview:",
-          htmlResult ? htmlResult.substring(0, 200) + "..." : "NULL"
-        );
       }
 
       if (structuredContent.rubricContent) {
@@ -130,10 +127,6 @@ const structureGeneratedContent = (generatedContent, activityType) => {
         );
         structuredContent.rubricHTML = rubricHtmlResult;
         console.log("Rubric HTML generated:", !!structuredContent.rubricHTML);
-        console.log(
-          "Rubric HTML preview:",
-          rubricHtmlResult ? rubricHtmlResult.substring(0, 200) + "..." : "NULL"
-        );
       }
 
       structuredContent.hasStudentContent = !!generatedContent.activityContent;
@@ -158,6 +151,8 @@ const structureGeneratedContent = (generatedContent, activityType) => {
 
   return structuredContent;
 };
+
+// [All existing HTML conversion functions remain the same - keeping them for brevity]
 const convertActivityToHTML = (activityContent, activityType) => {
   if (!activityContent) return null;
 
@@ -519,8 +514,294 @@ const convertAnswerKeyToHTML = (answerKeyContent) => {
   return html;
 };
 
+// NEW: Main standalone assessment creation endpoint
+const createStandaloneAssessment = async (req, res) => {
+  try {
+    console.log("📝 Creating standalone assessment:", req.body);
+
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const {
+      activityType: rawActivityType,
+      grade,
+      subject,
+      classId,
+      className,
+      assessmentTitle,
+      assessmentDescription,
+      isStandalone,
+      ...activityData
+    } = req.body;
+
+    console.log("🔍 Extracted data:", {
+      rawActivityType,
+      grade,
+      subject,
+      classId,
+      assessmentTitle,
+      isStandalone,
+    });
+
+    // Validate and map activity type
+    const activityType = validateAndMapActivityType(rawActivityType);
+    console.log(
+      `🎯 Activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
+
+    // Validate required fields for standalone assessments
+    if (!activityType || !grade || !subject) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: activityType, grade, subject",
+      });
+    }
+
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
+    console.log("🔑 Gemini API key found, proceeding with generation...");
+
+    let generatedContent;
+
+    // Create mock lesson plan data for standalone assessments
+    const mockLessonPlanData = {
+      lesson: activityData.specificTopic || `${subject} Assessment`,
+      subject: subject,
+      theme: activityData.theme || "",
+      topic: activityData.specificTopic || activityData.topic || subject,
+      grade: grade,
+      contentStandard: {
+        main: activityData.contentStandard?.main || "",
+        component: activityData.contentStandard?.component || "",
+      },
+      learningStandard: {
+        main: activityData.learningStandard?.main || "",
+        component: activityData.learningStandard?.component || "",
+      },
+      learningOutline: {
+        pre: activityData.learningOutline?.pre || "",
+        during: activityData.learningOutline?.during || "",
+        post: activityData.learningOutline?.post || "",
+      },
+    };
+
+    console.log("📋 Mock lesson plan data:", mockLessonPlanData);
+
+    // Route to appropriate generation function based on activity type
+    switch (activityType) {
+      case "activity":
+        generatedContent = await generateActivityContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+          activityType: "activity",
+        });
+        break;
+
+      case "essay":
+        generatedContent = await generateEssayContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      case "textbook":
+        generatedContent = await generateTextbookContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      case "assessment":
+        generatedContent = await generateAssessmentContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      default:
+        console.warn(
+          `Unhandled activity type for standalone: ${activityType}, falling back to activity`
+        );
+        generatedContent = await generateActivityContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+          activityType: "activity",
+        });
+        break;
+    }
+
+    console.log("✨ Generated content from AI:", Object.keys(generatedContent));
+
+    // Structure the content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType
+    );
+
+    console.log("📦 Structured standalone content:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
+
+    // Create the standalone assessment record
+    const assessmentData = {
+      title:
+        assessmentTitle ||
+        `${activityData.specificTopic || subject} - ${activityType} (${grade})`,
+      description:
+        assessmentDescription ||
+        `Standalone ${activityType} assessment for ${subject}`,
+      createdBy: req.user.id,
+
+      // For standalone assessments, we don't have lesson plans
+      lessonPlanId: null,
+
+      // Class information (optional for standalone)
+      classId: classId || null,
+
+      // Activity and assessment metadata
+      activityType: activityType,
+      assessmentType: `Standalone ${activityType
+        .charAt(0)
+        .toUpperCase()}${activityType.slice(1)} Assessment`,
+      questionCount: activityData.numberOfQuestions || 20,
+      duration:
+        activityData.timeAllocation || activityData.duration || "60 minutes",
+      difficulty: activityData.difficultyLevel || "Intermediate",
+      skills: activityData.skills || [],
+
+      // Generated content
+      generatedContent: structuredContent,
+
+      // Lesson plan snapshot for standalone assessments
+      lessonPlanSnapshot: {
+        title: activityData.specificTopic || `${subject} Assessment`,
+        subject: subject,
+        grade: grade,
+        contentStandard: {
+          main: activityData.contentStandard?.main || "",
+          component: activityData.contentStandard?.component || "",
+        },
+        learningStandard: {
+          main: activityData.learningStandard?.main || "",
+          component: activityData.learningStandard?.component || "",
+        },
+        learningOutline: {
+          pre: activityData.learningOutline?.pre || "",
+          during: activityData.learningOutline?.during || "",
+          post: activityData.learningOutline?.post || "",
+        },
+      },
+
+      // Status and flags
+      status: "Generated",
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
+
+      // Additional metadata for standalone assessments
+      tags: activityData.tags || [],
+      notes: activityData.additionalRequirement || "",
+
+      // Mark as standalone
+      isStandalone: true,
+    };
+
+    console.log("💾 Creating standalone assessment with data:", {
+      title: assessmentData.title,
+      activityType: assessmentData.activityType,
+      hasActivity: assessmentData.hasActivity,
+      hasRubric: assessmentData.hasRubric,
+      isStandalone: assessmentData.isStandalone,
+    });
+
+    const assessment = await Assessment.create(assessmentData);
+
+    console.log("✅ Standalone assessment created successfully:", {
+      id: assessment._id,
+      title: assessment.title,
+      activityType: assessment.activityType,
+    });
+
+    // Return the complete response
+    res.status(201).json({
+      success: true,
+      message: `Standalone ${activityType} assessment created successfully`,
+      data: assessment,
+      generatedContent: assessment.generatedContent,
+    });
+  } catch (error) {
+    console.error("❌ Error in createStandaloneAssessment:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Error creating standalone assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// ENHANCED: Modified existing generateFromLessonPlan to handle both lesson-based and standalone
 const generateFromLessonPlan = async (req, res) => {
   try {
+    // Check if this is a standalone assessment creation request
+    if (req.body.isStandalone) {
+      console.log("🔄 Routing to standalone assessment creation...");
+      return await createStandaloneAssessment(req, res);
+    }
+
     const {
       lessonPlanId,
       classId,
@@ -538,7 +819,7 @@ const generateFromLessonPlan = async (req, res) => {
       ...activityData
     } = req.body;
 
-    console.log("Received request body:", req.body);
+    console.log("📚 Processing lesson-based assessment:", req.body);
 
     // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
@@ -546,7 +827,7 @@ const generateFromLessonPlan = async (req, res) => {
       `Activity type validation: "${rawActivityType}" -> "${activityType}"`
     );
 
-    // Validate required fields
+    // Validate required fields for lesson-based assessments
     if (!lessonPlanId || !classId || !lesson || !activityType) {
       return res.status(400).json({
         success: false,
@@ -658,18 +939,18 @@ const generateFromLessonPlan = async (req, res) => {
 
     console.log("Generated content from AI:", Object.keys(generatedContent));
 
-    // FIXED: Ensure we have the user properly
+    // Ensure we have the user properly
     if (!req.user) {
       req.user = { id: "test-user-id" };
     }
 
-    // FIXED: Structure the content properly based on activity type
+    // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
       activityType
     );
 
-    console.log("Creating assessment with data:", {
+    console.log("Creating lesson-based assessment with data:", {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       activityType,
       lessonPlanId,
@@ -678,7 +959,7 @@ const generateFromLessonPlan = async (req, res) => {
       structuredContent,
     });
 
-    // FIXED: Save assessment to database with proper content structure
+    // Save assessment to database with proper content structure
     const assessmentData = {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       description:
@@ -686,7 +967,7 @@ const generateFromLessonPlan = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType, // Use the validated activity type
+      activityType: activityType,
       assessmentType: `${activityType
         .charAt(0)
         .toUpperCase()}${activityType.slice(1)} Assessment`,
@@ -695,7 +976,6 @@ const generateFromLessonPlan = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: "Intermediate",
       skills: [],
-      // FIXED: Use the properly structured content
       generatedContent: structuredContent,
       lessonPlanSnapshot: {
         title: lesson,
@@ -706,7 +986,6 @@ const generateFromLessonPlan = async (req, res) => {
         learningOutline,
       },
       status: "Generated",
-      // FIXED: Set proper flags based on content availability and activity type
       hasActivity: structuredContent.hasStudentContent,
       hasRubric: structuredContent.hasTeacherContent,
     };
@@ -714,53 +993,6 @@ const generateFromLessonPlan = async (req, res) => {
     console.log("Assessment data to save:", assessmentData);
 
     const assessment = await Assessment.create(assessmentData);
-    console.log("BEFORE SAVING - Structured content HTML status:", {
-      activityHTML: !!structuredContent.activityHTML,
-      rubricHTML: !!structuredContent.rubricHTML,
-      assessmentHTML: !!structuredContent.assessmentHTML,
-      answerKeyHTML: !!structuredContent.answerKeyHTML,
-    });
-
-    // Log the structured content keys to see what's included
-    console.log(
-      "BEFORE SAVING - Structured content keys:",
-      Object.keys(structuredContent)
-    );
-
-    // Log HTML content length if it exists
-    if (structuredContent.activityHTML) {
-      console.log(
-        "BEFORE SAVING - Activity HTML length:",
-        structuredContent.activityHTML.length
-      );
-      console.log(
-        "BEFORE SAVING - Activity HTML preview:",
-        structuredContent.activityHTML.substring(0, 300)
-      );
-    } else {
-      console.log("BEFORE SAVING - Activity HTML is NULL/UNDEFINED");
-    }
-
-    if (structuredContent.rubricHTML) {
-      console.log(
-        "BEFORE SAVING - Rubric HTML length:",
-        structuredContent.rubricHTML.length
-      );
-    } else {
-      console.log("BEFORE SAVING - Rubric HTML is NULL/UNDEFINED");
-    }
-
-    // Most importantly, log what we're actually saving to the database
-    console.log(
-      "ASSESSMENT DATA generatedContent keys:",
-      Object.keys(assessmentData.generatedContent)
-    );
-    console.log("ASSESSMENT DATA HTML status:", {
-      activityHTML: !!assessmentData.generatedContent.activityHTML,
-      rubricHTML: !!assessmentData.generatedContent.rubricHTML,
-      assessmentHTML: !!assessmentData.generatedContent.assessmentHTML,
-      answerKeyHTML: !!assessmentData.generatedContent.answerKeyHTML,
-    });
 
     // Update lesson plan status
     try {
@@ -779,12 +1011,12 @@ const generateFromLessonPlan = async (req, res) => {
       console.error("Error updating lesson plan status:", lessonPlanError);
     }
 
-    // FIXED: Return the complete response with all content
+    // Return the complete response with all content
     res.status(201).json({
       success: true,
       message: `${activityType} assessment generated and saved successfully`,
       data: assessment,
-      generatedContent: assessment.generatedContent, // Include the generated content in response
+      generatedContent: assessment.generatedContent,
     });
   } catch (error) {
     console.error("Error in generateFromLessonPlan:", error);
@@ -819,6 +1051,252 @@ const generateFromLessonPlan = async (req, res) => {
   }
 };
 
+// NEW: Get standalone assessments only
+const getStandaloneAssessments = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const {
+      page = 1,
+      limit = 10,
+      classId,
+      activityType: rawActivityType,
+      status,
+      search,
+    } = req.query;
+
+    console.log("🔍 Getting standalone assessments with filters:", {
+      page,
+      limit,
+      classId,
+      rawActivityType,
+      status,
+      search,
+    });
+
+    // Build filter object for standalone assessments only
+    const filter = {
+      createdBy: req.user.id,
+      $or: [
+        { lessonPlanId: { $exists: false } },
+        { lessonPlanId: null },
+        { isStandalone: true },
+      ],
+    };
+
+    if (classId) filter.classId = classId;
+
+    // Validate activity type filter
+    if (rawActivityType) {
+      const mappedActivityType = validateAndMapActivityType(rawActivityType);
+      filter.activityType = mappedActivityType;
+    }
+
+    if (status) filter.status = status;
+
+    if (search) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { assessmentType: { $regex: search, $options: "i" } },
+        ],
+      });
+    }
+
+    console.log("📋 Standalone assessments filter query:", filter);
+
+    // Execute query with pagination
+    const assessments = await Assessment.find(filter)
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Assessment.countDocuments(filter);
+
+    console.log(
+      `✅ Found ${assessments.length} standalone assessments out of ${total} total`
+    );
+
+    // Transform assessments to include grade and subject info for standalone assessments
+    const transformedAssessments = assessments.map((assessment) => {
+      const transformed = assessment.toObject();
+
+      // For standalone assessments, extract grade and subject from lessonPlanSnapshot or classId
+      if (!transformed.classId) {
+        transformed.grade = transformed.lessonPlanSnapshot?.grade || "General";
+        transformed.subject =
+          transformed.lessonPlanSnapshot?.subject || "General";
+        transformed.className = "General";
+      } else {
+        transformed.grade =
+          transformed.classId?.grade ||
+          transformed.lessonPlanSnapshot?.grade ||
+          "General";
+        transformed.subject =
+          transformed.classId?.subject ||
+          transformed.lessonPlanSnapshot?.subject ||
+          "General";
+        transformed.className = transformed.classId?.className || "General";
+      }
+
+      return transformed;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: transformedAssessments.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: transformedAssessments,
+    });
+  } catch (error) {
+    console.error("❌ Get standalone assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching standalone assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// NEW: Update standalone assessment
+const updateStandaloneAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+    const updateData = req.body;
+
+    console.log("🔄 Updating standalone assessment:", {
+      assessmentId,
+      updateData: Object.keys(updateData),
+    });
+
+    // Find the assessment
+    const assessment = await Assessment.findById(assessmentId);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this assessment",
+      });
+    }
+
+    // Validate activity type if provided
+    if (updateData.activityType) {
+      updateData.activityType = validateAndMapActivityType(
+        updateData.activityType
+      );
+    }
+
+    // Update the assessment
+    const updatedAssessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      {
+        ...updateData,
+        updatedAt: new Date(),
+      },
+      { new: true, runValidators: true }
+    ).populate({
+      path: "classId",
+      select: "className grade subject year",
+    });
+
+    console.log("✅ Standalone assessment updated successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "Standalone assessment updated successfully",
+      data: updatedAssessment,
+    });
+  } catch (error) {
+    console.error("❌ Update standalone assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating standalone assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// NEW: Delete standalone assessment
+const deleteStandaloneAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+
+    console.log("🗑️ Deleting standalone assessment:", assessmentId);
+
+    const assessment = await Assessment.findById(assessmentId);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this assessment",
+      });
+    }
+
+    await assessment.deleteOne();
+
+    console.log("✅ Standalone assessment deleted successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "Standalone assessment deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    console.error("❌ Delete standalone assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting standalone assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 // Add method to get lesson plans without assessments
 const getLessonPlansWithoutAssessments = async (req, res) => {
   try {
@@ -845,7 +1323,7 @@ const getLessonPlansWithoutAssessments = async (req, res) => {
   }
 };
 
-// Get filtered assessments method
+// Get filtered assessments method - ENHANCED to handle both types
 const getUserAssessmentsFiltered = async (req, res) => {
   try {
     const {
@@ -855,11 +1333,34 @@ const getUserAssessmentsFiltered = async (req, res) => {
       activityType: rawActivityType,
       status,
       search,
-      hasLessonPlan,
+      hasLessonPlan, // NEW: Filter parameter to distinguish types
     } = req.query;
+
+    console.log("🔍 Getting filtered assessments:", {
+      page,
+      limit,
+      classId,
+      rawActivityType,
+      status,
+      search,
+      hasLessonPlan,
+    });
 
     // Build filter object
     const filter = { createdBy: req.user.id };
+
+    // NEW: Filter by lesson plan presence
+    if (hasLessonPlan !== undefined) {
+      if (hasLessonPlan === "true") {
+        filter.lessonPlanId = { $exists: true, $ne: null };
+      } else if (hasLessonPlan === "false") {
+        filter.$or = [
+          { lessonPlanId: { $exists: false } },
+          { lessonPlanId: null },
+          { isStandalone: true },
+        ];
+      }
+    }
 
     if (classId) filter.classId = classId;
 
@@ -871,27 +1372,18 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     if (status) filter.status = status;
 
-    // Filter by lesson plan presence
-    if (hasLessonPlan !== undefined) {
-      if (hasLessonPlan === "true") {
-        filter.lessonPlanId = { $exists: true, $ne: null };
-      } else if (hasLessonPlan === "false") {
-        filter.$or = [
-          { lessonPlanId: { $exists: false } },
-          { lessonPlanId: null },
-        ];
-      }
-    }
-
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { assessmentType: { $regex: search, $options: "i" } },
-      ];
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { assessmentType: { $regex: search, $options: "i" } },
+        ],
+      });
     }
 
-    console.log("Assessment filter query:", filter);
+    console.log("📋 Assessment filter query:", filter);
 
     // Execute query with pagination
     const assessments = await Assessment.find(filter)
@@ -909,16 +1401,40 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     const total = await Assessment.countDocuments(filter);
 
+    // Transform assessments to include necessary info for display
+    const transformedAssessments = assessments.map((assessment) => {
+      const transformed = assessment.toObject();
+
+      // For standalone assessments, extract info from lessonPlanSnapshot
+      if (!transformed.lessonPlanId) {
+        transformed.grade =
+          transformed.lessonPlanSnapshot?.grade ||
+          transformed.classId?.grade ||
+          "General";
+        transformed.subject =
+          transformed.lessonPlanSnapshot?.subject ||
+          transformed.classId?.subject ||
+          "General";
+        transformed.className = transformed.classId?.className || "General";
+      }
+
+      return transformed;
+    });
+
+    console.log(
+      `✅ Found ${transformedAssessments.length} assessments out of ${total} total`
+    );
+
     res.status(200).json({
       success: true,
-      count: assessments.length,
+      count: transformedAssessments.length,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: parseInt(page),
-      data: assessments,
+      data: transformedAssessments,
     });
   } catch (error) {
-    console.error("Get filtered assessments error:", error);
+    console.error("❌ Get filtered assessments error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching assessments",
@@ -927,7 +1443,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
   }
 };
 
-// Helper functions for different assessment types - UPDATED to use Gemini and return JSON
+// [Keep all existing helper functions for generation - they remain the same]
 const generateActivityContent = async (data) => {
   const genAI = new GoogleGenerativeAI(data.geminiApiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -1011,7 +1527,6 @@ const generateTextbookContent = async (data) => {
   };
 };
 
-// UPDATED: Assessment content generation - return proper field names and use Gemini
 const generateAssessmentContent = async (data) => {
   console.log("Generating assessment content with data:", data);
 
@@ -1085,7 +1600,6 @@ const generateAssessmentContent = async (data) => {
   }
 };
 
-// UPDATED: Retry function for when assessment generation fails
 const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   console.log(
     `Retrying assessment generation with emphasis on ${numberOfQuestions} questions`
@@ -1129,7 +1643,8 @@ const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   };
 };
 
-// Helper functions to build prompts - UPDATED to request JSON instead of HTML
+// [Keep all existing prompt building functions - they remain the same]
+// [Keep all existing prompt building functions - they remain the same]
 const buildActivityPrompt = (data) => {
   return `
 # Identity
@@ -1484,7 +1999,6 @@ Do not include anything else. Just return the clean JSON object.
 `;
 };
 
-// UPDATED: Assessment prompt to generate JSON content
 const buildAssessmentPrompt = (data) => {
   const numberOfQuestions = data.numberOfQuestions || 20;
   const questionTypes = Array.isArray(data.questionTypes)
@@ -1588,7 +2102,6 @@ Remember: You MUST generate exactly ${numberOfQuestions} questions in the questi
 `;
 };
 
-// UPDATED: Enhanced prompt for retry attempts
 const buildEnhancedAssessmentPrompt = (data, numberOfQuestions) => {
   return `
 # URGENT: Generate EXACTLY ${numberOfQuestions} Questions
@@ -1635,6 +2148,7 @@ DO NOT STOP until you have written Question ${numberOfQuestions}!
 `;
 };
 
+// [Keep all existing CRUD functions that were already working]
 const saveAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1681,7 +2195,7 @@ const saveAssessment = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType, // Use validated activity type
+      activityType: activityType,
       assessmentType: assessmentType || "General Assessment",
       questionCount: questionCount || 20,
       duration: duration || "60 minutes",
@@ -1723,11 +2237,6 @@ const saveAssessment = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get user's assessments with filtering
- * @route   GET /api/assessment/my-assessments
- * @access  Private
- */
 const getUserAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1802,11 +2311,6 @@ const getUserAssessments = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get assessment by ID
- * @route   GET /api/assessment/:id
- * @access  Private
- */
 const getAssessmentById = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1846,42 +2350,6 @@ const getAssessmentById = async (req, res) => {
       });
     }
 
-    console.log("Raw assessment from database:", {
-      id: assessment._id,
-      generatedContentKeys: Object.keys(assessment.generatedContent || {}),
-      htmlStatus: {
-        activityHTML: assessment.generatedContent?.activityHTML
-          ? "EXISTS"
-          : "MISSING",
-        rubricHTML: assessment.generatedContent?.rubricHTML
-          ? "EXISTS"
-          : "MISSING",
-        assessmentHTML: assessment.generatedContent?.assessmentHTML
-          ? "EXISTS"
-          : "MISSING",
-        answerKeyHTML: assessment.generatedContent?.answerKeyHTML
-          ? "EXISTS"
-          : "MISSING",
-      },
-      htmlLengths: {
-        activityHTML: assessment.generatedContent?.activityHTML?.length || 0,
-        rubricHTML: assessment.generatedContent?.rubricHTML?.length || 0,
-        assessmentHTML:
-          assessment.generatedContent?.assessmentHTML?.length || 0,
-        answerKeyHTML: assessment.generatedContent?.answerKeyHTML?.length || 0,
-      },
-    });
-
-    // If HTML exists, log a preview
-    if (assessment.generatedContent?.activityHTML) {
-      console.log(
-        "ActivityHTML preview:",
-        assessment.generatedContent.activityHTML.substring(0, 100) + "..."
-      );
-    } else {
-      console.log("ActivityHTML is NULL/UNDEFINED in database");
-    }
-
     res.status(200).json({
       success: true,
       data: assessment,
@@ -1896,11 +2364,6 @@ const getAssessmentById = async (req, res) => {
   }
 };
 
-/**
- * @desc    Delete assessment
- * @route   DELETE /api/assessment/:id
- * @access  Private
- */
 const deleteAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1978,11 +2441,6 @@ const deleteAssessment = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update assessment status and generated content
- * @route   PUT /api/assessment/:id
- * @access  Private
- */
 const updateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -2064,7 +2522,6 @@ const updateAssessment = async (req, res) => {
   }
 };
 
-
 const regenerateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -2119,12 +2576,13 @@ const regenerateAssessment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "No Gemini API key found. Please add your API key in your profile settings.",
+          "No Gemini API key found. Please add your API key in profile settings.",
       });
     }
 
     // Extract activity type and validate mapping
-    const rawActivityType = activityFormData.activityType || existingAssessment.activityType;
+    const rawActivityType =
+      activityFormData.activityType || existingAssessment.activityType;
     const activityType = validateAndMapActivityType(rawActivityType);
 
     console.log(
@@ -2181,7 +2639,10 @@ const regenerateAssessment = async (req, res) => {
         break;
     }
 
-    console.log("Generated new content for regeneration:", Object.keys(generatedContent));
+    console.log(
+      "Generated new content for regeneration:",
+      Object.keys(generatedContent)
+    );
 
     // Structure the new content properly based on activity type
     const structuredContent = structureGeneratedContent(
@@ -2199,15 +2660,18 @@ const regenerateAssessment = async (req, res) => {
     // Update the existing assessment with new content and metadata
     const updateData = {
       // Update title to indicate regeneration
-      title: lessonPlanData.assessmentTitle || existingAssessment.title + " (Regenerated)",
-      description: lessonPlanData.assessmentDescription || existingAssessment.description,
-      
+      title:
+        lessonPlanData.assessmentTitle ||
+        existingAssessment.title + " (Regenerated)",
+      description:
+        lessonPlanData.assessmentDescription || existingAssessment.description,
+
       // Update activity type if changed
       activityType: activityType,
-      
+
       // Replace the generated content entirely
       generatedContent: structuredContent,
-      
+
       // Update lesson plan snapshot if provided
       ...(lessonPlanData.contentStandard && {
         lessonPlanSnapshot: {
@@ -2219,20 +2683,20 @@ const regenerateAssessment = async (req, res) => {
           learningOutline: lessonPlanData.learningOutline,
         },
       }),
-      
+
       // Update status and flags
       status: "Generated",
       hasActivity: structuredContent.hasStudentContent,
       hasRubric: structuredContent.hasTeacherContent,
-      
+
       // Update usage tracking
       usageCount: existingAssessment.usageCount + 1,
       lastUsed: new Date(),
-      
+
       // Add regeneration metadata
       regeneratedAt: new Date(),
       regenerationCount: (existingAssessment.regenerationCount || 0) + 1,
-      
+
       // Preserve original creation date if this is the first regeneration
       ...(!(existingAssessment.regenerationCount > 0) && {
         originalCreatedAt: existingAssessment.createdAt,
@@ -2252,16 +2716,19 @@ const regenerateAssessment = async (req, res) => {
       assessmentId,
       updateData,
       { new: true, runValidators: true }
-    ).populate({
-      path: "lessonPlanId",
-      select: "parameters plan",
-    }).populate({
-      path: "classId",
-      select: "className grade subject",
-    }).populate({
-      path: "createdBy",
-      select: "name",
-    });
+    )
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject",
+      })
+      .populate({
+        path: "createdBy",
+        select: "name",
+      });
 
     if (!updatedAssessment) {
       return res.status(404).json({
@@ -2285,7 +2752,6 @@ const regenerateAssessment = async (req, res) => {
       data: updatedAssessment,
       generatedContent: updatedAssessment.generatedContent,
     });
-
   } catch (error) {
     console.error("Error in regenerateAssessment:", error);
 
@@ -2319,9 +2785,13 @@ const regenerateAssessment = async (req, res) => {
   }
 };
 
-// Update the module.exports at the end of the file
+// Update the module.exports to include all new standalone functions
 module.exports = {
   generateFromLessonPlan,
+  createStandaloneAssessment, 
+  getStandaloneAssessments, 
+  updateStandaloneAssessment, 
+  deleteStandaloneAssessment, 
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -2329,5 +2799,5 @@ module.exports = {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
-  regenerateAssessment, 
+  regenerateAssessment,
 };

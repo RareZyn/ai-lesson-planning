@@ -1,4 +1,4 @@
-// src/pages/community/Community.jsx 
+// src/pages/community/Community.jsx
 import React, { useState, useEffect } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
@@ -339,7 +339,11 @@ const Community = () => {
               (activeTab === "myCollection" && isAuthenticated)) && (
               <Button
                 type="primary"
-                icon={<UploadOutlined />}
+                icon={
+                  <UploadOutlined
+                    style={{ fontSize: "30px", marginTop: "14px" }}
+                  />
+                }
                 onClick={() => {
                   if (activeTab === "myShared") {
                     setIsUploadModalOpen(true);
@@ -347,7 +351,7 @@ const Community = () => {
                     setActiveTab("discover");
                   }
                 }}
-                style={{ marginTop: "16px" }}
+                style={{ marginTop: "5px" }}
               >
                 {activeTab === "myShared"
                   ? "Share Your First Lesson"
@@ -405,14 +409,14 @@ const Community = () => {
       <div className="community-header">
         <div className="header-content">
           <h1>Lesson Sharing Hub</h1>
-          <p>
+          <p style={{ paddingTop: "6px" }}>
             Discover, share, and collaborate on lesson plans with fellow
             educators
           </p>
         </div>
         <Button
           type="primary"
-          icon={<UploadOutlined />}
+          icon={<UploadOutlined style={{ fontSize: "30px" }} />}
           size="large"
           onClick={() => {
             if (!isAuthenticated) {

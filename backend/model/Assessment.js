@@ -24,7 +24,7 @@ const AssessmentSchema = new mongoose.Schema(
     lessonPlanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LessonPlan",
-      required: true,
+      required: false,
     },
     classId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -233,19 +233,19 @@ export const englishSkills = [
 
 export const difficultyLevels = [
   {
-    value: "beginner",
+    value: "Beginner",
     label: "Beginner",
     color: "#52c41a",
     description: "Basic level for new learners",
   },
   {
-    value: "intermediate",
+    value: "Intermediate",
     label: "Intermediate",
     color: "#fa8c16",
     description: "Moderate difficulty level",
   },
   {
-    value: "advanced",
+    value: "Advanced",
     label: "Advanced",
     color: "#f5222d",
     description: "Challenging level for skilled learners",
