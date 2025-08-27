@@ -1,5 +1,5 @@
 const Class = require('../model/Class');
-const LessonPlan = require('../model/lesson');
+const LessonPlan = require('../model/Lesson');
 
 const getClasses = async (req, res) => {
     const { year, subject } = req.query;

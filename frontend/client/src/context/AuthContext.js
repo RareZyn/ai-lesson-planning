@@ -1,8 +1,6 @@
-// src/context/AuthContext.js - Fixed with better logout handling
+// src/context/AuthContext.js 
 import { createContext, useContext, useState, useEffect } from "react";
 import { auth, onAuthStateChanged } from "../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
 import { authAPI } from "../services/api";
 
 export const AuthContext = createContext();
@@ -33,34 +31,32 @@ export function AuthProvider({ children }) {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         try {
           if (user) {
-            const userRef = doc(db, "users", user.uid);
-            const userDoc = await getDoc(userRef);
+            // Firebase user exists - sync with MongoDB
+            try {
+              const response = await authAPI.findOrCreateFirebaseUser({
+                firebaseUid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email?.split("@")[0] || "User",
+                displayName: user.displayName || "",
+                photoURL: user.photoURL || "",
+              });
 
-            if (userDoc.exists()) {
+              if (response.success && response.user) {
+                setCurrentUser({
+                  ...response.user,
+                  uid: user.uid, // Keep Firebase UID for reference
+                });
+              } else {
+                setCurrentUser(null);
+              }
+            } catch (error) {
+              console.error("Error syncing with MongoDB:", error);
+              // Set basic Firebase user if MongoDB sync fails
               setCurrentUser({
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
                 photoURL: user.photoURL,
-                ...userDoc.data(),
-              });
-            } else {
-              // Create new user document if it doesn't exist
-              await setDoc(userRef, {
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                createdAt: serverTimestamp(),
-                roles: ["teacher"], // Default role
-                lastLogin: serverTimestamp(),
-              });
-
-              setCurrentUser({
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                roles: ["teacher"],
               });
             }
           } else {
@@ -68,18 +64,8 @@ export function AuthProvider({ children }) {
             setCurrentUser(null);
           }
         } catch (error) {
-          console.error("Error handling user document:", error);
-          // Fallback to basic user info if Firestore fails
-          if (user) {
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-            });
-          } else {
-            setCurrentUser(null);
-          }
+          console.error("Error handling auth state:", error);
+          setCurrentUser(null);
         } finally {
           setLoading(false);
         }

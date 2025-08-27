@@ -13,9 +13,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from "../../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../firebase";
 import { authAPI } from "../../services/api";
+import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css";
 
@@ -43,35 +42,34 @@ const RegisterPage = () => {
         displayName: values.name,
       });
 
-      // 3. Create user document in Firestore
-      const userRef = doc(db, "users", userCredential.user.uid);
-      await setDoc(userRef, {
-        email: values.email,
-        name: values.name,
-        schoolName: values.schoolName,
-        createdAt: serverTimestamp(),
-        roles: ["teacher"],
-        lastLogin: serverTimestamp(),
-      });
-
-      // 4. Register user in MongoDB backend
+      // 3. Register user in MongoDB backend
       try {
-        await authAPI.register({
+        const response = await authAPI.register({
           name: values.name,
           email: values.email,
           password: values.password,
           schoolName: values.schoolName,
-          firebaseUid: userCredential.user.uid, // Link Firebase and MongoDB users
+          firebaseUid: userCredential.user.uid,
+          geminiApiKey: values.geminiApiKey || "",
         });
-        console.log("✅ User registered in MongoDB backend");
-      } catch (backendError) {
-        console.error("⚠️ Backend registration failed:", backendError);
-        // Don't fail the whole registration if backend fails
-        message.warning("Account created but some features may be limited");
-      }
 
-      message.success("Registration successful!");
-      navigate("/app/", { replace: true });
+        if (response.success) {
+          console.log("✅ User registered successfully");
+          message.success("Registration successful!");
+          navigate("/app/", { replace: true });
+        } else {
+          throw new Error(response.message || "Registration failed");
+        }
+      } catch (backendError) {
+        console.error("❌ Backend registration failed:", backendError);
+        // Delete Firebase user if MongoDB registration fails
+        try {
+          await userCredential.user.delete();
+        } catch (deleteError) {
+          console.error("Failed to cleanup Firebase user:", deleteError);
+        }
+        throw backendError;
+      }
     } catch (error) {
       console.error("Registration error:", error);
       message.error(error.message || "Registration failed!");
@@ -90,7 +88,7 @@ const RegisterPage = () => {
 
   return (
     <div className="login-container">
-      <div className="login-box">
+      <div className="login-box" style={{ maxWidth: 500 }}>
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
@@ -120,7 +118,12 @@ const RegisterPage = () => {
           </ul>
         </div>
 
-        <Form name="register_form" className="login-form" onFinish={onFinish}>
+        <Form
+          name="register_form"
+          className="login-form"
+          onFinish={onFinish}
+          layout="vertical"
+        >
           <Form.Item
             name="name"
             rules={[
@@ -195,6 +198,9 @@ const RegisterPage = () => {
               size="large"
             />
           </Form.Item>
+
+          {/* Gemini API Key Input */}
+          <GeminiApiKeyInput required={false} showInstructions={true} />
 
           <Form.Item>
             <Button

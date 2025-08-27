@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import styles from './MultiStepPlanner.module.css';
-import { getSow } from '../../../services/sowService';
+import React, { useState, useEffect } from "react";
+import styles from "./MultiStepPlanner.module.css";
+import { getSow } from "../../../services/sowService";
+
+// Import all the modal components
+import ActivityInClassModal from "../../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
+import EssayModal from "../../../components/Modal/LessonBasedAssessment/EssayLessonModal";
+import AssessmentModal from "../../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
+import TextBookModal from "../../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
 
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [sowLessons, setSowLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // State for modal management
+  const [activeModal, setActiveModal] = useState(null);
+  const [hasConfiguredActivity, setHasConfiguredActivity] = useState(false);
 
   useEffect(() => {
     if (!data.grade) {
@@ -25,10 +35,6 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         const lessons = response?.lessons || [];
         if (lessons.length > 0) {
           setSowLessons(lessons);
-          // Auto-fill topic from SOW if a lesson is already selected and topic is empty
-          if (data.sow?.topic && !data.specificTopic) {
-            updateData('specificTopic', data.sow.topic);
-          }
         } else {
           setError(
             `No lessons found for ${data.grade}. Please check if SOW data exists.`
@@ -57,14 +63,118 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     fetchSowLessons();
   }, [data.grade]);
 
+  // Check if activity has been configured when activity type or configuration changes
+  useEffect(() => {
+    if (data.activityType && data.activityConfiguration) {
+      setHasConfiguredActivity(true);
+    } else {
+      setHasConfiguredActivity(false);
+    }
+  }, [data.activityType, data.activityConfiguration]);
+
+  const handleActivityTypeChange = (activityType) => {
+    updateData("activityType", activityType);
+    // Clear previous configuration when changing activity type
+    updateData("activityConfiguration", null);
+    setHasConfiguredActivity(false);
+
+    // Open the appropriate modal for configuration
+    setActiveModal(activityType);
+  };
+
+  const handleModalSubmit = (modalData) => {
+    console.log("Modal data received:", modalData);
+
+    // Save the activity configuration to the lesson plan data
+    const activityConfig = {
+      type: data.activityType,
+      parameters: modalData,
+      configuredAt: new Date().toISOString(),
+    };
+
+    updateData("activityConfiguration", activityConfig);
+    setHasConfiguredActivity(true);
+    setActiveModal(null);
+
+    console.log("Activity configuration saved:", activityConfig);
+  };
+
+  const handleModalClose = () => {
+    setActiveModal(null);
+  };
+
+  const handleReconfigureActivity = () => {
+    if (data.activityType) {
+      setActiveModal(data.activityType);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // --- UPDATED VALIDATION ---
-    if (!data.sow?.lessonNo || !data.specificTopic || !data.activityType || !data.proficiencyLevel || !data.hotsFocus) {
+
+    // Validation
+    if (
+      !data.sow?.lessonNo ||
+      !data.specificTopic ||
+      !data.activityType ||
+      !data.proficiencyLevel ||
+      !data.hotsFocus
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
+
+    // Check if activity has been configured
+    if (!hasConfiguredActivity) {
+      alert("Please configure your selected activity type before proceeding.");
+      return;
+    }
+
     onNext();
+  };
+
+  const getActivityTypeLabel = (type) => {
+    const labels = {
+      textbook: "Textbook-based Activity",
+      essay: "Essay Writing",
+      activityInClass: "In-class Activity",
+      assessment: "Assessment / Test",
+    };
+    return labels[type] || type;
+  };
+
+  const getConfigurationSummary = () => {
+    if (!data.activityConfiguration?.parameters) return "Not configured";
+
+    const params = data.activityConfiguration.parameters;
+    const type = data.activityType;
+
+    switch (type) {
+      case "essay":
+        return `${params.essayType || "Unknown type"} essay, ${
+          params.wordCount || "Unknown length"
+        }, ${params.duration || "Unknown duration"}`;
+
+      case "assessment":
+        return `${params.assessmentType || "Unknown type"}, ${
+          params.numberOfQuestions || 0
+        } questions, ${params.timeAllocation || "Unknown"} minutes`;
+
+      case "activityInClass":
+        return `${params.studentArrangement || "Unknown arrangement"}, ${
+          params.resourceUsage || "Unknown resources"
+        }, ${params.duration || "Unknown duration"}`;
+
+      case "textbook":
+        return `Textbook activity${
+          params.additionalRequirement
+            ? ` - ${params.additionalRequirement.substring(0, 50)}...`
+            : ""
+        }`;
+
+      default:
+        return "Configured";
+    }
   };
 
   return (
@@ -73,39 +183,43 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       <p>Fill in the core details based on the KSSM Scheme of Work.</p>
 
       <form onSubmit={handleSubmit}>
-        {/* --- FIELD 1: Lesson from SOW --- */}
+        {/* Lesson from SOW */}
         <div className={styles.formGroup}>
           <label htmlFor="lessonNumber">Lesson from Scheme of Work</label>
           <select
             id="lessonNumber"
             name="lessonNumber"
-            value={data.sow?.lessonNo || ''}
+            value={data.sow?.lessonNo || ""}
             onChange={(e) => {
               const selectedValue = e.target.value;
               const selectedLesson = sowLessons.find(
                 (lesson) => lesson.lessonNo.toString() === selectedValue
               );
-              updateData('sow', selectedLesson || {});
-              // Also update the topic field with the SOW topic when a lesson is selected
-              if (selectedLesson) {
-                updateData('specificTopic', selectedLesson.topic);
+              updateData("sow", selectedLesson || {});
+              if (selectedLesson && selectedLesson.topic) {
+                updateData("specificTopic", selectedLesson.topic);
               }
             }}
             disabled={isLoading}
             required
           >
-            <option value="" disabled>-- Select Lesson --</option>
+            <option value="" disabled>
+              -- Select Lesson --
+            </option>
             {isLoading && <option disabled>Loading lessons...</option>}
             {error && <option disabled>Error: {error}</option>}
-            {!isLoading && !error && sowLessons.length === 0 && <option disabled>No lessons available for {data.grade}</option>}
-            {!isLoading && !error && sowLessons.map(lesson => (
-              <option key={lesson.lessonNo} value={lesson.lessonNo}>
-                Lesson {lesson.lessonNo} - {lesson.topic} ({lesson.focus})
-              </option>
-            ))}
+            {!isLoading && !error && sowLessons.length === 0 && (
+              <option disabled>No lessons available for {data.grade}</option>
+            )}
+            {!isLoading &&
+              !error &&
+              sowLessons.map((lesson) => (
+                <option key={lesson.lessonNo} value={lesson.lessonNo}>
+                  Lesson {lesson.lessonNo} - {lesson.topic} ({lesson.focus})
+                </option>
+              ))}
           </select>
 
-          {/* Show additional info about current grade and loading state */}
           <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
             {data.grade
               ? `Looking for lessons in ${data.grade}`
@@ -113,40 +227,115 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             {isLoading && " - Loading..."}
           </small>
         </div>
-        
-        {/* --- FIELD 2 (NEW ORDER): Specific Topic / Lesson Title --- */}
+
+        {/* Specific Topic */}
         <div className={styles.formGroup}>
-          <label htmlFor="specificTopic">Lesson Title (Specific Topic or Context)</label>
+          <label htmlFor="specificTopic">
+            Lesson Title (Specific Topic or Context)
+          </label>
           <input
             type="text"
             id="specificTopic"
             name="specificTopic"
-            value={data.specificTopic || ''}
-            onChange={(e) => updateData('specificTopic', e.target.value)}
+            value={data.specificTopic || ""}
+            onChange={(e) => updateData("specificTopic", e.target.value)}
             placeholder="e.g., 'The life of Nicol David'"
             required
           />
+          <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
+            This field is auto-populated from the SOW topic but you can
+            customize it
+          </small>
         </div>
 
-        {/* --- FIELD 3 (NEW): Activity Format --- */}
+        {/* Activity Format - Updated with modal integration */}
         <div className={styles.formGroup}>
           <label htmlFor="activityType">Primary Activity Format</label>
-          <select 
-            id="activityType" 
-            name="activityType" 
-            value={data.activityType || ''} 
-            onChange={(e) => updateData('activityType', e.target.value)} 
+          <select
+            id="activityType"
+            name="activityType"
+            value={data.activityType || ""}
+            onChange={(e) => handleActivityTypeChange(e.target.value)}
             required
           >
-            <option value="" disabled>-- Select a format --</option>
+            <option value="" disabled>
+              -- Select a format --
+            </option>
             <option value="textbook">Textbook-based Activity</option>
             <option value="essay">Essay Writing</option>
-            <option value="activityInClass">In-class Activity (e.g., group work, presentation)</option>
+            <option value="activityInClass">
+              In-class Activity (e.g., group work, presentation)
+            </option>
             <option value="assessment">Assessment / Test</option>
           </select>
+
+          {/* Show configuration status and summary */}
+          {data.activityType && (
+            <div style={{ marginTop: "12px" }}>
+              {hasConfiguredActivity ? (
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#f6ffed",
+                    border: "1px solid #b7eb8f",
+                    borderRadius: "6px",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#52c41a",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    ✓ {getActivityTypeLabel(data.activityType)} Configured
+                  </div>
+                  <div
+                    style={{
+                      color: "#666",
+                      fontSize: "12px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {getConfigurationSummary()}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleReconfigureActivity}
+                    style={{
+                      background: "none",
+                      border: "1px solid #d9d9d9",
+                      borderRadius: "4px",
+                      padding: "4px 12px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      color: "#666",
+                    }}
+                  >
+                    Reconfigure Settings
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#fff7e6",
+                    border: "1px solid #ffd591",
+                    borderRadius: "6px",
+                    color: "#fa8c16",
+                    fontSize: "14px",
+                  }}
+                >
+                  ⚠ Please configure your{" "}
+                  {getActivityTypeLabel(data.activityType)} settings
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* --- FIELD 4: Proficiency Level --- */}
+        {/* Proficiency Level */}
         <div className={styles.formGroup}>
           <label htmlFor="proficiencyLevel">Class Proficiency Level</label>
           <select
@@ -171,7 +360,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </select>
         </div>
 
-        {/* --- FIELD 5: HOTS Focus --- */}
+        {/* HOTS Focus */}
         <div className={styles.formGroup}>
           <label htmlFor="hotsFocus">HOTS Focus</label>
           <select
@@ -191,6 +380,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </select>
         </div>
 
+        {/* Navigation */}
         <div className={styles.navigation}>
           <button
             type="button"
@@ -204,6 +394,53 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </button>
         </div>
       </form>
+
+      {/* Render Modals - All set to lesson planning mode */}
+      {activeModal === "activityInClass" && (
+        <ActivityInClassModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          activityType="activity"
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "essay" && (
+        <EssayModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          activityType="essay"
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "textbook" && (
+        <TextBookModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {activeModal === "assessment" && (
+        <AssessmentModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
-// Fixed ActivityInClassLessonModal.jsx with Loading Screen
-import React, { useState } from "react";
+//ActivityInClassLessonModal.jsx 
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Radio,
@@ -24,6 +24,7 @@ import {
   BulbOutlined,
   ClockCircleOutlined,
   LoadingOutlined,
+  RedoOutlined,
 } from "@ant-design/icons";
 import {
   classroomActivityTypes,
@@ -43,16 +44,35 @@ const ActivityInClassLesson = ({
   onSubmit,
   selectedLessonPlan,
   activityType = "activity",
+  isLessonPlanningMode = false,
+  existingConfiguration = null,
+  isRegenerateMode = false, // NEW: Flag for regeneration mode
+  existingAssessment = null, // NEW: Existing assessment data
 }) => {
   const [formData, setFormData] = useState({
     studentArrangement: "small_group",
     resourceUsage: "classroom_only",
-    activityType: "", // This is for specific activity type selection
+    activityType: "",
     duration: "",
     additionalRequirement: "",
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available (for regeneration or lesson planning)
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        studentArrangement:
+          existingConfiguration.studentArrangement || "small_group",
+        resourceUsage: existingConfiguration.resourceUsage || "classroom_only",
+        activityType: existingConfiguration.activityType || "",
+        duration: existingConfiguration.duration || "",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -70,13 +90,39 @@ const ActivityInClassLesson = ({
 
     setLoading(true);
     try {
-      const submitData = {
-        ...formData,
-        selectedLessonPlan,
-        activityType: "activity", // Always send "activity" as the main type
-      };
-      await onSubmit(submitData);
-      message.success("Activity settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "activityInClass",
+        };
+
+        await onSubmit(submitData);
+        message.success("Activity configuration saved successfully!");
+      } else if (isRegenerateMode) {
+        // NEW: For regeneration mode, submit new configuration
+        submitData = {
+          ...formData,
+          activityType: "activity",
+          isRegeneration: true,
+          existingAssessmentId: existingAssessment?._id,
+        };
+
+        await onSubmit(submitData);
+        // Success message will be handled by parent component
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          selectedLessonPlan,
+          activityType: "activity",
+        };
+        await onSubmit(submitData);
+        message.success("Activity settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -98,7 +144,7 @@ const ActivityInClassLesson = ({
 
   if (!isOpen) return null;
 
-  // Loading overlay when generating activity
+  // Loading overlay when generating/regenerating activity
   if (loading) {
     return (
       <div className="modal-overlay">
@@ -118,7 +164,11 @@ const ActivityInClassLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Activity
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : isRegenerateMode
+                  ? "Regenerating Activity"
+                  : "Generating Activity"}
               </h3>
               <p
                 style={{
@@ -127,7 +177,11 @@ const ActivityInClassLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your classroom activity based on the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your activity configuration for the lesson plan..."
+                  : isRegenerateMode
+                  ? "Regenerating your classroom activity with new settings..."
+                  : "Creating your classroom activity based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -138,7 +192,11 @@ const ActivityInClassLesson = ({
                 }}
               >
                 <Text type="secondary" style={{ fontSize: "14px" }}>
-                  Setting up interactive learning experience
+                  {isLessonPlanningMode
+                    ? "Configuring activity parameters"
+                    : isRegenerateMode
+                    ? "Updating activity with new configuration"
+                    : "Setting up interactive learning experience"}
                 </Text>
               </div>
             </div>
@@ -159,9 +217,15 @@ const ActivityInClassLesson = ({
         <div className="modal-header">
           <div className="modal-header-content">
             <div className="modal-icon">
-              <ThunderboltOutlined />
+              {isRegenerateMode ? <RedoOutlined /> : <ThunderboltOutlined />}
             </div>
-            <h3 className="modal-title">Activity in Class</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure Activity in Class"
+                : isRegenerateMode
+                ? "Regenerate Activity in Class"
+                : "Activity in Class"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -170,15 +234,44 @@ const ActivityInClassLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Selected Lesson Plan Info */}
-          {selectedLessonPlan && (
+          {/* Info Alert based on mode */}
+          {isLessonPlanningMode && (
             <Alert
-              message={`Based on Lesson Plan: ${
-                selectedLessonPlan.title || "Selected Lesson"
+              message="Configure In-Class Activity"
+              description="Set up the parameters for your in-class activity. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {isRegenerateMode && (
+            <Alert
+              message="Regenerate Activity Assessment"
+              description={`Update the settings for "${selectedLessonPlan?.title}" activity. The existing assessment will be replaced with a new one based on your updated configuration.`}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Selected Lesson Plan Info - only show in assessment mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
+            <Alert
+              message={`${
+                isRegenerateMode ? "Regenerating" : "Based on"
+              } Lesson Plan: ${selectedLessonPlan.title || "Selected Lesson"}`}
+              description={`${
+                isRegenerateMode ? "Update" : "Generate"
+              } classroom activity for: ${
+                selectedLessonPlan.classId?.className ||
+                selectedLessonPlan.class ||
+                "Class"
+              } | ${
+                selectedLessonPlan.parameters?.grade ||
+                selectedLessonPlan.grade ||
+                "Grade"
               }`}
-              description={`Generate classroom activity for: ${
-                selectedLessonPlan.class || "Class"
-              } | ${selectedLessonPlan.grade || "Grade"}`}
               type="info"
               showIcon
               style={{ marginBottom: 24 }}
@@ -408,7 +501,13 @@ const ActivityInClassLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity..."
+                      : isRegenerateMode
+                      ? "Update instructions, materials, or special considerations for the regenerated activity..."
+                      : "Enter specific instructions, materials needed, learning objectives, or any special considerations for this activity based on the selected lesson plan..."
+                  }
                   maxLength={300}
                   showCount
                   disabled={loading}
@@ -420,7 +519,9 @@ const ActivityInClassLesson = ({
             <Col span={24}>
               <Card
                 size="small"
-                title="Activity Summary"
+                title={`Activity ${
+                  isRegenerateMode ? "Regeneration" : ""
+                } Summary`}
                 style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
               >
                 <Row gutter={[16, 8]}>
@@ -460,13 +561,36 @@ const ActivityInClassLesson = ({
                       <Tag color="orange">{formData.duration}</Tag>
                     </Col>
                   )}
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
                       <Text strong style={{ color: "#666" }}>
-                        Based on Lesson:
+                        {isRegenerateMode ? "Updating" : "Based on"} Lesson:
                       </Text>
                       <br />
                       <Text>{selectedLessonPlan.title}</Text>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <Text strong style={{ color: "#666" }}>
+                        Configuration Mode:
+                      </Text>
+                      <br />
+                      <Text>
+                        This configuration will be saved with your lesson plan
+                      </Text>
+                    </Col>
+                  )}
+                  {isRegenerateMode && (
+                    <Col span={24}>
+                      <Text strong style={{ color: "#666" }}>
+                        Regeneration Mode:
+                      </Text>
+                      <br />
+                      <Text type="warning">
+                        The existing assessment will be replaced with new
+                        content
+                      </Text>
                     </Col>
                   )}
                 </Row>
@@ -492,9 +616,25 @@ const ActivityInClassLesson = ({
             type="primary"
             loading={loading}
             onClick={handleSubmit}
-            icon={loading ? <LoadingOutlined /> : null}
+            icon={
+              loading ? (
+                <LoadingOutlined />
+              ) : isRegenerateMode ? (
+                <RedoOutlined />
+              ) : null
+            }
           >
-            {loading ? "Generating..." : "Submit Activity"}
+            {loading
+              ? isLessonPlanningMode
+                ? "Saving..."
+                : isRegenerateMode
+                ? "Regenerating..."
+                : "Generating..."
+              : isLessonPlanningMode
+              ? "Save Configuration"
+              : isRegenerateMode
+              ? "Regenerate Activity"
+              : "Submit Activity"}
           </Button>
         </div>
       </div>

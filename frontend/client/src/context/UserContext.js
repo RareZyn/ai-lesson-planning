@@ -1,7 +1,8 @@
-// src/context/UserContext.js - Fixed version with proper auth handling
+// src/context/UserContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { authAPI } from "../services/api";
+import { auth, signOut } from "../firebase";
 
 const UserContext = createContext();
 
@@ -20,7 +21,6 @@ export const UserProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // FIXED: Make sure we're getting the right property from AuthContext
   const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
   // Helper function to set authenticated state
@@ -38,7 +38,7 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem("authToken");
   };
 
-  // FIXED: Sync Firebase user with MongoDB backend
+  // Sync Firebase user with MongoDB backend
   const syncFirebaseUserWithMongoDB = async (firebaseUser) => {
     try {
       if (!firebaseUser) {
@@ -73,12 +73,13 @@ export const UserProvider = ({ children }) => {
         throw new Error(response.message || "Failed to sync user with backend");
       }
     } catch (error) {
+      console.error("MongoDB sync error:", error);
       clearAuthenticatedState();
       return null;
     }
   };
 
-  // FIXED: Check for existing JWT token
+  // Check for existing JWT token
   const checkExistingAuth = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -103,13 +104,14 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // FIXED: Main auth initialization function
+  // Main auth initialization function
   const initializeAuth = async () => {
     setLoading(true);
 
     try {
       // First, check if we have a Firebase user
       if (firebaseUser && firebaseUser.uid) {
+        // If Firebase user exists, sync with MongoDB
         await syncFirebaseUserWithMongoDB(firebaseUser);
       } else {
         // No Firebase user, check for existing JWT token
@@ -120,6 +122,7 @@ export const UserProvider = ({ children }) => {
         }
       }
     } catch (error) {
+      console.error("Auth initialization error:", error);
       clearAuthenticatedState();
     } finally {
       setLoading(false);
@@ -127,7 +130,7 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // FIXED: Effect to handle auth state changes
+  // Effect to handle auth state changes
   useEffect(() => {
     // Wait for Firebase auth to finish loading
     if (authLoading) {
@@ -150,9 +153,17 @@ export const UserProvider = ({ children }) => {
         await authAPI.logout();
       } catch (error) {
         // Ignore backend logout errors
+        console.error("Backend logout error:", error);
+      }
+
+      // Sign out from Firebase
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Firebase signout error:", error);
       }
     } catch (error) {
-      // Handle logout errors silently
+      console.error("Logout error:", error);
     } finally {
       setLoading(false);
     }

@@ -1,17 +1,36 @@
-//TextBookModal.jsx with Loading Screen
-import React, { useState } from "react";
-import { Card, Input, Row, Col, message, Spin } from "antd";
-import { BookOutlined, LoadingOutlined } from "@ant-design/icons";
+//TextbookLessonModal.jsx 
+import React, { useState, useEffect } from "react";
+import { Card, Input, Row, Col, message, Spin, Alert } from "antd";
+import { BookOutlined, LoadingOutlined, RedoOutlined } from "@ant-design/icons";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
 
-const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
+const TextBookLesson = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedLessonPlan,
+  isLessonPlanningMode = false, // Flag to indicate lesson planning mode
+  existingConfiguration = null, // Existing configuration data
+  isRegenerateMode = false, // NEW: Flag for regeneration mode
+  existingAssessment = null, // NEW: Existing assessment data
+}) => {
   const [formData, setFormData] = useState({
     additionalRequirement: "",
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -21,10 +40,43 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
   };
 
   const handleSubmit = async () => {
+    // Basic validation - textbook activities are generally less restrictive
+    // but we can add validation if needed in the future
+
     setLoading(true);
     try {
-      await onSubmit(formData);
-      message.success("Textbook activity submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "textbook", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Textbook configuration saved successfully!");
+      } else if (isRegenerateMode) {
+        // NEW: For regeneration mode, submit new configuration
+        submitData = {
+          ...formData,
+          activityType: "textbook",
+          isRegeneration: true,
+          existingAssessmentId: existingAssessment?._id,
+        };
+
+        await onSubmit(submitData);
+        // Success message will be handled by parent component
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          activityType: "textbook",
+        };
+        await onSubmit(submitData);
+        message.success("Textbook settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -42,7 +94,7 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
 
   if (!isOpen) return null;
 
-  // Loading overlay when generating textbook activity
+  // Loading overlay when generating/regenerating textbook activity
   if (loading) {
     return (
       <div className="modal-overlay">
@@ -62,7 +114,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Textbook Activity
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : isRegenerateMode
+                  ? "Regenerating Textbook Activity"
+                  : "Generating Textbook Activity"}
               </h3>
               <p
                 style={{
@@ -71,7 +127,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                   marginBottom: "16px",
                 }}
               >
-                Creating your textbook-based activity from the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your textbook activity configuration for the lesson plan..."
+                  : isRegenerateMode
+                  ? "Regenerating your textbook activity with new settings..."
+                  : "Creating your textbook-based activity from the lesson plan..."}
               </p>
               <div
                 style={{
@@ -82,7 +142,11 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                 }}
               >
                 <div style={{ fontSize: "14px", color: "#666" }}>
-                  📚 Aligning with curriculum standards
+                  {isLessonPlanningMode
+                    ? "📚 Configuring textbook activity parameters"
+                    : isRegenerateMode
+                    ? "📚 Updating textbook activity with new configuration"
+                    : "📚 Aligning with curriculum standards"}
                 </div>
               </div>
             </div>
@@ -103,9 +167,15 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
         <div className="modal-header">
           <div className="modal-header-content">
             <div className="modal-icon">
-              <BookOutlined />
+              {isRegenerateMode ? <RedoOutlined /> : <BookOutlined />}
             </div>
-            <h3 className="modal-title">English Textbook Activity</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure English Textbook Activity"
+                : isRegenerateMode
+                ? "Regenerate English Textbook Activity"
+                : "English Textbook Activity"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -114,35 +184,52 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
 
         {/* Body */}
         <div className="modal-body">
-          {/* Show lesson plan info if available */}
-          {selectedLessonPlan && (
-            <div
-              style={{
-                marginBottom: "24px",
-                padding: "16px",
-                background: "#f6ffed",
-                borderRadius: "8px",
-                border: "1px solid #b7eb8f",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: 600,
-                  color: "#52c41a",
-                  marginBottom: "4px",
-                }}
-              >
-                Based on Lesson Plan:
-              </div>
-              <div style={{ fontSize: "16px", marginBottom: "4px" }}>
-                {selectedLessonPlan.parameters?.specificTopic ||
-                  "Selected Lesson"}
-              </div>
-              <div style={{ fontSize: "12px", color: "#666" }}>
-                {selectedLessonPlan.parameters?.grade || "Form 4"} •
-                {selectedLessonPlan.classId?.subject || "English"}
-              </div>
-            </div>
+          {/* Info Alert based on mode */}
+          {isLessonPlanningMode && (
+            <Alert
+              message="Configure Textbook Activity"
+              description="Set up the parameters for your textbook-based activity. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {isRegenerateMode && (
+            <Alert
+              message="Regenerate Textbook Assessment"
+              description={`Update the settings for "${selectedLessonPlan?.title}" textbook assessment. The existing assessment will be replaced with a new one based on your updated configuration.`}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Selected Lesson Plan Info - only show in assessment mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
+            <Alert
+              message={`${
+                isRegenerateMode ? "Regenerating" : "Based on"
+              } Lesson Plan: ${
+                selectedLessonPlan.parameters?.specificTopic ||
+                selectedLessonPlan.title ||
+                "Selected Lesson"
+              }`}
+              description={`${
+                isRegenerateMode ? "Update" : "Generate"
+              } textbook-based activity for: ${
+                selectedLessonPlan.classId?.className ||
+                selectedLessonPlan.class ||
+                "Class"
+              } | ${
+                selectedLessonPlan.parameters?.grade ||
+                selectedLessonPlan.classId?.grade ||
+                "Grade"
+              } | English`}
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
           )}
 
           <Row gutter={[16, 24]}>
@@ -155,7 +242,13 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter your requirements, instructions, or notes for this textbook activity..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter your requirements, instructions, or notes for this textbook activity. This will be used when generating assessments based on this lesson plan..."
+                      : isRegenerateMode
+                      ? "Update requirements, instructions, or notes for the regenerated textbook activity..."
+                      : "Enter your requirements, instructions, or notes for this textbook activity..."
+                  }
                   maxLength={500}
                   showCount
                   disabled={loading}
@@ -172,9 +265,12 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                     color: "#666",
                   }}
                 >
-                  <strong>💡 Tip:</strong> Specify page numbers, exercises, or
-                  specific textbook sections you'd like to focus on. The AI will
-                  generate activities that complement your lesson objectives.
+                  <strong>💡 Tip:</strong>
+                  {isLessonPlanningMode
+                    ? " Specify page numbers, exercises, or specific textbook sections you'd like to focus on. This configuration will be saved and used when generating assessments later."
+                    : isRegenerateMode
+                    ? " Update page numbers, exercises, or specific textbook sections you'd like to focus on for the regenerated activity."
+                    : " Specify page numbers, exercises, or specific textbook sections you'd like to focus on. The AI will generate activities that complement your lesson objectives."}
                 </div>
               </Card>
             </Col>
@@ -183,7 +279,9 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             <Col span={24}>
               <Card
                 size="small"
-                title="Activity Summary"
+                title={`Textbook Activity ${
+                  isRegenerateMode ? "Regeneration" : ""
+                } Summary`}
                 style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
               >
                 <Row gutter={[16, 8]}>
@@ -203,7 +301,7 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                       English Textbook
                     </div>
                   </Col>
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
                       <div
                         style={{
@@ -212,11 +310,45 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
                           marginTop: "8px",
                         }}
                       >
-                        Based on Lesson:
+                        {isRegenerateMode ? "Updating" : "Based on"} Lesson:
                       </div>
                       <div style={{ color: "#333" }}>
                         {selectedLessonPlan.parameters?.specificTopic ||
+                          selectedLessonPlan.title ||
                           "Selected Lesson Plan"}
+                      </div>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        Configuration Mode:
+                      </div>
+                      <div style={{ color: "#333" }}>
+                        This configuration will be saved with your lesson plan
+                      </div>
+                    </Col>
+                  )}
+                  {isRegenerateMode && (
+                    <Col span={24}>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        Regeneration Mode:
+                      </div>
+                      <div style={{ color: "#fa8c16" }}>
+                        The existing assessment will be replaced with new
+                        content
                       </div>
                     </Col>
                   )}
@@ -248,10 +380,19 @@ const TextBookLesson = ({ isOpen, onClose, onSubmit, selectedLessonPlan }) => {
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Submitting...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode
+                    ? "Saving..."
+                    : isRegenerateMode
+                    ? "Regenerating..."
+                    : "Generating..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📝 Save Configuration"
+              ) : isRegenerateMode ? (
+                "🔄 Regenerate Assessment"
               ) : (
-                "📚 Submit Activity"
+                "📝 Generate Assessment"
               )}
             </button>
           </div>

@@ -1,10 +1,8 @@
-// Fixed backend/controller/assessmentController.js - Properly handle different content types
-const OpenAI = require("openai");
+// Enhanced backend/controller/assessmentController.js - Added standalone assessment support
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const User = require("../model/User");
 
 // Activity type mapping to ensure valid enum values
 const ACTIVITY_TYPE_MAPPING = {
@@ -35,13 +33,18 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// FIXED: Properly structure generated content based on activity type
+// [Previous structureGeneratedContent function remains the same]
 const structureGeneratedContent = (generatedContent, activityType) => {
   console.log("Structuring content for activity type:", activityType);
   console.log("Raw generated content:", Object.keys(generatedContent));
 
   // Initialize the content structure
   const structuredContent = {
+    activityContent: null,
+    rubricContent: null,
+    assessmentContent: null,
+    answerKeyContent: null,
+    // Add HTML versions for frontend compatibility
     activityHTML: null,
     rubricHTML: null,
     assessmentHTML: null,
@@ -54,13 +57,41 @@ const structureGeneratedContent = (generatedContent, activityType) => {
   // Map content based on activity type
   switch (activityType) {
     case "assessment":
-      // For assessments: student content = assessmentHTML, teacher content = answerKeyHTML
-      structuredContent.assessmentHTML =
-        generatedContent.assessmentHTML || null;
-      structuredContent.answerKeyHTML = generatedContent.answerKeyHTML || null;
-      structuredContent.hasStudentContent = !!generatedContent.assessmentHTML;
-      structuredContent.hasTeacherContent = !!generatedContent.answerKeyHTML;
+      // For assessments: student content = assessmentContent, teacher content = answerKeyContent
+      structuredContent.assessmentContent =
+        generatedContent.assessmentContent || null;
+      structuredContent.answerKeyContent =
+        generatedContent.answerKeyContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.assessmentContent) {
+        console.log("Converting assessmentContent to HTML...");
+        structuredContent.assessmentHTML = convertAssessmentToHTML(
+          structuredContent.assessmentContent
+        );
+        console.log(
+          "Assessment HTML generated:",
+          !!structuredContent.assessmentHTML
+        );
+      }
+      if (structuredContent.answerKeyContent) {
+        console.log("Converting answerKeyContent to HTML...");
+        structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
+          structuredContent.answerKeyContent
+        );
+        console.log(
+          "Answer Key HTML generated:",
+          !!structuredContent.answerKeyHTML
+        );
+      }
+
+      structuredContent.hasStudentContent =
+        !!generatedContent.assessmentContent;
+      structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
+
       console.log("Assessment content structured:", {
+        hasAssessmentContent: !!structuredContent.assessmentContent,
+        hasAnswerKeyContent: !!structuredContent.answerKeyContent,
         hasAssessmentHTML: !!structuredContent.assessmentHTML,
         hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
@@ -70,23 +101,707 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     case "textbook":
     case "activity":
     default:
-      // For other types: student content = activityHTML, teacher content = rubricHTML
-      structuredContent.activityHTML = generatedContent.activityHTML || null;
-      structuredContent.rubricHTML = generatedContent.rubricHTML || null;
-      structuredContent.hasStudentContent = !!generatedContent.activityHTML;
-      structuredContent.hasTeacherContent = !!generatedContent.rubricHTML;
+      // For other types: student content = activityContent, teacher content = rubricContent
+      structuredContent.activityContent =
+        generatedContent.activityContent || null;
+      structuredContent.rubricContent = generatedContent.rubricContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.activityContent) {
+        console.log("Converting activityContent to HTML...");
+        const htmlResult = convertActivityToHTML(
+          structuredContent.activityContent,
+          activityType
+        );
+        structuredContent.activityHTML = htmlResult;
+        console.log(
+          "Activity HTML generated:",
+          !!structuredContent.activityHTML
+        );
+      }
+
+      if (structuredContent.rubricContent) {
+        console.log("Converting rubricContent to HTML...");
+        const rubricHtmlResult = convertRubricToHTML(
+          structuredContent.rubricContent
+        );
+        structuredContent.rubricHTML = rubricHtmlResult;
+        console.log("Rubric HTML generated:", !!structuredContent.rubricHTML);
+      }
+
+      structuredContent.hasStudentContent = !!generatedContent.activityContent;
+      structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
+
       console.log("Activity content structured:", {
+        hasActivityContent: !!structuredContent.activityContent,
+        hasRubricContent: !!structuredContent.rubricContent,
         hasActivityHTML: !!structuredContent.activityHTML,
         hasRubricHTML: !!structuredContent.rubricHTML,
       });
       break;
   }
 
+  console.log("Final structured content keys:", Object.keys(structuredContent));
+  console.log("Final HTML content status:", {
+    activityHTML: !!structuredContent.activityHTML,
+    rubricHTML: !!structuredContent.rubricHTML,
+    assessmentHTML: !!structuredContent.assessmentHTML,
+    answerKeyHTML: !!structuredContent.answerKeyHTML,
+  });
+
   return structuredContent;
 };
 
+// [All existing HTML conversion functions remain the same - keeping them for brevity]
+const convertActivityToHTML = (activityContent, activityType) => {
+  if (!activityContent) return null;
+
+  let html = `
+    <div class="activity-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="activity-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          activityContent.title || "Activity"
+        }</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+      </div>
+  `;
+
+  if (activityContent.description) {
+    html += `<div class="activity-description" style="margin-bottom: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px;">
+      <p style="margin: 0;"><strong>Description:</strong> ${activityContent.description}</p>
+    </div>`;
+  }
+
+  if (activityContent.duration) {
+    html += `<p style="margin-bottom: 15px;"><strong>Duration:</strong> ${activityContent.duration}</p>`;
+  }
+
+  if (activityContent.materials && activityContent.materials.length > 0) {
+    html += `<div class="materials" style="margin-bottom: 20px;">
+      <h3 style="color: #52c41a;">Materials Needed:</h3>
+      <ul>`;
+    activityContent.materials.forEach((material) => {
+      html += `<li>${material}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (activityContent.instructions && activityContent.instructions.length > 0) {
+    html += `<div class="instructions" style="margin-bottom: 25px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ol style="padding-left: 20px;">`;
+    activityContent.instructions.forEach((instruction) => {
+      html += `<li style="margin-bottom: 8px;">${instruction}</li>`;
+    });
+    html += `</ol></div>`;
+  }
+
+  // Activity-specific content based on type
+  switch (activityType) {
+    case "essay":
+      if (activityContent.prompt) {
+        html += `<div class="essay-prompt" style="margin-bottom: 20px; padding: 20px; background: #fff7e6; border: 2px solid #ffa940; border-radius: 8px;">
+          <h3 style="color: #fa8c16;">Essay Prompt:</h3>
+          <p style="font-size: 16px; font-weight: 500;">${activityContent.prompt}</p>
+        </div>`;
+      }
+      if (activityContent.requirements) {
+        html += `<div class="requirements" style="margin-bottom: 20px;">
+          <h3 style="color: #1890ff;">Requirements:</h3>
+          <ul>
+            <li><strong>Word Count:</strong> ${activityContent.requirements.wordCount}</li>
+            <li><strong>Duration:</strong> ${activityContent.requirements.duration}</li>
+            <li><strong>Format:</strong> ${activityContent.requirements.format}</li>
+          </ul>
+        </div>`;
+      }
+      if (activityContent.guidelines && activityContent.guidelines.length > 0) {
+        html += `<div class="guidelines" style="margin-bottom: 20px;">
+          <h3 style="color: #722ed1;">Guidelines:</h3>
+          <ul>`;
+        activityContent.guidelines.forEach((guideline) => {
+          html += `<li>${guideline}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      break;
+
+    case "activity":
+      if (activityContent.activities && activityContent.activities.length > 0) {
+        activityContent.activities.forEach((section) => {
+          html += `<div class="activity-section" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${section.section}</h3>
+            <ol style="padding-left: 20px;">`;
+          section.tasks.forEach((task) => {
+            html += `<li style="margin-bottom: 10px;">${task}</li>`;
+          });
+          html += `</ol></div>`;
+        });
+      }
+      break;
+
+    case "textbook":
+      if (activityContent.textbookReference) {
+        html += `<div class="textbook-reference" style="margin-bottom: 20px; padding: 15px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
+          <h3 style="color: #52c41a;">Textbook Reference:</h3>
+          <p><strong>Pages:</strong> ${
+            activityContent.textbookReference.pages
+          }</p>
+          <p><strong>Chapter:</strong> ${
+            activityContent.textbookReference.chapter
+          }</p>
+          ${
+            activityContent.textbookReference.section
+              ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>`
+              : ""
+          }
+        </div>`;
+      }
+
+      if (
+        activityContent.preActivity &&
+        activityContent.preActivity.length > 0
+      ) {
+        html += `<div class="pre-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #1890ff;">Pre-Activity Tasks:</h3>
+          <ol>`;
+        activityContent.preActivity.forEach((task) => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+
+      if (
+        activityContent.mainActivity &&
+        activityContent.mainActivity.length > 0
+      ) {
+        html += `<div class="main-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #fa8c16;">Main Activity Tasks:</h3>
+          <ol>`;
+        activityContent.mainActivity.forEach((task) => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+
+      if (
+        activityContent.postActivity &&
+        activityContent.postActivity.length > 0
+      ) {
+        html += `<div class="post-activity" style="margin-bottom: 20px;">
+          <h3 style="color: #722ed1;">Post-Activity Tasks:</h3>
+          <ol>`;
+        activityContent.postActivity.forEach((task) => {
+          html += `<li>${task}</li>`;
+        });
+        html += `</ol></div>`;
+      }
+
+      if (activityContent.questions && activityContent.questions.length > 0) {
+        html += `<div class="questions" style="margin-bottom: 20px;">
+          <h3 style="color: #eb2f96;">Questions:</h3>`;
+        activityContent.questions.forEach((question, index) => {
+          html += `<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
+            <p><strong>Question ${index + 1} (${question.type}):</strong> ${
+            question.question
+          }</p>
+            <div style="height: 60px; border: 1px solid #d9d9d9; margin-top: 10px; background: #fafafa;"></div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+      break;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertAssessmentToHTML = (assessmentContent) => {
+  if (!assessmentContent) return null;
+
+  let html = `
+    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          assessmentContent.title || "Assessment"
+        }</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Time Allocation:</strong> ${
+            assessmentContent.timeAllocation || "60 minutes"
+          }</p>
+          <p style="margin: 0;"><strong>Total Questions:</strong> ${
+            assessmentContent.totalQuestions || "N/A"
+          }</p>
+        </div>
+      </div>
+  `;
+
+  if (assessmentContent.instructions) {
+    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    assessmentContent.instructions.forEach((instruction) => {
+      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (assessmentContent.questions && assessmentContent.questions.length > 0) {
+    html += `<div class="questions">`;
+    assessmentContent.questions.forEach((question) => {
+      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
+          question.questionNumber
+        } (${question.points} ${
+        question.points === 1 ? "point" : "points"
+      })</h4>
+        <p style="font-size: 16px; margin-bottom: 15px;">${
+          question.question
+        }</p>`;
+
+      if (question.type === "multiple_choice" && question.options) {
+        html += `<div class="options" style="margin-left: 20px;">`;
+        question.options.forEach((option) => {
+          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+        });
+        html += `</div>`;
+      } else if (question.answerSpace) {
+        const height =
+          question.answerSpace === "3 lines"
+            ? "80px"
+            : question.answerSpace === "5 lines"
+            ? "120px"
+            : "60px";
+        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      } else {
+        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      }
+
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertRubricToHTML = (rubricContent) => {
+  if (!rubricContent) return null;
+
+  let html = `
+    <div class="rubric-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.5;">
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${
+        rubricContent.title || "Assessment Rubric"
+      }</h1>
+      ${
+        rubricContent.description
+          ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>`
+          : ""
+      }
+  `;
+
+  if (rubricContent.criteria && rubricContent.criteria.length > 0) {
+    html += `
+      <table class="rubric-table" border="1" cellpadding="12" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <thead>
+          <tr style="background-color: #52c41a; color: white;">
+            <th style="text-align: left; font-weight: bold;">Criteria</th>
+            <th style="text-align: center; font-weight: bold;">Excellent</th>
+            <th style="text-align: center; font-weight: bold;">Good</th>
+            <th style="text-align: center; font-weight: bold;">Satisfactory</th>
+            <th style="text-align: center; font-weight: bold;">Needs Improvement</th>
+            <th style="text-align: center; font-weight: bold;">Points</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    rubricContent.criteria.forEach((criterion, index) => {
+      const bgColor = index % 2 === 0 ? "#f6ffed" : "#ffffff";
+      html += `
+        <tr style="background-color: ${bgColor};">
+          <td style="font-weight: bold; vertical-align: top;">${criterion.category}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.excellent}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.good}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.satisfactory}</td>
+          <td style="vertical-align: top; text-align: left;">${criterion.needsImprovement}</td>
+          <td style="text-align: center; font-weight: bold; vertical-align: top;">${criterion.points}</td>
+        </tr>`;
+    });
+
+    html += `
+        </tbody>
+      </table>
+      <div class="grading-info" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+        <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Information</h3>
+        <p><strong>Total Points:</strong> ${
+          rubricContent.totalPoints || "N/A"
+        }</p>`;
+
+    if (rubricContent.gradingScale) {
+      html += `<h4 style="margin-top: 15px; color: #1890ff;">Grading Scale:</h4><ul style="margin: 0; padding-left: 20px;">`;
+      Object.entries(rubricContent.gradingScale).forEach(([level, range]) => {
+        html += `<li><strong>${
+          level.charAt(0).toUpperCase() + level.slice(1)
+        }:</strong> ${range}</li>`;
+      });
+      html += `</ul>`;
+    }
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertAnswerKeyToHTML = (answerKeyContent) => {
+  if (!answerKeyContent) return null;
+
+  let html = `
+    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${
+        answerKeyContent.title || "Answer Key"
+      }</h1>
+      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p><strong>Total Questions:</strong> ${
+          answerKeyContent.totalQuestions || "N/A"
+        }</p>
+        <p style="margin: 0;"><strong>Total Points:</strong> ${
+          answerKeyContent.totalPoints || "N/A"
+        }</p>
+      </div>
+  `;
+
+  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
+    html += `<div class="answers">`;
+    answerKeyContent.answers.forEach((answer) => {
+      html += `
+        <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+          <h3 style="color: #262626; margin-bottom: 10px;">Question ${
+            answer.questionNumber
+          } (${answer.points} ${answer.points === 1 ? "point" : "points"})</h3>
+          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${
+            answer.correctAnswer
+          }</p>
+          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${
+            answer.markingNotes
+          }</p>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (answerKeyContent.gradingScale) {
+    html += `<div class="grading-scale" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+      <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Scale:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
+      html += `<li><strong>${
+        level.charAt(0).toUpperCase() + level.slice(1)
+      }:</strong> ${range}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+// NEW: Main standalone assessment creation endpoint
+const createStandaloneAssessment = async (req, res) => {
+  try {
+    console.log("📝 Creating standalone assessment:", req.body);
+
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const {
+      activityType: rawActivityType,
+      grade,
+      subject,
+      classId,
+      className,
+      assessmentTitle,
+      assessmentDescription,
+      isStandalone,
+      ...activityData
+    } = req.body;
+
+    console.log("🔍 Extracted data:", {
+      rawActivityType,
+      grade,
+      subject,
+      classId,
+      assessmentTitle,
+      isStandalone,
+    });
+
+    // Validate and map activity type
+    const activityType = validateAndMapActivityType(rawActivityType);
+    console.log(
+      `🎯 Activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
+
+    // Validate required fields for standalone assessments
+    if (!activityType || !grade || !subject) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: activityType, grade, subject",
+      });
+    }
+
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
+    console.log("🔑 Gemini API key found, proceeding with generation...");
+
+    let generatedContent;
+
+    // Create mock lesson plan data for standalone assessments
+    const mockLessonPlanData = {
+      lesson: activityData.specificTopic || `${subject} Assessment`,
+      subject: subject,
+      theme: activityData.theme || "",
+      topic: activityData.specificTopic || activityData.topic || subject,
+      grade: grade,
+      contentStandard: {
+        main: activityData.contentStandard?.main || "",
+        component: activityData.contentStandard?.component || "",
+      },
+      learningStandard: {
+        main: activityData.learningStandard?.main || "",
+        component: activityData.learningStandard?.component || "",
+      },
+      learningOutline: {
+        pre: activityData.learningOutline?.pre || "",
+        during: activityData.learningOutline?.during || "",
+        post: activityData.learningOutline?.post || "",
+      },
+    };
+
+    console.log("📋 Mock lesson plan data:", mockLessonPlanData);
+
+    // Route to appropriate generation function based on activity type
+    switch (activityType) {
+      case "activity":
+        generatedContent = await generateActivityContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+          activityType: "activity",
+        });
+        break;
+
+      case "essay":
+        generatedContent = await generateEssayContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      case "textbook":
+        generatedContent = await generateTextbookContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      case "assessment":
+        generatedContent = await generateAssessmentContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+        });
+        break;
+
+      default:
+        console.warn(
+          `Unhandled activity type for standalone: ${activityType}, falling back to activity`
+        );
+        generatedContent = await generateActivityContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+          activityType: "activity",
+        });
+        break;
+    }
+
+    console.log("✨ Generated content from AI:", Object.keys(generatedContent));
+
+    // Structure the content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType
+    );
+
+    console.log("📦 Structured standalone content:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
+
+    // Create the standalone assessment record
+    const assessmentData = {
+      title:
+        assessmentTitle ||
+        `${activityData.specificTopic || subject} - ${activityType} (${grade})`,
+      description:
+        assessmentDescription ||
+        `Standalone ${activityType} assessment for ${subject}`,
+      createdBy: req.user.id,
+
+      // For standalone assessments, we don't have lesson plans
+      lessonPlanId: null,
+
+      // Class information (optional for standalone)
+      classId: classId || null,
+
+      // Activity and assessment metadata
+      activityType: activityType,
+      assessmentType: `Standalone ${activityType
+        .charAt(0)
+        .toUpperCase()}${activityType.slice(1)} Assessment`,
+      questionCount: activityData.numberOfQuestions || 20,
+      duration:
+        activityData.timeAllocation || activityData.duration || "60 minutes",
+      difficulty: activityData.difficultyLevel || "Intermediate",
+      skills: activityData.skills || [],
+
+      // Generated content
+      generatedContent: structuredContent,
+
+      // Lesson plan snapshot for standalone assessments
+      lessonPlanSnapshot: {
+        title: activityData.specificTopic || `${subject} Assessment`,
+        subject: subject,
+        grade: grade,
+        contentStandard: {
+          main: activityData.contentStandard?.main || "",
+          component: activityData.contentStandard?.component || "",
+        },
+        learningStandard: {
+          main: activityData.learningStandard?.main || "",
+          component: activityData.learningStandard?.component || "",
+        },
+        learningOutline: {
+          pre: activityData.learningOutline?.pre || "",
+          during: activityData.learningOutline?.during || "",
+          post: activityData.learningOutline?.post || "",
+        },
+      },
+
+      // Status and flags
+      status: "Generated",
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
+
+      // Additional metadata for standalone assessments
+      tags: activityData.tags || [],
+      notes: activityData.additionalRequirement || "",
+
+      // Mark as standalone
+      isStandalone: true,
+    };
+
+    console.log("💾 Creating standalone assessment with data:", {
+      title: assessmentData.title,
+      activityType: assessmentData.activityType,
+      hasActivity: assessmentData.hasActivity,
+      hasRubric: assessmentData.hasRubric,
+      isStandalone: assessmentData.isStandalone,
+    });
+
+    const assessment = await Assessment.create(assessmentData);
+
+    console.log("✅ Standalone assessment created successfully:", {
+      id: assessment._id,
+      title: assessment.title,
+      activityType: assessment.activityType,
+    });
+
+    // Return the complete response
+    res.status(201).json({
+      success: true,
+      message: `Standalone ${activityType} assessment created successfully`,
+      data: assessment,
+      generatedContent: assessment.generatedContent,
+    });
+  } catch (error) {
+    console.error("❌ Error in createStandaloneAssessment:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Error creating standalone assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// ENHANCED: Modified existing generateFromLessonPlan to handle both lesson-based and standalone
 const generateFromLessonPlan = async (req, res) => {
   try {
+    // Check if this is a standalone assessment creation request
+    if (req.body.isStandalone) {
+      console.log("🔄 Routing to standalone assessment creation...");
+      return await createStandaloneAssessment(req, res);
+    }
+
     const {
       lessonPlanId,
       classId,
@@ -104,7 +819,7 @@ const generateFromLessonPlan = async (req, res) => {
       ...activityData
     } = req.body;
 
-    console.log("Received request body:", req.body);
+    console.log("📚 Processing lesson-based assessment:", req.body);
 
     // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
@@ -112,12 +827,33 @@ const generateFromLessonPlan = async (req, res) => {
       `Activity type validation: "${rawActivityType}" -> "${activityType}"`
     );
 
-    // Validate required fields
+    // Validate required fields for lesson-based assessments
     if (!lessonPlanId || !classId || !lesson || !activityType) {
       return res.status(400).json({
         success: false,
         message:
           "Missing required fields: lessonPlanId, classId, lesson, activityType",
+      });
+    }
+
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in your profile settings.",
       });
     }
 
@@ -135,6 +871,7 @@ const generateFromLessonPlan = async (req, res) => {
           theme,
           topic,
           activityType: "activity",
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -148,6 +885,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -161,6 +899,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -174,6 +913,7 @@ const generateFromLessonPlan = async (req, res) => {
           subject,
           theme,
           topic,
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -191,6 +931,7 @@ const generateFromLessonPlan = async (req, res) => {
           theme,
           topic,
           activityType: "activity",
+          geminiApiKey,
           ...activityData,
         });
         break;
@@ -198,18 +939,18 @@ const generateFromLessonPlan = async (req, res) => {
 
     console.log("Generated content from AI:", Object.keys(generatedContent));
 
-    // FIXED: Ensure we have the user properly
+    // Ensure we have the user properly
     if (!req.user) {
       req.user = { id: "test-user-id" };
     }
 
-    // FIXED: Structure the content properly based on activity type
+    // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
       activityType
     );
 
-    console.log("Creating assessment with data:", {
+    console.log("Creating lesson-based assessment with data:", {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       activityType,
       lessonPlanId,
@@ -218,7 +959,7 @@ const generateFromLessonPlan = async (req, res) => {
       structuredContent,
     });
 
-    // FIXED: Save assessment to database with proper content structure
+    // Save assessment to database with proper content structure
     const assessmentData = {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       description:
@@ -226,7 +967,7 @@ const generateFromLessonPlan = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType, // Use the validated activity type
+      activityType: activityType,
       assessmentType: `${activityType
         .charAt(0)
         .toUpperCase()}${activityType.slice(1)} Assessment`,
@@ -235,7 +976,6 @@ const generateFromLessonPlan = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: "Intermediate",
       skills: [],
-      // FIXED: Use the properly structured content
       generatedContent: structuredContent,
       lessonPlanSnapshot: {
         title: lesson,
@@ -246,7 +986,6 @@ const generateFromLessonPlan = async (req, res) => {
         learningOutline,
       },
       status: "Generated",
-      // FIXED: Set proper flags based on content availability and activity type
       hasActivity: structuredContent.hasStudentContent,
       hasRubric: structuredContent.hasTeacherContent,
     };
@@ -254,9 +993,6 @@ const generateFromLessonPlan = async (req, res) => {
     console.log("Assessment data to save:", assessmentData);
 
     const assessment = await Assessment.create(assessmentData);
-
-    console.log("Assessment created successfully:", assessment._id);
-    console.log("Saved generatedContent:", assessment.generatedContent);
 
     // Update lesson plan status
     try {
@@ -275,18 +1011,287 @@ const generateFromLessonPlan = async (req, res) => {
       console.error("Error updating lesson plan status:", lessonPlanError);
     }
 
-    // FIXED: Return the complete response with all content
+    // Return the complete response with all content
     res.status(201).json({
       success: true,
       message: `${activityType} assessment generated and saved successfully`,
       data: assessment,
-      generatedContent: assessment.generatedContent, // Include the generated content in response
+      generatedContent: assessment.generatedContent,
     });
   } catch (error) {
     console.error("Error in generateFromLessonPlan:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Error generating assessment from lesson plan",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// NEW: Get standalone assessments only
+const getStandaloneAssessments = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const {
+      page = 1,
+      limit = 10,
+      classId,
+      activityType: rawActivityType,
+      status,
+      search,
+    } = req.query;
+
+    console.log("🔍 Getting standalone assessments with filters:", {
+      page,
+      limit,
+      classId,
+      rawActivityType,
+      status,
+      search,
+    });
+
+    // Build filter object for standalone assessments only
+    const filter = {
+      createdBy: req.user.id,
+      $or: [
+        { lessonPlanId: { $exists: false } },
+        { lessonPlanId: null },
+        { isStandalone: true },
+      ],
+    };
+
+    if (classId) filter.classId = classId;
+
+    // Validate activity type filter
+    if (rawActivityType) {
+      const mappedActivityType = validateAndMapActivityType(rawActivityType);
+      filter.activityType = mappedActivityType;
+    }
+
+    if (status) filter.status = status;
+
+    if (search) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { assessmentType: { $regex: search, $options: "i" } },
+        ],
+      });
+    }
+
+    console.log("📋 Standalone assessments filter query:", filter);
+
+    // Execute query with pagination
+    const assessments = await Assessment.find(filter)
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Assessment.countDocuments(filter);
+
+    console.log(
+      `✅ Found ${assessments.length} standalone assessments out of ${total} total`
+    );
+
+    // Transform assessments to include grade and subject info for standalone assessments
+    const transformedAssessments = assessments.map((assessment) => {
+      const transformed = assessment.toObject();
+
+      // For standalone assessments, extract grade and subject from lessonPlanSnapshot or classId
+      if (!transformed.classId) {
+        transformed.grade = transformed.lessonPlanSnapshot?.grade || "General";
+        transformed.subject =
+          transformed.lessonPlanSnapshot?.subject || "General";
+        transformed.className = "General";
+      } else {
+        transformed.grade =
+          transformed.classId?.grade ||
+          transformed.lessonPlanSnapshot?.grade ||
+          "General";
+        transformed.subject =
+          transformed.classId?.subject ||
+          transformed.lessonPlanSnapshot?.subject ||
+          "General";
+        transformed.className = transformed.classId?.className || "General";
+      }
+
+      return transformed;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: transformedAssessments.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: transformedAssessments,
+    });
+  } catch (error) {
+    console.error("❌ Get standalone assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching standalone assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// NEW: Update standalone assessment
+const updateStandaloneAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+    const updateData = req.body;
+
+    console.log("🔄 Updating standalone assessment:", {
+      assessmentId,
+      updateData: Object.keys(updateData),
+    });
+
+    // Find the assessment
+    const assessment = await Assessment.findById(assessmentId);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this assessment",
+      });
+    }
+
+    // Validate activity type if provided
+    if (updateData.activityType) {
+      updateData.activityType = validateAndMapActivityType(
+        updateData.activityType
+      );
+    }
+
+    // Update the assessment
+    const updatedAssessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      {
+        ...updateData,
+        updatedAt: new Date(),
+      },
+      { new: true, runValidators: true }
+    ).populate({
+      path: "classId",
+      select: "className grade subject year",
+    });
+
+    console.log("✅ Standalone assessment updated successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "Standalone assessment updated successfully",
+      data: updatedAssessment,
+    });
+  } catch (error) {
+    console.error("❌ Update standalone assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating standalone assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// NEW: Delete standalone assessment
+const deleteStandaloneAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+
+    console.log("🗑️ Deleting standalone assessment:", assessmentId);
+
+    const assessment = await Assessment.findById(assessmentId);
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this assessment",
+      });
+    }
+
+    await assessment.deleteOne();
+
+    console.log("✅ Standalone assessment deleted successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "Standalone assessment deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    console.error("❌ Delete standalone assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting standalone assessment",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
@@ -318,7 +1323,7 @@ const getLessonPlansWithoutAssessments = async (req, res) => {
   }
 };
 
-// Get filtered assessments method
+// Get filtered assessments method - ENHANCED to handle both types
 const getUserAssessmentsFiltered = async (req, res) => {
   try {
     const {
@@ -328,11 +1333,34 @@ const getUserAssessmentsFiltered = async (req, res) => {
       activityType: rawActivityType,
       status,
       search,
-      hasLessonPlan,
+      hasLessonPlan, // NEW: Filter parameter to distinguish types
     } = req.query;
+
+    console.log("🔍 Getting filtered assessments:", {
+      page,
+      limit,
+      classId,
+      rawActivityType,
+      status,
+      search,
+      hasLessonPlan,
+    });
 
     // Build filter object
     const filter = { createdBy: req.user.id };
+
+    // NEW: Filter by lesson plan presence
+    if (hasLessonPlan !== undefined) {
+      if (hasLessonPlan === "true") {
+        filter.lessonPlanId = { $exists: true, $ne: null };
+      } else if (hasLessonPlan === "false") {
+        filter.$or = [
+          { lessonPlanId: { $exists: false } },
+          { lessonPlanId: null },
+          { isStandalone: true },
+        ];
+      }
+    }
 
     if (classId) filter.classId = classId;
 
@@ -344,27 +1372,18 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     if (status) filter.status = status;
 
-    // Filter by lesson plan presence
-    if (hasLessonPlan !== undefined) {
-      if (hasLessonPlan === "true") {
-        filter.lessonPlanId = { $exists: true, $ne: null };
-      } else if (hasLessonPlan === "false") {
-        filter.$or = [
-          { lessonPlanId: { $exists: false } },
-          { lessonPlanId: null },
-        ];
-      }
-    }
-
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { assessmentType: { $regex: search, $options: "i" } },
-      ];
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { assessmentType: { $regex: search, $options: "i" } },
+        ],
+      });
     }
 
-    console.log("Assessment filter query:", filter);
+    console.log("📋 Assessment filter query:", filter);
 
     // Execute query with pagination
     const assessments = await Assessment.find(filter)
@@ -382,16 +1401,40 @@ const getUserAssessmentsFiltered = async (req, res) => {
 
     const total = await Assessment.countDocuments(filter);
 
+    // Transform assessments to include necessary info for display
+    const transformedAssessments = assessments.map((assessment) => {
+      const transformed = assessment.toObject();
+
+      // For standalone assessments, extract info from lessonPlanSnapshot
+      if (!transformed.lessonPlanId) {
+        transformed.grade =
+          transformed.lessonPlanSnapshot?.grade ||
+          transformed.classId?.grade ||
+          "General";
+        transformed.subject =
+          transformed.lessonPlanSnapshot?.subject ||
+          transformed.classId?.subject ||
+          "General";
+        transformed.className = transformed.classId?.className || "General";
+      }
+
+      return transformed;
+    });
+
+    console.log(
+      `✅ Found ${transformedAssessments.length} assessments out of ${total} total`
+    );
+
     res.status(200).json({
       success: true,
-      count: assessments.length,
+      count: transformedAssessments.length,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: parseInt(page),
-      data: assessments,
+      data: transformedAssessments,
     });
   } catch (error) {
-    console.error("Get filtered assessments error:", error);
+    console.error("❌ Get filtered assessments error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching assessments",
@@ -400,375 +1443,220 @@ const getUserAssessmentsFiltered = async (req, res) => {
   }
 };
 
-// Helper functions for different assessment types
-// Fixed generateActivityContent function with better error handling and flexible regex
+// [Keep all existing helper functions for generation - they remain the same]
 const generateActivityContent = async (data) => {
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent(buildActivityPrompt(data));
+  const response = await result.response;
+  const text = response.text();
+
+  let generatedContent;
   try {
-    console.log("Generating activity content with data:", data);
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You generate HTML student activities and teacher rubrics for classroom assessments. You must return exactly two HTML blocks with the specified comment headers.",
-        },
-        {
-          role: "user",
-          content: buildActivityPrompt(data),
-        },
-      ],
-    });
-
-    const output = response.choices[0].message.content;
-    console.log("Raw AI output length:", output.length);
-    console.log("Raw AI output preview:", output.substring(0, 500) + "...");
-
-    // More flexible regex patterns to handle variations in comments and spacing
-    const patterns = [
-      // Original pattern
-      /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/,
-
-      // Alternative patterns for different comment formats
-      /```html\s*<!-- STUDENT ACTIVITY -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER RUBRIC -->\s*([\s\S]*?)\s*```/,
-
-      // Pattern without specific comments
-      /```html\s*([\s\S]*?)\s*```[\s\S]*?```html\s*([\s\S]*?)\s*```/,
-
-      // Pattern with more flexible spacing
-      /```html[^`]*?<!-- STUDENT[^>]*? -->[^`]*?([\s\S]*?)\s*```[\s\S]*?```html[^`]*?<!-- TEACHER[^>]*? -->[^`]*?([\s\S]*?)\s*```/i,
-    ];
-
-    let match = null;
-    let patternUsed = -1;
-
-    // Try each pattern until one matches
-    for (let i = 0; i < patterns.length; i++) {
-      match = output.match(patterns[i]);
-      if (match && match.length >= 3) {
-        patternUsed = i;
-        console.log(`Successfully matched with pattern ${i}`);
-        break;
-      }
-    }
-
-    // If no pattern matched, try to extract any two HTML blocks
-    if (!match) {
-      console.warn(
-        "No specific pattern matched, trying to extract any two HTML blocks"
-      );
-      const htmlBlocks = output.match(/```html\s*([\s\S]*?)\s*```/g);
-
-      if (htmlBlocks && htmlBlocks.length >= 2) {
-        const firstBlock = htmlBlocks[0].match(/```html\s*([\s\S]*?)\s*```/)[1];
-        const secondBlock = htmlBlocks[1].match(
-          /```html\s*([\s\S]*?)\s*```/
-        )[1];
-
-        match = [null, firstBlock.trim(), secondBlock.trim()];
-        console.log("Extracted two HTML blocks as fallback");
-      }
-    }
-
-    if (!match || match.length < 3) {
-      console.error("Failed to parse AI response. Full output:", output);
-
-      // Log what we found for debugging
-      const htmlBlocks = output.match(/```html/g);
-      console.error(
-        "Number of HTML blocks found:",
-        htmlBlocks ? htmlBlocks.length : 0
-      );
-
-      // Try to provide more helpful error information
-      if (output.includes("```html")) {
-        console.error(
-          "HTML blocks detected but regex failed. Checking format..."
-        );
-        const allHtmlContent = output.match(/```html[\s\S]*?```/g);
-        if (allHtmlContent) {
-          console.error("All HTML blocks found:", allHtmlContent.length);
-          allHtmlContent.forEach((block, index) => {
-            console.error(
-              `Block ${index + 1} preview:`,
-              block.substring(0, 100) + "..."
-            );
-          });
-        }
-      }
-
-      throw new Error(
-        `Invalid response format from AI - could not extract HTML blocks. Pattern used: ${patternUsed}`
-      );
-    }
-
-    const result = {
-      activityHTML: match[1].trim(),
-      rubricHTML: match[2].trim(),
-    };
-
-    // Validate that we have actual content
-    if (!result.activityHTML || result.activityHTML.length < 50) {
-      console.warn(
-        "Activity HTML seems too short:",
-        result.activityHTML?.length
-      );
-    }
-
-    if (!result.rubricHTML || result.rubricHTML.length < 50) {
-      console.warn("Rubric HTML seems too short:", result.rubricHTML?.length);
-    }
-
-    console.log("Successfully generated activity content:", {
-      activityHTML: result.activityHTML
-        ? `${result.activityHTML.length} chars`
-        : "Missing",
-      rubricHTML: result.rubricHTML
-        ? `${result.rubricHTML.length} chars`
-        : "Missing",
-      patternUsed: patternUsed,
-    });
-
-    return result;
-  } catch (error) {
-    console.error("Error in generateActivityContent:", error);
-
-    // If it's our custom error, re-throw it
-    if (error.message.includes("Invalid response format from AI")) {
-      throw error;
-    }
-
-    // For other errors (API, network, etc.), wrap them
-    throw new Error(`Failed to generate activity content: ${error.message}`);
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
   }
-};
 
-const generateEssayContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML student activities and teacher rubrics for KSSM English essay assessments.",
-      },
-      {
-        role: "user",
-        content: buildEssayPrompt(data),
-      },
-    ],
-  });
-
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
-  );
-
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+  // Validate required fields
+  if (!generatedContent.activityContent || !generatedContent.rubricContent) {
+    throw new Error("Missing required content fields in AI response");
   }
 
   return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
+  };
+};
+
+const generateEssayContent = async (data) => {
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent(buildEssayPrompt(data));
+  const response = await result.response;
+  const text = response.text();
+
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
+  }
+
+  return {
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
   };
 };
 
 const generateTextbookContent = async (data) => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You generate HTML classroom textbook-based activities and teacher rubrics for the Malaysian curriculum.",
-      },
-      {
-        role: "user",
-        content: buildTextbookPrompt(data),
-      },
-    ],
-  });
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const output = response.choices[0].message.content;
-  const match = output.match(
-    /```html\s*<!-- STUDENT ACTIVITY -->\s*(.*?)\s*```[\s\n]*```html\s*<!-- TEACHER RUBRIC -->\s*(.*?)\s*```/s
-  );
+  const result = await model.generateContent(buildTextbookPrompt(data));
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    throw new Error("Invalid response format from AI");
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+    throw new Error("The AI response was not in a valid JSON format.");
   }
 
   return {
-    activityHTML: match[1].trim(),
-    rubricHTML: match[2].trim(),
+    activityContent: generatedContent.activityContent,
+    rubricContent: generatedContent.rubricContent,
   };
 };
 
-// FIXED: Assessment content generation - return proper field names
 const generateAssessmentContent = async (data) => {
   console.log("Generating assessment content with data:", data);
 
   const numberOfQuestions = data.numberOfQuestions || 20;
   console.log(`Generating assessment with ${numberOfQuestions} questions`);
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    temperature: 0.7, // Slight creativity for question variety
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert assessment creator for English language evaluation. You MUST generate exactly ${numberOfQuestions} questions as requested. Do not stop until all ${numberOfQuestions} questions are complete. Each question should be numbered clearly and include proper formatting.`,
-      },
-      {
-        role: "user",
-        content: buildAssessmentPrompt(data),
-      },
-    ],
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.7,
+    },
   });
 
-  const output = response.choices[0].message.content;
-  console.log("Raw AI output length:", output.length);
-  console.log("Raw AI output preview:", output.substring(0, 500) + "...");
+  try {
+    const result = await model.generateContent(buildAssessmentPrompt(data));
+    const response = await result.response;
+    const text = response.text();
 
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
-  );
+    console.log("Raw AI output length:", text.length);
+    console.log("Raw AI output preview:", text.substring(0, 500) + "...");
 
-  if (!match || match.length < 3) {
-    console.error("Failed to parse AI response. Full output:", output);
-    throw new Error(
-      "Invalid response format from AI - could not extract HTML blocks"
-    );
+    let generatedContent;
+    try {
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      generatedContent = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+      throw new Error("The AI response was not in a valid JSON format.");
+    }
+
+    // Validate required fields for assessment
+    if (
+      !generatedContent.assessmentContent ||
+      !generatedContent.answerKeyContent
+    ) {
+      console.error("Missing required assessment fields:", generatedContent);
+      throw new Error(
+        "Missing required assessment content fields in AI response"
+      );
+    }
+
+    const result_content = {
+      assessmentContent: generatedContent.assessmentContent,
+      answerKeyContent: generatedContent.answerKeyContent,
+    };
+
+    console.log(`Generated content analysis:`, {
+      assessmentContent: result_content.assessmentContent
+        ? "Generated"
+        : "Missing",
+      answerKeyContent: result_content.answerKeyContent
+        ? "Generated"
+        : "Missing",
+    });
+
+    return result_content;
+  } catch (error) {
+    console.error("Error in generateAssessmentContent:", error);
+
+    // Try one more time with a more explicit prompt if first attempt fails
+    if (!error.message.includes("retry")) {
+      console.log("Retrying assessment generation with enhanced prompt...");
+      return await retryAssessmentGeneration(data, numberOfQuestions);
+    }
+
+    throw error;
   }
-
-  const result = {
-    assessmentHTML: match[1].trim(),
-    answerKeyHTML: match[2].trim(),
-  };
-
-  // Verify question count in generated content
-  const questionMatches = [
-    result.assessmentHTML.match(/<(?:div|p|li)[^>]*>\s*\d+\.\s*/gi),
-    result.assessmentHTML.match(/\b\d+\.\s+[A-Z]/g),
-    result.assessmentHTML.match(/<h[3-6][^>]*>Question\s+\d+/gi),
-    result.assessmentHTML.match(/Question\s+\d+:/gi),
-  ].filter(Boolean);
-
-  const detectedQuestions =
-    questionMatches.length > 0
-      ? Math.max(...questionMatches.map((m) => m.length))
-      : 0;
-
-  console.log(`Generated content analysis:`, {
-    assessmentHTML: result.assessmentHTML ? "Generated" : "Missing",
-    answerKeyHTML: result.answerKeyHTML ? "Generated" : "Missing",
-    assessmentLength: result.assessmentHTML.length,
-    answerKeyLength: result.answerKeyHTML.length,
-    detectedQuestions: detectedQuestions,
-    requestedQuestions: numberOfQuestions,
-  });
-
-  if (detectedQuestions < numberOfQuestions) {
-    console.warn(
-      `⚠️  Generated ${detectedQuestions} questions but ${numberOfQuestions} were requested. Regenerating...`
-    );
-
-    // Try one more time with a more explicit prompt
-    return await retryAssessmentGeneration(data, numberOfQuestions);
-  }
-
-  return result;
 };
 
-// ADDED: Retry function for when question count is insufficient
 const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   console.log(
     `Retrying assessment generation with emphasis on ${numberOfQuestions} questions`
   );
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    temperature: 0.5,
-    messages: [
-      {
-        role: "system",
-        content: `You are creating an assessment with EXACTLY ${numberOfQuestions} questions. This is critical - you must not stop until you have generated all ${numberOfQuestions} questions. Count as you go: Question 1, Question 2, etc., up to Question ${numberOfQuestions}.`,
-      },
-      {
-        role: "user",
-        content: buildEnhancedAssessmentPrompt(data, numberOfQuestions),
-      },
-    ],
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.5,
+    },
   });
 
-  const output = response.choices[0].message.content;
-  console.log("Retry attempt - AI output length:", output.length);
-
-  const match = output.match(
-    /```html\s*<!-- STUDENT ASSESSMENT -->\s*([\s\S]*?)\s*```[\s\S]*?```html\s*<!-- TEACHER ANSWER KEY -->\s*([\s\S]*?)\s*```/
+  const result = await model.generateContent(
+    buildEnhancedAssessmentPrompt(data, numberOfQuestions)
   );
+  const response = await result.response;
+  const text = response.text();
 
-  if (!match || match.length < 3) {
-    console.error("Retry failed to parse AI response. Full output:", output);
-    throw new Error("Retry failed - Invalid response format from AI");
+  console.log("Retry attempt - AI output length:", text.length);
+
+  let generatedContent;
+  try {
+    const cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generatedContent = JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error("Retry failed to parse Gemini response. Full output:", text);
+    const retryError = new Error(
+      "Retry failed - Invalid response format from AI"
+    );
+    retryError.message += " (retry)";
+    throw retryError;
   }
 
   return {
-    assessmentHTML: match[1].trim(),
-    answerKeyHTML: match[2].trim(),
+    assessmentContent: generatedContent.assessmentContent,
+    answerKeyContent: generatedContent.answerKeyContent,
   };
 };
 
-// Helper functions to build prompts (keeping the existing ones)
+// [Keep all existing prompt building functions - they remain the same]
+// [Keep all existing prompt building functions - they remain the same]
 const buildActivityPrompt = (data) => {
   return `
 # Identity
 
 You are an AI assistant helping to generate creative and pedagogically sound in-class assessments and rubrics for English language teachers based on Malaysian KSSM curriculum lesson plans.
 
-# CRITICAL OUTPUT FORMAT REQUIREMENT
+# Instructions
 
-You MUST return your response in this EXACT format with no additional text:
+You must generate a JSON response with two main fields:
 
-\`\`\`html
-<!-- STUDENT ASSESSMENT -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Student Activity</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .activity { margin: 15px 0; padding: 10px; border-left: 3px solid #007acc; }
-    </style>
-</head>
-<body>
-    <!-- Your student activity content here -->
-</body>
-</html>
-\`\`\`
-
-\`\`\`html
-<!-- TEACHER ANSWER KEY -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Teacher Rubric</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .rubric { margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <!-- Your teacher rubric content here -->
-</body>
-</html>
-\`\`\`
-
-Do not include ANY other text, explanations, or content outside of these two HTML blocks.
+1. 🎓 Student Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -807,15 +1695,73 @@ Generate an in-class activity that incorporates:
     data.additionalRequirement || "Standard classroom activity"
   }
 
-# Requirements
+# Output Format
 
-1. Generate complete, valid HTML documents for both student and teacher sections
-2. Include proper styling for print-friendly layouts
-3. Make the student activity engaging and age-appropriate
-4. Create a comprehensive rubric for teachers
-5. Base content on the provided lesson data
+Return a JSON object with this exact structure:
 
-Remember: Return ONLY the two HTML blocks with the exact comment headers shown above.
+{
+  "activityContent": {
+    "title": "Activity Title",
+    "description": "Brief description of the activity",
+    "duration": "${data.duration || "30-45 minutes"}",
+    "materials": ["List", "of", "materials"],
+    "instructions": [
+      "Step 1: Clear instruction",
+      "Step 2: Another instruction",
+      "Step 3: Final instruction"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    },
+    "activities": [
+      {
+        "section": "Introduction",
+        "tasks": ["Task 1", "Task 2"]
+      },
+      {
+        "section": "Main Activity", 
+        "tasks": ["Task 1", "Task 2", "Task 3"]
+      },
+      {
+        "section": "Conclusion",
+        "tasks": ["Task 1", "Task 2"]
+      }
+    ]
+  },
+  "rubricContent": {
+    "title": "Assessment Rubric",
+    "description": "Rubric for evaluating student performance",
+    "criteria": [
+      {
+        "category": "Content Understanding",
+        "excellent": "Clear demonstration of understanding",
+        "good": "Good understanding with minor gaps", 
+        "satisfactory": "Basic understanding shown",
+        "needsImprovement": "Limited understanding evident",
+        "points": 5
+      },
+      {
+        "category": "Participation",
+        "excellent": "Active participation throughout",
+        "good": "Good participation with occasional engagement",
+        "satisfactory": "Moderate participation",
+        "needsImprovement": "Minimal participation",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points", 
+      "satisfactory": "13-17 points",
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
@@ -823,34 +1769,14 @@ const buildEssayPrompt = (data) => {
   return `
 # Identity
 
-You are an AI assistant that creates HTML-based student essay tasks and teacher grading rubrics based on Malaysian KSSM curriculum lesson plans. All outputs must follow a professional, styled, printable A4-friendly layout.
+You are an AI assistant that creates student essay tasks and teacher grading rubrics based on Malaysian KSSM curriculum lesson plans. All outputs must be in JSON format.
 
 # Instructions
 
-You must return exactly two blocks of HTML content:
+You must return a JSON object with two main fields:
 
-1. 🎓 Student Essay Activity Sheet (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
-
-Both must:
-- Be ready to print on A4 size
-- Be visually clear, with headings, sections, and consistent fonts
-- Use modern styling (e.g., clean layout, color headers, table borders for rubrics)
-
-## Student Essay Activity Guidelines
-- Include fields for Student Name, Class, and Teacher Name
-- Provide a clear title and engaging prompt related to the lesson topic
-- Include bullet points under instructions explaining what to write
-- Add a large text box for the essay (at least 600px height)
-- Include a note to students about tone, grammar, and proofreading
-- Word count requirement: ${data.wordCount || "200-300 words"}
-- Duration: ${data.duration || "60 minutes"}
-
-## Teacher Rubric Guidelines
-- Create a 5-column rubric table with: Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Improvement (1–2)
-- Include categories like Content, Organization, Tone, Language Use, and Creativity
-- Add a total score summary and grading scale (e.g., 23–25 = Excellent)
-- Use styled borders, background colors for headers, and even-row shading
+1. 📘 Student Essay Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -872,7 +1798,6 @@ Both must:
     "during": "${data.learningOutline?.during || ""}",
     "post": "${data.learningOutline?.post || ""}"
   },
-  "activityType": "essay",
   "essayType": "${data.essayType || "descriptive"}",
   "wordCount": "${data.wordCount || "200-300 words"}",
   "duration": "${data.duration || "60 minutes"}",
@@ -881,10 +1806,75 @@ Both must:
 
 # Output Format
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+Return a JSON object with this exact structure:
 
-Do not include anything else. Just the raw HTMLs.
+{
+  "activityContent": {
+    "title": "Essay Writing Task",
+    "essayType": "${data.essayType || "descriptive"}",
+    "topic": "Essay topic based on lesson",
+    "prompt": "Engaging essay prompt related to the lesson",
+    "instructions": [
+      "Clear instruction 1",
+      "Clear instruction 2",
+      "Clear instruction 3"
+    ],
+    "requirements": {
+      "wordCount": "${data.wordCount || "200-300 words"}",
+      "duration": "${data.duration || "60 minutes"}",
+      "format": "Standard essay format"
+    },
+    "guidelines": [
+      "Use proper grammar and spelling",
+      "Organize ideas clearly",
+      "Support points with examples"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    }
+  },
+  "rubricContent": {
+    "title": "Essay Assessment Rubric",
+    "description": "Rubric for evaluating essay performance",
+    "criteria": [
+      {
+        "category": "Content",
+        "excellent": "Ideas are clear, well-developed, and relevant",
+        "good": "Ideas are clear with good development",
+        "satisfactory": "Ideas are present but need more development",
+        "needsImprovement": "Ideas are unclear or irrelevant",
+        "points": 5
+      },
+      {
+        "category": "Organization",
+        "excellent": "Clear structure with logical flow",
+        "good": "Good structure with minor issues",
+        "satisfactory": "Basic structure present",
+        "needsImprovement": "Poor organization",
+        "points": 5
+      },
+      {
+        "category": "Language Use",
+        "excellent": "Excellent grammar and vocabulary",
+        "good": "Good language with minor errors",
+        "satisfactory": "Adequate language use",
+        "needsImprovement": "Frequent language errors",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points",
+      "satisfactory": "13-17 points", 
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
@@ -892,27 +1882,14 @@ const buildTextbookPrompt = (data) => {
   return `
 # Identity
 
-You are an AI assistant that generates printable HTML-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. This request is for a **Textbook-Based Activity**.
+You are an AI assistant that generates textbook-based classroom activities and teacher rubrics based on the Malaysian KSSM curriculum. Return JSON format only.
 
 # Instructions
 
-You must return exactly two blocks of HTML content:
+You must return a JSON object with two main fields:
 
-1. 📘 Student Activity Sheet – Textbook Based (Styled HTML)
-2. 🧑‍🏫 Teacher Rubric Sheet (Styled HTML)
-
-### Student Activity Sheet Must Include:
-- Title and lesson info (Lesson name, subject, theme, topic)
-- Fields for Student Name, Class, and Teacher Name
-- Reference to the specific textbook page(s)
-- Clear pre-, during-, and post-activity tasks based on provided outline
-- An open-ended task or reflective question aligned to textbook goals
-- A creative note or prompt (e.g., reflection, group discussion, or journal)
-
-### Teacher Rubric Must Include:
-- A 5-column scoring table: Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Improvement (1–2)
-- Criteria: Understanding, Participation, Communication, Collaboration, Creativity
-- Total score summary and simple grading scale
+1. 📘 Student Textbook Activity Content (JSON object)
+2. 🧑‍🏫 Teacher Rubric Content (JSON object)
 
 # Lesson Data
 
@@ -934,20 +1911,94 @@ You must return exactly two blocks of HTML content:
     "during": "${data.learningOutline?.during || ""}",
     "post": "${data.learningOutline?.post || ""}"
   },
-  "activityType": "textbook",
   "additionalRequirement": "${data.additionalRequirement || ""}"
 }
 
 # Output Format
 
-1. Begin your response with \`\`\`html\n<!-- STUDENT ACTIVITY -->\n<html>...</html>\n\`\`\`
-2. Then add a second HTML block: \`\`\`html\n<!-- TEACHER RUBRIC -->\n<html>...</html>\n\`\`\`
+Return a JSON object with this exact structure:
 
-No extra explanation. Just two valid HTML blocks.
+{
+  "activityContent": {
+    "title": "Textbook-Based Activity",
+    "description": "Activity based on textbook content",
+    "textbookReference": {
+      "pages": "Pages X-Y",
+      "chapter": "Chapter name",
+      "section": "Section title"
+    },
+    "preActivity": [
+      "Preview task 1",
+      "Preview task 2"
+    ],
+    "mainActivity": [
+      "Main textbook task 1",
+      "Main textbook task 2", 
+      "Main textbook task 3"
+    ],
+    "postActivity": [
+      "Follow-up task 1",
+      "Reflection task 2"
+    ],
+    "questions": [
+      {
+        "type": "comprehension",
+        "question": "Question based on textbook content"
+      },
+      {
+        "type": "analysis", 
+        "question": "Analysis question"
+      }
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    }
+  },
+  "rubricContent": {
+    "title": "Textbook Activity Assessment Rubric",
+    "description": "Rubric for evaluating textbook-based activity performance",
+    "criteria": [
+      {
+        "category": "Understanding",
+        "excellent": "Clear understanding of textbook content",
+        "good": "Good understanding with minor gaps",
+        "satisfactory": "Basic understanding shown",
+        "needsImprovement": "Limited understanding evident",
+        "points": 5
+      },
+      {
+        "category": "Participation",
+        "excellent": "Active participation in all activities",
+        "good": "Good participation throughout",
+        "satisfactory": "Moderate participation",
+        "needsImprovement": "Minimal participation",
+        "points": 5
+      },
+      {
+        "category": "Communication",
+        "excellent": "Clear and effective communication",
+        "good": "Good communication skills",
+        "satisfactory": "Adequate communication",
+        "needsImprovement": "Poor communication",
+        "points": 5
+      }
+    ],
+    "totalPoints": 25,
+    "gradingScale": {
+      "excellent": "23-25 points",
+      "good": "18-22 points",
+      "satisfactory": "13-17 points",
+      "needsImprovement": "Below 13 points"
+    }
+  }
+}
+
+Do not include anything else. Just return the clean JSON object.
 `;
 };
 
-// FIXED: Assessment prompt to generate proper content
 const buildAssessmentPrompt = (data) => {
   const numberOfQuestions = data.numberOfQuestions || 20;
   const questionTypes = Array.isArray(data.questionTypes)
@@ -959,7 +2010,7 @@ const buildAssessmentPrompt = (data) => {
 
 You must create a complete English assessment with exactly ${numberOfQuestions} questions based on the lesson "${
     data.lesson || "English Lesson"
-  }".
+  }" and return it in JSON format.
 
 ## Assessment Details:
 - Subject: ${data.subject || "English"}  
@@ -984,93 +2035,73 @@ You must create a complete English assessment with exactly ${numberOfQuestions} 
 
 ## Output Requirements:
 
-Generate TWO HTML blocks:
+Generate a JSON object with this exact structure:
 
-**Block 1: STUDENT ASSESSMENT PAPER**
-\`\`\`html
-<!-- STUDENT ASSESSMENT -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>${data.lesson || "English Assessment"}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .question { margin: 20px 0; padding: 10px; border-left: 3px solid #007acc; }
-        .answer-space { border-bottom: 1px solid #ccc; margin: 10px 0; height: 20px; }
-        .instructions { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>${data.lesson || "English Assessment"}</h1>
-        <p>Subject: ${data.subject || "English"} | Time: ${
-    data.timeAllocation || "60 minutes"
-  } | Total Questions: ${numberOfQuestions}</p>
-        <p>Name: _________________ Class: _____________ Date: _____________</p>
-    </div>
-    
-    <div class="instructions">
-        <h3>Instructions:</h3>
-        <ul>
-            <li>Read all questions carefully before answering</li>
-            <li>Answer ALL ${numberOfQuestions} questions</li>
-            <li>Write clearly and legibly</li>
-            <li>Manage your time wisely</li>
-        </ul>
-    </div>
+{
+  "assessmentContent": {
+    "title": "${data.lesson || "English Assessment"}",
+    "subject": "${data.subject || "English"}",
+    "timeAllocation": "${data.timeAllocation || "60 minutes"}",
+    "totalQuestions": ${numberOfQuestions},
+    "instructions": [
+      "Read all questions carefully before answering",
+      "Answer ALL ${numberOfQuestions} questions",
+      "Write clearly and legibly",
+      "Manage your time wisely"
+    ],
+    "studentInfo": {
+      "name": "",
+      "class": "",
+      "date": ""
+    },
+    "questions": [
+      {
+        "questionNumber": 1,
+        "type": "multiple_choice",
+        "question": "Question text here",
+        "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+        "points": 2
+      },
+      {
+        "questionNumber": 2,
+        "type": "short_answer",
+        "question": "Question text here",
+        "answerSpace": "3 lines",
+        "points": 5
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "ANSWER KEY - ${data.lesson || "English Assessment"}",
+    "totalQuestions": ${numberOfQuestions},
+    "totalPoints": "Calculate based on questions",
+    "answers": [
+      {
+        "questionNumber": 1,
+        "correctAnswer": "B) Option 2",
+        "points": 2,
+        "markingNotes": "Accept equivalent answers"
+      },
+      {
+        "questionNumber": 2,
+        "correctAnswer": "Sample correct answer",
+        "points": 5,
+        "markingNotes": "Look for key points: point1, point2, point3"
+      }
+    ],
+    "gradingScale": {
+      "excellent": "90-100%",
+      "good": "75-89%",
+      "satisfactory": "60-74%",
+      "needsImprovement": "Below 60%"
+    }
+  }
+}
 
-    <!-- Generate all ${numberOfQuestions} questions here -->
-    <div class="question">
-        <h4>Question 1:</h4>
-        <!-- Question content -->
-    </div>
-    
-    <!-- Continue for ALL ${numberOfQuestions} questions -->
-    
-</body>
-</html>
-\`\`\`
-
-**Block 2: TEACHER ANSWER KEY**
-\`\`\`html  
-<!-- TEACHER ANSWER KEY -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Answer Key - ${data.lesson || "English Assessment"}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .answer { margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px; }
-        .points { color: #007acc; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>ANSWER KEY</h1>
-        <h2>${data.lesson || "English Assessment"}</h2>
-        <p>Total Questions: ${numberOfQuestions} | Answer Key & Marking Guide</p>
-    </div>
-
-    <!-- Provide answers for all ${numberOfQuestions} questions -->
-    <div class="answer">
-        <h4>Question 1: <span class="points">[X points]</span></h4>
-        <p><strong>Answer:</strong> [Correct answer]</p>
-        <p><strong>Marking notes:</strong> [Guidance for teachers]</p>
-    </div>
-    
-    <!-- Continue for ALL ${numberOfQuestions} questions -->
-    
-</body>
-</html>
-\`\`\`
-
-Remember: You MUST generate exactly ${numberOfQuestions} questions. Count them as you write to ensure you reach the required number.
+Remember: You MUST generate exactly ${numberOfQuestions} questions in the questions array. Count them as you write to ensure you reach the required number.
 `;
 };
 
-// ADDED: Enhanced prompt for retry attempts
 const buildEnhancedAssessmentPrompt = (data, numberOfQuestions) => {
   return `
 # URGENT: Generate EXACTLY ${numberOfQuestions} Questions
@@ -1094,26 +2125,30 @@ ${Array.from(
   }
 
 ## Template Structure:
-Generate TWO complete HTML documents:
+Generate a JSON object with assessmentContent containing ALL ${numberOfQuestions} questions and answerKeyContent with answers to ALL ${numberOfQuestions} questions.
 
-1. **STUDENT ASSESSMENT** with ALL ${numberOfQuestions} questions numbered clearly
-2. **TEACHER ANSWER KEY** with answers to ALL ${numberOfQuestions} questions
-
-Start with:
-\`\`\`html
-<!-- STUDENT ASSESSMENT -->
-[Complete HTML with ${numberOfQuestions} questions]
-\`\`\`
-
-\`\`\`html  
-<!-- TEACHER ANSWER KEY -->
-[Complete answer key for ${numberOfQuestions} questions]
-\`\`\`
+Structure:
+{
+  "assessmentContent": {
+    "title": "${data.lesson || "English Assessment"}",
+    "totalQuestions": ${numberOfQuestions},
+    "questions": [
+      // ALL ${numberOfQuestions} questions here
+    ]
+  },
+  "answerKeyContent": {
+    "title": "Answer Key",
+    "answers": [
+      // Answers for ALL ${numberOfQuestions} questions here  
+    ]
+  }
+}
 
 DO NOT STOP until you have written Question ${numberOfQuestions}!
 `;
 };
 
+// [Keep all existing CRUD functions that were already working]
 const saveAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1160,7 +2195,7 @@ const saveAssessment = async (req, res) => {
       createdBy: req.user.id,
       lessonPlanId,
       classId,
-      activityType, // Use validated activity type
+      activityType: activityType,
       assessmentType: assessmentType || "General Assessment",
       questionCount: questionCount || 20,
       duration: duration || "60 minutes",
@@ -1171,8 +2206,14 @@ const saveAssessment = async (req, res) => {
       tags: tags || [],
       notes: notes || "",
       status: generatedContent ? "Generated" : "Draft",
-      hasActivity: !!(generatedContent && generatedContent.activityHTML),
-      hasRubric: !!(generatedContent && generatedContent.rubricHTML),
+      hasActivity: !!(
+        generatedContent &&
+        (generatedContent.activityContent || generatedContent.assessmentContent)
+      ),
+      hasRubric: !!(
+        generatedContent &&
+        (generatedContent.rubricContent || generatedContent.answerKeyContent)
+      ),
     });
 
     // Populate the response
@@ -1196,11 +2237,6 @@ const saveAssessment = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get user's assessments with filtering
- * @route   GET /api/assessment/my-assessments
- * @access  Private
- */
 const getUserAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1275,11 +2311,6 @@ const getUserAssessments = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get assessment by ID
- * @route   GET /api/assessment/:id
- * @access  Private
- */
 const getAssessmentById = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1319,13 +2350,6 @@ const getAssessmentById = async (req, res) => {
       });
     }
 
-    console.log("Returning assessment:", {
-      id: assessment._id,
-      generatedContent: assessment.generatedContent,
-      hasActivity: assessment.hasActivity,
-      hasRubric: assessment.hasRubric,
-    });
-
     res.status(200).json({
       success: true,
       data: assessment,
@@ -1340,11 +2364,6 @@ const getAssessmentById = async (req, res) => {
   }
 };
 
-/**
- * @desc    Delete assessment
- * @route   DELETE /api/assessment/:id
- * @access  Private
- */
 const deleteAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1422,11 +2441,6 @@ const deleteAssessment = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update assessment status and generated content
- * @route   PUT /api/assessment/:id
- * @access  Private
- */
 const updateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1508,8 +2522,276 @@ const updateAssessment = async (req, res) => {
   }
 };
 
+const regenerateAssessment = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    const assessmentId = req.params.id;
+    const { lessonPlanData, activityFormData } = req.body;
+
+    console.log("Regenerating assessment:", {
+      assessmentId,
+      lessonPlanData,
+      activityFormData,
+    });
+
+    // Find the existing assessment
+    const existingAssessment = await Assessment.findById(assessmentId);
+
+    if (!existingAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Check if user owns this assessment
+    if (existingAssessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to regenerate this assessment",
+      });
+    }
+
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+
+    // Extract activity type and validate mapping
+    const rawActivityType =
+      activityFormData.activityType || existingAssessment.activityType;
+    const activityType = validateAndMapActivityType(rawActivityType);
+
+    console.log(
+      `Regenerating with activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
+
+    let generatedContent;
+
+    // Route to appropriate generation function based on activity type
+    switch (activityType) {
+      case "activity":
+        generatedContent = await generateActivityContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+          activityType: "activity",
+        });
+        break;
+
+      case "essay":
+        generatedContent = await generateEssayContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      case "textbook":
+        generatedContent = await generateTextbookContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      case "assessment":
+        generatedContent = await generateAssessmentContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+        });
+        break;
+
+      default:
+        console.warn(
+          `Unhandled activity type for regeneration: ${activityType}, falling back to activity`
+        );
+        generatedContent = await generateActivityContent({
+          ...lessonPlanData,
+          geminiApiKey,
+          ...activityFormData,
+          activityType: "activity",
+        });
+        break;
+    }
+
+    console.log(
+      "Generated new content for regeneration:",
+      Object.keys(generatedContent)
+    );
+
+    // Structure the new content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType
+    );
+
+    console.log("Structured regenerated content:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
+
+    // Update the existing assessment with new content and metadata
+    const updateData = {
+      // Update title to indicate regeneration
+      title:
+        lessonPlanData.assessmentTitle ||
+        existingAssessment.title + " (Regenerated)",
+      description:
+        lessonPlanData.assessmentDescription || existingAssessment.description,
+
+      // Update activity type if changed
+      activityType: activityType,
+
+      // Replace the generated content entirely
+      generatedContent: structuredContent,
+
+      // Update lesson plan snapshot if provided
+      ...(lessonPlanData.contentStandard && {
+        lessonPlanSnapshot: {
+          title: lessonPlanData.lesson,
+          subject: lessonPlanData.subject,
+          grade: lessonPlanData.grade,
+          contentStandard: lessonPlanData.contentStandard,
+          learningStandard: lessonPlanData.learningStandard,
+          learningOutline: lessonPlanData.learningOutline,
+        },
+      }),
+
+      // Update status and flags
+      status: "Generated",
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
+
+      // Update usage tracking
+      usageCount: existingAssessment.usageCount + 1,
+      lastUsed: new Date(),
+
+      // Add regeneration metadata
+      regeneratedAt: new Date(),
+      regenerationCount: (existingAssessment.regenerationCount || 0) + 1,
+
+      // Preserve original creation date if this is the first regeneration
+      ...(!(existingAssessment.regenerationCount > 0) && {
+        originalCreatedAt: existingAssessment.createdAt,
+      }),
+    };
+
+    console.log("Updating assessment with data:", {
+      id: assessmentId,
+      newTitle: updateData.title,
+      hasNewActivity: updateData.hasActivity,
+      hasNewRubric: updateData.hasRubric,
+      regenerationCount: updateData.regenerationCount,
+    });
+
+    // Update the assessment
+    const updatedAssessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      updateData,
+      { new: true, runValidators: true }
+    )
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject",
+      })
+      .populate({
+        path: "createdBy",
+        select: "name",
+      });
+
+    if (!updatedAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Failed to update assessment",
+      });
+    }
+
+    console.log("Assessment successfully regenerated:", {
+      id: updatedAssessment._id,
+      title: updatedAssessment.title,
+      hasActivity: updatedAssessment.hasActivity,
+      hasRubric: updatedAssessment.hasRubric,
+      regenerationCount: updatedAssessment.regenerationCount,
+    });
+
+    // Return the updated assessment
+    res.status(200).json({
+      success: true,
+      message: "Assessment regenerated successfully",
+      data: updatedAssessment,
+      generatedContent: updatedAssessment.generatedContent,
+    });
+  } catch (error) {
+    console.error("Error in regenerateAssessment:", error);
+
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Error regenerating assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// Update the module.exports to include all new standalone functions
 module.exports = {
   generateFromLessonPlan,
+  createStandaloneAssessment, 
+  getStandaloneAssessments, 
+  updateStandaloneAssessment, 
+  deleteStandaloneAssessment, 
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -1517,4 +2799,5 @@ module.exports = {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
+  regenerateAssessment,
 };

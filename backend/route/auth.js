@@ -1,4 +1,4 @@
-// routes/auth.js - Fixed route order
+// routes/auth.js - Updated with Gemini API key routes
 const express = require("express");
 const { body } = require("express-validator");
 const {
@@ -10,6 +10,8 @@ const {
   logout,
   changePassword,
   findOrCreateFirebaseUser,
+  getGeminiApiKey,
+  updateGeminiApiKey,
 } = require("../controller/authController");
 const { protect } = require("../middleware/auth");
 
@@ -36,6 +38,11 @@ const registerValidation = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage("School name must be between 2 and 100 characters"),
+  body("geminiApiKey")
+    .optional()
+    .trim()
+    .isLength({ min: 20 })
+    .withMessage("Invalid API key format"),
 ];
 
 const loginValidation = [
@@ -57,6 +64,7 @@ const updateProfileValidation = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage("School name must be between 2 and 100 characters"),
+  body("geminiApiKey").optional().trim(),
 ];
 
 const changePasswordValidation = [
@@ -72,11 +80,19 @@ const changePasswordValidation = [
     ),
 ];
 
+const updateApiKeyValidation = [
+  body("apiKey")
+    .optional()
+    .trim()
+    .isLength({ min: 20 })
+    .withMessage("Invalid API key format"),
+];
+
 // Public routes (NO authentication required)
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
 router.post("/google", googleAuth);
-router.post("/firebase-user", findOrCreateFirebaseUser); 
+router.post("/firebase-user", findOrCreateFirebaseUser);
 
 // Protected routes (authentication required)
 router.use(protect); // Apply protection middleware to all routes below
@@ -85,5 +101,9 @@ router.get("/me", getMe);
 router.put("/profile", updateProfileValidation, updateProfile);
 router.post("/logout", logout);
 router.put("/password", changePasswordValidation, changePassword);
+
+// Gemini API key routes
+router.get("/gemini-key", getGeminiApiKey);
+router.put("/gemini-key", updateApiKeyValidation, updateGeminiApiKey);
 
 module.exports = router;

@@ -1,7 +1,7 @@
+// AssessmentStandaloneModal.jsx - Enhanced version for standalone assessments
 import React, { useState } from "react";
 import {
   Card,
-  Radio,
   Button,
   Input,
   Row,
@@ -15,6 +15,7 @@ import {
   message,
   InputNumber,
   Checkbox,
+  Alert,
 } from "antd";
 import {
   FileTextOutlined,
@@ -25,6 +26,7 @@ import {
   CheckCircleOutlined,
   BulbOutlined,
   SettingOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import {
   englishForms,
@@ -41,19 +43,24 @@ const { TextArea } = Input;
 const { Text } = Typography;
 const { Option } = Select;
 
-const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
+const AssessmentStandaloneModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  assessmentData,
+}) => {
   const [formData, setFormData] = useState({
-    form: "form4",
     assessmentType: "",
     questionTypes: [],
-    skills: [],
-    difficultyLevel: "intermediate",
-    numberOfQuestions: 20,
+    skills: ["reading"], // Default skill for standalone
+    difficultyLevel: "Intermediate",
+    numberOfQuestions: 10,
     timeAllocation: "60",
     includeInstructions: true,
     includeAnswerKey: true,
     literatureComponent: "",
     specificTopic: "",
+    learningObjectives: "",
     additionalRequirement: "",
   });
 
@@ -76,7 +83,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const handleSubmit = async () => {
-    // Validation
+    // Enhanced validation for standalone assessments
     if (!formData.assessmentType) {
       message.warning("Please select an assessment type");
       return;
@@ -92,9 +99,30 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       return;
     }
 
+    if (!formData.specificTopic.trim()) {
+      message.warning("Please specify a topic for the assessment");
+      return;
+    }
+
     setLoading(true);
     try {
-      await onSubmit(formData);
+      // Enhanced data preparation for standalone assessment
+      const submitData = {
+        ...formData,
+        ...assessmentData, // Include grade, subject, class info
+        activityType: "assessment",
+        isStandalone: true,
+        assessmentTitle: `${formData.specificTopic} - ${
+          getSelectedAssessmentDetails()?.label || "Assessment"
+        } (${assessmentData.grade})`,
+        assessmentDescription:
+          formData.learningObjectives ||
+          `Formal assessment for ${formData.specificTopic}`,
+      };
+
+      console.log("Submitting standalone assessment data:", submitData);
+
+      await onSubmit(submitData);
       message.success("Assessment settings submitted successfully!");
       onClose();
     } catch (error) {
@@ -107,17 +135,18 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleReset = () => {
     setFormData({
-      form: "form4",
+      form: assessmentData?.grade || "form4",
       assessmentType: "",
       questionTypes: [],
-      skills: [],
-      difficultyLevel: "intermediate",
-      numberOfQuestions: 20,
+      skills: ["reading"],
+      difficultyLevel: "Intermediate",
+      numberOfQuestions: 10,
       timeAllocation: "60",
       includeInstructions: true,
       includeAnswerKey: true,
       literatureComponent: "",
       specificTopic: "",
+      learningObjectives: "",
       additionalRequirement: "",
     });
   };
@@ -147,7 +176,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "900px" }}
+        style={{ maxWidth: "950px" }}
       >
         {/* Standardized Header */}
         <div className="modal-header">
@@ -155,7 +184,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
             <div className="modal-icon">
               <FileTextOutlined />
             </div>
-            <h3 className="modal-title">English Assessment Generator</h3>
+            <h3 className="modal-title">Create Assessment</h3>
           </div>
           <button className="modal-close" onClick={onClose}>
             ×
@@ -164,8 +193,85 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
 
         {/* Body */}
         <div className="modal-body">
+          {/* Assessment Info Alert */}
+          <Alert
+            message="Standalone Assessment Creation"
+            description={`Creating a formal assessment for ${
+              assessmentData?.subject || "your subject"
+            } - ${assessmentData?.grade || "Grade"} ${
+              assessmentData?.className ? `(${assessmentData.className})` : ""
+            }`}
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+            style={{ marginBottom: 24 }}
+          />
+
           <Row gutter={[16, 24]}>
-            {/* Form Level & Assessment Type */}
+            {/* Topic and Learning Objectives */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <BulbOutlined style={{ color: "#fa8c16" }} />
+                    <span>Assessment Topic & Objectives</span>
+                  </div>
+                }
+              >
+                <Row gutter={16}>
+                  <Col span={24} style={{ marginBottom: 16 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Specific Topic *
+                    </label>
+                    <Input
+                      placeholder="Enter the topic to be assessed (e.g., 'Present Perfect Tense', 'Reading Comprehension')"
+                      value={formData.specificTopic}
+                      onChange={(e) =>
+                        handleInputChange("specificTopic", e.target.value)
+                      }
+                      size="large"
+                      maxLength={100}
+                    />
+                  </Col>
+                  <Col span={24}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Learning Objectives (Optional)
+                    </label>
+                    <TextArea
+                      rows={3}
+                      placeholder="What learning outcomes should this assessment measure?"
+                      value={formData.learningObjectives}
+                      onChange={(e) =>
+                        handleInputChange("learningObjectives", e.target.value)
+                      }
+                      maxLength={300}
+                      showCount
+                    />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+
+            {/* Form Level & Difficulty */}
             <Col span={24}>
               <Row gutter={16}>
                 <Col xs={24} sm={12}>
@@ -267,8 +373,8 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   size="large"
                   showSearch
                   filterOption={(input, option) =>
-                    option.children
-                      .toLowerCase()
+                    option.children.props?.children?.[0]?.props?.children
+                      ?.toLowerCase()
                       .indexOf(input.toLowerCase()) >= 0
                   }
                 >
@@ -656,23 +762,9 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
               </Card>
             </Col>
 
-            {/* Specific Topic */}
-            <Col span={24}>
-              <Card size="small" title="Specific Topic/Theme (Optional)">
-                <Input
-                  placeholder="Enter specific topic, chapter, or theme to focus on..."
-                  value={formData.specificTopic}
-                  onChange={(e) =>
-                    handleInputChange("specificTopic", e.target.value)
-                  }
-                  size="large"
-                />
-              </Card>
-            </Col>
-
             {/* Additional Options */}
             <Col span={24}>
-              <Card size="small" title="Additional Options">
+              <Card size="small" title="Assessment Options">
                 <Space direction="vertical" style={{ width: "100%" }}>
                   <Checkbox
                     checked={formData.includeInstructions}
@@ -706,7 +798,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                  placeholder="Enter specific instructions, marking criteria, or any special considerations for this standalone assessment..."
                   maxLength={500}
                   showCount
                 />
@@ -735,19 +827,24 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                   style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
                 >
                   <Row gutter={[16, 8]}>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
-                        Form Level:
+                        Subject & Grade:
                       </Text>
                       <br />
-                      <Text>
-                        {
-                          englishForms.find((f) => f.value === formData.form)
-                            ?.label
-                        }
-                      </Text>
+                      <Tag color="blue">
+                        {assessmentData?.subject || "Subject"} -{" "}
+                        {assessmentData?.grade || "Grade"}
+                      </Tag>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
+                      <Text strong style={{ color: "#666" }}>
+                        Topic:
+                      </Text>
+                      <br />
+                      <Text>{formData.specificTopic || "Not specified"}</Text>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Assessment Type:
                       </Text>
@@ -757,14 +854,14 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                           "Not selected"}
                       </Text>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Questions:
                       </Text>
                       <br />
                       <Text>{formData.numberOfQuestions} questions</Text>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Duration:
                       </Text>
@@ -777,7 +874,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         }
                       </Text>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Difficulty:
                       </Text>
@@ -796,7 +893,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         }
                       </Tag>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Question Types:
                       </Text>
@@ -805,7 +902,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         {formData.questionTypes.length} types selected
                       </Text>
                     </Col>
-                    <Col xs={24} sm={12} md={6}>
+                    <Col xs={24} sm={12} md={8}>
                       <Text strong style={{ color: "#666" }}>
                         Skills:
                       </Text>
@@ -813,7 +910,7 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                       <Text>{formData.skills.length} skills selected</Text>
                     </Col>
                     {formData.literatureComponent && (
-                      <Col xs={24} sm={12} md={6}>
+                      <Col xs={24} sm={12} md={8}>
                         <Text strong style={{ color: "#666" }}>
                           Literature:
                         </Text>
@@ -827,16 +924,16 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                         </Text>
                       </Col>
                     )}
+                    {assessmentData?.className && (
+                      <Col xs={24} sm={12} md={8}>
+                        <Text strong style={{ color: "#666" }}>
+                          Class:
+                        </Text>
+                        <br />
+                        <Text>{assessmentData.className}</Text>
+                      </Col>
+                    )}
                   </Row>
-
-                  {formData.specificTopic && (
-                    <div style={{ marginTop: "12px" }}>
-                      <Text strong style={{ color: "#666" }}>
-                        Specific Topic:{" "}
-                      </Text>
-                      <Text>{formData.specificTopic}</Text>
-                    </div>
-                  )}
 
                   <div style={{ marginTop: "12px" }}>
                     <Text strong style={{ color: "#666" }}>
@@ -879,10 +976,11 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
                 !formData.assessmentType ||
                 formData.questionTypes.length === 0 ||
                 formData.skills.length === 0 ||
+                !formData.specificTopic.trim() ||
                 loading
               }
             >
-              {loading ? "⏳ Generating..." : "📝 Generate Assessment"}
+              {loading ? "⏳ Creating..." : "📝 Create Standalone Assessment"}
             </button>
           </div>
         </div>
@@ -891,4 +989,4 @@ const AssessmentModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-export default AssessmentModal;
+export default AssessmentStandaloneModal;

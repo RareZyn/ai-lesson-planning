@@ -1,5 +1,5 @@
-//AssessmentLesson.jsx with proper loading screen
-import React, { useState } from "react";
+//AssessmentLessonModal.jsx 
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Button,
@@ -15,6 +15,7 @@ import {
   message,
   InputNumber,
   Spin,
+  Alert,
 } from "antd";
 import {
   FileTextOutlined,
@@ -23,6 +24,7 @@ import {
   CheckCircleOutlined,
   BulbOutlined,
   LoadingOutlined,
+  RedoOutlined,
 } from "@ant-design/icons";
 import {
   englishAssessmentTypes,
@@ -40,6 +42,10 @@ const AssessmentLesson = ({
   onClose,
   onSubmit,
   selectedLessonPlan,
+  isLessonPlanningMode = false, // Flag to indicate lesson planning mode
+  existingConfiguration = null, // Existing configuration data
+  isRegenerateMode = false, // NEW: Flag for regeneration mode
+  existingAssessment = null, // NEW: Existing assessment data
 }) => {
   const [formData, setFormData] = useState({
     assessmentType: "",
@@ -50,6 +56,20 @@ const AssessmentLesson = ({
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        assessmentType: existingConfiguration.assessmentType || "",
+        questionTypes: existingConfiguration.questionTypes || [],
+        numberOfQuestions: existingConfiguration.numberOfQuestions || 20,
+        timeAllocation: existingConfiguration.timeAllocation || "60",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -81,8 +101,38 @@ const AssessmentLesson = ({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
-      message.success("Assessment settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "assessment", // Identifier for the configuration type
+        };
+
+        await onSubmit(submitData);
+        message.success("Assessment configuration saved successfully!");
+      } else if (isRegenerateMode) {
+        // NEW: For regeneration mode, submit new configuration
+        submitData = {
+          ...formData,
+          activityType: "assessment",
+          isRegeneration: true,
+          existingAssessmentId: existingAssessment?._id,
+        };
+
+        await onSubmit(submitData);
+        // Success message will be handled by parent component
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          activityType: "assessment",
+        };
+        await onSubmit(submitData);
+        message.success("Assessment settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -112,7 +162,7 @@ const AssessmentLesson = ({
 
   if (!isOpen) return null;
 
-  // Loading overlay when generating assessment
+  // Loading overlay when generating/regenerating assessment
   if (loading) {
     return (
       <div className="modal-overlay">
@@ -132,7 +182,11 @@ const AssessmentLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Assessment
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : isRegenerateMode
+                  ? "Regenerating Assessment"
+                  : "Generating Assessment"}
               </h3>
               <p
                 style={{
@@ -141,7 +195,11 @@ const AssessmentLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your customized assessment based on the lesson plan...
+                {isLessonPlanningMode
+                  ? "Saving your assessment configuration for the lesson plan..."
+                  : isRegenerateMode
+                  ? "Regenerating your assessment with new settings..."
+                  : "Creating your customized assessment based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -152,7 +210,11 @@ const AssessmentLesson = ({
                 }}
               >
                 <Text type="secondary" style={{ fontSize: "14px" }}>
-                  This may take 30-60 seconds depending on the complexity
+                  {isLessonPlanningMode
+                    ? "Configuring assessment parameters"
+                    : isRegenerateMode
+                    ? "Updating assessment with new configuration"
+                    : "This may take 30-60 seconds depending on the complexity"}
                 </Text>
               </div>
             </div>
@@ -173,9 +235,15 @@ const AssessmentLesson = ({
         <div className="modal-header">
           <div className="modal-header-content">
             <div className="modal-icon">
-              <FileTextOutlined />
+              {isRegenerateMode ? <RedoOutlined /> : <FileTextOutlined />}
             </div>
-            <h3 className="modal-title">English Assessment Generator</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure English Assessment"
+                : isRegenerateMode
+                ? "Regenerate English Assessment"
+                : "English Assessment Generator"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -184,30 +252,52 @@ const AssessmentLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Show lesson plan info if available */}
-          {selectedLessonPlan && (
-            <div
-              style={{
-                marginBottom: "24px",
-                padding: "16px",
-                background: "#f6ffed",
-                borderRadius: "8px",
-                border: "1px solid #b7eb8f",
-              }}
-            >
-              <Text strong style={{ color: "#52c41a" }}>
-                Based on Lesson Plan:
-              </Text>
-              <Text style={{ marginLeft: "8px" }}>
-                {selectedLessonPlan.parameters?.specificTopic ||
-                  "Selected Lesson"}
-              </Text>
-              <br />
-              <Text type="secondary" style={{ fontSize: "12px" }}>
-                {selectedLessonPlan.parameters?.grade || "Form 4"} •
-                {selectedLessonPlan.classId?.subject || "English"}
-              </Text>
-            </div>
+          {/* Info Alert based on mode */}
+          {isLessonPlanningMode && (
+            <Alert
+              message="Configure Assessment Parameters"
+              description="Set up the parameters for your assessment. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {isRegenerateMode && (
+            <Alert
+              message="Regenerate Assessment"
+              description={`Update the settings for "${selectedLessonPlan?.title}" assessment. The existing assessment will be replaced with a new one based on your updated configuration.`}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Show lesson plan info if available and not in lesson planning mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
+            <Alert
+              message={`${
+                isRegenerateMode ? "Regenerating" : "Based on"
+              } Lesson Plan: ${
+                selectedLessonPlan.parameters?.specificTopic ||
+                selectedLessonPlan.title ||
+                "Selected Lesson"
+              }`}
+              description={`${
+                isRegenerateMode ? "Update" : "Generate"
+              } assessment for: ${
+                selectedLessonPlan.classId?.className ||
+                selectedLessonPlan.class ||
+                "Class"
+              } | ${
+                selectedLessonPlan.parameters?.grade ||
+                selectedLessonPlan.classId?.grade ||
+                "Form 4"
+              } | English`}
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
           )}
 
           <Row gutter={[16, 24]}>
@@ -239,7 +329,7 @@ const AssessmentLesson = ({
                   showSearch
                   disabled={loading}
                   filterOption={(input, option) =>
-                    option.children
+                    option.children.props.children[0].props.children
                       .toLowerCase()
                       .indexOf(input.toLowerCase()) >= 0
                   }
@@ -507,7 +597,13 @@ const AssessmentLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                      : isRegenerateMode
+                      ? "Update instructions, learning objectives, marking criteria, or any special considerations for the regenerated assessment..."
+                      : "Enter specific instructions, learning objectives, marking criteria, or any special considerations for this assessment..."
+                  }
                   maxLength={500}
                   showCount
                   disabled={loading}
@@ -529,7 +625,10 @@ const AssessmentLesson = ({
                       }}
                     >
                       <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                      <span>Assessment Summary</span>
+                      <span>
+                        Assessment {isRegenerateMode ? "Regeneration" : ""}{" "}
+                        Summary
+                      </span>
                     </div>
                   }
                   style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
@@ -574,6 +673,42 @@ const AssessmentLesson = ({
                         {formData.questionTypes.length} types selected
                       </Text>
                     </Col>
+                    {!isLessonPlanningMode && selectedLessonPlan && (
+                      <Col span={24}>
+                        <Text strong style={{ color: "#666" }}>
+                          {isRegenerateMode ? "Updating" : "Based on"} Lesson:
+                        </Text>
+                        <br />
+                        <Text>
+                          {selectedLessonPlan.parameters?.specificTopic ||
+                            selectedLessonPlan.title ||
+                            "Selected Lesson Plan"}
+                        </Text>
+                      </Col>
+                    )}
+                    {isLessonPlanningMode && (
+                      <Col span={24}>
+                        <Text strong style={{ color: "#666" }}>
+                          Configuration Mode:
+                        </Text>
+                        <br />
+                        <Text>
+                          This configuration will be saved with your lesson plan
+                        </Text>
+                      </Col>
+                    )}
+                    {isRegenerateMode && (
+                      <Col span={24}>
+                        <Text strong style={{ color: "#666" }}>
+                          Regeneration Mode:
+                        </Text>
+                        <br />
+                        <Text type="warning">
+                          The existing assessment will be replaced with new
+                          content
+                        </Text>
+                      </Col>
+                    )}
                   </Row>
                 </Card>
               </Col>
@@ -607,8 +742,17 @@ const AssessmentLesson = ({
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Generating...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode
+                    ? "Saving..."
+                    : isRegenerateMode
+                    ? "Regenerating..."
+                    : "Generating..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📝 Save Configuration"
+              ) : isRegenerateMode ? (
+                "🔄 Regenerate Assessment"
               ) : (
                 "📝 Generate Assessment"
               )}

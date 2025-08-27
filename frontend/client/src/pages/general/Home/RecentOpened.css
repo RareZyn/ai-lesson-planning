@@ -3,7 +3,12 @@
   margin-top: 1rem;
 }
 
-
+.recent-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
 
 .recent-opened-title {
   color: #333;
@@ -14,30 +19,22 @@
 }
 
 .view-all-btn {
-  background: none;
-  border: none;
-  color: var(--blue, #1890ff);
+  color: var(--blue, #1890ff) !important;
   font-size: 0.9rem;
   font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.5rem 0.8rem;
-  border-radius: 4px;
+  text-decoration: none !important;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .view-all-btn:hover {
-  background-color: rgba(24, 144, 255, 0.1);
   transform: translateX(2px);
+  color: #1890ff !important;
 }
 
 .arrow {
   font-size: 1.2rem;
   transition: transform 0.2s ease;
+  display: inline-block;
 }
 
 .view-all-btn:hover .arrow {
@@ -46,33 +43,33 @@
 
 .recent-opened-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  /* --- THIS IS THE FIX --- */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
   justify-content: start;
-  /* Prevents a single item from stretching */
 }
 
 .recent-card {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
-  height: 160px;
+  height: 180px;
   display: flex;
   flex-direction: column;
+  border: 1px solid #f0f0f0;
 }
 
 .recent-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: #495057;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #e0e0e0;
 }
 
-.card-header {
-  height: 80px;
+/* Gradient header for lesson cards */
+.card-gradient-header {
+  height: 100px;
   position: relative;
   display: flex;
   align-items: center;
@@ -80,91 +77,79 @@
   overflow: hidden;
 }
 
-.subject-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.gradient-overlay {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
 }
 
-.subject-badge {
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.card-title-overlay {
   position: relative;
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 1rem;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-content {
-  padding: 0.8rem;
+  padding: 1rem;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-.card-title {
-  margin: 0 0 0.3rem 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-  line-height: 1.3;
-}
-
-.card-title:empty::before {
-  content: '-';
-}
-
 .card-grade {
-  margin: 0 0 0.3rem 0;
-  font-size: 0.75rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
   color: #666;
   font-weight: 500;
 }
 
 .card-meta {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #999;
   margin-top: auto;
 }
 
-/* Add these new styles to your existing RecentOpened.css file */
-
-/* --- Add Card Styles --- */
+/* Add lesson card styles */
 .add-lesson-card {
-  /* Use the same height as a normal card for alignment */
-  height: 160px; 
-  
+  height: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   
-  background-color: #f8f9fa; /* A light, neutral background */
-  border: 2px dashed #e0e0e0; /* Dashed border to indicate it's an action */
-  border-radius: 8px;
+  background-color: #fafafa;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   
-  color: #868e96; /* Muted text color */
+  color: #868e96;
   font-weight: 500;
   font-size: 0.9rem;
 }
 
 .add-lesson-card:hover {
-  background-color: #f1f3f5;
-  border-color: #6d88f7; /* Use your primary color on hover */
-  color: #3f51b5;
+  background-color: #f5f5f5;
+  border-color: #1890ff;
+  color: #1890ff;
 }
 
 .add-icon-wrapper {
@@ -179,22 +164,22 @@
 }
 
 .add-lesson-card:hover .add-icon-wrapper {
-  background-color: #e6e9fa;
+  background-color: #e6f7ff;
   transform: scale(1.1);
 }
 
 .add-icon-wrapper svg {
-  font-size: 2rem; /* Make the plus icon larger */
+  font-size: 2rem;
+  color: inherit;
 }
 
-
-/* --- Skeleton Loader for a better initial loading experience --- */
+/* Skeleton Loader */
 .recent-card-skeleton {
-  height: 160px;
+  height: 180px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite linear;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 @keyframes skeleton-loading {
@@ -203,5 +188,25 @@
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .recent-opened-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .recent-card {
+    height: 160px;
+  }
+  
+  .card-gradient-header {
+    height: 80px;
+  }
+  
+  .card-title-overlay {
+    font-size: 0.9rem;
   }
 }

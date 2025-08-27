@@ -1,4 +1,4 @@
-// frontend/client/src/data/activityTypesInClass.js
+// frontend/client/src/data/activityTypesInClass.js - Updated with missing exports
 export const classroomActivityTypes = [
   {
     category: "Reading & Comprehension",
@@ -111,10 +111,171 @@ export const resourceOptions = [
 ];
 
 export const timeDurationOptions = [
-  { value: "15 minutes", label: "15 minutes" },
-  { value: "20 minutes", label: "20 minutes" },
-  { value: "30 minutes", label: "30 minutes" },
-  { value: "45 minutes", label: "45 minutes" },
-  { value: "60 minutes", label: "60 minutes" },
-  { value: "90 minutes", label: "90 minutes" },
+  {
+    value: "15 minutes",
+    label: "15 minutes",
+    description: "Quick warm-up or review activity",
+  },
+  {
+    value: "20 minutes",
+    label: "20 minutes",
+    description: "Short focused activity",
+  },
+  {
+    value: "30 minutes",
+    label: "30 minutes",
+    description: "Standard activity duration",
+  },
+  {
+    value: "45 minutes",
+    label: "45 minutes",
+    description: "Extended activity session",
+  },
+  {
+    value: "60 minutes",
+    label: "60 minutes",
+    description: "Full period activity",
+  },
+  {
+    value: "90 minutes",
+    label: "90 minutes",
+    description: "Double period or block schedule",
+  },
+];
+
+export const bloomTaxonomyLevels = [
+  {
+    level: "Remember",
+    description: "Recall facts and basic concepts",
+    color: "#ff4d4f",
+    keywords: ["define", "list", "recall", "recognize", "state"],
+  },
+  {
+    level: "Understand",
+    description: "Explain ideas or concepts",
+    color: "#fa8c16",
+    keywords: ["explain", "describe", "interpret", "summarize", "classify"],
+  },
+  {
+    level: "Apply",
+    description: "Use information in new situations",
+    color: "#fadb14",
+    keywords: ["apply", "demonstrate", "solve", "use", "implement"],
+  },
+  {
+    level: "Analyze",
+    description: "Draw connections among ideas",
+    color: "#52c41a",
+    keywords: ["analyze", "compare", "contrast", "examine", "distinguish"],
+  },
+  {
+    level: "Evaluate",
+    description: "Justify a stand or decision",
+    color: "#1890ff",
+    keywords: ["evaluate", "judge", "defend", "assess", "critique"],
+  },
+  {
+    level: "Create",
+    description: "Produce new or original work",
+    color: "#722ed1",
+    keywords: ["create", "design", "compose", "plan", "construct"],
+  },
+];
+
+export const difficultyLevels = [
+  {
+    value: "Beginner",
+    label: "Beginner",
+    color: "#52c41a",
+    description: "Basic level for new learners",
+  },
+  {
+    value: "Intermediate",
+    label: "Intermediate",
+    color: "#fa8c16",
+    description: "Moderate difficulty level",
+  },
+  {
+    value: "Advanced",
+    label: "Advanced",
+    color: "#f5222d",
+    description: "Challenging level for skilled learners",
+  },
+];
+
+// Additional exports for standalone assessments
+export const englishForms = [
+  { value: "form1", label: "Form 1" },
+  { value: "form2", label: "Form 2" },
+  { value: "form3", label: "Form 3" },
+  { value: "form4", label: "Form 4" },
+  { value: "form5", label: "Form 5" },
+];
+
+export const englishSkills = [
+  {
+    value: "reading",
+    label: "Reading",
+    icon: "📖",
+    color: "#1890ff",
+    description: "Reading comprehension and analysis",
+  },
+  {
+    value: "writing",
+    label: "Writing",
+    icon: "✍️",
+    color: "#52c41a",
+    description: "Written communication and composition",
+  },
+  {
+    value: "listening",
+    label: "Listening",
+    icon: "👂",
+    color: "#fa8c16",
+    description: "Audio comprehension and understanding",
+  },
+  {
+    value: "speaking",
+    label: "Speaking",
+    icon: "🗣️",
+    color: "#722ed1",
+    description: "Oral communication and presentation",
+  },
+  {
+    value: "grammar",
+    label: "Grammar",
+    icon: "📝",
+    color: "#eb2f96",
+    description: "Language structure and rules",
+  },
+  {
+    value: "vocabulary",
+    label: "Vocabulary",
+    icon: "📚",
+    color: "#13c2c2",
+    description: "Word knowledge and usage",
+  },
+];
+
+export const literatureComponents = [
+  {
+    value: "poetry",
+    label: "Poetry",
+    description: "Poems and poetic analysis",
+  },
+  {
+    value: "prose",
+    label: "Prose",
+    description: "Short stories and novels",
+  },
+  {
+    value: "drama",
+    label: "Drama",
+    description: "Plays and dramatic works",
+  },
+  {
+    value: "non_fiction",
+    label: "Non-Fiction",
+    description: "Essays and informational texts",
+  },
 ];

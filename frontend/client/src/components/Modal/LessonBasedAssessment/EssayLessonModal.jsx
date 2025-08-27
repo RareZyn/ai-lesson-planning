@@ -1,28 +1,15 @@
-//EssayLessonModal.jsx with Loading Screen
-import React, { useState } from "react";
+//Updated EssayLessonModal.jsx with regeneration mode support
+import React, { useState, useEffect } from "react";
+import { Card, Input, Row, Col, message, Spin, Select, Alert } from "antd";
 import {
-  Card,
-  Button,
-  Input,
-  Row,
-  Col,
-  Typography,
-  Tag,
-  Select,
-  message,
-  Alert,
-  Spin,
-} from "antd";
-import {
-  EditOutlined,
-  ClockCircleOutlined,
-  FileTextOutlined,
+  BookOutlined,
   LoadingOutlined,
+  RedoOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import "./ModalStyles.css";
 
 const { TextArea } = Input;
-const { Text } = Typography;
 const { Option } = Select;
 
 const EssayLesson = ({
@@ -30,7 +17,10 @@ const EssayLesson = ({
   onClose,
   onSubmit,
   selectedLessonPlan,
-  activityType = "essay",
+  isLessonPlanningMode = false,
+  existingConfiguration = null,
+  isRegenerateMode = false, // NEW: Flag for regeneration mode
+  existingAssessment = null, // NEW: Existing assessment data
 }) => {
   const [formData, setFormData] = useState({
     essayType: "descriptive",
@@ -65,6 +55,19 @@ const EssayLesson = ({
     { value: "120 minutes", label: "120 minutes" },
   ];
 
+  // Load existing configuration if available
+  useEffect(() => {
+    if (existingConfiguration) {
+      setFormData({
+        essayType: existingConfiguration.essayType || "descriptive",
+        wordCount: existingConfiguration.wordCount || "200-300 words",
+        duration: existingConfiguration.duration || "60 minutes",
+        additionalRequirement:
+          existingConfiguration.additionalRequirement || "",
+      });
+    }
+  }, [existingConfiguration]);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -81,13 +84,39 @@ const EssayLesson = ({
 
     setLoading(true);
     try {
-      const submitData = {
-        ...formData,
-        selectedLessonPlan,
-        activityType,
-      };
-      await onSubmit(submitData);
-      message.success("Essay settings submitted successfully!");
+      let submitData;
+
+      if (isLessonPlanningMode) {
+        // For lesson planning mode, return configuration data
+        submitData = {
+          ...formData,
+          configuredFor: "essay",
+        };
+
+        await onSubmit(submitData);
+        message.success("Essay configuration saved successfully!");
+      } else if (isRegenerateMode) {
+        // NEW: For regeneration mode, submit new configuration
+        submitData = {
+          ...formData,
+          activityType: "essay",
+          isRegeneration: true,
+          existingAssessmentId: existingAssessment?._id,
+        };
+
+        await onSubmit(submitData);
+        // Success message will be handled by parent component
+      } else {
+        // For assessment generation mode (existing functionality)
+        submitData = {
+          ...formData,
+          selectedLessonPlan,
+          activityType: "essay",
+        };
+        await onSubmit(submitData);
+        message.success("Essay settings submitted successfully!");
+      }
+
       onClose();
     } catch (error) {
       console.error("Submit error:", error);
@@ -108,7 +137,7 @@ const EssayLesson = ({
 
   if (!isOpen) return null;
 
-  // Loading overlay when generating essay assessment
+  // Loading overlay when generating/regenerating essay assessment
   if (loading) {
     return (
       <div className="modal-overlay">
@@ -128,7 +157,11 @@ const EssayLesson = ({
             />
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                Generating Essay Assessment
+                {isLessonPlanningMode
+                  ? "Saving Configuration"
+                  : isRegenerateMode
+                  ? "Regenerating Essay Assessment"
+                  : "Generating Essay Assessment"}
               </h3>
               <p
                 style={{
@@ -137,8 +170,11 @@ const EssayLesson = ({
                   marginBottom: "16px",
                 }}
               >
-                Creating your essay writing assessment based on the lesson
-                plan...
+                {isLessonPlanningMode
+                  ? "Saving your essay configuration for the lesson plan..."
+                  : isRegenerateMode
+                  ? "Regenerating your essay assessment with new settings..."
+                  : "Creating your essay writing assessment based on the lesson plan..."}
               </p>
               <div
                 style={{
@@ -148,9 +184,13 @@ const EssayLesson = ({
                   border: "1px solid #d4edda",
                 }}
               >
-                <Text type="secondary" style={{ fontSize: "14px" }}>
-                  Preparing writing prompts and evaluation criteria
-                </Text>
+                <div style={{ fontSize: "14px", color: "#666" }}>
+                  {isLessonPlanningMode
+                    ? "Configuring essay parameters"
+                    : isRegenerateMode
+                    ? "Updating essay with new configuration"
+                    : "Preparing writing prompts and evaluation criteria"}
+                </div>
               </div>
             </div>
           </div>
@@ -170,9 +210,15 @@ const EssayLesson = ({
         <div className="modal-header">
           <div className="modal-header-content">
             <div className="modal-icon">
-              <EditOutlined />
+              {isRegenerateMode ? <RedoOutlined /> : <EditOutlined />}
             </div>
-            <h3 className="modal-title">Essay Writing Assessment</h3>
+            <h3 className="modal-title">
+              {isLessonPlanningMode
+                ? "Configure Essay Writing"
+                : isRegenerateMode
+                ? "Regenerate Essay Writing Assessment"
+                : "Essay Writing Assessment"}
+            </h3>
           </div>
           <button className="modal-close" onClick={onClose} disabled={loading}>
             ×
@@ -181,14 +227,39 @@ const EssayLesson = ({
 
         {/* Body */}
         <div className="modal-body">
-          {/* Selected Lesson Plan Info */}
-          {selectedLessonPlan && (
+          {/* Info Alert based on mode */}
+          {isLessonPlanningMode && (
             <Alert
-              message={`Based on Lesson Plan: ${
+              message="Configure Essay Writing Activity"
+              description="Set up the parameters for your essay writing activity. This configuration will be saved with your lesson plan and used when generating assessments later."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {isRegenerateMode && (
+            <Alert
+              message="Regenerate Essay Assessment"
+              description={`Update the settings for "${selectedLessonPlan?.title}" essay assessment. The existing assessment will be replaced with a new one based on your updated configuration.`}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+          )}
+
+          {/* Selected Lesson Plan Info - only show in assessment mode */}
+          {!isLessonPlanningMode && selectedLessonPlan && (
+            <Alert
+              message={`${
+                isRegenerateMode ? "Regenerating" : "Based on"
+              } Lesson Plan: ${
                 selectedLessonPlan.parameters?.specificTopic ||
                 "Selected Lesson"
               }`}
-              description={`Generate essay writing assessment for: ${
+              description={`${
+                isRegenerateMode ? "Update" : "Generate"
+              } essay writing assessment for: ${
                 selectedLessonPlan.classId?.className || "Class"
               } | ${selectedLessonPlan.parameters?.grade || "Grade"}`}
               type="info"
@@ -210,7 +281,7 @@ const EssayLesson = ({
                       gap: "8px",
                     }}
                   >
-                    <FileTextOutlined style={{ color: "#1890ff" }} />
+                    <EditOutlined style={{ color: "#1890ff" }} />
                     <span>Essay Type</span>
                   </div>
                 }
@@ -280,7 +351,7 @@ const EssayLesson = ({
                           gap: "8px",
                         }}
                       >
-                        <ClockCircleOutlined style={{ color: "#722ed1" }} />
+                        <LoadingOutlined style={{ color: "#722ed1" }} />
                         <span>Duration</span>
                       </div>
                     }
@@ -315,7 +386,13 @@ const EssayLesson = ({
                   onChange={(e) =>
                     handleInputChange("additionalRequirement", e.target.value)
                   }
-                  placeholder="Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay assessment based on the selected lesson plan..."
+                  placeholder={
+                    isLessonPlanningMode
+                      ? "Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay activity..."
+                      : isRegenerateMode
+                      ? "Update essay prompts, themes, or special considerations for the regenerated assessment..."
+                      : "Enter specific essay prompts, themes, learning objectives, or any special considerations for this essay assessment based on the selected lesson plan..."
+                  }
                   maxLength={400}
                   showCount
                   disabled={loading}
@@ -327,43 +404,84 @@ const EssayLesson = ({
             <Col span={24}>
               <Card
                 size="small"
-                title="Essay Assessment Summary"
+                title={`Essay Assessment ${
+                  isRegenerateMode ? "Regeneration" : ""
+                } Summary`}
                 style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
               >
                 <Row gutter={[16, 8]}>
                   <Col xs={24} sm={12} md={8}>
-                    <Text strong style={{ color: "#666" }}>
+                    <div style={{ color: "#666", fontWeight: 600 }}>
                       Essay Type:
-                    </Text>
-                    <br />
-                    <Tag color="blue">
+                    </div>
+                    <div style={{ color: "#52c41a", fontWeight: 500 }}>
                       {formData.essayType.replace("_", " ")}
-                    </Tag>
+                    </div>
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Text strong style={{ color: "#666" }}>
+                    <div style={{ color: "#666", fontWeight: 600 }}>
                       Word Count:
-                    </Text>
-                    <br />
-                    <Tag color="green">{formData.wordCount}</Tag>
+                    </div>
+                    <div style={{ color: "#52c41a", fontWeight: 500 }}>
+                      {formData.wordCount}
+                    </div>
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Text strong style={{ color: "#666" }}>
+                    <div style={{ color: "#666", fontWeight: 600 }}>
                       Duration:
-                    </Text>
-                    <br />
-                    <Tag color="orange">{formData.duration}</Tag>
+                    </div>
+                    <div style={{ color: "#52c41a", fontWeight: 500 }}>
+                      {formData.duration}
+                    </div>
                   </Col>
-                  {selectedLessonPlan && (
+                  {!isLessonPlanningMode && selectedLessonPlan && (
                     <Col span={24}>
-                      <Text strong style={{ color: "#666" }}>
-                        Based on Lesson:
-                      </Text>
-                      <br />
-                      <Text>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        {isRegenerateMode ? "Updating" : "Based on"} Lesson:
+                      </div>
+                      <div style={{ color: "#333" }}>
                         {selectedLessonPlan.parameters?.specificTopic ||
                           "Selected Lesson Plan"}
-                      </Text>
+                      </div>
+                    </Col>
+                  )}
+                  {isLessonPlanningMode && (
+                    <Col span={24}>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        Configuration Mode:
+                      </div>
+                      <div style={{ color: "#333" }}>
+                        This configuration will be saved with your lesson plan
+                      </div>
+                    </Col>
+                  )}
+                  {isRegenerateMode && (
+                    <Col span={24}>
+                      <div
+                        style={{
+                          color: "#666",
+                          fontWeight: 600,
+                          marginTop: "8px",
+                        }}
+                      >
+                        Regeneration Mode:
+                      </div>
+                      <div style={{ color: "#fa8c16" }}>
+                        The existing assessment will be replaced with new
+                        content
+                      </div>
                     </Col>
                   )}
                 </Row>
@@ -394,8 +512,17 @@ const EssayLesson = ({
             >
               {loading ? (
                 <>
-                  <LoadingOutlined spin /> Generating...
+                  <LoadingOutlined spin />{" "}
+                  {isLessonPlanningMode
+                    ? "Saving..."
+                    : isRegenerateMode
+                    ? "Regenerating..."
+                    : "Generating..."}
                 </>
+              ) : isLessonPlanningMode ? (
+                "📝 Save Configuration"
+              ) : isRegenerateMode ? (
+                "🔄 Regenerate Essay Assessment"
               ) : (
                 "📝 Generate Essay Assessment"
               )}

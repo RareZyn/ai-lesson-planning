@@ -1,4 +1,3 @@
-// backend/model/Assessment.js - Updated to support all content types
 const mongoose = require("mongoose");
 
 const AssessmentSchema = new mongoose.Schema(
@@ -25,7 +24,7 @@ const AssessmentSchema = new mongoose.Schema(
     lessonPlanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LessonPlan",
-      required: true,
+      required: false,
     },
     classId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -69,9 +68,27 @@ const AssessmentSchema = new mongoose.Schema(
       },
     ],
 
-    // UPDATED: Generated content from AI - supports all content types
+    // FIXED: Improved generatedContent schema with explicit HTML fields
     generatedContent: {
-      // For activity, essay, textbook types
+      // JSON Content Fields
+      activityContent: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      rubricContent: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      assessmentContent: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      answerKeyContent: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+
+      // CRITICAL: Explicitly define HTML fields as String type
       activityHTML: {
         type: String,
         default: null,
@@ -80,8 +97,6 @@ const AssessmentSchema = new mongoose.Schema(
         type: String,
         default: null,
       },
-
-      // For assessment type
       assessmentHTML: {
         type: String,
         default: null,
@@ -105,13 +120,12 @@ const AssessmentSchema = new mongoose.Schema(
         default: Date.now,
       },
 
-      // Raw AI response data (for debugging)
+      // Legacy field for backwards compatibility
       aiResponse: {
         type: mongoose.Schema.Types.Mixed,
       },
     },
 
-    // Original lesson plan data snapshot (for reference)
     lessonPlanSnapshot: {
       title: String,
       subject: String,
@@ -167,6 +181,16 @@ const AssessmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    regeneratedAt: {
+      type: Date,
+    },
+    regenerationCount: {
+      type: Number,
+      default: 0,
+    },
+    originalCreatedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -194,18 +218,18 @@ AssessmentSchema.methods.recordUsage = function () {
   return this.save();
 };
 
-// UPDATED: Instance method to mark content generated based on activity type
+// UPDATED: Instance method to mark content generated based on activity type (now handles JSON)
 AssessmentSchema.methods.markContentGenerated = function (
   studentContent,
   teacherContent,
   activityType
 ) {
   if (activityType === "assessment") {
-    this.generatedContent.assessmentHTML = studentContent;
-    this.generatedContent.answerKeyHTML = teacherContent;
+    this.generatedContent.assessmentContent = studentContent;
+    this.generatedContent.answerKeyContent = teacherContent;
   } else {
-    this.generatedContent.activityHTML = studentContent;
-    this.generatedContent.rubricHTML = teacherContent;
+    this.generatedContent.activityContent = studentContent;
+    this.generatedContent.rubricContent = teacherContent;
   }
 
   this.generatedContent.hasStudentContent = !!studentContent;
@@ -238,17 +262,17 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .sort({ createdAt: -1 });
 };
 
-// UPDATED: Pre-save middleware to update status and flags
+// UPDATED: Pre-save middleware to update status and flags (now handles JSON content)
 AssessmentSchema.pre("save", function (next) {
   // Update hasActivity and hasRubric based on content availability
   const content = this.generatedContent;
 
   if (this.activityType === "assessment") {
-    this.hasActivity = !!content.assessmentHTML;
-    this.hasRubric = !!content.answerKeyHTML;
+    this.hasActivity = !!(content.assessmentContent || content.assessmentHTML);
+    this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
   } else {
-    this.hasActivity = !!content.activityHTML;
-    this.hasRubric = !!content.rubricHTML;
+    this.hasActivity = !!(content.activityContent || content.activityHTML);
+    this.hasRubric = !!(content.rubricContent || content.rubricHTML);
   }
 
   // Update status based on content availability
