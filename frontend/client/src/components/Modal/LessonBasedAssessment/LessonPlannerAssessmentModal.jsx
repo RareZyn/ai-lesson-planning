@@ -38,14 +38,12 @@ const { Option } = Select;
 const { TextArea } = Input;
 const { Text } = Typography;
 
-// FIXED: Activity type mapping to ensure valid enum values
 const ACTIVITY_TYPE_MAPPING = {
-  activityInClass: "activity",
-  "activity-in-class": "activity",
-  activity: "activity",
+  activityInClass: "activityInClass",
   essay: "essay",
   textbook: "textbook",
   assessment: "assessment",
+  "spm-exam": "spm-exam",
 };
 
 const LessonPlannerAssessmentModal = ({ isOpen, onClose, onSubmit }) => {

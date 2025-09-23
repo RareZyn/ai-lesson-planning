@@ -4,18 +4,12 @@ const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
 
-// Activity type mapping to ensure valid enum values
 const ACTIVITY_TYPE_MAPPING = {
-  activityInClass: "activity",
-  "activity-in-class": "activity",
-  activity_in_class: "activity",
-  activity: "activity",
+  activityInClass: "activityInClass",
   essay: "essay",
   textbook: "textbook",
   assessment: "assessment",
-  exam: "exam",
-  "spm-exam": "exam",
-  spm_exam: "exam",
+  "spm-exam": "spm-exam",
 };
 
 // Function to validate and map activity type
