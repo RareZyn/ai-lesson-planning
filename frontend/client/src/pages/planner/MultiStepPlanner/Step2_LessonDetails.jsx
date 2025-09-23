@@ -342,7 +342,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                   style={{
                     padding: "12px",
                     backgroundColor:
-                      data.activityType === "smp-exam"
+                      data.activityType === "spm-exam"
                         ? "#fff0f6" // Special background for SPM exam
                         : "#fff7e6",
                     border:

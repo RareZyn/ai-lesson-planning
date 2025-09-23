@@ -30,7 +30,6 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// [Previous structureGeneratedContent function remains the same]
 const structureGeneratedContent = (
   generatedContent,
   activityType,
@@ -50,6 +49,7 @@ const structureGeneratedContent = (
     rubricHTML: null,
     assessmentHTML: null,
     answerKeyHTML: null,
+    examHTML: null, // CRITICAL: This was missing
     hasStudentContent: false,
     hasTeacherContent: false,
     generatedAt: new Date(),
@@ -99,20 +99,31 @@ const structureGeneratedContent = (
       break;
 
     case "spm-exam":
-      // For exams: student content = examContent, teacher content = answerKeyContent
       structuredContent.examContent = generatedContent.examContent || null;
       structuredContent.answerKeyContent =
         generatedContent.answerKeyContent || null;
+      structuredContent.assessmentContent =
+        generatedContent.examContent || null;
 
       // Convert JSON to HTML for frontend
       if (structuredContent.examContent) {
         console.log("Converting examContent to HTML...");
-        structuredContent.examHTML = convertExamToHTML(
+        const examHTML = convertExamToHTML(
           structuredContent.examContent,
-          additionalData.paperType || "paper1" // ✅ Now additionalData is properly defined
+          additionalData.paperType || "paper1"
         );
+
+        // CRITICAL: Store HTML in BOTH examHTML and assessmentHTML fields
+        structuredContent.examHTML = examHTML;
+        structuredContent.assessmentHTML = examHTML; // Frontend compatibility
+
         console.log("Exam HTML generated:", !!structuredContent.examHTML);
+        console.log(
+          "Assessment HTML generated:",
+          !!structuredContent.assessmentHTML
+        );
       }
+
       if (structuredContent.answerKeyContent) {
         console.log("Converting exam answerKeyContent to HTML...");
         structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
@@ -124,13 +135,16 @@ const structureGeneratedContent = (
         );
       }
 
+      // CRITICAL: Set flags correctly for SPM exams
       structuredContent.hasStudentContent = !!generatedContent.examContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
 
       console.log("Exam content structured:", {
         hasExamContent: !!structuredContent.examContent,
+        hasAssessmentContent: !!structuredContent.assessmentContent, // Should also be true
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
         hasExamHTML: !!structuredContent.examHTML,
+        hasAssessmentHTML: !!structuredContent.assessmentHTML, // Should also be true
         hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
       break;
@@ -185,7 +199,7 @@ const structureGeneratedContent = (
     rubricHTML: !!structuredContent.rubricHTML,
     assessmentHTML: !!structuredContent.assessmentHTML,
     answerKeyHTML: !!structuredContent.answerKeyHTML,
-    examHTML: !!structuredContent.examHTML, // ✅ Add this
+    examHTML: !!structuredContent.examHTML,
   });
 
   return structuredContent;
@@ -3364,67 +3378,100 @@ Generate authentic SPM Paper 2 content with realistic scenarios and age-appropri
 };
 
 const convertExamToHTML = (examContent, paperType) => {
-  if (!examContent) return null;
+  if (!examContent) {
+    console.error("No examContent provided to convertExamToHTML");
+    return null;
+  }
 
-  let html = `
-    <div class="exam-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div class="exam-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 5px;">${
-          examContent.title
-        }</h1>
-        <h2 style="color: #666; margin-bottom: 10px;">${
-          examContent.subtitle
-        }</h2>
-        <div class="exam-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
-          <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
-          <p><strong>Duration:</strong> ${examContent.duration}</p>
-          ${
-            paperType === "paper1"
-              ? `<p><strong>Questions:</strong> ${examContent.totalQuestions} <strong>Marks:</strong> ${examContent.totalMarks}</p>`
-              : `<p><strong>Parts:</strong> ${examContent.totalParts} <strong>Marks:</strong> ${examContent.totalMarks}</p>`
-          }
+  console.log("Converting exam content to HTML:", {
+    paperType,
+    hasTitle: !!examContent.title,
+    hasSubtitle: !!examContent.subtitle,
+    hasParts: !!examContent.parts,
+    partsCount: examContent.parts?.length || 0,
+  });
+
+  try {
+    let html = `
+      <div class="exam-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+        <div class="exam-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+          <h1 style="color: #1890ff; margin-bottom: 5px;">${
+            examContent.title || "SPM English Examination"
+          }</h1>
+          <h2 style="color: #666; margin-bottom: 10px;">${
+            examContent.subtitle || "Reading and Use of English"
+          }</h2>
+          <div class="exam-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+            <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
+            <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
+            <p><strong>Duration:</strong> ${
+              examContent.duration || "1 hour 30 minutes"
+            }</p>
+            ${
+              paperType === "paper1"
+                ? `<p><strong>Questions:</strong> ${
+                    examContent.totalQuestions || 40
+                  } <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>`
+                : `<p><strong>Parts:</strong> ${
+                    examContent.totalParts || 3
+                  } <strong>Marks:</strong> ${examContent.totalMarks || 60}</p>`
+            }
+          </div>
         </div>
-      </div>
-  `;
+    `;
 
-  if (examContent.instructions) {
-    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
-      <h3 style="color: #fa8c16;">Instructions:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
-    examContent.instructions.forEach((instruction) => {
-      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
-    });
-    html += `</ul></div>`;
+    if (examContent.instructions) {
+      html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+        <h3 style="color: #fa8c16;">Instructions:</h3>
+        <ul style="margin: 0; padding-left: 20px;">`;
+      examContent.instructions.forEach((instruction) => {
+        html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    if (paperType === "paper1" && examContent.parts) {
+      html += convertPaper1Parts(examContent.parts);
+    } else if (paperType === "paper2" && examContent.parts) {
+      html += convertPaper2Parts(examContent.parts);
+    }
+
+    html += `</div>`;
+
+    console.log("Successfully converted exam to HTML, length:", html.length);
+    return html;
+  } catch (error) {
+    console.error("Error in convertExamToHTML:", error);
+    return `<div class="error">Error generating exam HTML: ${error.message}</div>`;
   }
-
-  if (paperType === "paper1") {
-    html += convertPaper1Parts(examContent.parts);
-  } else if (paperType === "paper2") {
-    html += convertPaper2Parts(examContent.parts);
-  }
-
-  html += `</div>`;
-  return html;
 };
 
 const convertPaper1Parts = (parts) => {
+  if (!Array.isArray(parts)) {
+    console.warn("Parts is not an array:", parts);
+    return "";
+  }
+
   let html = "";
-  parts.forEach((part) => {
+  parts.forEach((part, index) => {
+    if (!part) return;
+
     html += `
       <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
         <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
-          part.title
+          part.title || `Part ${index + 1}`
         }</h3>
         <p style="font-style: italic; margin-bottom: 15px;">${
-          part.instructions
+          part.instructions || ""
         }</p>
         <p style="margin-bottom: 20px;"><strong>Questions ${
-          part.questions?.[0]?.questionNumber || part.partNumber
+          part.questions?.[0]?.questionNumber || part.partNumber || index + 1
         } to ${
       part.questions?.[part.questions?.length - 1]?.questionNumber ||
-      part.totalQuestions
-    }</strong> (${part.marks} marks)</p>
+      (part.totalQuestions
+        ? part.totalQuestions + (part.partNumber || index) * 10
+        : index + 8)
+    }</strong> (${part.marks || 8} marks)</p>
     `;
 
     if (part.passage) {
@@ -3433,14 +3480,16 @@ const convertPaper1Parts = (parts) => {
       </div>`;
     }
 
-    if (part.questions) {
+    if (part.questions && Array.isArray(part.questions)) {
       part.questions.forEach((question) => {
+        if (!question) return;
+
         html += `<div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
-          <p><strong>${question.questionNumber}.</strong> ${
+          <p><strong>${question.questionNumber || ""}.</strong> ${
           question.question || question.text || ""
         }</p>`;
 
-        if (question.options) {
+        if (question.options && Array.isArray(question.options)) {
           question.options.forEach((option) => {
             html += `<p style="margin-left: 20px;">${option}</p>`;
           });
@@ -3449,7 +3498,7 @@ const convertPaper1Parts = (parts) => {
       });
     }
 
-    if (part.sentenceOptions) {
+    if (part.sentenceOptions && Array.isArray(part.sentenceOptions)) {
       html += `<div class="sentence-options" style="margin: 20px 0;">
         <h4>Choose from these sentences:</h4>`;
       part.sentenceOptions.forEach((option) => {
@@ -3463,16 +3512,32 @@ const convertPaper1Parts = (parts) => {
   return html;
 };
 
+// Helper function for Paper 2 parts
 const convertPaper2Parts = (parts) => {
+  if (!Array.isArray(parts)) {
+    console.warn("Parts is not an array:", parts);
+    return "";
+  }
+
   let html = "";
-  parts.forEach((part) => {
+  parts.forEach((part, index) => {
+    if (!part) return;
+
     html += `
       <div class="exam-part" style="margin-bottom: 40px; page-break-before: auto;">
-        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${part.title}</h3>
+        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+          part.title || `Part ${index + 1}`
+        }</h3>
         <div class="part-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Marks:</strong> ${part.marks} | <strong>Word Count:</strong> ${part.wordCount} | <strong>Time:</strong> ${part.timeAllocation}</p>
+          <p><strong>Marks:</strong> ${
+            part.marks || 20
+          } | <strong>Word Count:</strong> ${
+      part.wordCount || "Not specified"
+    } | <strong>Time:</strong> ${part.timeAllocation || "Not specified"}</p>
         </div>
-        <p style="font-style: italic; margin-bottom: 15px;">${part.instructions}</p>
+        <p style="font-style: italic; margin-bottom: 15px;">${
+          part.instructions || ""
+        }</p>
     `;
 
     if (part.scenario) {
@@ -3486,7 +3551,7 @@ const convertPaper2Parts = (parts) => {
       html += `<p><strong>Task:</strong> ${part.task}</p>`;
     }
 
-    if (part.requiredContent) {
+    if (part.requiredContent && Array.isArray(part.requiredContent)) {
       html += `<div class="required-content" style="margin: 15px 0;">
         <h4>Your response must include:</h4>
         <ul>`;
@@ -3496,7 +3561,7 @@ const convertPaper2Parts = (parts) => {
       html += `</ul></div>`;
     }
 
-    if (part.guidingPoints) {
+    if (part.guidingPoints && Array.isArray(part.guidingPoints)) {
       html += `<div class="guiding-points" style="margin: 15px 0;">
         <h4>Use these points in your essay:</h4>
         <ul>`;
@@ -3506,23 +3571,27 @@ const convertPaper2Parts = (parts) => {
       html += `</ul></div>`;
     }
 
-    if (part.options) {
+    if (part.options && Array.isArray(part.options)) {
       html += `<div class="writing-options" style="margin: 20px 0;">`;
       part.options.forEach((option) => {
+        if (!option) return;
+
         html += `
           <div class="option" style="border: 1px solid #d9d9d9; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-            <h4>${option.questionNumber} - ${option.type}</h4>
-            <h5>${option.topic}</h5>
-            <p>${option.prompt}</p>
+            <h4>${option.questionNumber || ""} - ${
+          option.type || "Writing Task"
+        }</h4>
+            <h5>${option.topic || ""}</h5>
+            <p>${option.prompt || ""}</p>
             ${
-              option.notes
+              option.notes && Array.isArray(option.notes)
                 ? `<ul>${option.notes
                     .map((note) => `<li>${note}</li>`)
                     .join("")}</ul>`
                 : ""
             }
             ${
-              option.requirements
+              option.requirements && Array.isArray(option.requirements)
                 ? `<ul>${option.requirements
                     .map((req) => `<li>${req}</li>`)
                     .join("")}</ul>`

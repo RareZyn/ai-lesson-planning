@@ -167,7 +167,7 @@ const SPMExamLessonModal = ({
         submitData = {
           ...formData,
           selectedLessonPlan,
-          activityType: "smp-exam",
+          activityType: "spm-exam",
         };
         await onSubmit(submitData);
         message.success("SPM exam settings submitted successfully!");
