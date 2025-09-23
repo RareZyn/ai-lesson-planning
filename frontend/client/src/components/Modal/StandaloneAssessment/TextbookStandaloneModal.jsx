@@ -1,4 +1,4 @@
-// TextbookStandaloneModal.jsx - Enhanced standalone textbook modal
+// TextbookStandaloneModal.jsx
 import React, { useState, useEffect } from "react";
 import { Card, Input, Row, Col, message, Select, Alert, Tag } from "antd";
 import {
@@ -11,13 +11,13 @@ import {
 } from "@ant-design/icons";
 import textbookService from "../../../services/textbookService";
 import "./ModalStyles.css";
+import { Typography } from "antd";
 
 const { TextArea } = Input;
 const { Option } = Select;
 const { Text } = Typography;
 
-// Import Typography that was missing
-import { Typography } from "antd";
+
 
 const TextbookStandaloneModal = ({
   isOpen,
