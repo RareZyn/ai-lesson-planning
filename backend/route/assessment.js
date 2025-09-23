@@ -47,6 +47,7 @@ router.delete("/standalone/:id", protect, deleteStandaloneAssessment);
 // Get user's assessments with filtering and pagination (handles both types)
 router.get("/my-assessments", protect, getUserAssessmentsFiltered);
 // Get specific assessment by ID (works for both lesson-based and standalone)
+router.post("/spm-exam", protect, createStandaloneAssessment);
 router.get("/:id", protect, getAssessmentById);
 // Update assessment (works for both types)
 router.put("/:id", protect, updateAssessment);

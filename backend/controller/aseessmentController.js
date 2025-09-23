@@ -13,6 +13,9 @@ const ACTIVITY_TYPE_MAPPING = {
   essay: "essay",
   textbook: "textbook",
   assessment: "assessment",
+  exam: "exam",
+  "spm-exam": "exam",
+  spm_exam: "exam",
 };
 
 // Function to validate and map activity type
@@ -34,7 +37,11 @@ const validateAndMapActivityType = (activityType) => {
 };
 
 // [Previous structureGeneratedContent function remains the same]
-const structureGeneratedContent = (generatedContent, activityType) => {
+const structureGeneratedContent = (
+  generatedContent,
+  activityType,
+  additionalData = {}
+) => {
   console.log("Structuring content for activity type:", activityType);
   console.log("Raw generated content:", Object.keys(generatedContent));
 
@@ -44,7 +51,7 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     rubricContent: null,
     assessmentContent: null,
     answerKeyContent: null,
-    // Add HTML versions for frontend compatibility
+    examContent: null,
     activityHTML: null,
     rubricHTML: null,
     assessmentHTML: null,
@@ -93,6 +100,43 @@ const structureGeneratedContent = (generatedContent, activityType) => {
         hasAssessmentContent: !!structuredContent.assessmentContent,
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
         hasAssessmentHTML: !!structuredContent.assessmentHTML,
+        hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
+      });
+      break;
+
+    case "exam":
+      // For exams: student content = examContent, teacher content = answerKeyContent
+      structuredContent.examContent = generatedContent.examContent || null;
+      structuredContent.answerKeyContent =
+        generatedContent.answerKeyContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.examContent) {
+        console.log("Converting examContent to HTML...");
+        structuredContent.examHTML = convertExamToHTML(
+          structuredContent.examContent,
+          additionalData.paperType || "paper1" // ✅ Now additionalData is properly defined
+        );
+        console.log("Exam HTML generated:", !!structuredContent.examHTML);
+      }
+      if (structuredContent.answerKeyContent) {
+        console.log("Converting exam answerKeyContent to HTML...");
+        structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
+          structuredContent.answerKeyContent
+        );
+        console.log(
+          "Exam Answer Key HTML generated:",
+          !!structuredContent.answerKeyHTML
+        );
+      }
+
+      structuredContent.hasStudentContent = !!generatedContent.examContent;
+      structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
+
+      console.log("Exam content structured:", {
+        hasExamContent: !!structuredContent.examContent,
+        hasAnswerKeyContent: !!structuredContent.answerKeyContent,
+        hasExamHTML: !!structuredContent.examHTML,
         hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
       break;
@@ -147,6 +191,7 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     rubricHTML: !!structuredContent.rubricHTML,
     assessmentHTML: !!structuredContent.assessmentHTML,
     answerKeyHTML: !!structuredContent.answerKeyHTML,
+    examHTML: !!structuredContent.examHTML, // ✅ Add this
   });
 
   return structuredContent;
@@ -646,6 +691,15 @@ const createStandaloneAssessment = async (req, res) => {
         });
         break;
 
+      case "exam":
+        generatedContent = await generateExamContent({
+          ...mockLessonPlanData, // or lessonPlanData for lesson-based
+          geminiApiKey,
+          ...activityData,
+          paperType: activityData.paperType, // paper1 or paper2
+        });
+        break;
+
       default:
         console.warn(
           `Unhandled activity type for standalone: ${activityType}, falling back to activity`
@@ -664,7 +718,8 @@ const createStandaloneAssessment = async (req, res) => {
     // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: activityData.paperType }
     );
 
     console.log("📦 Structured standalone content:", {
@@ -700,7 +755,19 @@ const createStandaloneAssessment = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: activityData.difficultyLevel || "Intermediate",
       skills: activityData.skills || [],
-
+      ...(activityType === "exam" && {
+        examConfiguration: {
+          paperType: activityData.paperType,
+          textSources: activityData.textSources,
+          readingLevel: activityData.readingLevel,
+          topics: activityData.topics,
+          communicationFormat: activityData.communicationFormat,
+          essayTypes: activityData.essayTypes,
+          topicCategories: activityData.topicCategories,
+          promptComplexity: activityData.promptComplexity,
+          questionTypes: activityData.questionTypes,
+        },
+      }),
       // Generated content
       generatedContent: structuredContent,
 
@@ -947,7 +1014,8 @@ const generateFromLessonPlan = async (req, res) => {
     // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: activityData.paperType }
     );
 
     console.log("Creating lesson-based assessment with data:", {
@@ -2647,7 +2715,8 @@ const regenerateAssessment = async (req, res) => {
     // Structure the new content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: activityData.paperType }
     );
 
     console.log("Structured regenerated content:", {
@@ -2785,13 +2854,714 @@ const regenerateAssessment = async (req, res) => {
   }
 };
 
+const generateExamContent = async (data) => {
+  console.log("Generating SPM exam content with data:", data);
+
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.7,
+    },
+  });
+
+  try {
+    let prompt;
+    if (data.paperType === "paper1") {
+      prompt = buildPaper1Prompt(data);
+    } else if (data.paperType === "paper2") {
+      prompt = buildPaper2Prompt(data);
+    } else {
+      throw new Error("Invalid paper type. Must be 'paper1' or 'paper2'");
+    }
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("Raw AI output length:", text.length);
+    console.log("Raw AI output preview:", text.substring(0, 500) + "...");
+
+    let generatedContent;
+    try {
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      generatedContent = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON. Raw text:", text);
+      throw new Error("The AI response was not in a valid JSON format.");
+    }
+
+    // Validate required fields for exam
+    if (!generatedContent.examContent || !generatedContent.answerKeyContent) {
+      console.error("Missing required exam fields:", generatedContent);
+      throw new Error("Missing required exam content fields in AI response");
+    }
+
+    const result_content = {
+      examContent: generatedContent.examContent,
+      answerKeyContent: generatedContent.answerKeyContent,
+    };
+
+    console.log(`Generated exam content analysis:`, {
+      examContent: result_content.examContent ? "Generated" : "Missing",
+      answerKeyContent: result_content.answerKeyContent
+        ? "Generated"
+        : "Missing",
+    });
+
+    return result_content;
+  } catch (error) {
+    console.error("Error in generateExamContent:", error);
+    throw error;
+  }
+};
+
+const buildPaper1Prompt = (data) => {
+  return `
+# CRITICAL: Generate SPM English Paper 1 (Reading & Use of English) Examination
+
+Create a complete SPM English Paper 1 examination based on the Malaysian KSSM curriculum format with exactly 40 questions across 5 parts.
+
+## Exam Configuration:
+- Paper Type: Paper 1 (Reading & Use of English)
+- Duration: 1 hour 30 minutes
+- Total Questions: 40 questions
+- Total Marks: 40 marks
+- Grade Level: ${data.grade || "Form 4/5"}
+- Reading Level: ${data.readingLevel || "Form 4/5 level"}
+- Topics/Themes: ${data.topics?.join(", ") || "General topics"}
+- Text Sources: ${data.textSources?.join(", ") || "Mixed sources"}
+
+## Paper Structure Requirements:
+
+**Part 1: Multiple Choice (8 questions, 8 marks)**
+- 8 short texts (advertisements, notices, emails, etc.)
+- 3 answer choices (A, B, C) for each question
+- Focus on understanding main ideas and specific information
+
+**Part 2: Multiple Choice Cloze (10 questions, 10 marks)**  
+- 1 passage with 10 gaps
+- 4 answer choices (A, B, C, D) for each gap
+- Focus: ${data.clozeTestFocus || "grammar and vocabulary"}
+- Test grammar structures, vocabulary, and discourse markers
+
+**Part 3: Multiple Choice Reading (8 questions, 8 marks)**
+- 1 longer passage (300-400 words)
+- 3 answer choices (A, B, C) for each question
+- Test inference, main ideas, supporting details, author's purpose
+
+**Part 4: Gapped Text (6 questions, 6 marks)**
+- 1 passage with 6 removed sentences
+- 8 sentence options (A-H) to choose from
+- Test understanding of text organization and coherence
+
+**Part 5: Matching & Information Transfer (8 questions, 8 marks)**
+- 1 informational text with multiple sections
+- 4 matching questions (match statements to paragraphs)
+- 4 information transfer questions (complete sentences with words from text)
+
+## Output Format:
+
+Generate a JSON object with this exact structure:
+
+{
+  "examContent": {
+    "title": "SPM English Paper 1 (1119/1)",
+    "subtitle": "Reading and Use of English",
+    "duration": "1 hour 30 minutes",
+    "totalQuestions": 40,
+    "totalMarks": 40,
+    "instructions": [
+      "Answer all questions",
+      "For each question, choose the best answer and mark it on your answer sheet",
+      "Read all texts and questions carefully",
+      "Transfer your answers to the answer sheet in pencil"
+    ],
+    "parts": [
+      {
+        "partNumber": 1,
+        "title": "Part 1",
+        "instructions": "Questions 1 to 8. Read the text carefully in each question. Choose the best answer A, B or C.",
+        "totalQuestions": 8,
+        "marks": 8,
+        "questions": [
+          {
+            "questionNumber": 1,
+            "text": "Short text here (advertisement, notice, etc.)",
+            "question": "What is the main purpose of this text?",
+            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 2,
+        "title": "Part 2", 
+        "instructions": "Questions 9 to 18. Read the passage carefully and choose the best answer A, B, C or D to fill each blank.",
+        "totalQuestions": 10,
+        "marks": 10,
+        "passage": "Complete passage with numbered gaps (9) to (18)",
+        "questions": [
+          {
+            "questionNumber": 9,
+            "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 3,
+        "title": "Part 3",
+        "instructions": "Questions 19 to 26. Read the passage carefully and choose the best answer A, B or C.",
+        "totalQuestions": 8, 
+        "marks": 8,
+        "passage": "Longer reading passage (300-400 words)",
+        "questions": [
+          {
+            "questionNumber": 19,
+            "question": "According to the passage...",
+            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 4,
+        "title": "Part 4",
+        "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap. There are two extra sentences you do not need to use.",
+        "totalQuestions": 6,
+        "marks": 6,
+        "passage": "Passage with 6 gaps marked (27) to (32)",
+        "sentenceOptions": ["A: Sentence option 1", "B: Sentence option 2", "C: Sentence option 3", "D: Sentence option 4", "E: Sentence option 5", "F: Sentence option 6", "G: Sentence option 7", "H: Sentence option 8"],
+        "questions": [
+          {
+            "questionNumber": 27,
+            "gapPosition": "After paragraph 1",
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 5,
+        "title": "Part 5", 
+        "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
+        "totalQuestions": 8,
+        "marks": 8,
+        "passage": "Informational text with clear sections/paragraphs",
+        "questions": [
+          {
+            "questionType": "matching",
+            "questionNumbers": "33-36",
+            "instructions": "Which paragraph (A-F) describes the views expressed by the teenagers?",
+            "questions": [
+              {
+                "questionNumber": 33,
+                "statement": "Statement to match to paragraph",
+                "marks": 1
+              }
+            ]
+          },
+          {
+            "questionType": "information_transfer",
+            "questionNumbers": "37-40", 
+            "instructions": "Complete the notes using information from the text. Choose no more than one word from the passage for each answer.",
+            "questions": [
+              {
+                "questionNumber": 37,
+                "sentence": "Complete this sentence: Many restaurants serve _______ food.",
+                "marks": 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "ANSWER KEY - SPM English Paper 1 (1119/1)",
+    "totalQuestions": 40,
+    "totalMarks": 40,
+    "answers": [
+      {
+        "questionNumber": 1,
+        "correctAnswer": "B",
+        "explanation": "Brief explanation of why this is correct",
+        "marks": 1
+      }
+    ],
+    "markingScheme": {
+      "part1": "1 mark per correct answer (8 marks total)",
+      "part2": "1 mark per correct answer (10 marks total)", 
+      "part3": "1 mark per correct answer (8 marks total)",
+      "part4": "1 mark per correct answer (6 marks total)",
+      "part5": "1 mark per correct answer (8 marks total)"
+    },
+    "gradingScale": {
+      "A": "34-40 marks (85-100%)",
+      "B": "28-33 marks (70-84%)", 
+      "C": "20-27 marks (50-69%)",
+      "D": "12-19 marks (30-49%)",
+      "E": "8-11 marks (20-29%)",
+      "G": "0-7 marks (0-19%)"
+    }
+  }
+}
+
+Remember: Generate exactly 40 questions following the SPM format precisely. Each part must have the correct number of questions and follow authentic SPM style and difficulty.
+`;
+};
+
+const buildPaper2Prompt = (data) => {
+  return `
+# CRITICAL: Generate SPM English Paper 2 (Writing) Examination
+
+Create a complete SPM English Paper 2 examination based on the Malaysian KSSM curriculum format.
+
+## Exam Configuration:
+- Paper Type: Paper 2 (Writing)
+- Duration: 1 hour 30 minutes
+- Total Parts: 3 parts
+- Total Marks: 60 marks
+- Grade Level: ${data.grade || "Form 4/5"}
+- Communication Format: ${data.communicationFormat || "Mixed formats"}
+- Essay Types: ${data.essayTypes?.join(", ") || "Mixed types"}
+- Topic Categories: ${data.topicCategories?.join(", ") || "General topics"}
+- Prompt Complexity: ${data.promptComplexity || "Intermediate"}
+
+## Paper Structure Requirements:
+
+**Part 1: Short Communicative Message (20 marks)**
+- Format: ${data.communicationFormat || "Email/Letter/Note"}
+- Word Count: About 80 words
+- Task: Respond to a given message/situation
+- Focus: Clear communication, appropriate format, accurate information
+
+**Part 2: Guided Writing (20 marks)**
+- Format: Essay with guided points
+- Word Count: 125-150 words  
+- Task: Write based on given notes/points
+- Focus: Content development, organization, language accuracy
+
+**Part 3: Extended Writing (20 marks)**
+- Format: Choose 1 from 3 options (${
+    data.essayTypes?.join("/") || "Article/Report/Story"
+  })
+- Word Count: 200-250 words
+- Task: Creative/informative writing with given prompts
+- Focus: Content, organization, language range, communicative achievement
+
+## Assessment Criteria:
+- Content: Relevance to task, completeness of response
+- Communicative Achievement: Clear communication, appropriate register
+- Organisation: Logical structure, coherent flow
+- Language: Grammar accuracy, vocabulary range, spelling
+
+## Output Format:
+
+Generate a JSON object with this exact structure:
+
+{
+  "examContent": {
+    "title": "SPM English Paper 2 (1119/2)", 
+    "subtitle": "Writing",
+    "duration": "1 hour 30 minutes",
+    "totalParts": 3,
+    "totalMarks": 60,
+    "instructions": [
+      "Answer all questions",
+      "Write your answers in the spaces provided",
+      "Pay attention to word limits for each part",
+      "Plan your time carefully: Part 1 (25 min), Part 2 (30 min), Part 3 (35 min)"
+    ],
+    "parts": [
+      {
+        "partNumber": 1,
+        "title": "Part 1: Short Communicative Message",
+        "marks": 20,
+        "wordCount": "About 80 words",
+        "timeAllocation": "25 minutes",
+        "instructions": "You must answer this question.",
+        "scenario": "Detailed scenario/context here",
+        "task": "Write an email/letter/note responding to the given situation",
+        "requiredContent": [
+          "Point 1 to address",
+          "Point 2 to address", 
+          "Point 3 to address",
+          "Point 4 to address"
+        ],
+        "format": "${data.communicationFormat || "Email"}",
+        "writingSpace": "Lined space for approximately 80 words"
+      },
+      {
+        "partNumber": 2,
+        "title": "Part 2: Guided Writing",
+        "marks": 20,
+        "wordCount": "125-150 words", 
+        "timeAllocation": "30 minutes",
+        "instructions": "You must answer this question.",
+        "topic": "Essay topic related to current issues/themes",
+        "guidingPoints": [
+          "Point 1 to discuss",
+          "Point 2 to elaborate",
+          "Point 3 to explain"
+        ],
+        "taskInstructions": "Use all the notes above and give reasons for your point of view. Write your essay in an appropriate style.",
+        "writingSpace": "Lined space for approximately 125-150 words"
+      },
+      {
+        "partNumber": 3,
+        "title": "Part 3: Extended Writing", 
+        "marks": 20,
+        "wordCount": "200-250 words",
+        "timeAllocation": "35 minutes",
+        "instructions": "Choose one of the following questions. Answer in 200-250 words in an appropriate style.",
+        "options": [
+          {
+            "questionNumber": "3A",
+            "type": "${data.essayTypes?.[0] || "Article"}",
+            "topic": "Engaging topic for article writing",
+            "prompt": "Detailed writing prompt with context and requirements",
+            "notes": [
+              "Key point 1 to include",
+              "Key point 2 to develop",
+              "Key point 3 to discuss"
+            ]
+          },
+          {
+            "questionNumber": "3B", 
+            "type": "${data.essayTypes?.[1] || "Report"}",
+            "topic": "Professional report topic",
+            "prompt": "Report writing scenario with specific requirements",
+            "notes": [
+              "Aspect 1 to report on",
+              "Aspect 2 to analyze",
+              "Aspect 3 to recommend"
+            ]
+          },
+          {
+            "questionNumber": "3C",
+            "type": "${data.essayTypes?.[2] || "Story"}",
+            "topic": "Creative story prompt",
+            "prompt": "Story beginning or scenario to continue/develop",
+            "requirements": [
+              "Include specific elements",
+              "Develop character/plot",
+              "Create engaging narrative"
+            ]
+          }
+        ],
+        "writingSpace": "Lined space for approximately 200-250 words"
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "MARKING SCHEME - SPM English Paper 2 (1119/2)",
+    "totalMarks": 60,
+    "assessmentCriteria": {
+      "part1": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 8,
+            "description": "Completeness and relevance of response to all required points"
+          },
+          {
+            "aspect": "Communicative Achievement", 
+            "marks": 6,
+            "description": "Appropriateness of format, register, and tone"
+          },
+          {
+            "aspect": "Organisation",
+            "marks": 3,
+            "description": "Logical structure and coherent flow"
+          },
+          {
+            "aspect": "Language",
+            "marks": 3,
+            "description": "Grammar accuracy and vocabulary appropriateness"
+          }
+        ],
+        "sampleResponse": "Model answer showing expected content and format",
+        "markingNotes": [
+          "Award full marks for complete, relevant response",
+          "Deduct marks for missing required content",
+          "Consider format appropriateness and tone"
+        ]
+      },
+      "part2": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 9,
+            "description": "Development of all guided points with relevant elaboration"
+          },
+          {
+            "aspect": "Organisation",
+            "marks": 5,
+            "description": "Clear essay structure with introduction, body, conclusion"
+          },
+          {
+            "aspect": "Language",
+            "marks": 6,
+            "description": "Range and accuracy of vocabulary and grammar"
+          }
+        ],
+        "sampleResponse": "Model essay demonstrating expected development",
+        "markingNotes": [
+          "All guided points must be addressed",
+          "Look for personal opinions and examples",
+          "Assess language range and accuracy"
+        ]
+      },
+      "part3": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 8,
+            "description": "Creativity, relevance, and development of ideas"
+          },
+          {
+            "aspect": "Communicative Achievement",
+            "marks": 5,
+            "description": "Effectiveness in engaging reader and achieving purpose"
+          },
+          {
+            "aspect": "Organisation", 
+            "marks": 4,
+            "description": "Logical structure appropriate to text type"
+          },
+          {
+            "aspect": "Language",
+            "marks": 3,
+            "description": "Vocabulary range, grammar accuracy, spelling"
+          }
+        ],
+        "sampleResponses": {
+          "article": "Model article response",
+          "report": "Model report response", 
+          "story": "Model story response"
+        },
+        "markingNotes": [
+          "Assess creativity and originality",
+          "Consider appropriateness to chosen format",
+          "Evaluate language sophistication"
+        ]
+      }
+    },
+    "gradingScale": {
+      "A": "51-60 marks (85-100%)",
+      "B": "42-50 marks (70-84%)",
+      "C": "30-41 marks (50-69%)", 
+      "D": "18-29 marks (30-49%)",
+      "E": "12-17 marks (20-29%)",
+      "G": "0-11 marks (0-19%)"
+    }
+  }
+}
+
+Generate authentic SPM Paper 2 content with realistic scenarios and age-appropriate topics for Form 4/5 students.
+`;
+};
+
+const convertExamToHTML = (examContent, paperType) => {
+  if (!examContent) return null;
+
+  let html = `
+    <div class="exam-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="exam-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 5px;">${
+          examContent.title
+        }</h1>
+        <h2 style="color: #666; margin-bottom: 10px;">${
+          examContent.subtitle
+        }</h2>
+        <div class="exam-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
+          <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
+          <p><strong>Duration:</strong> ${examContent.duration}</p>
+          ${
+            paperType === "paper1"
+              ? `<p><strong>Questions:</strong> ${examContent.totalQuestions} <strong>Marks:</strong> ${examContent.totalMarks}</p>`
+              : `<p><strong>Parts:</strong> ${examContent.totalParts} <strong>Marks:</strong> ${examContent.totalMarks}</p>`
+          }
+        </div>
+      </div>
+  `;
+
+  if (examContent.instructions) {
+    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    examContent.instructions.forEach((instruction) => {
+      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (paperType === "paper1") {
+    html += convertPaper1Parts(examContent.parts);
+  } else if (paperType === "paper2") {
+    html += convertPaper2Parts(examContent.parts);
+  }
+
+  html += `</div>`;
+  return html;
+};
+
+const convertPaper1Parts = (parts) => {
+  let html = "";
+  parts.forEach((part) => {
+    html += `
+      <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
+        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+          part.title
+        }</h3>
+        <p style="font-style: italic; margin-bottom: 15px;">${
+          part.instructions
+        }</p>
+        <p style="margin-bottom: 20px;"><strong>Questions ${
+          part.questions?.[0]?.questionNumber || part.partNumber
+        } to ${
+      part.questions?.[part.questions?.length - 1]?.questionNumber ||
+      part.totalQuestions
+    }</strong> (${part.marks} marks)</p>
+    `;
+
+    if (part.passage) {
+      html += `<div class="passage" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p style="margin: 0;">${part.passage}</p>
+      </div>`;
+    }
+
+    if (part.questions) {
+      part.questions.forEach((question) => {
+        html += `<div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
+          <p><strong>${question.questionNumber}.</strong> ${
+          question.question || question.text || ""
+        }</p>`;
+
+        if (question.options) {
+          question.options.forEach((option) => {
+            html += `<p style="margin-left: 20px;">${option}</p>`;
+          });
+        }
+        html += `</div>`;
+      });
+    }
+
+    if (part.sentenceOptions) {
+      html += `<div class="sentence-options" style="margin: 20px 0;">
+        <h4>Choose from these sentences:</h4>`;
+      part.sentenceOptions.forEach((option) => {
+        html += `<p style="margin: 5px 0;">${option}</p>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  });
+  return html;
+};
+
+const convertPaper2Parts = (parts) => {
+  let html = "";
+  parts.forEach((part) => {
+    html += `
+      <div class="exam-part" style="margin-bottom: 40px; page-break-before: auto;">
+        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${part.title}</h3>
+        <div class="part-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Marks:</strong> ${part.marks} | <strong>Word Count:</strong> ${part.wordCount} | <strong>Time:</strong> ${part.timeAllocation}</p>
+        </div>
+        <p style="font-style: italic; margin-bottom: 15px;">${part.instructions}</p>
+    `;
+
+    if (part.scenario) {
+      html += `<div class="scenario" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <h4>Scenario:</h4>
+        <p>${part.scenario}</p>
+      </div>`;
+    }
+
+    if (part.task) {
+      html += `<p><strong>Task:</strong> ${part.task}</p>`;
+    }
+
+    if (part.requiredContent) {
+      html += `<div class="required-content" style="margin: 15px 0;">
+        <h4>Your response must include:</h4>
+        <ul>`;
+      part.requiredContent.forEach((content) => {
+        html += `<li>${content}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    if (part.guidingPoints) {
+      html += `<div class="guiding-points" style="margin: 15px 0;">
+        <h4>Use these points in your essay:</h4>
+        <ul>`;
+      part.guidingPoints.forEach((point) => {
+        html += `<li>${point}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    if (part.options) {
+      html += `<div class="writing-options" style="margin: 20px 0;">`;
+      part.options.forEach((option) => {
+        html += `
+          <div class="option" style="border: 1px solid #d9d9d9; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+            <h4>${option.questionNumber} - ${option.type}</h4>
+            <h5>${option.topic}</h5>
+            <p>${option.prompt}</p>
+            ${
+              option.notes
+                ? `<ul>${option.notes
+                    .map((note) => `<li>${note}</li>`)
+                    .join("")}</ul>`
+                : ""
+            }
+            ${
+              option.requirements
+                ? `<ul>${option.requirements
+                    .map((req) => `<li>${req}</li>`)
+                    .join("")}</ul>`
+                : ""
+            }
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Add writing space
+    const lineHeight =
+      part.partNumber === 1
+        ? "80px"
+        : part.partNumber === 2
+        ? "120px"
+        : "200px";
+    html += `<div class="writing-space" style="margin: 20px 0; padding: 15px; border: 1px solid #d9d9d9; border-radius: 5px; background: #fafafa; min-height: ${lineHeight};">
+      <p style="color: #666; font-style: italic;">Write your answer here...</p>
+    </div>`;
+
+    html += `</div>`;
+  });
+  return html;
+};
+
 // Update the module.exports to include all new standalone functions
 module.exports = {
   generateFromLessonPlan,
-  createStandaloneAssessment, 
-  getStandaloneAssessments, 
-  updateStandaloneAssessment, 
-  deleteStandaloneAssessment, 
+  createStandaloneAssessment,
+  getStandaloneAssessments,
+  updateStandaloneAssessment,
+  deleteStandaloneAssessment,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -2800,4 +3570,5 @@ module.exports = {
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
   regenerateAssessment,
+  generateExamContent,
 };

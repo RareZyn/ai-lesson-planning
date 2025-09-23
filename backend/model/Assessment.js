@@ -36,7 +36,7 @@ const AssessmentSchema = new mongoose.Schema(
     activityType: {
       type: String,
       required: true,
-      enum: ["assessment", "essay", "textbook", "activity"],
+      enum: ["assessment", "essay", "textbook", "activity", "exam"],
     },
     assessmentType: {
       type: String,
@@ -124,6 +124,15 @@ const AssessmentSchema = new mongoose.Schema(
       aiResponse: {
         type: mongoose.Schema.Types.Mixed,
       },
+
+      examContent: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      examHTML: {
+        type: String,
+        default: null,
+      },
     },
 
     lessonPlanSnapshot: {
@@ -191,7 +200,27 @@ const AssessmentSchema = new mongoose.Schema(
     originalCreatedAt: {
       type: Date,
     },
+
+    examConfiguration: {
+      paperType: {
+        type: String,
+        enum: ["paper1", "paper2"],
+      },
+      textSources: [String],
+      readingLevel: String,
+      topics: [String],
+      communicationFormat: String,
+      essayTypes: [String],
+      topicCategories: [String],
+      promptComplexity: String,
+      questionTypes: {
+        multipleChoiceOptions: Number,
+        clozeTestFocus: String,
+        matchingComplexity: String,
+      },
+    },
   },
+
   {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -262,13 +291,16 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .sort({ createdAt: -1 });
 };
 
-// UPDATED: Pre-save middleware to update status and flags (now handles JSON content)
 AssessmentSchema.pre("save", function (next) {
   // Update hasActivity and hasRubric based on content availability
   const content = this.generatedContent;
 
   if (this.activityType === "assessment") {
     this.hasActivity = !!(content.assessmentContent || content.assessmentHTML);
+    this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
+  } else if (this.activityType === "exam") {
+    // ✅ Add exam handling
+    this.hasActivity = !!(content.examContent || content.examHTML);
     this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
   } else {
     this.hasActivity = !!(content.activityContent || content.activityHTML);
