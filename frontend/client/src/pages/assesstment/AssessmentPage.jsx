@@ -48,12 +48,53 @@ import ActivityInClassStandaloneModal from "../../components/Modal/StandaloneAss
 import AssessmentStandaloneModal from "../../components/Modal/StandaloneAssessment/AssessmentStandaloneModal";
 import EssayStandaloneModal from "../../components/Modal/StandaloneAssessment/EssayStandaloneModal";
 import TextbookStandaloneModal from "../../components/Modal/StandaloneAssessment/TextbookStandaloneModal";
+import SPMExamLessonModal from "../../components/Modal/LessonBasedAssessment/SPMExamLessonModal";
+import SPMExamStandaloneModal from "../../components/Modal/StandaloneAssessment/SPMExamStandaloneModal";
 
 import "./AssessmentPage.css";
 
 const { Search } = Input;
 const { Option } = Select;
-
+const activityTypes = [
+  {
+    key: "activityInClass",
+    title: "Activity in Class",
+    description: "Interactive classroom activities and group work",
+    icon: (
+      <ThunderboltOutlined style={{ fontSize: "32px", color: "#1890ff" }} />
+    ),
+    color: "#1890ff",
+  },
+  {
+    key: "assessment",
+    title: "Assessment (Exam)",
+    description: "Formal assessments, tests, and examinations",
+    icon: <FileTextOutlined style={{ fontSize: "32px", color: "#52c41a" }} />,
+    color: "#52c41a",
+  },
+  {
+    key: "essay",
+    title: "Essay Writing",
+    description: "Essay prompts and writing assignments",
+    icon: <EditOutlined style={{ fontSize: "32px", color: "#fa8c16" }} />,
+    color: "#fa8c16",
+  },
+  {
+    key: "textbook",
+    title: "Textbook Exercise",
+    description: "Textbook-based activities and exercises",
+    icon: <BookOutlined style={{ fontSize: "32px", color: "#722ed1" }} />,
+    color: "#722ed1",
+  },
+  // NEW: SPM Exam option
+  {
+    key: "spm-exam",
+    title: "SPM Examination",
+    description: "Malaysian SPM English Paper 1 & 2 examinations",
+    icon: <CalculatorOutlined style={{ fontSize: "32px", color: "#eb2f96" }} />,
+    color: "#eb2f96",
+  },
+];
 const AssessmentPage = () => {
   const navigate = useNavigate();
   const { userId } = useUser();
@@ -1022,6 +1063,10 @@ const AssessmentPage = () => {
         return <EssayStandaloneModal {...commonProps} />;
       case "textbook":
         return <TextbookStandaloneModal {...commonProps} />;
+      // NEW: SPM Exam case
+      case "smp-exam": // Note: keeping consistency with existing system
+      case "spm-exam":
+        return <SPMExamStandaloneModal {...commonProps} />;
       default:
         console.warn("⚠️ Unknown activity type:", standaloneActivityType);
         return <ActivityInClassStandaloneModal {...commonProps} />;

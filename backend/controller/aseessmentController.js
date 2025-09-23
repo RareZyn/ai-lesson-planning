@@ -687,7 +687,7 @@ const createStandaloneAssessment = async (req, res) => {
 
       case "spm-exam":
         generatedContent = await generateExamContent({
-          ...mockLessonPlanData, // or lessonPlanData for lesson-based
+          ...mockLessonPlanData, 
           geminiApiKey,
           ...activityData,
           paperType: activityData.paperType, // paper1 or paper2
