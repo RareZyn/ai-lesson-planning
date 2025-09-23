@@ -304,31 +304,6 @@ export const questionTypes = [
       },
     ],
   },
-  {
-    category: "Reading Comprehension",
-    types: [
-      {
-        value: "literal",
-        label: "Literal Comprehension",
-        description: "Direct information from text",
-      },
-      {
-        value: "inferential",
-        label: "Inferential Reading",
-        description: "Reading between lines",
-      },
-      {
-        value: "evaluative",
-        label: "Evaluative Reading",
-        description: "Judge and analyze content",
-      },
-      {
-        value: "appreciative",
-        label: "Appreciative Reading",
-        description: "Understand style and tone",
-      },
-    ],
-  },
 ];
 
 // Difficulty levels
@@ -364,69 +339,6 @@ export const timeAllocations = [
   },
 ];
 
-// Assessment focus areas
-export const assessmentFocus = [
-  {
-    value: "reading_skills",
-    label: "Reading Skills",
-    description: "Comprehension, scanning, skimming",
-  },
-  {
-    value: "language_use",
-    label: "Language Use",
-    description: "Grammar, vocabulary, structures",
-  },
-  {
-    value: "writing_skills",
-    label: "Writing Skills",
-    description: "Organization, coherence, style",
-  },
-  {
-    value: "communication",
-    label: "Communication",
-    description: "Practical language use",
-  },
-  {
-    value: "exam_technique",
-    label: "Exam Technique",
-    description: "Test-taking strategies",
-  },
-];
-
-// Sample themes aligned with KSSM
-export const kssmThemes = [
-  {
-    theme: "People and Culture",
-    topics: [
-      "Personal Identity and Self-Awareness",
-      "Family Relationships and Values",
-      "Cultural Diversity in Malaysia",
-      "Traditional Arts and Crafts",
-      "Festivals and Celebrations",
-    ],
-  },
-  {
-    theme: "Science and Technology",
-    topics: [
-      "Digital Communication",
-      "Medical Breakthroughs",
-      "Environmental Technology",
-      "Space Exploration",
-      "Artificial Intelligence",
-    ],
-  },
-  {
-    theme: "Health and Environment",
-    topics: [
-      "Mental Health Awareness",
-      "Climate Change Effects",
-      "Biodiversity Conservation",
-      "Sustainable Lifestyle",
-      "Pollution Prevention",
-    ],
-  },
-];
-
 // Default configurations
 export const defaultConfigurations = {
   paper1: {
@@ -450,13 +362,6 @@ export const defaultConfigurations = {
 // Helper functions
 export const getConfigurationByPaper = (paperType) => {
   return defaultConfigurations[paperType] || defaultConfigurations.paper1;
-};
-
-export const getThemeTopics = (themeName) => {
-  const theme = kssmThemes.find((t) =>
-    t.theme.toLowerCase().includes(themeName.toLowerCase())
-  );
-  return theme ? theme.topics : [];
 };
 
 export const validateSPMConfiguration = (config) => {

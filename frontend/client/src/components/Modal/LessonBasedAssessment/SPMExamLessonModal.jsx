@@ -158,7 +158,7 @@ const SPMExamLessonModal = ({
       } else if (isRegenerateMode) {
         submitData = {
           ...formData,
-          activityType: "smp-exam",
+          activityType: "spm-exam",
           isRegeneration: true,
           existingAssessmentId: existingAssessment?._id,
         };
@@ -167,7 +167,7 @@ const SPMExamLessonModal = ({
         submitData = {
           ...formData,
           selectedLessonPlan,
-          activityType: "spm-exam",
+          activityType: "smp-exam",
         };
         await onSubmit(submitData);
         message.success("SPM exam settings submitted successfully!");

@@ -36,7 +36,7 @@ const AssessmentSchema = new mongoose.Schema(
     activityType: {
       type: String,
       required: true,
-      enum: ["assessment", "essay", "textbook", "activity", "exam"],
+      enum: ["assessment", "essay", "textbook", "activity", "spm-exam"],
     },
     assessmentType: {
       type: String,
@@ -298,7 +298,7 @@ AssessmentSchema.pre("save", function (next) {
   if (this.activityType === "assessment") {
     this.hasActivity = !!(content.assessmentContent || content.assessmentHTML);
     this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
-  } else if (this.activityType === "exam") {
+  } else if (this.activityType === "spm-exam") {
     // ✅ Add exam handling
     this.hasActivity = !!(content.examContent || content.examHTML);
     this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);

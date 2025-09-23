@@ -1,4 +1,4 @@
-// UPDATED: src/pages/assessment/AssessmentPage.jsx - Added standalone assessment functionality
+//src/pages/assessment/AssessmentPage.jsx 
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -27,6 +27,7 @@ import {
   FileExclamationOutlined,
   ThunderboltOutlined,
   RedoOutlined,
+  CalculatorOutlined, // NEW: Added for SPM exam icon
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +42,7 @@ import ActivityInClassLessonModal from "../../components/Modal/LessonBasedAssess
 import EssayLessonModal from "../../components/Modal/LessonBasedAssessment/EssayLessonModal";
 import AssessmentLessonModal from "../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
 import TextbookLessonModal from "../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
+import SPMExamLessonModal from "../../components/Modal/LessonBasedAssessment/SPMExamLessonModal"; // NEW
 
 // Import modals for standalone assessments
 import StandAloneAssessmentModal from "../../components/Modal/StandaloneAssessment/StandAloneAssessmentModal";
@@ -48,13 +50,14 @@ import ActivityInClassStandaloneModal from "../../components/Modal/StandaloneAss
 import AssessmentStandaloneModal from "../../components/Modal/StandaloneAssessment/AssessmentStandaloneModal";
 import EssayStandaloneModal from "../../components/Modal/StandaloneAssessment/EssayStandaloneModal";
 import TextbookStandaloneModal from "../../components/Modal/StandaloneAssessment/TextbookStandaloneModal";
-import SPMExamLessonModal from "../../components/Modal/LessonBasedAssessment/SPMExamLessonModal";
-import SPMExamStandaloneModal from "../../components/Modal/StandaloneAssessment/SPMExamStandaloneModal";
+import SPMExamStandaloneModal from "../../components/Modal/StandaloneAssessment/SPMExamStandaloneModal"; // NEW
 
 import "./AssessmentPage.css";
 
 const { Search } = Input;
 const { Option } = Select;
+
+// UPDATED: Activity types with SPM exam option
 const activityTypes = [
   {
     key: "activityInClass",
@@ -95,6 +98,7 @@ const activityTypes = [
     color: "#eb2f96",
   },
 ];
+
 const AssessmentPage = () => {
   const navigate = useNavigate();
   const { userId } = useUser();
@@ -143,6 +147,31 @@ const AssessmentPage = () => {
       loadStandaloneAssessments();
     }
   }, [activeTab, filters]);
+
+  // UPDATED: Helper functions for activity type handling
+  const getActivityTypeDisplay = (activityType) => {
+    const displayMap = {
+      activityInClass: "Activity",
+      activity: "Activity",
+      assessment: "Assessment",
+      essay: "Essay",
+      textbook: "Textbook",
+      "spm-exam": "SPM Exam", // NEW
+    };
+    return displayMap[activityType] || activityType?.toUpperCase() || "Unknown";
+  };
+
+  const getActivityTypeColor = (activityType) => {
+    const colorMap = {
+      activityInClass: "blue",
+      activity: "blue",
+      assessment: "green",
+      essay: "orange",
+      textbook: "purple",
+      "spm-exam": "magenta", // NEW
+    };
+    return colorMap[activityType] || "default";
+  };
 
   const loadInitialData = async () => {
     if (!userId) return;
@@ -700,7 +729,12 @@ const AssessmentPage = () => {
                 </Tag>
               </>
             )}
-            <Tag color="purple">{record.activityType}</Tag>
+            <Tag
+              color={getActivityTypeColor(record.activityType)}
+              data-activity={record.activityType}
+            >
+              {getActivityTypeDisplay(record.activityType)}
+            </Tag>
             {record.parameters?.activityConfiguration && (
               <Tag color="cyan">Configured</Tag>
             )}
@@ -741,7 +775,8 @@ const AssessmentPage = () => {
           (a) =>
             a.hasActivity ||
             a.generatedContent?.activityHTML ||
-            a.generatedContent?.assessmentHTML
+            a.generatedContent?.assessmentHTML ||
+            a.generatedContent?.examHTML // NEW: SPM exam content
         );
         const hasTeacherContent = record.assessments?.some(
           (a) =>
@@ -794,7 +829,8 @@ const AssessmentPage = () => {
           (a) =>
             a.hasActivity ||
             a.generatedContent?.activityHTML ||
-            a.generatedContent?.assessmentHTML
+            a.generatedContent?.assessmentHTML ||
+            a.generatedContent?.examHTML // NEW: SPM exam content
         );
         const hasTeacherContent = record.assessments?.some(
           (a) =>
@@ -888,7 +924,12 @@ const AssessmentPage = () => {
           <div className="assessment-title">{record.title}</div>
           <div className="assessment-description">{record.description}</div>
           <div className="assessment-meta">
-            <Tag color="blue">{record.activityType?.toUpperCase()}</Tag>
+            <Tag
+              color={getActivityTypeColor(record.activityType)}
+              data-activity={record.activityType}
+            >
+              {getActivityTypeDisplay(record.activityType)}
+            </Tag>
             <Tag color="green">{record.grade}</Tag>
             <Tag color="purple">{record.subject}</Tag>
             <Tag color="orange">Standalone</Tag>
@@ -999,7 +1040,7 @@ const AssessmentPage = () => {
     </Option>
   ));
 
-  // NEW: Render the appropriate regeneration modal
+  // UPDATED: Render the appropriate regeneration modal with SPM exam support
   const renderRegenerateModal = () => {
     if (
       !regenerateModalOpen ||
@@ -1029,11 +1070,17 @@ const AssessmentPage = () => {
       case "textbook":
         return <TextbookLessonModal {...commonProps} />;
       case "activity":
+      case "activityInClass":
         return <ActivityInClassLessonModal {...commonProps} />;
+      // NEW: SPM exam case
+      case "spm-exam":
+        return <SPMExamLessonModal {...commonProps} />;
       default:
         return <ActivityInClassLessonModal {...commonProps} />;
     }
   };
+
+  // UPDATED: Render standalone activity modal with SPM exam support
   const renderStandaloneActivityModal = () => {
     console.log("🎭 Rendering standalone activity modal:", {
       isOpen: standaloneActivityModalOpen,
@@ -1056,6 +1103,7 @@ const AssessmentPage = () => {
 
     switch (standaloneActivityType) {
       case "activity":
+      case "activityInClass":
         return <ActivityInClassStandaloneModal {...commonProps} />;
       case "assessment":
         return <AssessmentStandaloneModal {...commonProps} />;
@@ -1064,7 +1112,6 @@ const AssessmentPage = () => {
       case "textbook":
         return <TextbookStandaloneModal {...commonProps} />;
       // NEW: SPM Exam case
-      case "smp-exam": // Note: keeping consistency with existing system
       case "spm-exam":
         return <SPMExamStandaloneModal {...commonProps} />;
       default:
@@ -1073,7 +1120,7 @@ const AssessmentPage = () => {
     }
   };
 
-  // Define tab items for the new Tabs API
+  // UPDATED: Define tab items with enhanced activity type filtering
   const tabItems = [
     {
       key: "lesson-based",
@@ -1103,6 +1150,30 @@ const AssessmentPage = () => {
                 onChange={(value) => handleFilterChange("classId", value)}
               >
                 {classOptions}
+              </Select>
+              {/* UPDATED: Activity type filter with SPM exam */}
+              <Select
+                placeholder="Filter by activity type"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.activityType}
+                onChange={(value) => handleFilterChange("activityType", value)}
+              >
+                <Option value="activity">Activity in Class</Option>
+                <Option value="assessment">Assessment</Option>
+                <Option value="essay">Essay</Option>
+                <Option value="textbook">Textbook</Option>
+                <Option value="spm-exam">SPM Exam</Option> {/* NEW */}
+              </Select>
+              <Select
+                placeholder="Filter by status"
+                style={{ width: 150 }}
+                allowClear
+                value={filters.status}
+                onChange={(value) => handleFilterChange("status", value)}
+              >
+                <Option value="Generated">Generated</Option>
+                <Option value="Not Generated">Not Generated</Option>
               </Select>
             </div>
           </div>
@@ -1157,6 +1228,7 @@ const AssessmentPage = () => {
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
               />
+              {/* UPDATED: Activity type filter with SPM exam */}
               <Select
                 placeholder="Filter by activity type"
                 style={{ width: 200 }}
@@ -1168,6 +1240,16 @@ const AssessmentPage = () => {
                 <Option value="assessment">Assessment</Option>
                 <Option value="essay">Essay</Option>
                 <Option value="textbook">Textbook</Option>
+                <Option value="spm-exam">SPM Exam</Option> {/* NEW */}
+              </Select>
+              <Select
+                placeholder="Filter by class"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.classId}
+                onChange={(value) => handleFilterChange("classId", value)}
+              >
+                {classOptions}
               </Select>
             </div>
           </div>
@@ -1222,7 +1304,7 @@ const AssessmentPage = () => {
             </h2>
             <p>
               Generate assessments from lesson plans or create standalone
-              assessments
+              assessments including SPM examinations
             </p>
           </div>
         </div>
@@ -1238,17 +1320,17 @@ const AssessmentPage = () => {
         />
       </Card>
 
-      {/* Regeneration Modal for Lesson-based assessments */}
+      {/* UPDATED: Regeneration Modal for Lesson-based assessments with SPM support */}
       {renderRegenerateModal()}
 
-      {/* Standalone Assessment Modals */}
+      {/* UPDATED: Standalone Assessment Modals with SPM support */}
       <StandAloneAssessmentModal
         isOpen={standaloneModalOpen}
         onClose={handleCloseStandaloneModals}
         onActivitySelect={handleStandaloneActivitySelect}
       />
 
-      {/* Standalone Activity Modal */}
+      {/* UPDATED: Standalone Activity Modal with SPM support */}
       {renderStandaloneActivityModal()}
     </div>
   );

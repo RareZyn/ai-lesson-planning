@@ -1,4 +1,4 @@
-// SPMExamStandaloneModal.jsx - Standalone SPM exam modal
+// SPMExamStandaloneModal.jsx
 import React, { useState } from "react";
 import {
   Card,
@@ -26,6 +26,7 @@ import {
   InfoCircleOutlined,
   CheckCircleOutlined,
   CalculatorOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import {
   paperTypes,
@@ -134,7 +135,9 @@ const SPMExamStandaloneModal = ({
         return;
       }
       if (formData.topics.length === 0) {
-        message.warning("Please select at least one topic category for Paper 1");
+        message.warning(
+          "Please select at least one topic category for Paper 1"
+        );
         return;
       }
     }
@@ -145,7 +148,9 @@ const SPMExamStandaloneModal = ({
         return;
       }
       if (formData.topicCategories.length === 0) {
-        message.warning("Please select at least one topic category for Paper 2");
+        message.warning(
+          "Please select at least one topic category for Paper 2"
+        );
         return;
       }
     }
@@ -165,7 +170,9 @@ const SPMExamStandaloneModal = ({
           formData.examDescription ||
           formData.learningObjectives ||
           `Standalone SPM ${
-            formData.paperType === "paper1" ? "Reading & Use of English" : "Writing"
+            formData.paperType === "paper1"
+              ? "Reading & Use of English"
+              : "Writing"
           } exam for ${formData.specificTopic}`,
       };
 
@@ -305,7 +312,7 @@ const SPMExamStandaloneModal = ({
                       maxLength={100}
                     />
                   </Col>
-                  
+
                   <Col span={24} style={{ marginBottom: 16 }}>
                     <label
                       style={{
@@ -327,7 +334,7 @@ const SPMExamStandaloneModal = ({
                       showCount
                     />
                   </Col>
-                  
+
                   <Col span={24}>
                     <label
                       style={{
@@ -372,7 +379,13 @@ const SPMExamStandaloneModal = ({
               >
                 <Row gutter={16}>
                   <Col xs={24} sm={8}>
-                    <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
                       Form Level *
                     </label>
                     <Select
@@ -388,14 +401,22 @@ const SPMExamStandaloneModal = ({
                       ))}
                     </Select>
                   </Col>
-                  
+
                   <Col xs={24} sm={8}>
-                    <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
                       Time Allocation
                     </label>
                     <Select
                       value={formData.timeAllocation}
-                      onChange={(value) => handleInputChange("timeAllocation", value)}
+                      onChange={(value) =>
+                        handleInputChange("timeAllocation", value)
+                      }
                       style={{ width: "100%" }}
                       size="large"
                     >
@@ -406,20 +427,31 @@ const SPMExamStandaloneModal = ({
                       ))}
                     </Select>
                   </Col>
-                  
+
                   <Col xs={24} sm={8}>
-                    <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontWeight: 500,
+                      }}
+                    >
                       Difficulty Level
                     </label>
                     <Select
                       value={formData.difficultyLevel}
-                      onChange={(value) => handleInputChange("difficultyLevel", value)}
+                      onChange={(value) =>
+                        handleInputChange("difficultyLevel", value)
+                      }
                       style={{ width: "100%" }}
                       size="large"
                     >
                       {difficultyLevels.map((level) => (
                         <Option key={level.value} value={level.value}>
-                          <Tag color={level.color} style={{ marginRight: "8px" }}>
+                          <Tag
+                            color={level.color}
+                            style={{ marginRight: "8px" }}
+                          >
                             {level.label}
                           </Tag>
                           {level.description}
@@ -450,7 +482,9 @@ const SPMExamStandaloneModal = ({
               >
                 <Radio.Group
                   value={formData.paperType}
-                  onChange={(e) => handleInputChange("paperType", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("paperType", e.target.value)
+                  }
                   style={{ width: "100%" }}
                 >
                   <Row gutter={[16, 16]}>
@@ -466,15 +500,37 @@ const SPMExamStandaloneModal = ({
                           }}
                         >
                           <div>
-                            <div style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px" }}>
+                            <div
+                              style={{
+                                fontSize: "16px",
+                                fontWeight: "600",
+                                marginBottom: "8px",
+                              }}
+                            >
                               {paper.label}
                             </div>
-                            <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                color: "#666",
+                                marginBottom: "8px",
+                              }}
+                            >
                               {paper.description}
                             </div>
                             <Space>
                               <Tag color="blue">{paper.duration}</Tag>
-                              <Tag color="green">{paper.questions}</Tag>
+                              {paper.totalQuestions && (
+                                <Tag color="green">
+                                  {paper.totalQuestions} questions
+                                </Tag>
+                              )}
+                              {paper.totalParts && (
+                                <Tag color="green">
+                                  {paper.totalParts} parts
+                                </Tag>
+                              )}
+                              <Tag color="orange">{paper.totalMarks} marks</Tag>
                             </Space>
                           </div>
                         </Radio.Button>
@@ -482,12 +538,564 @@ const SPMExamStandaloneModal = ({
                     ))}
                   </Row>
                 </Radio.Group>
+
+                {/* Paper Structure Preview */}
+                {getSelectedPaperDetails() && (
+                  <div
+                    style={{
+                      marginTop: 16,
+                      padding: 12,
+                      background: "#f6ffed",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text strong>Paper Structure:</Text>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      {getSelectedPaperDetails().parts.map((part, index) => (
+                        <Col xs={24} sm={12} md={8} key={index}>
+                          <div style={{ fontSize: "12px" }}>
+                            <Text strong>{part.name}:</Text> {part.description}
+                            {part.questions && ` (${part.questions} questions)`}
+                            {part.marks && ` (${part.marks} marks)`}
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                )}
               </Card>
-           </Col>
+            </Col>
+
+            {/* Paper 1 Configuration */}
+            {formData.paperType === "paper1" && (
+              <Col span={24}>
+                <Collapse defaultActiveKey={["sources", "difficulty"]}>
+                  <Panel
+                    header="Text Sources & Reading Level"
+                    key="sources"
+                    extra={<BookOutlined />}
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Text Sources *
+                        </label>
+                        <Checkbox.Group
+                          value={formData.textSources}
+                          onChange={(values) =>
+                            handleInputChange("textSources", values)
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          <Row>
+                            {textSources.map((source) => (
+                              <Col
+                                xs={24}
+                                sm={12}
+                                key={source.value}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Tooltip title={source.description}>
+                                  <Checkbox value={source.value}>
+                                    {source.label}
+                                  </Checkbox>
+                                </Tooltip>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Checkbox.Group>
+                      </Col>
+
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Reading Level *
+                        </label>
+                        <Select
+                          value={formData.readingLevel}
+                          onChange={(value) =>
+                            handleInputChange("readingLevel", value)
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        >
+                          {readingLevels.map((level) => (
+                            <Option key={level.value} value={level.value}>
+                              {level.label} - {level.description}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16} style={{ marginTop: 16 }}>
+                      <Col span={24}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Topic Categories
+                        </label>
+                        <Checkbox.Group
+                          value={formData.topics}
+                          onChange={(values) =>
+                            handleInputChange("topics", values)
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          <Row>
+                            {topicCategories.map((topic) => (
+                              <Col
+                                xs={24}
+                                sm={12}
+                                md={8}
+                                key={topic.value}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Tooltip title={topic.description}>
+                                  <Checkbox value={topic.value}>
+                                    {topic.label}
+                                  </Checkbox>
+                                </Tooltip>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Checkbox.Group>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16} style={{ marginTop: 16 }}>
+                      <Col xs={24} sm={8}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Multiple Choice Options
+                        </label>
+                        <InputNumber
+                          min={3}
+                          max={4}
+                          value={formData.questionTypes.multipleChoiceOptions}
+                          onChange={(value) =>
+                            handleNestedInputChange(
+                              "questionTypes",
+                              "multipleChoiceOptions",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        />
+                      </Col>
+
+                      <Col xs={24} sm={8}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Cloze Test Focus
+                        </label>
+                        <Select
+                          value={formData.questionTypes.clozeTestFocus}
+                          onChange={(value) =>
+                            handleNestedInputChange(
+                              "questionTypes",
+                              "clozeTestFocus",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        >
+                          <Option value="grammar">Grammar Focus</Option>
+                          <Option value="vocabulary">Vocabulary Focus</Option>
+                          <Option value="mixed">Mixed Skills</Option>
+                        </Select>
+                      </Col>
+
+                      <Col xs={24} sm={8}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Matching Complexity
+                        </label>
+                        <Select
+                          value={formData.questionTypes.matchingComplexity}
+                          onChange={(value) =>
+                            handleNestedInputChange(
+                              "questionTypes",
+                              "matchingComplexity",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        >
+                          <Option value="simple">Simple</Option>
+                          <Option value="moderate">Moderate</Option>
+                          <Option value="complex">Complex</Option>
+                        </Select>
+                      </Col>
+                    </Row>
+                  </Panel>
+                </Collapse>
+              </Col>
+            )}
+
+            {/* Paper 2 Configuration */}
+            {formData.paperType === "paper2" && (
+              <Col span={24}>
+                <Collapse defaultActiveKey={["writing", "topics"]}>
+                  <Panel
+                    header="Writing Configuration"
+                    key="writing"
+                    extra={<EditOutlined />}
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Communication Format *
+                        </label>
+                        <Select
+                          value={formData.communicationFormat}
+                          onChange={(value) =>
+                            handleInputChange("communicationFormat", value)
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        >
+                          {communicationFormats.map((format) => (
+                            <Option key={format.value} value={format.value}>
+                              {format.label} - {format.description}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Prompt Complexity
+                        </label>
+                        <Select
+                          value={formData.promptComplexity}
+                          onChange={(value) =>
+                            handleInputChange("promptComplexity", value)
+                          }
+                          style={{ width: "100%" }}
+                          size="large"
+                        >
+                          {promptComplexity.map((level) => (
+                            <Option key={level.value} value={level.value}>
+                              {level.label} - {level.description}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+                    </Row>
+                  </Panel>
+
+                  <Panel
+                    header="Essay Types & Topics"
+                    key="topics"
+                    extra={<BulbOutlined />}
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Essay Types *
+                        </label>
+                        <Checkbox.Group
+                          value={formData.essayTypes}
+                          onChange={(values) =>
+                            handleInputChange("essayTypes", values)
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          <Row>
+                            {essayTypes.map((type) => (
+                              <Col
+                                xs={24}
+                                sm={12}
+                                key={type.value}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Tooltip title={type.description}>
+                                  <Checkbox value={type.value}>
+                                    {type.label}
+                                  </Checkbox>
+                                </Tooltip>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Checkbox.Group>
+                      </Col>
+
+                      <Col xs={24} sm={12}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Topic Categories
+                        </label>
+                        <Checkbox.Group
+                          value={formData.topicCategories}
+                          onChange={(values) =>
+                            handleInputChange("topicCategories", values)
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          <Row>
+                            {topicCategories.map((topic) => (
+                              <Col
+                                xs={24}
+                                key={topic.value}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Tooltip title={topic.description}>
+                                  <Checkbox value={topic.value}>
+                                    {topic.label}
+                                  </Checkbox>
+                                </Tooltip>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Checkbox.Group>
+                      </Col>
+                    </Row>
+                  </Panel>
+                </Collapse>
+              </Col>
+            )}
+
+            {/* Additional Requirements */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title="Additional Requirements & Instructions (Optional)"
+              >
+                <TextArea
+                  rows={4}
+                  value={formData.additionalRequirement}
+                  onChange={(e) =>
+                    handleInputChange("additionalRequirement", e.target.value)
+                  }
+                  placeholder="Enter specific instructions, marking schemes, or special considerations for this standalone SPM exam..."
+                  maxLength={500}
+                  showCount
+                />
+              </Card>
+            </Col>
+
+            {/* Summary Card */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                    <span>SPM Exam Summary</span>
+                  </div>
+                }
+                style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
+              >
+                <Row gutter={[16, 8]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Paper Type:
+                    </Text>
+                    <br />
+                    <Tag color="blue">
+                      {getSelectedPaperDetails()?.label || "Not selected"}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Form Level:
+                    </Text>
+                    <br />
+                    <Tag color="green">{formData.form.toUpperCase()}</Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Duration:
+                    </Text>
+                    <br />
+                    <Tag color="orange">{formData.timeAllocation} minutes</Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Topic:
+                    </Text>
+                    <br />
+                    <Text>{formData.specificTopic || "Not specified"}</Text>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Grade:
+                    </Text>
+                    <br />
+                    <Tag color="purple">
+                      {assessmentData?.grade || "General"}
+                    </Tag>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong style={{ color: "#666" }}>
+                      Subject:
+                    </Text>
+                    <br />
+                    <Tag color="cyan">
+                      {assessmentData?.subject || "English"}
+                    </Tag>
+                  </Col>
+
+                  {formData.paperType === "paper1" && (
+                    <>
+                      <Col xs={24} sm={12} md={8}>
+                        <Text strong style={{ color: "#666" }}>
+                          Text Sources:
+                        </Text>
+                        <br />
+                        <Text>{formData.textSources.length} selected</Text>
+                      </Col>
+                      <Col xs={24} sm={12} md={8}>
+                        <Text strong style={{ color: "#666" }}>
+                          Reading Level:
+                        </Text>
+                        <br />
+                        <Tag color="gold">{formData.readingLevel}</Tag>
+                      </Col>
+                    </>
+                  )}
+
+                  {formData.paperType === "paper2" && (
+                    <>
+                      <Col xs={24} sm={12} md={8}>
+                        <Text strong style={{ color: "#666" }}>
+                          Communication Format:
+                        </Text>
+                        <br />
+                        <Tag color="magenta">
+                          {formData.communicationFormat}
+                        </Tag>
+                      </Col>
+                      <Col xs={24} sm={12} md={8}>
+                        <Text strong style={{ color: "#666" }}>
+                          Essay Types:
+                        </Text>
+                        <br />
+                        <Text>{formData.essayTypes.length} selected</Text>
+                      </Col>
+                    </>
+                  )}
+
+                  <Col span={24}>
+                    <Text strong style={{ color: "#666" }}>
+                      Class:
+                    </Text>
+                    <br />
+                    <Text>
+                      {assessmentData?.className
+                        ? `${assessmentData.className} - ${assessmentData.grade}`
+                        : "Standalone Assessment"}
+                    </Text>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
           </Row>
         </div>
-      </div>  
-    </div>   
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <div className="modal-footer-left">
+            <button
+              className="btn-reset"
+              onClick={handleReset}
+              disabled={loading}
+            >
+              Reset All
+            </button>
+          </div>
+          <div className="modal-footer-right">
+            <button className="btn-cancel" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button
+              className={`btn-submit ${
+                validationErrors.length > 0 || !formData.specificTopic.trim()
+                  ? "disabled"
+                  : ""
+              } ${loading ? "loading" : ""}`}
+              onClick={handleSubmit}
+              disabled={
+                validationErrors.length > 0 ||
+                !formData.specificTopic.trim() ||
+                loading
+              }
+            >
+              {loading ? (
+                <>
+                  <LoadingOutlined spin /> Creating...
+                </>
+              ) : (
+                "📝 Create SPM Exam"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
