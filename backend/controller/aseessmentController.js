@@ -98,7 +98,7 @@ const structureGeneratedContent = (
       });
       break;
 
-    case "exam":
+    case "spm-exam":
       // For exams: student content = examContent, teacher content = answerKeyContent
       structuredContent.examContent = generatedContent.examContent || null;
       structuredContent.answerKeyContent =
@@ -685,7 +685,7 @@ const createStandaloneAssessment = async (req, res) => {
         });
         break;
 
-      case "exam":
+      case "spm-exam":
         generatedContent = await generateExamContent({
           ...mockLessonPlanData, // or lessonPlanData for lesson-based
           geminiApiKey,
