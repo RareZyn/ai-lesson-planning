@@ -1,4 +1,4 @@
-// SPMExamLessonModal.jsx
+// SPMExamLessonModal.jsx - Updated with optional specificTopic
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -80,7 +80,7 @@ const SPMExamLessonModal = ({
     essayTypes: ["descriptive", "narrative"],
     topicCategories: ["people_culture"],
     promptComplexity: "moderate",
-    // Common
+    // Common - specificTopic is now optional
     specificTopic: "",
     learningObjectives: "",
     additionalRequirement: "",
@@ -131,16 +131,25 @@ const SPMExamLessonModal = ({
     }));
   };
 
+  // Helper function to generate assessment title with fallback
+  const generateAssessmentTitle = () => {
+    const lessonTitle = selectedLessonPlan?.title || "SPM Assessment";
+    const topicPart =
+      formData.specificTopic ||
+      (formData.paperType === "paper1"
+        ? "Reading & Use of English"
+        : "Writing");
+    const paperTypePart =
+      formData.paperType === "paper1" ? "Paper 1" : "Paper 2";
+
+    return `${lessonTitle} - SPM ${paperTypePart} (${topicPart})`;
+  };
+
   const handleSubmit = async () => {
-    // Validation
+    // Validation (specificTopic is now optional)
     const validation = validateSPMConfiguration(formData);
     if (!validation.isValid) {
       message.error("Please fix the validation errors before submitting");
-      return;
-    }
-
-    if (!formData.specificTopic.trim()) {
-      message.warning("Please specify a topic for the SPM exam");
       return;
     }
 
@@ -158,7 +167,7 @@ const SPMExamLessonModal = ({
       } else if (isRegenerateMode) {
         submitData = {
           ...formData,
-          activityType: "spm-exam",
+          activityType: "smp-exam",
           isRegeneration: true,
           existingAssessmentId: existingAssessment?._id,
         };
@@ -167,7 +176,7 @@ const SPMExamLessonModal = ({
         submitData = {
           ...formData,
           selectedLessonPlan,
-          activityType: "spm-exam",
+          activityType: "smp-exam",
         };
         await onSubmit(submitData);
         message.success("SPM exam settings submitted successfully!");
@@ -410,10 +419,10 @@ const SPMExamLessonModal = ({
                         fontWeight: 500,
                       }}
                     >
-                      Specific Topic *
+                      Specific Topic (Optional)
                     </label>
                     <Input
-                      placeholder="Enter the specific topic for this SPM exam"
+                      placeholder="Enter the specific topic for this SPM exam (e.g., 'People and Culture - Malaysian Traditions')"
                       value={formData.specificTopic}
                       onChange={(e) =>
                         handleInputChange("specificTopic", e.target.value)
@@ -421,6 +430,16 @@ const SPMExamLessonModal = ({
                       size="large"
                       maxLength={100}
                     />
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      If left empty, a general topic based on your paper type
+                      selection will be used
+                    </div>
                   </Col>
                 </Row>
               </Card>
@@ -971,7 +990,10 @@ const SPMExamLessonModal = ({
                       Topic:
                     </Text>
                     <br />
-                    <Text>{formData.specificTopic || "Not specified"}</Text>
+                    <Text>
+                      {formData.specificTopic ||
+                        "General Topic (Auto-generated)"}
+                    </Text>
                   </Col>
 
                   {formData.paperType === "paper1" && (
@@ -1045,6 +1067,16 @@ const SPMExamLessonModal = ({
                       </Text>
                     </Col>
                   )}
+
+                  <Col span={24}>
+                    <Text strong style={{ color: "#666" }}>
+                      Generated Title:
+                    </Text>
+                    <br />
+                    <Text style={{ fontStyle: "italic", color: "#1890ff" }}>
+                      {generateAssessmentTitle()}
+                    </Text>
+                  </Col>
                 </Row>
               </Card>
             </Col>
@@ -1068,16 +1100,10 @@ const SPMExamLessonModal = ({
             </button>
             <button
               className={`btn-submit ${
-                validationErrors.length > 0 || !formData.specificTopic.trim()
-                  ? "disabled"
-                  : ""
+                validationErrors.length > 0 ? "disabled" : ""
               } ${loading ? "loading" : ""}`}
               onClick={handleSubmit}
-              disabled={
-                validationErrors.length > 0 ||
-                !formData.specificTopic.trim() ||
-                loading
-              }
+              disabled={validationErrors.length > 0 || loading}
             >
               {loading ? (
                 <>

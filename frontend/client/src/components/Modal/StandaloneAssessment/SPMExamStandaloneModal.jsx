@@ -1,4 +1,4 @@
-// SPMExamStandaloneModal.jsx
+// SPMExamStandaloneModal.jsx 
 import React, { useState } from "react";
 import {
   Card,
@@ -73,7 +73,7 @@ const SPMExamStandaloneModal = ({
     essayTypes: ["descriptive", "narrative", "report"],
     topicCategories: ["people_culture", "health_environment"],
     promptComplexity: "moderate",
-    // Common fields
+    // Common fields - specificTopic is now optional
     specificTopic: "",
     learningObjectives: "",
     examDescription: "",
@@ -116,15 +116,10 @@ const SPMExamStandaloneModal = ({
   };
 
   const handleSubmit = async () => {
-    // Enhanced validation for standalone SPM exams
+    // Enhanced validation for standalone SPM exams (specificTopic is now optional)
     const validation = validateSPMConfiguration(formData);
     if (!validation.isValid) {
       message.error("Please fix the validation errors before submitting");
-      return;
-    }
-
-    if (!formData.specificTopic.trim()) {
-      message.warning("Please specify a topic for the SPM exam");
       return;
     }
 
@@ -161,19 +156,10 @@ const SPMExamStandaloneModal = ({
       const submitData = {
         ...formData,
         ...assessmentData, // Include grade, subject, class info
-        activityType: "spm-exam",
+        activityType: "smp-exam",
         isStandalone: true,
-        assessmentTitle: `${formData.specificTopic} - SPM ${
-          formData.paperType === "paper1" ? "Paper 1" : "Paper 2"
-        } (${assessmentData.grade})`,
-        assessmentDescription:
-          formData.examDescription ||
-          formData.learningObjectives ||
-          `Standalone SPM ${
-            formData.paperType === "paper1"
-              ? "Reading & Use of English"
-              : "Writing"
-          } exam for ${formData.specificTopic}`,
+        assessmentTitle: generateAssessmentTitle(),
+        assessmentDescription: generateAssessmentDescription(),
       };
 
       console.log("Submitting standalone SPM exam data:", submitData);
@@ -187,6 +173,41 @@ const SPMExamStandaloneModal = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to generate assessment title with fallback
+  const generateAssessmentTitle = () => {
+    const topicPart =
+      formData.specificTopic ||
+      (formData.paperType === "paper1"
+        ? "Reading & Use of English"
+        : "Writing");
+    const paperTypePart =
+      formData.paperType === "paper1" ? "Paper 1" : "Paper 2";
+
+    return `${topicPart} - SPM ${paperTypePart} (${
+      assessmentData?.grade || "Form 5"
+    })`;
+  };
+
+  // Helper function to generate assessment description with fallback
+  const generateAssessmentDescription = () => {
+    if (formData.examDescription) {
+      return formData.examDescription;
+    }
+
+    if (formData.learningObjectives) {
+      return formData.learningObjectives;
+    }
+
+    const paperTypePart =
+      formData.paperType === "paper1" ? "Reading & Use of English" : "Writing";
+
+    const topicPart = formData.specificTopic
+      ? ` focusing on ${formData.specificTopic}`
+      : "";
+
+    return `Standalone SPM ${paperTypePart} exam${topicPart}`;
   };
 
   const handleReset = () => {
@@ -300,10 +321,10 @@ const SPMExamStandaloneModal = ({
                         fontWeight: 500,
                       }}
                     >
-                      Specific Topic *
+                      Specific Topic (Optional)
                     </label>
                     <Input
-                      placeholder="Enter the specific topic for this SPM exam (e.g., 'People and Culture - Malaysian Traditions')"
+                      placeholder="Enter a specific topic for this SPM exam (e.g., 'People and Culture - Malaysian Traditions')"
                       value={formData.specificTopic}
                       onChange={(e) =>
                         handleInputChange("specificTopic", e.target.value)
@@ -311,6 +332,16 @@ const SPMExamStandaloneModal = ({
                       size="large"
                       maxLength={100}
                     />
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      If left empty, a general topic based on your paper type
+                      selection will be used
+                    </div>
                   </Col>
 
                   <Col span={24} style={{ marginBottom: 16 }}>
@@ -978,7 +1009,10 @@ const SPMExamStandaloneModal = ({
                       Topic:
                     </Text>
                     <br />
-                    <Text>{formData.specificTopic || "Not specified"}</Text>
+                    <Text>
+                      {formData.specificTopic ||
+                        "General Topic (Auto-generated)"}
+                    </Text>
                   </Col>
                   <Col xs={24} sm={12} md={8}>
                     <Text strong style={{ color: "#666" }}>
@@ -1050,6 +1084,16 @@ const SPMExamStandaloneModal = ({
                         : "Standalone Assessment"}
                     </Text>
                   </Col>
+
+                  <Col span={24}>
+                    <Text strong style={{ color: "#666" }}>
+                      Generated Title:
+                    </Text>
+                    <br />
+                    <Text style={{ fontStyle: "italic", color: "#1890ff" }}>
+                      {generateAssessmentTitle()}
+                    </Text>
+                  </Col>
                 </Row>
               </Card>
             </Col>
@@ -1073,16 +1117,10 @@ const SPMExamStandaloneModal = ({
             </button>
             <button
               className={`btn-submit ${
-                validationErrors.length > 0 || !formData.specificTopic.trim()
-                  ? "disabled"
-                  : ""
+                validationErrors.length > 0 ? "disabled" : ""
               } ${loading ? "loading" : ""}`}
               onClick={handleSubmit}
-              disabled={
-                validationErrors.length > 0 ||
-                !formData.specificTopic.trim() ||
-                loading
-              }
+              disabled={validationErrors.length > 0 || loading}
             >
               {loading ? (
                 <>
