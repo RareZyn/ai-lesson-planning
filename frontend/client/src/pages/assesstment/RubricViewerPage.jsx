@@ -50,31 +50,170 @@ const convertAnswerKeyContentToHTML = (answerKeyContent) => {
   if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
     html += `<div class="answers">`;
     answerKeyContent.answers.forEach((answer) => {
+      // Handle points properly - check for marks field as fallback
+      const points = answer.points || answer.marks || 1;
+
       html += `
-        <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-          <h3 style="color: #262626; margin-bottom: 10px;">Question ${
-            answer.questionNumber
-          } (${answer.points} ${answer.points === 1 ? "point" : "points"})</h3>
-          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${
-            answer.correctAnswer
-          }</p>
-          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${
-            answer.markingNotes
-          }</p>
-        </div>`;
+        <div class="answer-item" style="margin-bottom: 25px; padding: 20px; border: 2px solid #d9d9d9; border-radius: 12px; background: #fafafa;">
+          <h3 style="color: #262626; margin-bottom: 15px; border-bottom: 1px solid #e8e8e8; padding-bottom: 8px;">
+            Question ${answer.questionNumber} (${points} ${
+        points === 1 ? "point" : "points"
+      })
+          </h3>
+          
+          <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0; font-size: 16px;"><strong style="color: #52c41a;">Correct Answer:</strong> ${
+              answer.correctAnswer
+            }</p>
+          </div>`;
+
+      // Add explanation if available
+      if (answer.explanation) {
+        html += `
+          <div style="background: #e6f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1890ff;">
+            <p style="margin: 0;"><strong style="color: #1890ff;">Explanation:</strong> ${answer.explanation}</p>
+          </div>`;
+      }
+
+      // Add marking guidance if available
+      if (answer.markingGuidance && answer.markingGuidance !== "undefined") {
+        html += `
+          <div style="background: #fff7e6; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa8c16;">
+            <p style="margin: 0;"><strong style="color: #fa8c16;">Marking Guidance:</strong> ${answer.markingGuidance}</p>
+          </div>`;
+      }
+
+      // Add marking notes if available and not undefined
+      if (answer.markingNotes && answer.markingNotes !== "undefined") {
+        html += `
+          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0;"><strong style="color: #52c41a;">Marking Notes:</strong> ${answer.markingNotes}</p>
+          </div>`;
+      }
+
+      // Add acceptable alternatives if available
+      if (
+        answer.acceptableAlternatives &&
+        answer.acceptableAlternatives !== "None" &&
+        answer.acceptableAlternatives !== "undefined"
+      ) {
+        html += `
+          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
+            <p style="margin: 0;"><strong style="color: #722ed1;">Acceptable Alternatives:</strong> ${answer.acceptableAlternatives}</p>
+          </div>`;
+      }
+
+      // Add common errors if available
+      if (answer.commonErrors && answer.commonErrors !== "undefined") {
+        html += `
+          <div style="background: #fff2e8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa541c;">
+            <p style="margin: 0;"><strong style="color: #fa541c;">Common Student Errors:</strong> ${answer.commonErrors}</p>
+          </div>`;
+      }
+
+      // Add text reference if available
+      if (answer.textReference) {
+        html += `
+          <div style="background: #f9f0ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
+            <p style="margin: 0;"><strong style="color: #722ed1;">Text Reference:</strong> ${answer.textReference}</p>
+          </div>`;
+      }
+
+      // Add grammar point if available
+      if (answer.grammarPoint) {
+        html += `
+          <div style="background: #e6fffb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #13c2c2;">
+            <p style="margin: 0;"><strong style="color: #13c2c2;">Grammar Point:</strong> ${answer.grammarPoint}</p>
+          </div>`;
+      }
+
+      // Add reading skill if available
+      if (answer.readingSkill) {
+        html += `
+          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0;"><strong style="color: #52c41a;">Reading Skill:</strong> ${answer.readingSkill}</p>
+          </div>`;
+      }
+
+      // Add discourse skill if available
+      if (answer.discourseSkill) {
+        html += `
+          <div style="background: #fff1f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff4d4f;">
+            <p style="margin: 0;"><strong style="color: #ff4d4f;">Discourse Skill:</strong> ${answer.discourseSkill}</p>
+          </div>`;
+      }
+
+      // Add transfer skill if available
+      if (answer.transferSkill) {
+        html += `
+          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #597ef7;">
+            <p style="margin: 0;"><strong style="color: #597ef7;">Transfer Skill:</strong> ${answer.transferSkill}</p>
+          </div>`;
+      }
+
+      html += `</div>`; // Close answer-item div
     });
+    html += `</div>`; // Close answers div
+  }
+
+  // Add part-specific guidance if available
+  if (answerKeyContent.partSpecificGuidance) {
+    html += `
+      <div style="margin-top: 30px; padding: 20px; background: #f0f2f5; border-radius: 12px;">
+        <h3 style="color: #262626; margin-bottom: 20px;">Part-Specific Marking Guidance</h3>`;
+
+    Object.entries(answerKeyContent.partSpecificGuidance).forEach(
+      ([part, guidance]) => {
+        html += `
+        <div style="margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; border-left: 4px solid #1890ff;">
+          <h4 style="color: #1890ff; margin-bottom: 10px;">${part.toUpperCase()}</h4>
+          <p><strong>Focus:</strong> ${guidance.focus}</p>
+          <p><strong>Marking Principle:</strong> ${
+            guidance.markingPrinciple
+          }</p>
+          ${
+            guidance.commonIssues
+              ? `<p><strong>Common Issues:</strong> ${guidance.commonIssues}</p>`
+              : ""
+          }
+          ${
+            guidance.teachingPoint
+              ? `<p><strong>Teaching Point:</strong> ${guidance.teachingPoint}</p>`
+              : ""
+          }
+        </div>`;
+      }
+    );
+
     html += `</div>`;
   }
 
   // Add marking scheme if available
   if (answerKeyContent.markingScheme) {
-    html += `<div class="marking-scheme" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
-      <h3 style="color: #1890ff; margin-bottom: 15px;">Marking Scheme:</h3>`;
+    html += `<div class="marking-scheme" style="margin-top: 25px; padding: 20px; background: #e6f7ff; border-radius: 12px;">
+      <h3 style="color: #1890ff; margin-bottom: 15px;">Marking Scheme</h3>`;
 
     Object.entries(answerKeyContent.markingScheme).forEach(
       ([section, description]) => {
-        html += `<p><strong>${
+        html += `<p style="margin-bottom: 10px;"><strong>${
           section.charAt(0).toUpperCase() + section.slice(1)
+        }:</strong> ${description}</p>`;
+      }
+    );
+
+    html += `</div>`;
+  }
+
+  // Add general marking principles if available
+  if (answerKeyContent.generalMarkingPrinciples) {
+    html += `
+      <div style="margin-top: 25px; padding: 20px; background: #fff7e6; border-radius: 12px;">
+        <h3 style="color: #fa8c16; margin-bottom: 15px;">General Marking Principles</h3>`;
+
+    Object.entries(answerKeyContent.generalMarkingPrinciples).forEach(
+      ([principle, description]) => {
+        html += `<p style="margin-bottom: 10px;"><strong>${
+          principle.charAt(0).toUpperCase() + principle.slice(1)
         }:</strong> ${description}</p>`;
       }
     );
@@ -84,21 +223,23 @@ const convertAnswerKeyContentToHTML = (answerKeyContent) => {
 
   // Add grading scale if available
   if (answerKeyContent.gradingScale) {
-    html += `<div class="grading-scale" style="margin-top: 25px; padding: 15px; background: #fff7e6; border-radius: 8px;">
-      <h3 style="color: #fa8c16; margin-bottom: 15px;">Grading Scale:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
+    html += `<div class="grading-scale" style="margin-top: 25px; padding: 20px; background: #f6ffed; border-radius: 12px;">
+      <h3 style="color: #52c41a; margin-bottom: 15px;">Grading Scale</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">`;
 
     Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
-      html += `<li><strong>${level.toUpperCase()}:</strong> ${range}</li>`;
+      html += `
+        <div style="padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #d9d9d9;">
+          <strong style="color: #52c41a;">${level.toUpperCase()}:</strong> ${range}
+        </div>`;
     });
 
-    html += `</ul></div>`;
+    html += `</div></div>`;
   }
 
   html += `</div>`;
   return html;
 };
-
 const convertRubricContentToHTML = (rubricContent) => {
   if (!rubricContent) return null;
 
@@ -318,7 +459,7 @@ const RubricViewerPage = () => {
     switch (assessment.activityType) {
       case "assessment":
         return "Assessment Paper";
-      case "smp-exam": // CRITICAL: Handle SPM exam naming
+      case "spm-exam": 
         return "SPM Examination Paper";
       case "essay":
         return "Essay Activity";
