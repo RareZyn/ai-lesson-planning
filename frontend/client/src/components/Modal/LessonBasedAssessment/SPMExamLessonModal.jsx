@@ -65,7 +65,7 @@ const SPMExamLessonModal = ({
     paperType: "paper1",
     form: "form5",
     timeAllocation: "90",
-    difficultyLevel: "intermediate",
+    difficultyLevel: "Intermediate",
     // Paper 1 specific
     textSources: ["newspapers", "magazines"],
     readingLevel: "form5",
@@ -187,7 +187,7 @@ const SPMExamLessonModal = ({
       paperType: "paper1",
       form: "form5",
       timeAllocation: "90",
-      difficultyLevel: "intermediate",
+      difficultyLevel: "Intermediate",
       textSources: ["newspapers", "magazines"],
       readingLevel: "form5",
       topics: ["people_culture"],

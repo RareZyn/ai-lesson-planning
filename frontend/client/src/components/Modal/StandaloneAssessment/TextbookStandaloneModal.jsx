@@ -59,9 +59,9 @@ const TextbookStandaloneModal = ({
   ];
 
   const difficultyOptions = [
-    { value: "beginner", label: "Beginner", color: "#52c41a" },
-    { value: "intermediate", label: "Intermediate", color: "#fa8c16" },
-    { value: "advanced", label: "Advanced", color: "#f5222d" },
+    { value: "Beginner", label: "Beginner", color: "#52c41a" },
+    { value: "Intermediate", label: "Intermediate", color: "#fa8c16" },
+    { value: "Advanced", label: "Advanced", color: "#f5222d" },
   ];
 
   const exerciseTypes = [

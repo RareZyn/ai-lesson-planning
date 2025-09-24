@@ -58,7 +58,7 @@ const SPMExamStandaloneModal = ({
     paperType: "paper1",
     form: assessmentData?.grade?.includes("4") ? "form4" : "form5",
     timeAllocation: "90",
-    difficultyLevel: "intermediate",
+    difficultyLevel: "Intermediate",
     // Paper 1 specific
     textSources: ["newspapers", "magazines", "advertisements"],
     readingLevel: assessmentData?.grade?.includes("4") ? "form4" : "form5",
@@ -194,7 +194,7 @@ const SPMExamStandaloneModal = ({
       paperType: "paper1",
       form: assessmentData?.grade?.includes("4") ? "form4" : "form5",
       timeAllocation: "90",
-      difficultyLevel: "intermediate",
+      difficultyLevel: "Intermediate",
       textSources: ["newspapers", "magazines", "advertisements"],
       readingLevel: assessmentData?.grade?.includes("4") ? "form4" : "form5",
       topics: ["people_culture", "science_technology"],
