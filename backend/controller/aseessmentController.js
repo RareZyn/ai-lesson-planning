@@ -11,8 +11,6 @@ const ACTIVITY_TYPE_MAPPING = {
   assessment: "assessment",
   "spm-exam": "spm-exam",
 };
-
-// Function to validate and map activity type
 const validateAndMapActivityType = (activityType) => {
   if (!activityType) {
     return "activity"; // Default fallback
@@ -35,8 +33,8 @@ const structureGeneratedContent = (
   activityType,
   additionalData = {}
 ) => {
-  console.log("Structuring content for activity type:", activityType);
-  console.log("Raw generated content:", Object.keys(generatedContent));
+  console.log("🔧 Structuring content for activity type:", activityType);
+  console.log("🔧 Raw generated content:", Object.keys(generatedContent));
 
   // Initialize the content structure
   const structuredContent = {
@@ -49,7 +47,7 @@ const structureGeneratedContent = (
     rubricHTML: null,
     assessmentHTML: null,
     answerKeyHTML: null,
-    examHTML: null, // CRITICAL: This was missing
+    examHTML: null,
     hasStudentContent: false,
     hasTeacherContent: false,
     generatedAt: new Date(),
@@ -66,22 +64,22 @@ const structureGeneratedContent = (
 
       // Convert JSON to HTML for frontend
       if (structuredContent.assessmentContent) {
-        console.log("Converting assessmentContent to HTML...");
+        console.log("🔧 Converting assessmentContent to HTML...");
         structuredContent.assessmentHTML = convertAssessmentToHTML(
           structuredContent.assessmentContent
         );
         console.log(
-          "Assessment HTML generated:",
+          "✅ Assessment HTML generated:",
           !!structuredContent.assessmentHTML
         );
       }
       if (structuredContent.answerKeyContent) {
-        console.log("Converting answerKeyContent to HTML...");
+        console.log("🔧 Converting answerKeyContent to HTML...");
         structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
           structuredContent.answerKeyContent
         );
         console.log(
-          "Answer Key HTML generated:",
+          "✅ Answer Key HTML generated:",
           !!structuredContent.answerKeyHTML
         );
       }
@@ -89,25 +87,22 @@ const structureGeneratedContent = (
       structuredContent.hasStudentContent =
         !!generatedContent.assessmentContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
-
-      console.log("Assessment content structured:", {
-        hasAssessmentContent: !!structuredContent.assessmentContent,
-        hasAnswerKeyContent: !!structuredContent.answerKeyContent,
-        hasAssessmentHTML: !!structuredContent.assessmentHTML,
-        hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
-      });
       break;
 
     case "spm-exam":
+      console.log("🎯 Processing SPM exam content...");
+
       structuredContent.examContent = generatedContent.examContent || null;
       structuredContent.answerKeyContent =
         generatedContent.answerKeyContent || null;
+
+      // CRITICAL: Also populate assessmentContent for frontend compatibility
       structuredContent.assessmentContent =
         generatedContent.examContent || null;
 
       // Convert JSON to HTML for frontend
       if (structuredContent.examContent) {
-        console.log("Converting examContent to HTML...");
+        console.log("🔧 Converting examContent to HTML...");
         const examHTML = convertExamToHTML(
           structuredContent.examContent,
           additionalData.paperType || "paper1"
@@ -117,20 +112,20 @@ const structureGeneratedContent = (
         structuredContent.examHTML = examHTML;
         structuredContent.assessmentHTML = examHTML; // Frontend compatibility
 
-        console.log("Exam HTML generated:", !!structuredContent.examHTML);
+        console.log("✅ Exam HTML generated:", !!structuredContent.examHTML);
         console.log(
-          "Assessment HTML generated:",
+          "✅ Assessment HTML (copy) generated:",
           !!structuredContent.assessmentHTML
         );
       }
 
       if (structuredContent.answerKeyContent) {
-        console.log("Converting exam answerKeyContent to HTML...");
+        console.log("🔧 Converting exam answerKeyContent to HTML...");
         structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
           structuredContent.answerKeyContent
         );
         console.log(
-          "Exam Answer Key HTML generated:",
+          "✅ Exam Answer Key HTML generated:",
           !!structuredContent.answerKeyHTML
         );
       }
@@ -139,12 +134,12 @@ const structureGeneratedContent = (
       structuredContent.hasStudentContent = !!generatedContent.examContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
 
-      console.log("Exam content structured:", {
+      console.log("📊 Exam content structured:", {
         hasExamContent: !!structuredContent.examContent,
-        hasAssessmentContent: !!structuredContent.assessmentContent, // Should also be true
+        hasAssessmentContent: !!structuredContent.assessmentContent,
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
         hasExamHTML: !!structuredContent.examHTML,
-        hasAssessmentHTML: !!structuredContent.assessmentHTML, // Should also be true
+        hasAssessmentHTML: !!structuredContent.assessmentHTML,
         hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
       break;
@@ -160,41 +155,40 @@ const structureGeneratedContent = (
 
       // Convert JSON to HTML for frontend
       if (structuredContent.activityContent) {
-        console.log("Converting activityContent to HTML...");
+        console.log("🔧 Converting activityContent to HTML...");
         const htmlResult = convertActivityToHTML(
           structuredContent.activityContent,
           activityType
         );
         structuredContent.activityHTML = htmlResult;
         console.log(
-          "Activity HTML generated:",
+          "✅ Activity HTML generated:",
           !!structuredContent.activityHTML
         );
       }
 
       if (structuredContent.rubricContent) {
-        console.log("Converting rubricContent to HTML...");
+        console.log("🔧 Converting rubricContent to HTML...");
         const rubricHtmlResult = convertRubricToHTML(
           structuredContent.rubricContent
         );
         structuredContent.rubricHTML = rubricHtmlResult;
-        console.log("Rubric HTML generated:", !!structuredContent.rubricHTML);
+        console.log(
+          "✅ Rubric HTML generated:",
+          !!structuredContent.rubricHTML
+        );
       }
 
       structuredContent.hasStudentContent = !!generatedContent.activityContent;
       structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
-
-      console.log("Activity content structured:", {
-        hasActivityContent: !!structuredContent.activityContent,
-        hasRubricContent: !!structuredContent.rubricContent,
-        hasActivityHTML: !!structuredContent.activityHTML,
-        hasRubricHTML: !!structuredContent.rubricHTML,
-      });
       break;
   }
 
-  console.log("Final structured content keys:", Object.keys(structuredContent));
-  console.log("Final HTML content status:", {
+  console.log(
+    "📦 Final structured content keys:",
+    Object.keys(structuredContent)
+  );
+  console.log("📊 Final HTML content status:", {
     activityHTML: !!structuredContent.activityHTML,
     rubricHTML: !!structuredContent.rubricHTML,
     assessmentHTML: !!structuredContent.assessmentHTML,
@@ -205,7 +199,6 @@ const structureGeneratedContent = (
   return structuredContent;
 };
 
-// [All existing HTML conversion functions remain the same - keeping them for brevity]
 const convertActivityToHTML = (activityContent, activityType) => {
   if (!activityContent) return null;
 
@@ -567,7 +560,6 @@ const convertAnswerKeyToHTML = (answerKeyContent) => {
   return html;
 };
 
-// NEW: Main standalone assessment creation endpoint
 const createStandaloneAssessment = async (req, res) => {
   try {
     console.log("📝 Creating standalone assessment:", req.body);
@@ -868,7 +860,6 @@ const createStandaloneAssessment = async (req, res) => {
   }
 };
 
-// ENHANCED: Modified existing generateFromLessonPlan to handle both lesson-based and standalone
 const generateFromLessonPlan = async (req, res) => {
   try {
     // Check if this is a standalone assessment creation request
@@ -894,12 +885,18 @@ const generateFromLessonPlan = async (req, res) => {
       ...activityData
     } = req.body;
 
-    console.log("📚 Processing lesson-based assessment:", req.body);
+    console.log("📚 Processing lesson-based assessment:", {
+      rawActivityType,
+      paperType: req.body.paperType,
+      lesson,
+      subject,
+      grade,
+    });
 
     // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
     console.log(
-      `Activity type validation: "${rawActivityType}" -> "${activityType}"`
+      `🎯 Activity type validation: "${rawActivityType}" -> "${activityType}"`
     );
 
     // Validate required fields for lesson-based assessments
@@ -931,6 +928,11 @@ const generateFromLessonPlan = async (req, res) => {
           "No Gemini API key found. Please add your API key in your profile settings.",
       });
     }
+
+    console.log(
+      "🔑 Gemini API key found, starting generation for:",
+      activityType
+    );
 
     let generatedContent;
 
@@ -993,9 +995,63 @@ const generateFromLessonPlan = async (req, res) => {
         });
         break;
 
+      case "spm-exam":
+        console.log("🎯 Generating SPM exam content...");
+
+        // Extract SPM-specific data from request body
+        const spmExamData = {
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          grade,
+          geminiApiKey,
+          paperType: req.body.paperType || activityData.paperType || "paper1",
+          form: req.body.form || activityData.form || grade,
+          timeAllocation:
+            req.body.timeAllocation || activityData.timeAllocation || "90",
+          difficultyLevel:
+            req.body.difficultyLevel ||
+            activityData.difficultyLevel ||
+            "intermediate",
+          textSources: req.body.textSources ||
+            activityData.textSources || ["newspapers", "magazines"],
+          readingLevel:
+            req.body.readingLevel || activityData.readingLevel || grade,
+          topics: req.body.topics || activityData.topics || ["general"],
+          communicationFormat:
+            req.body.communicationFormat ||
+            activityData.communicationFormat ||
+            "email",
+          essayTypes: req.body.essayTypes ||
+            activityData.essayTypes || ["descriptive", "narrative"],
+          topicCategories: req.body.topicCategories ||
+            activityData.topicCategories || ["general"],
+          promptComplexity:
+            req.body.promptComplexity ||
+            activityData.promptComplexity ||
+            "moderate",
+          questionTypes:
+            req.body.questionTypes || activityData.questionTypes || {},
+        };
+
+        console.log("📋 SPM exam generation data:", {
+          paperType: spmExamData.paperType,
+          form: spmExamData.form,
+          timeAllocation: spmExamData.timeAllocation,
+          textSources: spmExamData.textSources?.length || 0,
+          topics: spmExamData.topics?.length || 0,
+        });
+
+        generatedContent = await generateExamContent(spmExamData);
+        break;
+
       default:
         console.warn(
-          `Unhandled activity type: ${activityType}, falling back to activity`
+          `⚠️ Unhandled activity type: ${activityType}, falling back to activity`
         );
         generatedContent = await generateActivityContent({
           contentStandard,
@@ -1012,7 +1068,11 @@ const generateFromLessonPlan = async (req, res) => {
         break;
     }
 
-    console.log("Generated content from AI:", Object.keys(generatedContent));
+    console.log("✨ Generated content from AI:", Object.keys(generatedContent));
+
+    if (!generatedContent || Object.keys(generatedContent).length === 0) {
+      throw new Error("No content was generated from AI");
+    }
 
     // Ensure we have the user properly
     if (!req.user) {
@@ -1023,16 +1083,17 @@ const generateFromLessonPlan = async (req, res) => {
     const structuredContent = structureGeneratedContent(
       generatedContent,
       activityType,
-      { paperType: activityData.paperType }
+      { paperType: req.body.paperType || activityData.paperType }
     );
 
-    console.log("Creating lesson-based assessment with data:", {
+    console.log("📦 Creating lesson-based assessment with data:", {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       activityType,
       lessonPlanId,
       classId,
       createdBy: req.user.id,
-      structuredContent,
+      hasStudentContent: structuredContent.hasStudentContent,
+      hasTeacherContent: structuredContent.hasTeacherContent,
     });
 
     // Save assessment to database with proper content structure
@@ -1049,8 +1110,11 @@ const generateFromLessonPlan = async (req, res) => {
         .toUpperCase()}${activityType.slice(1)} Assessment`,
       questionCount: activityData.numberOfQuestions || 20,
       duration:
-        activityData.timeAllocation || activityData.duration || "60 minutes",
-      difficulty: "Intermediate",
+        req.body.timeAllocation ||
+        activityData.timeAllocation ||
+        activityData.duration ||
+        "60 minutes",
+      difficulty: req.body.difficultyLevel || "Intermediate",
       skills: [],
       generatedContent: structuredContent,
       lessonPlanSnapshot: {
@@ -1064,9 +1128,32 @@ const generateFromLessonPlan = async (req, res) => {
       status: "Generated",
       hasActivity: structuredContent.hasStudentContent,
       hasRubric: structuredContent.hasTeacherContent,
+
+      // Add SPM exam configuration if applicable
+      ...(activityType === "spm-exam" && {
+        examConfiguration: {
+          paperType: req.body.paperType || "paper1",
+          textSources: req.body.textSources || [],
+          readingLevel: req.body.readingLevel || grade,
+          topics: req.body.topics || [],
+          communicationFormat: req.body.communicationFormat || "email",
+          essayTypes: req.body.essayTypes || [],
+          topicCategories: req.body.topicCategories || [],
+          promptComplexity: req.body.promptComplexity || "moderate",
+          questionTypes: req.body.questionTypes || {},
+        },
+      }),
     };
 
-    console.log("Assessment data to save:", assessmentData);
+    console.log("💾 Assessment data to save:", {
+      title: assessmentData.title,
+      activityType: assessmentData.activityType,
+      hasActivity: assessmentData.hasActivity,
+      hasRubric: assessmentData.hasRubric,
+      examConfiguration: assessmentData.examConfiguration
+        ? "Present"
+        : "Not present",
+    });
 
     const assessment = await Assessment.create(assessmentData);
 
@@ -1082,10 +1169,18 @@ const generateFromLessonPlan = async (req, res) => {
           },
         },
       });
-      console.log(`Updated lesson plan ${lessonPlanId} status to generated`);
+      console.log(`✅ Updated lesson plan ${lessonPlanId} status to generated`);
     } catch (lessonPlanError) {
-      console.error("Error updating lesson plan status:", lessonPlanError);
+      console.error("❌ Error updating lesson plan status:", lessonPlanError);
     }
+
+    console.log("🎉 Assessment generated successfully:", {
+      id: assessment._id,
+      title: assessment.title,
+      activityType: assessment.activityType,
+      hasActivity: assessment.hasActivity,
+      hasRubric: assessment.hasRubric,
+    });
 
     // Return the complete response with all content
     res.status(201).json({
@@ -1095,7 +1190,7 @@ const generateFromLessonPlan = async (req, res) => {
       generatedContent: assessment.generatedContent,
     });
   } catch (error) {
-    console.error("Error in generateFromLessonPlan:", error);
+    console.error("❌ Error in generateFromLessonPlan:", error);
 
     // Check if it's a Gemini API related error
     if (
@@ -1126,8 +1221,6 @@ const generateFromLessonPlan = async (req, res) => {
     });
   }
 };
-
-// NEW: Get standalone assessments only
 const getStandaloneAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1248,7 +1341,7 @@ const getStandaloneAssessments = async (req, res) => {
   }
 };
 
-// NEW: Update standalone assessment
+//Update standalone assessment
 const updateStandaloneAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1322,7 +1415,7 @@ const updateStandaloneAssessment = async (req, res) => {
   }
 };
 
-// NEW: Delete standalone assessment
+//Delete standalone assessment
 const deleteStandaloneAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1519,7 +1612,6 @@ const getUserAssessmentsFiltered = async (req, res) => {
   }
 };
 
-// [Keep all existing helper functions for generation - they remain the same]
 const generateActivityContent = async (data) => {
   const genAI = new GoogleGenerativeAI(data.geminiApiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -1719,8 +1811,6 @@ const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   };
 };
 
-// [Keep all existing prompt building functions - they remain the same]
-// [Keep all existing prompt building functions - they remain the same]
 const buildActivityPrompt = (data) => {
   return `
 # Identity
@@ -2863,7 +2953,12 @@ const regenerateAssessment = async (req, res) => {
 };
 
 const generateExamContent = async (data) => {
-  console.log("Generating SPM exam content with data:", data);
+  console.log("🎯 Generating SPM exam content with data:", {
+    paperType: data.paperType,
+    lesson: data.lesson,
+    subject: data.subject,
+    grade: data.grade,
+  });
 
   const genAI = new GoogleGenerativeAI(data.geminiApiKey);
   const model = genAI.getGenerativeModel({
@@ -2883,12 +2978,18 @@ const generateExamContent = async (data) => {
       throw new Error("Invalid paper type. Must be 'paper1' or 'paper2'");
     }
 
+    console.log("🚀 Sending request to Gemini AI for", data.paperType);
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
-    console.log("Raw AI output length:", text.length);
-    console.log("Raw AI output preview:", text.substring(0, 500) + "...");
+    console.log("📥 Raw AI output length:", text.length);
+    console.log("📥 Raw AI output preview:", text.substring(0, 500) + "...");
+
+    if (!text || text.trim().length === 0) {
+      throw new Error("Empty response from AI");
+    }
 
     let generatedContent;
     try {
@@ -2898,13 +2999,21 @@ const generateExamContent = async (data) => {
         .trim();
       generatedContent = JSON.parse(cleanedText);
     } catch (parseError) {
-      console.error("Failed to parse Gemini response as JSON. Raw text:", text);
-      throw new Error("The AI response was not in a valid JSON format.");
+      console.error(
+        "❌ Failed to parse Gemini response as JSON. Raw text:",
+        text.substring(0, 1000) + "..."
+      );
+      throw new Error(
+        `The AI response was not in a valid JSON format: ${parseError.message}`
+      );
     }
 
     // Validate required fields for exam
     if (!generatedContent.examContent || !generatedContent.answerKeyContent) {
-      console.error("Missing required exam fields:", generatedContent);
+      console.error(
+        "❌ Missing required exam fields:",
+        Object.keys(generatedContent)
+      );
       throw new Error("Missing required exam content fields in AI response");
     }
 
@@ -2913,16 +3022,19 @@ const generateExamContent = async (data) => {
       answerKeyContent: generatedContent.answerKeyContent,
     };
 
-    console.log(`Generated exam content analysis:`, {
+    console.log(`✅ Generated exam content analysis:`, {
       examContent: result_content.examContent ? "Generated" : "Missing",
       answerKeyContent: result_content.answerKeyContent
         ? "Generated"
         : "Missing",
+      examContentKeys: result_content.examContent
+        ? Object.keys(result_content.examContent)
+        : [],
     });
 
     return result_content;
   } catch (error) {
-    console.error("Error in generateExamContent:", error);
+    console.error("❌ Error in generateExamContent:", error);
     throw error;
   }
 };
@@ -2933,53 +3045,64 @@ const buildPaper1Prompt = (data) => {
 
 Create a complete SPM English Paper 1 examination based on the Malaysian KSSM curriculum format with exactly 40 questions across 5 parts.
 
-## Exam Configuration:
+## Lesson Context:
+- Subject: ${data.subject || "English"}
+- Topic: ${data.lesson || "English Lesson"}  
+- Grade: ${data.grade || "Form 5"}
+- Theme: ${data.theme || "General"}
+- Learning Focus: ${
+    data.learningOutline?.during || "Grammar and vocabulary practice"
+  }
+
+## Paper Configuration:
 - Paper Type: Paper 1 (Reading & Use of English)
-- Duration: 1 hour 30 minutes
+- Duration: ${data.timeAllocation || "90"} minutes
 - Total Questions: 40 questions
 - Total Marks: 40 marks
-- Grade Level: ${data.grade || "Form 4/5"}
-- Reading Level: ${data.readingLevel || "Form 4/5 level"}
-- Topics/Themes: ${data.topics?.join(", ") || "General topics"}
-- Text Sources: ${data.textSources?.join(", ") || "Mixed sources"}
+- Reading Level: ${data.readingLevel || "Form 5 level"}
+- Text Sources: ${data.textSources?.join(", ") || "Mixed authentic sources"}
+- Topics: ${
+    data.topics?.join(", ") || "Health, environment, people and culture"
+  }
 
-## Paper Structure Requirements:
+## Paper Structure (MANDATORY):
 
 **Part 1: Multiple Choice (8 questions, 8 marks)**
-- 8 short texts (advertisements, notices, emails, etc.)
+- 8 short texts (notices, emails, signs, advertisements)
 - 3 answer choices (A, B, C) for each question
 - Focus on understanding main ideas and specific information
 
 **Part 2: Multiple Choice Cloze (10 questions, 10 marks)**  
-- 1 passage with 10 gaps
+- 1 passage with 10 gaps numbered (9) to (18)
 - 4 answer choices (A, B, C, D) for each gap
-- Focus: ${data.clozeTestFocus || "grammar and vocabulary"}
-- Test grammar structures, vocabulary, and discourse markers
+- Focus: ${
+    data.questionTypes?.clozeTestFocus || "grammar, vocabulary, and discourse"
+  }
 
 **Part 3: Multiple Choice Reading (8 questions, 8 marks)**
 - 1 longer passage (300-400 words)
-- 3 answer choices (A, B, C) for each question
+- 3 answer choices (A, B, C) for each question (19-26)
 - Test inference, main ideas, supporting details, author's purpose
 
 **Part 4: Gapped Text (6 questions, 6 marks)**
-- 1 passage with 6 removed sentences
-- 8 sentence options (A-H) to choose from
+- 1 passage with 6 removed sentences numbered (27) to (32)
+- 8 sentence options (A-H) to choose from (2 extras)
 - Test understanding of text organization and coherence
 
 **Part 5: Matching & Information Transfer (8 questions, 8 marks)**
-- 1 informational text with multiple sections
-- 4 matching questions (match statements to paragraphs)
-- 4 information transfer questions (complete sentences with words from text)
+- 1 informational text with multiple sections/paragraphs
+- Questions 33-36: Match statements to paragraphs
+- Questions 37-40: Complete sentences with words from text
 
-## Output Format:
+## Output Requirements:
 
-Generate a JSON object with this exact structure:
+You MUST return a JSON object with this EXACT structure:
 
 {
   "examContent": {
     "title": "SPM English Paper 1 (1119/1)",
     "subtitle": "Reading and Use of English",
-    "duration": "1 hour 30 minutes",
+    "duration": "${data.timeAllocation || "90"} minutes",
     "totalQuestions": 40,
     "totalMarks": 40,
     "instructions": [
@@ -2998,9 +3121,15 @@ Generate a JSON object with this exact structure:
         "questions": [
           {
             "questionNumber": 1,
-            "text": "Short text here (advertisement, notice, etc.)",
-            "question": "What is the main purpose of this text?",
-            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
+            "text": "You see this notice on a classroom door:\\n\\n'EXAM IN PROGRESS\\nPLEASE DO NOT DISTURB\\nAll mobile phones must be switched off'\\n\\nWhat does this notice tell you?",
+            "options": ["A) The exam has been cancelled", "B) Students should turn off their phones", "C) The classroom is closed for cleaning"],
+            "marks": 1
+          },
+          {
+            "questionNumber": 2,
+            "text": "Email: Hi Sarah, Can you pick me up at 3pm today? My car broke down this morning. Thanks! Mike",
+            "question": "Why does Mike need Sarah to pick him up?",
+            "options": ["A) He doesn't have a driving licence", "B) His car is not working", "C) He forgot where he parked"],
             "marks": 1
           }
         ]
@@ -3011,11 +3140,16 @@ Generate a JSON object with this exact structure:
         "instructions": "Questions 9 to 18. Read the passage carefully and choose the best answer A, B, C or D to fill each blank.",
         "totalQuestions": 10,
         "marks": 10,
-        "passage": "Complete passage with numbered gaps (9) to (18)",
+        "passage": "Complete passage about health/environment topic with 10 numbered gaps (9) to (18) that test grammar and vocabulary related to the lesson topic",
         "questions": [
           {
             "questionNumber": 9,
-            "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+            "options": ["A) should", "B) must", "C) ought", "D) might"],
+            "marks": 1
+          },
+          {
+            "questionNumber": 10,
+            "options": ["A) to exercise", "B) exercising", "C) exercise", "D) exercised"],
             "marks": 1
           }
         ]
@@ -3026,12 +3160,12 @@ Generate a JSON object with this exact structure:
         "instructions": "Questions 19 to 26. Read the passage carefully and choose the best answer A, B or C.",
         "totalQuestions": 8, 
         "marks": 8,
-        "passage": "Longer reading passage (300-400 words)",
+        "passage": "A 350-word informative passage about health advice, environmental issues, or cultural topics that connects to the lesson theme",
         "questions": [
           {
             "questionNumber": 19,
-            "question": "According to the passage...",
-            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
+            "question": "According to the passage, the main reason people should exercise regularly is",
+            "options": ["A) to lose weight quickly", "B) to maintain good health", "C) to become professional athletes"],
             "marks": 1
           }
         ]
@@ -3042,12 +3176,21 @@ Generate a JSON object with this exact structure:
         "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap. There are two extra sentences you do not need to use.",
         "totalQuestions": 6,
         "marks": 6,
-        "passage": "Passage with 6 gaps marked (27) to (32)",
-        "sentenceOptions": ["A: Sentence option 1", "B: Sentence option 2", "C: Sentence option 3", "D: Sentence option 4", "E: Sentence option 5", "F: Sentence option 6", "G: Sentence option 7", "H: Sentence option 8"],
+        "passage": "Coherent passage with 6 gaps marked (27) to (32) about health, environment, or cultural topic",
+        "sentenceOptions": [
+          "A: However, this requires consistent effort and dedication.",
+          "B: Many people find this advice difficult to follow.",
+          "C: Research shows that small changes can make a big difference.",
+          "D: Therefore, it is important to start with simple steps.",
+          "E: Most experts agree on the benefits of regular exercise.",
+          "F: This approach has been proven effective in many studies.", 
+          "G: Unfortunately, not everyone has access to proper facilities.",
+          "H: As a result, more people are becoming health-conscious."
+        ],
         "questions": [
           {
             "questionNumber": 27,
-            "gapPosition": "After paragraph 1",
+            "gapPosition": "After the first paragraph discussing health benefits",
             "marks": 1
           }
         ]
@@ -3058,16 +3201,21 @@ Generate a JSON object with this exact structure:
         "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
         "totalQuestions": 8,
         "marks": 8,
-        "passage": "Informational text with clear sections/paragraphs",
+        "passage": "Multi-paragraph informational text with clear sections (A-F) about health tips, environmental issues, or cultural practices",
         "questions": [
           {
             "questionType": "matching",
             "questionNumbers": "33-36",
-            "instructions": "Which paragraph (A-F) describes the views expressed by the teenagers?",
+            "instructions": "Which paragraph (A-F) contains the following information?",
             "questions": [
               {
                 "questionNumber": 33,
-                "statement": "Statement to match to paragraph",
+                "statement": "The importance of getting enough sleep for health",
+                "marks": 1
+              },
+              {
+                "questionNumber": 34,
+                "statement": "How stress affects our daily performance",
                 "marks": 1
               }
             ]
@@ -3075,11 +3223,16 @@ Generate a JSON object with this exact structure:
           {
             "questionType": "information_transfer",
             "questionNumbers": "37-40", 
-            "instructions": "Complete the notes using information from the text. Choose no more than one word from the passage for each answer.",
+            "instructions": "Complete the sentences using information from the text. Choose no more than ONE word from the passage for each answer.",
             "questions": [
               {
                 "questionNumber": 37,
-                "sentence": "Complete this sentence: Many restaurants serve _______ food.",
+                "sentence": "Regular exercise can help reduce _______ levels in the body.",
+                "marks": 1
+              },
+              {
+                "questionNumber": 38,
+                "sentence": "People _______ eat more vegetables to improve their health.",
                 "marks": 1
               }
             ]
@@ -3096,7 +3249,13 @@ Generate a JSON object with this exact structure:
       {
         "questionNumber": 1,
         "correctAnswer": "B",
-        "explanation": "Brief explanation of why this is correct",
+        "explanation": "The notice clearly states that mobile phones must be switched off",
+        "marks": 1
+      },
+      {
+        "questionNumber": 2,
+        "correctAnswer": "B", 
+        "explanation": "Mike states 'My car broke down this morning'",
         "marks": 1
       }
     ],
@@ -3118,7 +3277,9 @@ Generate a JSON object with this exact structure:
   }
 }
 
-Remember: Generate exactly 40 questions following the SPM format precisely. Each part must have the correct number of questions and follow authentic SPM style and difficulty.
+CRITICAL: Generate ALL 40 questions following authentic SPM format. Include complete passages, questions, and answer options. Base content on the lesson topic "${
+    data.lesson
+  }" while maintaining SPM standards.
 `;
 };
 
@@ -3128,61 +3289,63 @@ const buildPaper2Prompt = (data) => {
 
 Create a complete SPM English Paper 2 examination based on the Malaysian KSSM curriculum format.
 
-## Exam Configuration:
+## Lesson Context:
+- Subject: ${data.subject || "English"}
+- Topic: ${data.lesson || "English Lesson"}
+- Grade: ${data.grade || "Form 5"}
+- Theme: ${data.theme || "General"}
+- Learning Focus: ${
+    data.learningOutline?.during || "Writing skills development"
+  }
+
+## Paper Configuration:
 - Paper Type: Paper 2 (Writing)
-- Duration: 1 hour 30 minutes
+- Duration: ${data.timeAllocation || "90"} minutes
 - Total Parts: 3 parts
 - Total Marks: 60 marks
-- Grade Level: ${data.grade || "Form 4/5"}
-- Communication Format: ${data.communicationFormat || "Mixed formats"}
-- Essay Types: ${data.essayTypes?.join(", ") || "Mixed types"}
-- Topic Categories: ${data.topicCategories?.join(", ") || "General topics"}
-- Prompt Complexity: ${data.promptComplexity || "Intermediate"}
+- Communication Format: ${data.communicationFormat || "Email"}
+- Essay Types: ${data.essayTypes?.join(", ") || "Article, Report, Story"}
+- Topic Categories: ${
+    data.topicCategories?.join(", ") || "Health, Environment, Culture"
+  }
+- Complexity: ${data.promptComplexity || "Intermediate"}
 
-## Paper Structure Requirements:
+## Paper Structure (MANDATORY):
 
 **Part 1: Short Communicative Message (20 marks)**
-- Format: ${data.communicationFormat || "Email/Letter/Note"}
+- Format: ${data.communicationFormat || "Email"}
 - Word Count: About 80 words
-- Task: Respond to a given message/situation
+- Task: Respond to a given situation
 - Focus: Clear communication, appropriate format, accurate information
 
 **Part 2: Guided Writing (20 marks)**
 - Format: Essay with guided points
 - Word Count: 125-150 words  
-- Task: Write based on given notes/points
+- Task: Write based on given notes/points related to "${data.lesson}"
 - Focus: Content development, organization, language accuracy
 
 **Part 3: Extended Writing (20 marks)**
-- Format: Choose 1 from 3 options (${
-    data.essayTypes?.join("/") || "Article/Report/Story"
-  })
+- Format: Choose 1 from 3 options
+- Options: ${data.essayTypes?.join(", ") || "Article, Report, Story"}
 - Word Count: 200-250 words
-- Task: Creative/informative writing with given prompts
 - Focus: Content, organization, language range, communicative achievement
 
-## Assessment Criteria:
-- Content: Relevance to task, completeness of response
-- Communicative Achievement: Clear communication, appropriate register
-- Organisation: Logical structure, coherent flow
-- Language: Grammar accuracy, vocabulary range, spelling
+## Output Requirements:
 
-## Output Format:
-
-Generate a JSON object with this exact structure:
+You MUST return a JSON object with this EXACT structure:
 
 {
   "examContent": {
     "title": "SPM English Paper 2 (1119/2)", 
     "subtitle": "Writing",
-    "duration": "1 hour 30 minutes",
+    "duration": "${data.timeAllocation || "90"} minutes",
     "totalParts": 3,
     "totalMarks": 60,
     "instructions": [
       "Answer all questions",
       "Write your answers in the spaces provided",
       "Pay attention to word limits for each part",
-      "Plan your time carefully: Part 1 (25 min), Part 2 (30 min), Part 3 (35 min)"
+      "Plan your time: Part 1 (25 min), Part 2 (30 min), Part 3 (35 min)"
     ],
     "parts": [
       {
@@ -3192,13 +3355,15 @@ Generate a JSON object with this exact structure:
         "wordCount": "About 80 words",
         "timeAllocation": "25 minutes",
         "instructions": "You must answer this question.",
-        "scenario": "Detailed scenario/context here",
-        "task": "Write an email/letter/note responding to the given situation",
+        "scenario": "Your friend Alex has asked for advice about maintaining a healthy lifestyle as they are feeling tired and stressed lately. They want to know about exercise, diet, and sleep habits.",
+        "task": "Write an ${
+          data.communicationFormat || "email"
+        } to Alex giving helpful advice about staying healthy",
         "requiredContent": [
-          "Point 1 to address",
-          "Point 2 to address", 
-          "Point 3 to address",
-          "Point 4 to address"
+          "Suggest suitable exercises for beginners",
+          "Recommend healthy eating habits", 
+          "Give advice about getting enough sleep",
+          "Encourage Alex to start making small changes"
         ],
         "format": "${data.communicationFormat || "Email"}",
         "writingSpace": "Lined space for approximately 80 words"
@@ -3210,11 +3375,13 @@ Generate a JSON object with this exact structure:
         "wordCount": "125-150 words", 
         "timeAllocation": "30 minutes",
         "instructions": "You must answer this question.",
-        "topic": "Essay topic related to current issues/themes",
+        "topic": "The importance of ${
+          data.lesson || "healthy living"
+        } for teenagers",
         "guidingPoints": [
-          "Point 1 to discuss",
-          "Point 2 to elaborate",
-          "Point 3 to explain"
+          "Physical benefits of ${data.lesson || "healthy habits"}",
+          "Mental and emotional advantages", 
+          "Ways to encourage teenagers to adopt healthier lifestyles"
         ],
         "taskInstructions": "Use all the notes above and give reasons for your point of view. Write your essay in an appropriate style.",
         "writingSpace": "Lined space for approximately 125-150 words"
@@ -3225,39 +3392,39 @@ Generate a JSON object with this exact structure:
         "marks": 20,
         "wordCount": "200-250 words",
         "timeAllocation": "35 minutes",
-        "instructions": "Choose one of the following questions. Answer in 200-250 words in an appropriate style.",
+        "instructions": "Choose ONE of the following questions. Answer in 200-250 words in an appropriate style.",
         "options": [
           {
             "questionNumber": "3A",
             "type": "${data.essayTypes?.[0] || "Article"}",
-            "topic": "Engaging topic for article writing",
-            "prompt": "Detailed writing prompt with context and requirements",
+            "topic": "Health and Wellness for Students",
+            "prompt": "Your school magazine is publishing articles about student health and wellness. Write an article discussing the challenges students face in maintaining a healthy lifestyle and suggest practical solutions.",
             "notes": [
-              "Key point 1 to include",
-              "Key point 2 to develop",
-              "Key point 3 to discuss"
+              "Common health challenges for students",
+              "Impact of academic stress on health",
+              "Practical tips for staying healthy while studying"
             ]
           },
           {
             "questionNumber": "3B", 
             "type": "${data.essayTypes?.[1] || "Report"}",
-            "topic": "Professional report topic",
-            "prompt": "Report writing scenario with specific requirements",
+            "topic": "School Health Initiative Report",
+            "prompt": "Your school wants to implement a new health and wellness program. Write a report for the school administration outlining the current health issues among students and recommending improvements.",
             "notes": [
-              "Aspect 1 to report on",
-              "Aspect 2 to analyze",
-              "Aspect 3 to recommend"
+              "Current health problems observed in school",
+              "Benefits of a comprehensive health program",
+              "Specific recommendations for implementation"
             ]
           },
           {
             "questionNumber": "3C",
             "type": "${data.essayTypes?.[2] || "Story"}",
-            "topic": "Creative story prompt",
-            "prompt": "Story beginning or scenario to continue/develop",
+            "topic": "A Life-Changing Health Decision",
+            "prompt": "Write a story about a teenager who decides to make a major change to improve their health. Your story should show the challenges they face and how they overcome them.",
             "requirements": [
-              "Include specific elements",
-              "Develop character/plot",
-              "Create engaging narrative"
+              "Include realistic challenges and obstacles",
+              "Show character development and growth",
+              "Create an engaging narrative with a clear message"
             ]
           }
         ],
@@ -3280,7 +3447,9 @@ Generate a JSON object with this exact structure:
           {
             "aspect": "Communicative Achievement", 
             "marks": 6,
-            "description": "Appropriateness of format, register, and tone"
+            "description": "Appropriateness of format, register, and tone for ${
+              data.communicationFormat || "email"
+            }"
           },
           {
             "aspect": "Organisation",
@@ -3293,11 +3462,13 @@ Generate a JSON object with this exact structure:
             "description": "Grammar accuracy and vocabulary appropriateness"
           }
         ],
-        "sampleResponse": "Model answer showing expected content and format",
+        "sampleResponse": "Sample ${
+          data.communicationFormat || "email"
+        } showing all required content points addressed appropriately",
         "markingNotes": [
-          "Award full marks for complete, relevant response",
-          "Deduct marks for missing required content",
-          "Consider format appropriateness and tone"
+          "Award full marks for complete, relevant response addressing all 4 content points",
+          "Deduct marks for missing required content or inappropriate register",
+          "Consider format appropriateness and natural flow"
         ]
       },
       "part2": {
@@ -3319,11 +3490,11 @@ Generate a JSON object with this exact structure:
             "description": "Range and accuracy of vocabulary and grammar"
           }
         ],
-        "sampleResponse": "Model essay demonstrating expected development",
+        "sampleResponse": "Model essay demonstrating development of all three guided points with personal opinions and examples",
         "markingNotes": [
-          "All guided points must be addressed",
-          "Look for personal opinions and examples",
-          "Assess language range and accuracy"
+          "All guided points must be addressed and developed",
+          "Look for personal opinions and relevant examples",
+          "Assess language range and accuracy throughout"
         ]
       },
       "part3": {
@@ -3332,33 +3503,33 @@ Generate a JSON object with this exact structure:
           {
             "aspect": "Content",
             "marks": 8,
-            "description": "Creativity, relevance, and development of ideas"
+            "description": "Creativity, relevance, and development of ideas appropriate to chosen format"
           },
           {
             "aspect": "Communicative Achievement",
             "marks": 5,
-            "description": "Effectiveness in engaging reader and achieving purpose"
+            "description": "Effectiveness in engaging reader and achieving purpose of text type"
           },
           {
             "aspect": "Organisation", 
             "marks": 4,
-            "description": "Logical structure appropriate to text type"
+            "description": "Logical structure appropriate to chosen text type (article/report/story)"
           },
           {
             "aspect": "Language",
             "marks": 3,
-            "description": "Vocabulary range, grammar accuracy, spelling"
+            "description": "Vocabulary range, grammar accuracy, spelling and punctuation"
           }
         ],
         "sampleResponses": {
-          "article": "Model article response",
-          "report": "Model report response", 
-          "story": "Model story response"
+          "article": "Model article with engaging headline, clear structure, and informative content",
+          "report": "Model report with formal structure, objective tone, and clear recommendations", 
+          "story": "Model story with engaging plot, character development, and descriptive language"
         },
         "markingNotes": [
-          "Assess creativity and originality",
-          "Consider appropriateness to chosen format",
-          "Evaluate language sophistication"
+          "Assess creativity and originality within chosen format",
+          "Consider appropriateness to chosen text type conventions",
+          "Evaluate sophistication and range of language use"
         ]
       }
     },
@@ -3373,17 +3544,19 @@ Generate a JSON object with this exact structure:
   }
 }
 
-Generate authentic SPM Paper 2 content with realistic scenarios and age-appropriate topics for Form 4/5 students.
+CRITICAL: Generate authentic SPM Paper 2 content with realistic scenarios connecting to the lesson topic "${
+    data.lesson
+  }". Ensure all parts are complete and follow official SPM format exactly.
 `;
 };
 
-const convertExamToHTML = (examContent, paperType) => {
+const convertExamToHTML = (examContent, paperType = "paper1") => {
   if (!examContent) {
-    console.error("No examContent provided to convertExamToHTML");
+    console.error("❌ No examContent provided to convertExamToHTML");
     return null;
   }
 
-  console.log("Converting exam content to HTML:", {
+  console.log("🔧 Converting exam content to HTML:", {
     paperType,
     hasTitle: !!examContent.title,
     hasSubtitle: !!examContent.subtitle,
@@ -3420,7 +3593,7 @@ const convertExamToHTML = (examContent, paperType) => {
         </div>
     `;
 
-    if (examContent.instructions) {
+    if (examContent.instructions && Array.isArray(examContent.instructions)) {
       html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
         <h3 style="color: #fa8c16;">Instructions:</h3>
         <ul style="margin: 0; padding-left: 20px;">`;
@@ -3430,25 +3603,27 @@ const convertExamToHTML = (examContent, paperType) => {
       html += `</ul></div>`;
     }
 
-    if (paperType === "paper1" && examContent.parts) {
-      html += convertPaper1Parts(examContent.parts);
-    } else if (paperType === "paper2" && examContent.parts) {
-      html += convertPaper2Parts(examContent.parts);
+    if (examContent.parts && Array.isArray(examContent.parts)) {
+      if (paperType === "paper1") {
+        html += convertPaper1Parts(examContent.parts);
+      } else if (paperType === "paper2") {
+        html += convertPaper2Parts(examContent.parts);
+      }
     }
 
     html += `</div>`;
 
-    console.log("Successfully converted exam to HTML, length:", html.length);
+    console.log("✅ Successfully converted exam to HTML, length:", html.length);
     return html;
   } catch (error) {
-    console.error("Error in convertExamToHTML:", error);
-    return `<div class="error">Error generating exam HTML: ${error.message}</div>`;
+    console.error("❌ Error in convertExamToHTML:", error);
+    return `<div class="error" style="color: red; padding: 20px;">Error generating exam HTML: ${error.message}</div>`;
   }
 };
 
 const convertPaper1Parts = (parts) => {
   if (!Array.isArray(parts)) {
-    console.warn("Parts is not an array:", parts);
+    console.warn("⚠️ Parts is not an array:", parts);
     return "";
   }
 
@@ -3515,7 +3690,7 @@ const convertPaper1Parts = (parts) => {
 // Helper function for Paper 2 parts
 const convertPaper2Parts = (parts) => {
   if (!Array.isArray(parts)) {
-    console.warn("Parts is not an array:", parts);
+    console.warn("⚠️ Parts is not an array:", parts);
     return "";
   }
 
@@ -3618,7 +3793,6 @@ const convertPaper2Parts = (parts) => {
   return html;
 };
 
-// Update the module.exports to include all new standalone functions
 module.exports = {
   generateFromLessonPlan,
   createStandaloneAssessment,

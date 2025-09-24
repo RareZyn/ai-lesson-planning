@@ -167,7 +167,7 @@ const AssessmentPage = () => {
       assessment: "green",
       essay: "orange",
       textbook: "purple",
-      "smp-exam": "magenta", // Handle legacy typo
+      "spm-exam": "magenta", // Handle legacy typo
       "spm-exam": "magenta",
     };
     return colorMap[activityType] || "default";
@@ -672,11 +672,7 @@ const AssessmentPage = () => {
         activityType: standaloneActivityType,
       });
 
-      // CRITICAL FIX: Ensure activity type is properly mapped
       let mappedActivityType = standaloneActivityType;
-      if (standaloneActivityType === "smp-exam") {
-        mappedActivityType = "spm-exam";
-      }
 
       // Prepare the data for standalone assessment creation
       const standaloneData = {
