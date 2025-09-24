@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
-
+const { jsonrepair } = require("jsonrepair");
 const ACTIVITY_TYPE_MAPPING = {
   activityInClass: "activityInClass",
   essay: "essay",
@@ -2992,20 +2992,75 @@ const generateExamContent = async (data) => {
     }
 
     let generatedContent;
+    let cleanedText;
+
     try {
-      const cleanedText = text
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
+      // Basic cleaning - remove markdown code blocks
+      cleanedText = text
+        .trim()
+        .replace(/```json\s*/g, "")
+        .replace(/```\s*/g, "")
         .trim();
-      generatedContent = JSON.parse(cleanedText);
+
+      // Find the JSON object boundaries
+      const firstBrace = cleanedText.indexOf("{");
+      const lastBrace = cleanedText.lastIndexOf("}");
+
+      if (firstBrace === -1 || lastBrace === -1) {
+        throw new Error("No valid JSON object found in response");
+      }
+
+      // Extract only the JSON portion
+      cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+
+      console.log("🔧 Attempting to repair JSON...");
+
+      // Use jsonrepair to fix any malformed JSON
+      const repairedJson = jsonrepair(cleanedText);
+
+      console.log("✅ JSON successfully repaired");
+
+      generatedContent = JSON.parse(repairedJson);
     } catch (parseError) {
-      console.error(
-        "❌ Failed to parse Gemini response as JSON. Raw text:",
-        text.substring(0, 1000) + "..."
-      );
-      throw new Error(
-        `The AI response was not in a valid JSON format: ${parseError.message}`
-      );
+      console.error("❌ Failed to parse and repair JSON.");
+      console.error("Parse error:", parseError.message);
+
+      // Fallback: Try to extract specific sections manually
+      try {
+        console.log("🔄 Attempting manual content extraction...");
+
+        const examContentMatch = text.match(
+          /"examContent"\s*:\s*\{[\s\S]*?(?=,\s*"answerKeyContent")/
+        );
+        const answerKeyMatch = text.match(
+          /"answerKeyContent"\s*:\s*\{[\s\S]*?(?=\s*\}?\s*$)/
+        );
+
+        if (examContentMatch && answerKeyMatch) {
+          const examContentStr = examContentMatch[0] + "}";
+          const answerKeyStr = answerKeyMatch[0] + "}";
+
+          const reconstructedJson = `{${examContentStr}, ${answerKeyStr}}`;
+
+          // Try to repair the reconstructed JSON
+          const repairedReconstructedJson = jsonrepair(reconstructedJson);
+          generatedContent = JSON.parse(repairedReconstructedJson);
+
+          console.log(
+            "✅ Successfully extracted and repaired content manually"
+          );
+        } else {
+          throw new Error("Could not extract JSON structure from response");
+        }
+      } catch (altParseError) {
+        console.error(
+          "❌ Manual extraction also failed:",
+          altParseError.message
+        );
+        throw new Error(
+          `Unable to parse AI response as valid JSON: ${parseError.message}`
+        );
+      }
     }
 
     // Validate required fields for exam
@@ -3249,22 +3304,112 @@ You MUST return a JSON object with this EXACT structure:
       {
         "questionNumber": 1,
         "correctAnswer": "B",
-        "explanation": "The notice clearly states that mobile phones must be switched off",
-        "marks": 1
+        "explanation": "The notice clearly states that mobile phones must be switched off during the exam",
+        "marks": 1,
+        "acceptableAlternatives": "None - must be exact answer B",
+        "commonErrors": "Students may choose A if they misread 'exam in progress' as 'exam cancelled'. Students may choose C if they focus on 'do not disturb' without reading the full context.",
+        "markingGuidance": "Award 1 mark for B only. No partial marks. Look for evidence that student understood the main instruction in the notice.",
+        "textReference": "Mobile phones must be switched off - this is a direct instruction to students"
       },
       {
         "questionNumber": 2,
         "correctAnswer": "B", 
-        "explanation": "Mike states 'My car broke down this morning'",
-        "marks": 1
+        "explanation": "Mike explicitly states 'My car broke down this morning' - indicating mechanical failure preventing him from driving",
+        "marks": 1,
+        "acceptableAlternatives": "None - must be exact answer B",
+        "commonErrors": "Students may choose C if they focus on 'pick me up' without reading the reason. Students may choose A if they misunderstand 'broke down' as a personal issue.",
+        "markingGuidance": "Award 1 mark for B only. Look for evidence of literal comprehension of cause and effect in the text.",
+        "textReference": "My car broke down this morning - clear statement of mechanical problem"
+      },
+      {
+        "questionNumber": 9,
+        "correctAnswer": "B",
+        "explanation": "Modal verb 'must' indicates strong necessity/obligation in health advice context",
+        "marks": 1,
+        "acceptableAlternatives": "None - grammar requires specific modal",
+        "commonErrors": "Students may choose 'should' (A) for weaker advice, or 'might' (D) for possibility rather than obligation",
+        "markingGuidance": "Award 1 mark for B only. This tests understanding of modal verb strength in context.",
+        "grammarPoint": "Must = strong obligation/necessity, Should = advice/recommendation"
+      },
+      {
+        "questionNumber": 19,
+        "correctAnswer": "B",
+        "explanation": "The passage emphasizes overall health maintenance as the primary benefit of regular exercise",
+        "marks": 1,
+        "acceptableAlternatives": "None - must identify main idea from passage",
+        "commonErrors": "Students may choose A (weight loss) if they focus on one detail rather than main theme. Students may choose C (professional athletics) if they misunderstand the target audience.",
+        "markingGuidance": "Award 1 mark for B only. This tests ability to identify main idea vs supporting details.",
+        "readingSkill": "Main idea identification - students must distinguish between primary purpose and supporting examples"
+      },
+      {
+        "questionNumber": 27,
+        "correctAnswer": "E",
+        "explanation": "Sentence E 'Most experts agree on the benefits of regular exercise' provides logical transition after introducing health benefits",
+        "marks": 1,
+        "acceptableAlternatives": "None - must fit discourse context",
+        "commonErrors": "Students may choose C or F if they don't consider discourse flow. Students may choose A if they jump ahead in logical sequence.",
+        "markingGuidance": "Award 1 mark for E only. This tests understanding of coherence and logical flow in academic text.",
+        "discourseSkill": "Coherence - sentence must provide appropriate transition and maintain topic development"
+      },
+      {
+        "questionNumber": 33,
+        "correctAnswer": "C",
+        "explanation": "Paragraph C discusses sleep importance with specific details about sleep duration and health benefits",
+        "marks": 1,
+        "acceptableAlternatives": "None - information is in specific paragraph",
+        "commonErrors": "Students may choose B if they confuse sleep with rest. Students may choose A if they don't read carefully for specific sleep information.",
+        "markingGuidance": "Award 1 mark for C only. This tests ability to locate specific information within longer text.",
+        "readingSkill": "Information location - students must scan for specific content within multiple paragraphs"
+      },
+      {
+        "questionNumber": 37,
+        "correctAnswer": "stress",
+        "explanation": "The text states 'Regular exercise can help reduce stress levels in the body'",
+        "marks": 1,
+        "acceptableAlternatives": "None - must be exact word from passage",
+        "commonErrors": "Students may write 'anxiety' or 'tension' if they use synonyms instead of passage words. Students may write multiple words instead of one.",
+        "markingGuidance": "Award 1 mark for 'stress' only. Must be exact word from passage, correctly spelled. Do not accept synonyms or multiple words.",
+        "transferSkill": "Word extraction - students must locate and transfer exact vocabulary from source text"
       }
     ],
+    "partSpecificGuidance": {
+      "part1": {
+        "focus": "Literal comprehension of short authentic texts",
+        "markingPrinciple": "Award marks only for correct answers that show understanding of explicit information",
+        "commonIssues": "Students may overthink simple texts or miss key details",
+        "teachingPoint": "Emphasize careful reading of all text elements including titles, formatting, and context clues"
+      },
+      "part2": {
+        "focus": "Grammar, vocabulary, and discourse markers in context",
+        "markingPrinciple": "Each gap tests specific language point - no partial credit",
+        "commonIssues": "Students may choose answers that are grammatically possible but don't fit context",
+        "teachingPoint": "Read whole passage first for context, then analyze each gap for grammar and meaning"
+      },
+      "part3": {
+        "focus": "Reading comprehension including inference and main ideas",
+        "markingPrinciple": "Answers must be supported by evidence in the passage",
+        "commonIssues": "Students may use prior knowledge instead of passage information",
+        "teachingPoint": "All answers must come from the passage - avoid using outside knowledge"
+      },
+      "part4": {
+        "focus": "Text organization and coherence",
+        "markingPrinciple": "Sentences must fit logically and grammatically in context",
+        "commonIssues": "Students may choose sentences that are thematically related but don't fit discourse flow",
+        "teachingPoint": "Consider both meaning and grammatical connections (pronouns, conjunctions, discourse markers)"
+      },
+      "part5": {
+        "focus": "Information location and vocabulary transfer",
+        "markingPrinciple": "Matching requires exact correspondence; word completion requires exact words from text",
+        "commonIssues": "Students may paraphrase instead of using exact text words",
+        "teachingPoint": "Use only words that appear in the passage - no synonyms or paraphrasing"
+      }
+    },
     "markingScheme": {
-      "part1": "1 mark per correct answer (8 marks total)",
-      "part2": "1 mark per correct answer (10 marks total)", 
-      "part3": "1 mark per correct answer (8 marks total)",
-      "part4": "1 mark per correct answer (6 marks total)",
-      "part5": "1 mark per correct answer (8 marks total)"
+      "part1": "1 mark per correct answer (8 marks total) - no partial credit",
+      "part2": "1 mark per correct answer (10 marks total) - no partial credit", 
+      "part3": "1 mark per correct answer (8 marks total) - no partial credit",
+      "part4": "1 mark per correct answer (6 marks total) - no partial credit",
+      "part5": "1 mark per correct answer (8 marks total) - spelling must be accurate for word completion questions"
     },
     "gradingScale": {
       "A": "34-40 marks (85-100%)",
@@ -3273,6 +3418,12 @@ You MUST return a JSON object with this EXACT structure:
       "D": "12-19 marks (30-49%)",
       "E": "8-11 marks (20-29%)",
       "G": "0-7 marks (0-19%)"
+    },
+    "generalMarkingPrinciples": {
+      "accuracy": "All answers must be exactly as specified - no partial credit for 'almost correct' responses",
+      "evidence": "Student responses should demonstrate understanding of the source text, not general knowledge",
+      "fairness": "Apply marking criteria consistently across all student responses",
+      "documentation": "Keep clear records of common errors for feedback and future teaching"
     }
   }
 }
@@ -3462,13 +3613,51 @@ You MUST return a JSON object with this EXACT structure:
             "description": "Grammar accuracy and vocabulary appropriateness"
           }
         ],
-        "sampleResponse": "Sample ${
-          data.communicationFormat || "email"
-        } showing all required content points addressed appropriately",
-        "markingNotes": [
-          "Award full marks for complete, relevant response addressing all 4 content points",
-          "Deduct marks for missing required content or inappropriate register",
-          "Consider format appropriateness and natural flow"
+        "detailedMarkingGuide": {
+          "content": {
+            "fullMarks": "All 4 content points addressed completely and relevantly with appropriate detail and personal touch",
+            "goodMarks": "3-4 content points addressed with good development and relevant details", 
+            "satisfactoryMarks": "2-3 content points addressed adequately with basic development",
+            "lowMarks": "1-2 content points with limited development or missing key information"
+          },
+          "communicativeAchievement": {
+            "fullMarks": "Perfect email format (greeting, body, closing, sign-off), consistently appropriate friendly tone, natural register throughout",
+            "goodMarks": "Good email format with minor inconsistencies, generally appropriate tone with occasional lapses",
+            "satisfactoryMarks": "Basic email format present, generally appropriate tone but may be too formal or informal in places",
+            "lowMarks": "Poor format (missing essential email elements) or inappropriate tone affecting communication effectiveness"
+          },
+          "organisation": {
+            "fullMarks": "Clear logical flow with smooth transitions between points, ideas well-connected and easy to follow",
+            "goodMarks": "Good organisation with minor issues in transitions, generally logical flow",
+            "satisfactoryMarks": "Basic organisation present, some attempt at logical sequencing",
+            "lowMarks": "Poor organisation, disconnected ideas, difficult to follow"
+          },
+          "language": {
+            "fullMarks": "Wide range of vocabulary used accurately, complex structures handled well, minimal errors that don't impede communication",
+            "goodMarks": "Good vocabulary range with occasional errors, generally accurate grammar",
+            "satisfactoryMarks": "Adequate vocabulary for task, basic structures mostly accurate",
+            "lowMarks": "Limited vocabulary, frequent errors impeding communication"
+          }
+        },
+        "sampleMarkingComments": [
+          "Excellent response addressing all required points with natural, friendly tone and perfect email format - Full marks",
+          "Good advice given but missing encouragement point and informal greeting - deduct 2 marks from content, 1 from communicative achievement",
+          "Format issues: missing proper email greeting/closing, too formal tone for friend - deduct 3 marks from communicative achievement",
+          "All points covered but very brief development, needs more specific advice - deduct 2 marks from content",
+          "Language errors (verb tenses, prepositions) affecting clarity - deduct 2 marks from language"
+        ],
+        "contentPointsBreakdown": {
+          "exerciseAdvice": "2 marks - Must suggest specific, suitable exercises for beginners with brief explanation",
+          "dietAdvice": "2 marks - Must recommend specific healthy eating habits, not just 'eat healthy'",
+          "sleepAdvice": "2 marks - Must give specific advice about sleep duration, routine, or habits",
+          "encouragement": "2 marks - Must include motivational language to encourage Alex to start making changes"
+        },
+        "markingInstructions": [
+          "Read entire response first to assess overall communication effectiveness",
+          "Check systematically for each of the 4 required content points",
+          "Evaluate format appropriateness - must follow email conventions for full communicative achievement marks",
+          "Consider naturalness of language - should sound like genuine communication between friends",
+          "Deduct marks proportionally - missing content points result in significant deductions"
         ]
       },
       "part2": {
@@ -3490,12 +3679,43 @@ You MUST return a JSON object with this EXACT structure:
             "description": "Range and accuracy of vocabulary and grammar"
           }
         ],
-        "sampleResponse": "Model essay demonstrating development of all three guided points with personal opinions and examples",
-        "markingNotes": [
-          "All guided points must be addressed and developed",
-          "Look for personal opinions and relevant examples",
-          "Assess language range and accuracy throughout"
-        ]
+        "detailedMarkingGuide": {
+          "contentDevelopment": {
+            "fullMarks": "All 3 guided points fully developed with personal opinions, relevant examples, and clear explanations showing deep understanding",
+            "goodMarks": "All 3 points addressed with good development of 2-3 points, some personal opinions and examples provided",
+            "satisfactoryMarks": "All 3 points mentioned but limited development, basic examples or opinions included",
+            "lowMarks": "1-2 points missing or very poor development, lacks personal opinions or relevant examples"
+          },
+          "organisation": {
+            "fullMarks": "Clear introduction stating position, well-developed body paragraphs for each point, effective conclusion summarizing key ideas",
+            "goodMarks": "Good structure with minor issues in paragraph development or transitions",
+            "satisfactoryMarks": "Basic essay structure present with identifiable introduction, body, and conclusion",
+            "lowMarks": "Poor organisation affecting clarity, missing key structural elements"
+          },
+          "language": {
+            "fullMarks": "Wide vocabulary range, varied sentence structures, accurate grammar throughout, sophisticated expression",
+            "goodMarks": "Good vocabulary with some variety, generally accurate with minor errors",
+            "satisfactoryMarks": "Adequate vocabulary for task, basic structures mostly correct",
+            "lowMarks": "Limited vocabulary, frequent errors impeding understanding"
+          }
+        },
+        "guidedPointsBreakdown": {
+          "physicalBenefits": "3 marks - Must discuss specific physical health benefits with examples or explanation",
+          "mentalEmotionalAdvantages": "3 marks - Must address psychological/emotional benefits, not just repeat physical benefits", 
+          "encouragementWays": "3 marks - Must suggest practical, specific ways to encourage healthy lifestyle adoption"
+        },
+        "markingInstructions": [
+          "Each guided point must be present and developed - deduct 3 marks per completely missing point",
+          "Look for personal opinions and relevant examples - these demonstrate higher-order thinking",
+          "Assess language range and accuracy throughout - reward variety and sophistication",
+          "Consider coherence between guided points - should flow logically as unified essay",
+          "Award marks for creativity within appropriate boundaries of guided writing format"
+        ],
+        "qualityIndicators": {
+          "highQuality": "All points well-integrated with personal voice, clear stance, relevant examples from student experience or observation",
+          "averageQuality": "Points addressed but development uneven, some personal input but may rely heavily on general statements",
+          "lowQuality": "Points mentioned but not developed, lacks personal opinion or specific examples"
+        }
       },
       "part3": {
         "marks": 20,
@@ -3521,16 +3741,90 @@ You MUST return a JSON object with this EXACT structure:
             "description": "Vocabulary range, grammar accuracy, spelling and punctuation"
           }
         ],
-        "sampleResponses": {
-          "article": "Model article with engaging headline, clear structure, and informative content",
-          "report": "Model report with formal structure, objective tone, and clear recommendations", 
-          "story": "Model story with engaging plot, character development, and descriptive language"
+        "textTypeSpecificGuides": {
+          "article": {
+            "contentMarking": "Engaging headline (1 mark), clear introduction hooking reader (2 marks), informative body with specific examples and solutions (4 marks), effective conclusion with call to action or summary (1 mark)",
+            "achievementMarking": "Engaging reader interest through personal anecdotes or striking facts, appropriate article conventions (subheadings, quotes), clear informative purpose",
+            "organisationMarking": "Logical article structure with clear paragraphs and smooth transitions, appropriate use of subheadings or formatting",
+            "commonIssues": "Students often write as essay rather than article format, missing engaging elements, lack of specific examples",
+            "markingTips": "Look for article-specific features: headline, engaging opening, informative tone, practical advice"
+          },
+          "report": {
+            "contentMarking": "Clear executive summary/introduction (2 marks), detailed findings with evidence (4 marks), practical recommendations with justification (2 marks)",
+            "achievementMarking": "Objective tone maintained throughout, formal register appropriate for administration, professional presentation",
+            "organisationMarking": "Clear report structure with appropriate headings (Introduction, Findings, Recommendations), logical flow of information",
+            "commonIssues": "Students may be too informal, lack specific recommendations, or fail to provide evidence for findings",
+            "markingTips": "Assess objectivity, formality, and practical value of recommendations. Look for evidence-based conclusions."
+          },
+          "story": {
+            "contentMarking": "Engaging opening that establishes character and situation (2 marks), clear character development showing change (2 marks), realistic challenges and obstacles (2 marks), satisfying resolution with clear message (2 marks)",
+            "achievementMarking": "Reader engagement through descriptive language and realistic dialogue, appropriate narrative techniques, clear moral/message",
+            "organisationMarking": "Logical story structure with clear beginning, middle, end, effective use of chronological or other narrative structure",
+            "commonIssues": "Students often rush the ending, lack character development, or create unrealistic scenarios",
+            "markingTips": "Evaluate character growth, realism of challenges, and clarity of the health-related message"
+          }
         },
-        "markingNotes": [
-          "Assess creativity and originality within chosen format",
-          "Consider appropriateness to chosen text type conventions",
-          "Evaluate sophistication and range of language use"
-        ]
+        "markingInstructions": [
+          "Identify which text type student chose before beginning assessment",
+          "Apply text-type specific criteria - don't mark article as essay or story as report",
+          "Reward creativity and originality within appropriate format boundaries",
+          "Consider target audience appropriateness for chosen text type",
+          "Assess whether student achieved the communicative purpose of their chosen format"
+        ],
+        "sampleResponses": {
+          "article": {
+            "excellentFeatures": "Catchy headline 'Health Hacks for Busy Students', engaging opening with statistics, subheadings organizing content, practical tips with examples, call to action in conclusion",
+            "markingExample": "Content: 7/8 (excellent examples and solutions), Achievement: 5/5 (perfect article format), Organisation: 4/4 (clear structure), Language: 3/3 (varied vocabulary)"
+          },
+          "report": {
+            "excellentFeatures": "Professional title, clear sections (Executive Summary, Current Issues, Recommendations), objective tone, specific data, actionable recommendations with timeline",
+            "markingExample": "Content: 8/8 (comprehensive findings and practical recommendations), Achievement: 4/5 (very formal and professional), Organisation: 4/4 (perfect structure), Language: 2/3 (minor errors)"
+          },
+          "story": {
+            "excellentFeatures": "Compelling character introduction, realistic health challenges (stress, poor diet), gradual character development, believable obstacles, inspiring but realistic conclusion",
+            "markingExample": "Content: 6/8 (good development but rushed ending), Achievement: 4/5 (engaging narrative), Organisation: 3/4 (good structure, abrupt transition), Language: 3/3 (excellent descriptive language)"
+          }
+        }
+      }
+    },
+    "comprehensiveMarkingGuide": {
+      "beforeMarking": [
+        "Read the entire response first to get overall impression and identify student's ability level",
+        "Identify which text type student attempted in Part 3 - this determines specific criteria to apply",
+        "Check word counts for all parts - deduct marks for significantly under word limits (more than 20% under) or over limits (more than 50% over)",
+        "Note overall language proficiency level to ensure consistent marking across all criteria",
+        "Review the specific content requirements for each part to ensure systematic assessment"
+      ],
+      "duringMarking": [
+        "Use positive marking approach - reward what students can do rather than penalizing what they cannot",
+        "Consider communicative effectiveness over perfect accuracy - does the message come across clearly?",
+        "Look for evidence of planning and organisation in structure and content development",
+        "Award marks for creativity and originality within appropriate format boundaries",
+        "Be consistent in applying criteria across all student responses",
+        "Make brief notes about strengths and areas for improvement for feedback purposes"
+      ],
+      "afterMarking": [
+        "Double-check addition of marks for each part and total",
+        "Ensure marks awarded align with the demonstrated ability level across all parts",
+        "Review any borderline cases to ensure fair and consistent application of criteria",
+        "Consider whether feedback comments match the marks awarded"
+      ],
+      "qualityIndicators": {
+        "excellent": "Natural, fluent expression with sophisticated vocabulary, complex structures used accurately, creative and engaging content, perfect format adherence",
+        "good": "Generally accurate language with good vocabulary range, minor errors don't impede communication, well-developed content, appropriate format",
+        "satisfactory": "Adequate expression with basic vocabulary sufficient for task, some errors but meaning generally clear, content addresses requirements",
+        "needsImprovement": "Frequent errors impede communication, limited vocabulary range, content lacks development, format issues affect communication"
+      },
+      "commonStudentErrors": {
+        "part1": "Too formal/informal tone, missing email elements, insufficient development of content points, word count issues",
+        "part2": "Missing guided points, lack of personal opinion, poor essay structure, repetition of points without development",
+        "part3": "Wrong text type features, inappropriate register, lack of creativity, rushing the conclusion"
+      },
+      "feedbackGuidelines": {
+        "strengths": "Always identify specific strengths in language use, content development, or format adherence",
+        "improvements": "Provide specific, actionable advice for improvement in weaker areas",
+        "encouragement": "Acknowledge effort and progress while indicating areas for further development",
+        "examples": "Where possible, provide brief examples of how improvements could be made"
       }
     },
     "gradingScale": {
@@ -3540,6 +3834,12 @@ You MUST return a JSON object with this EXACT structure:
       "D": "18-29 marks (30-49%)",
       "E": "12-17 marks (20-29%)",
       "G": "0-11 marks (0-19%)"
+    },
+    "teacherGuidance": {
+      "timeManagement": "Allocate approximately 3-4 minutes per script for initial reading and marking, with additional time for borderline cases",
+      "consistency": "Use sample responses and marking criteria to calibrate marking standards, especially when multiple teachers are involved",
+      "documentation": "Keep records of common errors and successful approaches for future teaching reference",
+      "moderation": "Regular cross-marking and discussion of borderline cases ensures fair and consistent standards"
     }
   }
 }
