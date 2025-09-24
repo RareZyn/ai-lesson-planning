@@ -1016,7 +1016,7 @@ const generateFromLessonPlan = async (req, res) => {
           difficultyLevel:
             req.body.difficultyLevel ||
             activityData.difficultyLevel ||
-            "intermediate",
+            "Intermediate",
           textSources: req.body.textSources ||
             activityData.textSources || ["newspapers", "magazines"],
           readingLevel:

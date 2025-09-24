@@ -309,19 +309,19 @@ export const questionTypes = [
 // Difficulty levels
 export const difficultyLevels = [
   {
-    value: "beginner",
+    value: "Beginner",
     label: "Beginner (A2-B1)",
     color: "#52c41a",
     description: "Basic level",
   },
   {
-    value: "intermediate",
+    value: "Intermediate",
     label: "Intermediate (B1)",
     color: "#fa8c16",
     description: "Standard SPM level",
   },
   {
-    value: "advanced",
+    value: "Advanced",
     label: "Advanced (B1-B2)",
     color: "#f5222d",
     description: "High achiever level",
