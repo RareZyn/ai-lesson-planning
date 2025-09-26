@@ -17,7 +17,7 @@ import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner"
 import Community from "./pages/community/Community";
 import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
-
+import OCRPage from "./pages/answerChecker/OCRPage";
 const router = createBrowserRouter(
   [
     {
@@ -29,7 +29,7 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: "", element: <HomePage /> },
-
+        { path: "ocr", element: <OCRPage /> },
         // Assessment routes - corrected
         { path: "assessment", element: <AssessmentPage /> },
         { path: "assessment/:id", element: <ActivityViewerPage /> },

@@ -40,7 +40,7 @@ const classRoutes = require("./route/classRoutes");
 const sowRoutes = require("./route/sowRoutes");
 const lessonRoutes = require("./route/lessonRoutes");
 const communityRoutes = require("./route/communityRoute");
-
+const ocrRoutes = require("./route/ocrRoutes");
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/gpt", openAiRoutes);
@@ -51,8 +51,27 @@ app.use("/api/classes", classRoutes);
 app.use("/api/sow", sowRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/ocr", ocrRoutes);
+app.use(
+  express.json({
+    limit: "100mb",
+    extended: true,
+    parameterLimit: 50000,
+  })
+);
 
+app.use(
+  express.urlencoded({
+    limit: "100mb",
+    extended: true,
+    parameterLimit: 50000,
+  })
+);
 
+app.use((req, res, next) => {
+  req.setTimeout(300000);
+  next();
+});
 // Health check route
 app.get("/api/health", (req, res) => {
   res.status(200).json({

@@ -1,0 +1,29 @@
+# OCR Service Requirements
+# Save this as requirements.txt in your project root
+
+# Core OCR and Computer Vision
+easyocr==1.7.1
+opencv-python==4.10.0.84
+Pillow==10.4.0
+numpy==1.24.3
+
+# Web Framework
+Flask==3.0.3
+Flask-CORS==4.0.1
+
+# Additional utilities
+torch==2.1.0
+torchvision==0.16.0
+
+# Optional: For better performance on GPU
+# torch==2.1.0+cu118
+# torchvision==0.16.0+cu118
+
+# For image processing
+scikit-image==0.22.0
+
+# For handling base64 and file operations
+base64
+io
+json
+os
