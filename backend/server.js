@@ -22,36 +22,6 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
 };
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Add this line - IMPORTANT for cookie handling
-app.use(morgan("dev"));
-
-// Import routes
-const authRoutes = require("./route/auth");
-const openAiRoutes = require("./route/openAiRoutes");
-const assessmentRoutes = require("./route/assessment");
-const dskpRoutes = require("./route/dskp");
-const textbookRoutes = require("./route/textbook");
-const classRoutes = require("./route/classRoutes");
-const sowRoutes = require("./route/sowRoutes");
-const lessonRoutes = require("./route/lessonRoutes");
-const communityRoutes = require("./route/communityRoute");
-const ocrRoutes = require("./route/ocrRoutes");
-// Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api/gpt", openAiRoutes);
-app.use("/api/assessment", assessmentRoutes);
-app.use("/api/dskp", dskpRoutes);
-app.use("/api/textbook", textbookRoutes);
-app.use("/api/classes", classRoutes);
-app.use("/api/sow", sowRoutes);
-app.use("/api/lessons", lessonRoutes);
-app.use("/api/community", communityRoutes);
-app.use("/api/ocr", ocrRoutes);
 app.use(
   express.json({
     limit: "100mb",
@@ -68,10 +38,41 @@ app.use(
   })
 );
 
+// middleware
+app.use(cors(corsOptions));
+app.use(cookieParser()); // Add this line - IMPORTANT for cookie handling
+app.use(morgan("dev"));
+
+// Set request timeout
 app.use((req, res, next) => {
-  req.setTimeout(300000);
+  req.setTimeout(300000); // 5 minutes timeout
   next();
 });
+
+// Import routes
+const authRoutes = require("./route/auth");
+const openAiRoutes = require("./route/openAiRoutes");
+const assessmentRoutes = require("./route/assessment");
+const dskpRoutes = require("./route/dskp");
+const textbookRoutes = require("./route/textbook");
+const classRoutes = require("./route/classRoutes");
+const sowRoutes = require("./route/sowRoutes");
+const lessonRoutes = require("./route/lessonRoutes");
+const communityRoutes = require("./route/communityRoute");
+const ocrRoutes = require("./route/ocrRoutes");
+
+// Use routes
+app.use("/api/auth", authRoutes);
+app.use("/api/gpt", openAiRoutes);
+app.use("/api/assessment", assessmentRoutes);
+app.use("/api/dskp", dskpRoutes);
+app.use("/api/textbook", textbookRoutes);
+app.use("/api/classes", classRoutes);
+app.use("/api/sow", sowRoutes);
+app.use("/api/lessons", lessonRoutes);
+app.use("/api/community", communityRoutes);
+app.use("/api/ocr", ocrRoutes);
+
 // Health check route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -142,6 +143,7 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
+  console.log(`📊 Body parser limit: 100MB for OCR uploads`);
 });
 
 // Graceful shutdown
