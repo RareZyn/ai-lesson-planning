@@ -1,55 +1,40 @@
-# OCR Service Requirements
-# Save this as requirements.txt in your project root
+# Fixed requirements for Qwen2-VL OCR Service
+# Compatible with GTX 1650 and Windows
 
-# Core OCR and Computer Vision
-easyocr==1.7.1
-opencv-python==4.10.0.84
-Pillow==10.4.0
-numpy==1.24.3
+# Uninstall current PyTorch first: pip uninstall torch torchvision torchaudio -y
 
-# Web Framework
-Flask==3.0.3
-Flask-CORS==4.0.1
+# PyTorch with CUDA 11.8 support (compatible with GTX 1650)
+# Using newer available versions that work with Qwen2-VL
+torch==2.6.0+cu118
+torchvision==0.21.0+cu118
+torchaudio==2.6.0+cu118
+--extra-index-url https://download.pytorch.org/whl/cu118
 
-# Additional utilities
-torch==2.1.0
-torchvision==0.16.0
-
-# Optional: For better performance on GPU
-# torch==2.1.0+cu118
-# torchvision==0.16.0+cu118
-
-# For image processing
-scikit-image==0.22.0
-
-# For handling base64 and file operations
-base64
-io
-json
-os
-
-# Core dependencies for Qwen2-VL OCR Service
-torch>=2.0.0
-torchvision>=0.15.0
-transformers>=4.37.0
-accelerate>=0.20.0
-qwen-vl-utils
+# Transformers and Qwen dependencies (updated for compatibility)
+transformers>=4.45.0
+accelerate>=0.25.0
+qwen-vl-utils==0.0.14
+tokenizers>=0.15.0
 
 # Image processing
-opencv-python>=4.8.0
-Pillow>=10.0.0
-numpy>=1.24.0
+opencv-python==4.8.1.78
+Pillow==10.0.1
+numpy==1.24.4
+scikit-image==0.22.0
 
 # Flask web framework
-Flask>=2.3.0
-flask-cors>=4.0.0
+Flask==2.3.3
+flask-cors==4.0.0
+Werkzeug==2.3.7
 
-# Additional dependencies
-requests>=2.31.0
-regex>=2023.8.8
+# System monitoring and utilities
+psutil==5.9.6
+requests==2.31.0
+regex==2023.10.3
 
-# Optional: For better performance with CUDA
-# nvidia-ml-py3  # Uncomment if you want to monitor GPU usage
+# Additional dependencies for better compatibility
+einops==0.7.0
+safetensors==0.4.1
 
-# For development/debugging
-# matplotlib>=3.7.0  # Uncomment for visualization debugging
+# Memory optimization (optional but recommended)
+# bitsandbytes==0.41.3

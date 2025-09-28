@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const morgan = require("morgan");
-const cookieParser = require("cookie-parser"); // Add this
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const app = express();
@@ -22,6 +22,8 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
 };
+
+// Increase payload limits for OCR
 app.use(
   express.json({
     limit: "100mb",
@@ -40,12 +42,18 @@ app.use(
 
 // middleware
 app.use(cors(corsOptions));
-app.use(cookieParser()); // Add this line - IMPORTANT for cookie handling
+app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Set request timeout
+// Set request timeout - INCREASED FOR OCR PROCESSING
 app.use((req, res, next) => {
-  req.setTimeout(300000); // 5 minutes timeout
+  // Set longer timeout for OCR routes
+  if (req.url.includes("/api/ocr")) {
+    req.setTimeout(600000); // 10 minutes for OCR requests
+    res.setTimeout(600000); // 10 minutes for OCR responses
+  } else {
+    req.setTimeout(300000); // 5 minutes for other requests
+  }
   next();
 });
 
@@ -82,6 +90,33 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// OCR service health check route
+app.get("/api/ocr-health", async (req, res) => {
+  try {
+    const axios = require("axios");
+    const ocrServiceUrl =
+      process.env.OCR_SERVICE_URL || "http://localhost:5001";
+
+    const response = await axios.get(`${ocrServiceUrl}/health`, {
+      timeout: 10000, // 10 second timeout for health check
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "OCR service is healthy",
+      serviceInfo: response.data,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      message: "OCR service is unavailable",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -93,6 +128,15 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+
+  // Handle timeout errors
+  if (err.code === "TIMEOUT" || err.message.includes("timeout")) {
+    return res.status(408).json({
+      success: false,
+      message: "Request timeout - processing took too long",
+      suggestion: "Try with a smaller image or enable preprocessing",
+    });
+  }
 
   // Mongoose duplicate key
   if (err.code === 11000) {
@@ -143,8 +187,15 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
+  console.log(`🤖 OCR endpoints: http://localhost:${PORT}/api/ocr/`);
   console.log(`📊 Body parser limit: 100MB for OCR uploads`);
+  console.log(`⏱️  OCR timeout: 10 minutes`);
 });
+
+// Set server timeout for long-running OCR requests
+server.timeout = 600000; // 10 minutes
+server.keepAliveTimeout = 610000; // 10 minutes + 10 seconds
+server.headersTimeout = 620000; // 10 minutes + 20 seconds
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

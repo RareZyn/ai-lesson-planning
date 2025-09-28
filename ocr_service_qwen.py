@@ -11,6 +11,9 @@ import os
 import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import gc
+import psutil
+import time
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,24 +21,45 @@ CORS(app)
 
 class QwenOCRService:
     def __init__(self):
-        print("Initializing Qwen2-VL-7B-Instruct model...")
+        print("Initializing Qwen2-VL-7B-Instruct model with optimizations...")
         
-        # Set device
+        # Set device and memory optimizations
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {self.device}")
         
+        if torch.cuda.is_available():
+            print(f"GPU: {torch.cuda.get_device_name()}")
+            print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+            # Clear GPU cache
+            torch.cuda.empty_cache()
+            
         # Model name
         self.model_name = "Qwen/Qwen2-VL-7B-Instruct"
         
         try:
-            # Load model with optimizations for inference
-            print("Loading model...")
-            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
-                self.model_name,
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-                device_map="auto" if torch.cuda.is_available() else None,
-                trust_remote_code=True
-            )
+            print("Loading model with memory optimizations...")
+            
+            # Optimized model loading for low VRAM
+            if torch.cuda.is_available():
+                # For GTX 1650 with 4GB VRAM - use aggressive optimizations
+                self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+                    self.model_name,
+                    torch_dtype=torch.float16,  # Use FP16 to save memory
+                    device_map="auto",
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,    # Reduce CPU memory during loading
+                    max_memory={0: "3GB", "cpu": "12GB"},  # Limit GPU memory usage
+                    offload_folder="./model_offload",  # Offload to disk if needed
+                    offload_state_dict=True
+                )
+            else:
+                self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+                    self.model_name,
+                    torch_dtype=torch.float32,
+                    device_map=None,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True
+                )
             
             # Load processor
             print("Loading processor...")
@@ -44,14 +68,34 @@ class QwenOCRService:
                 trust_remote_code=True
             )
             
-            # Set model to evaluation mode
+            # Set model to evaluation mode and enable optimizations
             self.model.eval()
             
+            # Enable memory efficient attention if available
+            if hasattr(self.model, 'gradient_checkpointing_enable'):
+                self.model.gradient_checkpointing_enable()
+            
             print("Qwen2-VL model initialized successfully!")
+            
+            # Print memory usage
+            if torch.cuda.is_available():
+                print(f"GPU Memory allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+                print(f"GPU Memory reserved: {torch.cuda.memory_reserved() / 1024**3:.2f} GB")
+            
+            print(f"System RAM usage: {psutil.virtual_memory().percent:.1f}%")
             
         except Exception as e:
             print(f"Error initializing model: {e}")
             raise e
+    
+    def cleanup_memory(self):
+        """Clean up GPU and system memory"""
+        try:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            gc.collect()
+        except Exception as e:
+            print(f"Error during memory cleanup: {e}")
     
     def preprocess_image(self, image):
         """
@@ -96,9 +140,10 @@ class QwenOCRService:
             else:
                 return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     
-    def optimize_image_for_model(self, image_np, max_size=1024):
+    def optimize_image_for_model(self, image_np, max_size=768):  # Reduced from 1024
         """
         Optimize image size for the model while maintaining aspect ratio
+        Reduced max_size to save memory and processing time
         """
         try:
             height, width = image_np.shape[:2]
@@ -127,10 +172,11 @@ class QwenOCRService:
     
     def extract_text_with_qwen(self, image_pil):
         """
-        Extract text using Qwen2-VL model
+        Extract text using Qwen2-VL model with optimizations
         """
         try:
             print("Preparing messages for Qwen2-VL...")
+            start_time = time.time()
             
             # Prepare messages for the model
             messages = [
@@ -143,7 +189,7 @@ class QwenOCRService:
                         },
                         {
                             "type": "text", 
-                            "text": "Please extract all text from this image. Focus on handwritten text if present. Return only the extracted text without any additional commentary or formatting. If you see both printed and handwritten text, include both. Be as accurate as possible with the transcription."
+                            "text": "Extract all text from this image. Return only the text content without explanations."
                         },
                     ],
                 }
@@ -168,16 +214,35 @@ class QwenOCRService:
             inputs = inputs.to(self.device)
             
             print("Running inference with Qwen2-VL...")
+            inference_start = time.time()
             
-            # Generate response
+            # Generate response with optimized settings
             with torch.no_grad():
-                generated_ids = self.model.generate(
-                    **inputs,
-                    max_new_tokens=512,
-                    temperature=0.1,
-                    do_sample=False,
-                    pad_token_id=self.processor.tokenizer.eos_token_id
-                )
+                # Use torch.cuda.amp for automatic mixed precision if available
+                if torch.cuda.is_available():
+                    with torch.cuda.amp.autocast():
+                        generated_ids = self.model.generate(
+                            **inputs,
+                            max_new_tokens=256,  # Reduced from 512 for faster processing
+                            temperature=0.1,
+                            do_sample=False,
+                            pad_token_id=self.processor.tokenizer.eos_token_id,
+                            use_cache=True,  # Enable KV cache for efficiency
+                            num_beams=1,     # Use greedy decoding for speed
+                        )
+                else:
+                    generated_ids = self.model.generate(
+                        **inputs,
+                        max_new_tokens=256,
+                        temperature=0.1,
+                        do_sample=False,
+                        pad_token_id=self.processor.tokenizer.eos_token_id,
+                        use_cache=True,
+                        num_beams=1,
+                    )
+            
+            inference_time = time.time() - inference_start
+            print(f"Inference completed in {inference_time:.2f} seconds")
             
             # Trim generated tokens
             generated_ids_trimmed = [
@@ -194,7 +259,12 @@ class QwenOCRService:
             # Clean and process the output
             extracted_text = self.clean_extracted_text(output_text)
             
+            total_time = time.time() - start_time
+            print(f"Total processing time: {total_time:.2f} seconds")
             print(f"Cleaned extracted text: '{extracted_text}'")
+            
+            # Clean up memory after inference
+            self.cleanup_memory()
             
             return extracted_text
             
@@ -202,6 +272,7 @@ class QwenOCRService:
             print(f"Error in Qwen2-VL inference: {e}")
             import traceback
             traceback.print_exc()
+            self.cleanup_memory()
             return ""
     
     def clean_extracted_text(self, text):
@@ -219,6 +290,8 @@ class QwenOCRService:
                 "The image contains:",
                 "Here is the text:",
                 "The text says:",
+                "The text reads:",
+                "Image text:",
             ]
             
             cleaned_text = text.strip()
@@ -246,7 +319,6 @@ class QwenOCRService:
     def estimate_confidence(self, extracted_text, image_complexity="medium"):
         """
         Estimate confidence based on text length and complexity
-        Since Qwen2-VL doesn't provide confidence scores, we estimate based on output
         """
         try:
             if not extracted_text or len(extracted_text.strip()) == 0:
@@ -295,13 +367,6 @@ class QwenOCRService:
     def extract_text_from_image(self, image_data, preprocess=True):
         """
         Extract text from image using Qwen2-VL model
-        
-        Args:
-            image_data: Base64 encoded image or file path
-            preprocess: Whether to apply preprocessing
-            
-        Returns:
-            dict: Contains extracted text, confidence scores, and metadata
         """
         try:
             print(f"Starting text extraction with Qwen2-VL, preprocessing: {preprocess}")
@@ -388,6 +453,7 @@ class QwenOCRService:
             print(f"Error in OCR extraction: {e}")
             import traceback
             traceback.print_exc()
+            self.cleanup_memory()
             return {
                 'error': str(e),
                 'text': '',
@@ -398,19 +464,18 @@ class QwenOCRService:
     
     def batch_process_images(self, image_list):
         """
-        Process multiple images at once
-        
-        Args:
-            image_list: List of image data
-            
-        Returns:
-            list: Results for each image
+        Process multiple images at once with memory management
         """
         results = []
         for i, image_data in enumerate(image_list):
             print(f"Processing batch image {i+1}/{len(image_list)}")
             result = self.extract_text_from_image(image_data)
             results.append(result)
+            
+            # Clean up memory between images
+            if i % 2 == 0:  # Clean every 2 images
+                self.cleanup_memory()
+                
         return results
 
 # Initialize OCR service
@@ -519,15 +584,28 @@ def health_check():
     Health check endpoint
     """
     status = 'healthy' if qwen_ocr_service is not None else 'unhealthy'
+    
+    gpu_info = {}
+    if torch.cuda.is_available():
+        gpu_info = {
+            'gpu_name': torch.cuda.get_device_name(),
+            'gpu_memory_allocated': f"{torch.cuda.memory_allocated() / 1024**3:.2f} GB",
+            'gpu_memory_total': f"{torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB"
+        }
+    
     model_info = {
         'status': status,
         'service': 'Qwen2-VL OCR Service',
         'model': 'Qwen/Qwen2-VL-7B-Instruct',
-        'device': str(qwen_ocr_service.device) if qwen_ocr_service else 'unknown'
+        'device': str(qwen_ocr_service.device) if qwen_ocr_service else 'unknown',
+        'system_memory_usage': f"{psutil.virtual_memory().percent:.1f}%",
+        **gpu_info
     }
     
     return jsonify(model_info)
 
 if __name__ == '__main__':
     print("Starting Flask Qwen2-VL OCR service on port 5001...")
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    # Increase timeout for the Flask app
+    app.config['TIMEOUT'] = 300  # 5 minutes
+    app.run(debug=True, port=5001, host='0.0.0.0', threaded=True)
