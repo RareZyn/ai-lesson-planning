@@ -47,3 +47,5 @@ coverage/
 .tmp/
 .temp/
 structure.txt
+models/
+
