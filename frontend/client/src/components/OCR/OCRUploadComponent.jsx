@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   Upload,
   Button,
@@ -7,10 +7,13 @@ import {
   Progress,
   Alert,
   Spin,
-  Switch,
   Image,
   Space,
   Divider,
+  Tag,
+  Statistic,
+  Row,
+  Col,
 } from "antd";
 import {
   InboxOutlined,
@@ -19,10 +22,10 @@ import {
   CopyOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  ClockCircleOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import "bootstrap/dist/css/bootstrap.min.css";
-import axios from "axios";
+import { ocrAPI, ocrUtils } from "../../services/ocrService";
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
@@ -30,169 +33,67 @@ const { Dragger } = Upload;
 const OCRUploadComponent = () => {
   const [extractedText, setExtractedText] = useState("");
   const [confidence, setConfidence] = useState(0);
-  const [words, setWords] = useState([]);
+  const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
-  const [preprocess, setPreprocess] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [processingTime, setProcessingTime] = useState(null);
-  const [serviceStatus, setServiceStatus] = useState("unknown");
-  const textAreaRef = useRef(null);
 
-  // Enhanced axios configuration with longer timeout
-  const apiClient = axios.create({
-    timeout: 600000, // 10 minutes
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  // Check OCR service health on component mount
-  React.useEffect(() => {
-    checkServiceHealth();
-  }, []);
-
-  // Function to check OCR service health
-  const checkServiceHealth = async () => {
-    try {
-      const response = await axios.get("/api/ocr/health", { timeout: 10000 });
-      if (response.data.success) {
-        setServiceStatus("healthy");
-        console.log("✅ OCR service is healthy:", response.data.serviceStatus);
-      }
-    } catch (err) {
-      setServiceStatus("unhealthy");
-      console.error("❌ OCR service health check failed:", err.message);
-    }
-  };
-
-  // Function to convert file to base64
-  const getBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-  // Upload configuration for Ant Design
+  // Upload configuration
   const uploadProps = {
     name: "image",
     multiple: false,
     accept: "image/*",
     showUploadList: false,
     beforeUpload: async (file) => {
-      console.log(`📁 File: ${file.name}`);
-      console.log(`📏 Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(
+        `📁 File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+      );
 
-      // Validate file type
-      const isImage = file.type.startsWith("image/");
-      if (!isImage) {
-        setError("You can only upload image files!");
+      // Validate file
+      const validation = ocrAPI.validateImage(file);
+
+      if (!validation.isValid) {
+        setError(validation.errors.join(". "));
         return false;
       }
 
-      // Validate file size (50MB)
-      const isLt50M = file.size / 1024 / 1024 < 50;
-      if (!isLt50M) {
-        setError(
-          `Image must be smaller than 50MB! Current size: ${(
-            file.size /
-            1024 /
-            1024
-          ).toFixed(2)} MB`
-        );
-        return false;
+      if (validation.warnings.length > 0) {
+        console.warn("⚠️ Warnings:", validation.warnings);
       }
 
-      // Check service health before processing
-      if (serviceStatus === "unhealthy") {
-        setError(
-          "OCR service is not available. Please check if the Python service is running."
-        );
-        return false;
-      }
-
+      // Reset state
       setError("");
       setSuccess("");
       setLoading(true);
-      setProcessingTime(null);
 
       try {
-        // Convert to base64
-        const base64Image = await getBase64(file);
-        setUploadedImage(base64Image);
+        // Convert to base64 and display preview
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          setUploadedImage(reader.result);
+        };
 
-        // Extract text
-        await extractTextFromImage(base64Image);
+        // Extract text using Gemini
+        const result = await ocrAPI.extractText(file, true);
+
+        if (result.success) {
+          setExtractedText(result.data.extractedText);
+          setConfidence(result.data.confidence);
+          setMetadata(result.data.metadata);
+          setSuccess(result.message || "Text extracted successfully!");
+        } else {
+          setError(result.message);
+        }
       } catch (err) {
         setError("Failed to process image: " + err.message);
+      } finally {
         setLoading(false);
       }
 
       return false; // Prevent default upload
     },
-  };
-
-  // Extract text from image using API with enhanced error handling
-  const extractTextFromImage = async (imageData) => {
-    const startTime = Date.now();
-
-    try {
-      console.log("🚀 Starting OCR extraction...");
-
-      const response = await apiClient.post("/api/ocr/extract-text", {
-        image: imageData,
-        preprocess: preprocess,
-      });
-
-      const endTime = Date.now();
-      const duration = ((endTime - startTime) / 1000).toFixed(2);
-      setProcessingTime(duration);
-
-      if (response.data.success) {
-        const data = response.data.data;
-        setExtractedText(data.extractedText);
-        setConfidence(Math.round(data.confidence * 100));
-        setWords(data.words || []);
-        setSuccess(`Text extracted successfully in ${duration} seconds!`);
-
-        console.log("✅ OCR Success:", {
-          textLength: data.extractedText.length,
-          confidence: Math.round(data.confidence * 100),
-          processingTime: duration,
-        });
-      } else {
-        throw new Error(response.data.message || "Unknown error");
-      }
-    } catch (err) {
-      const endTime = Date.now();
-      const duration = ((endTime - startTime) / 1000).toFixed(2);
-
-      console.error("❌ OCR Error:", err);
-
-      let errorMessage = "Failed to extract text";
-
-      if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
-        errorMessage = `Processing timed out after ${duration}s. Try with a smaller image or enable preprocessing.`;
-      } else if (err.response?.status === 503) {
-        errorMessage =
-          "OCR service is unavailable. Please ensure the Python service is running.";
-        setServiceStatus("unhealthy");
-      } else if (err.response?.status === 408) {
-        errorMessage = "Request timed out. Please try with a smaller image.";
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Copy text to clipboard
@@ -220,31 +121,14 @@ const OCRUploadComponent = () => {
   const clearAll = () => {
     setExtractedText("");
     setConfidence(0);
-    setWords([]);
+    setMetadata(null);
     setUploadedImage(null);
     setError("");
     setSuccess("");
-    setProcessingTime(null);
   };
 
-  // Get confidence color
-  const getConfidenceColor = (conf) => {
-    if (conf >= 80) return "#52c41a"; // green
-    if (conf >= 60) return "#faad14"; // yellow
-    return "#ff4d4f"; // red
-  };
-
-  // Get service status indicator
-  const getServiceStatusIcon = () => {
-    switch (serviceStatus) {
-      case "healthy":
-        return <CheckCircleOutlined style={{ color: "#52c41a" }} />;
-      case "unhealthy":
-        return <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />;
-      default:
-        return <ClockCircleOutlined style={{ color: "#faad14" }} />;
-    }
-  };
+  // Get confidence display info
+  const confidenceInfo = ocrUtils.getConfidenceColor(confidence);
 
   return (
     <div className="container-fluid py-4">
@@ -253,67 +137,17 @@ const OCRUploadComponent = () => {
           {/* Header */}
           <div className="mb-4 text-center">
             <Title level={2} className="mb-1">
-              AI-Powered Answer Recognition
+              <ThunderboltOutlined
+                className="me-2"
+                style={{ color: "#1890ff" }}
+              />
+              AI-Powered Handwriting Recognition
             </Title>
             <Text type="secondary" className="lead">
-              Upload student handwritten answers to extract text using OCR
-              technology
+              Powered by Google Gemini Vision AI - Extract text from handwritten
+              student answers
             </Text>
           </div>
-
-          {/* Service Status */}
-          <Card className="mb-3" size="small">
-            <div className="d-flex justify-content-between align-items-center">
-              <Space>
-                {getServiceStatusIcon()}
-                <Text strong>
-                  OCR Service Status:{" "}
-                  {serviceStatus === "healthy"
-                    ? "Online"
-                    : serviceStatus === "unhealthy"
-                    ? "Offline"
-                    : "Checking..."}
-                </Text>
-                {processingTime && (
-                  <Text type="secondary">
-                    Last processing time: {processingTime}s
-                  </Text>
-                )}
-              </Space>
-              <Button size="small" onClick={checkServiceHealth}>
-                Refresh Status
-              </Button>
-            </div>
-          </Card>
-
-          {/* Settings */}
-          <Card className="mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <Space direction="vertical" size="small">
-                  <div>
-                    <Text strong>Preprocessing: </Text>
-                    <Switch
-                      checked={preprocess}
-                      onChange={setPreprocess}
-                      checkedChildren="ON"
-                      unCheckedChildren="OFF"
-                      disabled={loading}
-                    />
-                  </div>
-                  <Text type="secondary" className="small">
-                    Enable image preprocessing to improve OCR accuracy
-                    (recommended for handwritten text)
-                  </Text>
-                </Space>
-              </div>
-              {(extractedText || uploadedImage) && (
-                <Button onClick={clearAll} type="default" disabled={loading}>
-                  Clear All
-                </Button>
-              )}
-            </div>
-          </Card>
 
           {/* Alerts */}
           {error && (
@@ -324,13 +158,7 @@ const OCRUploadComponent = () => {
               closable
               className="mb-3"
               onClose={() => setError("")}
-              action={
-                serviceStatus === "unhealthy" && (
-                  <Button size="small" onClick={checkServiceHealth}>
-                    Check Service
-                  </Button>
-                )
-              }
+              showIcon
             />
           )}
 
@@ -341,6 +169,8 @@ const OCRUploadComponent = () => {
               type="success"
               className="mb-3"
               showIcon
+              closable
+              onClose={() => setSuccess("")}
             />
           )}
 
@@ -349,30 +179,37 @@ const OCRUploadComponent = () => {
             <div className="col-lg-6 mb-4">
               <Card
                 title={
-                  <div className="d-flex align-items-center">
-                    <InboxOutlined className="me-2" />
-                    Upload Image
+                  <div className="d-flex align-items-center justify-content-between">
+                    <span>
+                      <InboxOutlined className="me-2" />
+                      Upload Student Answer
+                    </span>
+                    {uploadedImage && (
+                      <Button
+                        size="small"
+                        onClick={clearAll}
+                        disabled={loading}
+                      >
+                        Clear
+                      </Button>
+                    )}
                   </div>
                 }
                 className="h-100"
               >
-                <Dragger
-                  {...uploadProps}
-                  className="mb-3"
-                  disabled={loading || serviceStatus === "unhealthy"}
-                >
+                <Dragger {...uploadProps} className="mb-3" disabled={loading}>
                   <p className="ant-upload-drag-icon">
                     <InboxOutlined />
                   </p>
                   <p className="ant-upload-text">
-                    Click or drag image to this area to upload
+                    Click or drag image to upload
                   </p>
                   <p className="ant-upload-hint">
-                    Support for JPG, PNG, GIF formats. Maximum file size: 50MB
+                    Supports JPG, PNG formats. Max 50MB.
                     <br />
-                    {serviceStatus === "unhealthy" && (
-                      <Text type="danger">OCR service is offline</Text>
-                    )}
+                    <Text type="secondary" className="small">
+                      Large images will be automatically compressed
+                    </Text>
                   </p>
                 </Dragger>
 
@@ -386,6 +223,7 @@ const OCRUploadComponent = () => {
                         style={{
                           objectFit: "cover",
                           border: "1px solid #d9d9d9",
+                          borderRadius: "8px",
                         }}
                         src={uploadedImage}
                         preview={{
@@ -401,13 +239,14 @@ const OCRUploadComponent = () => {
                 )}
 
                 {loading && (
-                  <div className="text-center mt-3">
+                  <div className="text-center mt-4">
                     <Spin size="large" />
-                    <div className="mt-2">
-                      <Text>Processing image with AI...</Text>
+                    <div className="mt-3">
+                      <Text>Processing with Gemini AI...</Text>
                       <br />
                       <Text type="secondary" className="small">
-                        This may take 1-5 minutes depending on image complexity
+                        This may take 10-30 seconds depending on image
+                        complexity
                       </Text>
                     </div>
                   </div>
@@ -452,26 +291,96 @@ const OCRUploadComponent = () => {
               >
                 {extractedText ? (
                   <div>
-                    {/* Confidence Score */}
-                    <div className="mb-3">
-                      <Text strong>Confidence Score:</Text>
-                      <Progress
-                        percent={confidence}
-                        strokeColor={getConfidenceColor(confidence)}
-                        className="mb-2"
-                      />
-                      <Text type="secondary" className="small">
-                        {confidence >= 80
-                          ? "High confidence - text should be very accurate"
-                          : confidence >= 60
-                          ? "Medium confidence - review for accuracy"
-                          : "Low confidence - manual review recommended"}
-                      </Text>
-                    </div>
+                    {/* Statistics */}
+                    <Row gutter={16} className="mb-3">
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Confidence"
+                            value={Math.round(confidence * 100)}
+                            suffix="%"
+                            valueStyle={{ color: confidenceInfo.color }}
+                            prefix={
+                              confidence >= 0.8 ? (
+                                <CheckCircleOutlined />
+                              ) : (
+                                <ExclamationCircleOutlined />
+                              )
+                            }
+                          />
+                          <Tag color={confidenceInfo.color} className="mt-2">
+                            {confidenceInfo.label}
+                          </Tag>
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Characters"
+                            value={extractedText.length}
+                            valueStyle={{ color: "#1890ff" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Words"
+                            value={
+                              extractedText.split(/\s+/).filter(Boolean).length
+                            }
+                            valueStyle={{ color: "#52c41a" }}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
 
                     <Divider />
 
-                    {/* Extracted Text */}
+                    {/* Metadata */}
+                    {metadata && (
+                      <div className="mb-3">
+                        <Space wrap>
+                          {metadata.language && (
+                            <Tag color="blue">
+                              Language: {metadata.language}
+                            </Tag>
+                          )}
+                          {metadata.textType && (
+                            <Tag color="purple">Type: {metadata.textType}</Tag>
+                          )}
+                          {metadata.legibility && (
+                            <Tag
+                              color={
+                                metadata.legibility === "high"
+                                  ? "green"
+                                  : metadata.legibility === "medium"
+                                  ? "orange"
+                                  : "red"
+                              }
+                            >
+                              Legibility: {metadata.legibility}
+                            </Tag>
+                          )}
+                          {metadata.processingTime && (
+                            <Tag color="cyan">
+                              Time: {metadata.processingTime}
+                            </Tag>
+                          )}
+                        </Space>
+                        {metadata.notes && (
+                          <Alert
+                            message={metadata.notes}
+                            type="info"
+                            className="mt-2"
+                            showIcon
+                            closable
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Extracted Text Display */}
                     <div>
                       <Text strong>Extracted Text:</Text>
                       <div
@@ -479,7 +388,7 @@ const OCRUploadComponent = () => {
                         style={{
                           backgroundColor: "#fafafa",
                           minHeight: "200px",
-                          maxHeight: "300px",
+                          maxHeight: "400px",
                           overflowY: "auto",
                         }}
                       >
@@ -488,60 +397,55 @@ const OCRUploadComponent = () => {
                             whiteSpace: "pre-wrap",
                             marginBottom: 0,
                             fontSize: "14px",
-                            lineHeight: "1.6",
+                            lineHeight: "1.8",
+                            fontFamily: "'Courier New', monospace",
                           }}
                         >
-                          {extractedText || "No text extracted"}
+                          {extractedText}
                         </Paragraph>
                       </div>
                     </div>
 
-                    {/* Word Details */}
-                    {words.length > 0 && (
-                      <div className="mt-3">
-                        <Text strong>Detected Words ({words.length}):</Text>
-                        <div
-                          className="mt-2 p-2 border rounded"
-                          style={{
-                            backgroundColor: "#f6ffed",
-                            maxHeight: "150px",
-                            overflowY: "auto",
-                          }}
-                        >
-                          {words.map((word, index) => (
-                            <span
-                              key={index}
-                              className="badge me-1 mb-1"
-                              style={{
-                                backgroundColor: getConfidenceColor(
-                                  word.confidence * 100
-                                ),
-                                fontSize: "11px",
-                              }}
-                              title={`Confidence: ${Math.round(
-                                word.confidence * 100
-                              )}%`}
-                            >
-                              {word.text}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                    {/* Confidence Guide */}
+                    {confidence < 0.8 && (
+                      <Alert
+                        message="Tips for Better Results"
+                        description={
+                          <ul className="mb-0 ps-3">
+                            <li>Ensure good lighting without shadows</li>
+                            <li>Keep text horizontal and properly oriented</li>
+                            <li>Use higher resolution images if possible</li>
+                            <li>Avoid blur or motion in the photo</li>
+                          </ul>
+                        }
+                        type="warning"
+                        className="mt-3"
+                        showIcon
+                        closable
+                      />
                     )}
                   </div>
                 ) : (
                   <div
                     className="d-flex align-items-center justify-content-center text-muted"
-                    style={{ minHeight: "200px" }}
+                    style={{ minHeight: "300px" }}
                   >
                     <div className="text-center">
-                      <EyeOutlined
-                        style={{ fontSize: "48px", marginBottom: "16px" }}
+                      <ThunderboltOutlined
+                        style={{
+                          fontSize: "64px",
+                          marginBottom: "16px",
+                          opacity: 0.3,
+                        }}
                       />
                       <div>
-                        {serviceStatus === "unhealthy"
-                          ? "OCR service is offline. Please start the Python service."
-                          : "Upload an image to extract text"}
+                        <Text type="secondary">
+                          Upload a handwritten answer to extract text
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="small">
+                          Powered by Google Gemini Vision AI
+                        </Text>
                       </div>
                     </div>
                   </div>
@@ -550,51 +454,84 @@ const OCRUploadComponent = () => {
             </div>
           </div>
 
-          {/* Instructions */}
-          <Card title="Instructions & Troubleshooting" className="mt-4">
-            <div className="row">
-              <div className="col-md-6">
-                <Title level={5}>Tips for Better OCR Results:</Title>
+          {/* Instructions & Best Practices */}
+          <Card
+            title="Best Practices for Handwriting Recognition"
+            className="mt-4"
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Title level={5}>
+                  <CheckCircleOutlined
+                    className="me-2"
+                    style={{ color: "#52c41a" }}
+                  />
+                  Do's
+                </Title>
                 <ul>
-                  <li>Use high-resolution images (at least 300 DPI)</li>
-                  <li>Ensure good lighting and contrast</li>
-                  <li>Keep text horizontal and properly oriented</li>
-                  <li>Avoid shadows and glare on the paper</li>
-                  <li>Use clear, legible handwriting</li>
-                  <li>Enable preprocessing for handwritten text</li>
+                  <li>Use well-lit, clear photos without shadows</li>
+                  <li>Keep the camera steady to avoid blur</li>
+                  <li>Capture text straight-on (not at an angle)</li>
+                  <li>Ensure handwriting is legible and not too small</li>
+                  <li>Use high contrast (dark ink on white paper)</li>
+                  <li>Include entire answer in frame</li>
                 </ul>
-              </div>
-              <div className="col-md-6">
-                <Title level={5}>Troubleshooting:</Title>
+              </Col>
+              <Col xs={24} md={12}>
+                <Title level={5}>
+                  <ExclamationCircleOutlined
+                    className="me-2"
+                    style={{ color: "#ff4d4f" }}
+                  />
+                  Don'ts
+                </Title>
                 <ul>
-                  <li>
-                    <strong>Service Offline:</strong> Start Python service with{" "}
-                    <code>python ocr_service_qwen.py</code>
-                  </li>
-                  <li>
-                    <strong>Timeout:</strong> Try smaller images or enable
-                    preprocessing
-                  </li>
-                  <li>
-                    <strong>Low Confidence:</strong> Improve image quality and
-                    lighting
-                  </li>
-                  <li>
-                    <strong>No Text Found:</strong> Ensure text is clearly
-                    visible and not too small
-                  </li>
-                  <li>
-                    <strong>Processing Slow:</strong> Normal for first request
-                    (model loading)
-                  </li>
+                  <li>Avoid dim lighting or harsh shadows</li>
+                  <li>Don't upload blurry or out-of-focus images</li>
+                  <li>Avoid extreme angles or distorted perspectives</li>
+                  <li>Don't use images with excessive background noise</li>
+                  <li>Avoid low-resolution or heavily compressed images</li>
+                  <li>Don't crop text too tightly</li>
                 </ul>
-              </div>
-            </div>
+              </Col>
+            </Row>
+
+            <Divider />
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Title level={5}>Understanding Confidence Scores</Title>
+                <Space direction="vertical" className="w-100">
+                  <div>
+                    <Tag color="green">High (80-100%)</Tag>
+                    <Text>Excellent quality - text is highly accurate</Text>
+                  </div>
+                  <div>
+                    <Tag color="orange">Medium (60-79%)</Tag>
+                    <Text>Good quality - minor review recommended</Text>
+                  </div>
+                  <div>
+                    <Tag color="red">Low (&lt;60%)</Tag>
+                    <Text>Manual review required - verify accuracy</Text>
+                  </div>
+                </Space>
+              </Col>
+              <Col xs={24} md={12}>
+                <Title level={5}>Supported Features</Title>
+                <ul>
+                  <li>English and Malay handwritten text</li>
+                  <li>Mixed handwritten and printed text</li>
+                  <li>Mathematical expressions and symbols</li>
+                  <li>Various handwriting styles</li>
+                  <li>Automatic image compression for large files</li>
+                  <li>Real-time processing with AI</li>
+                </ul>
+              </Col>
+            </Row>
           </Card>
         </div>
       </div>
     </div>
   );
 };
-
 export default OCRUploadComponent;

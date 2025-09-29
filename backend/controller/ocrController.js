@@ -1,116 +1,21 @@
-const axios = require("axios");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const User = require("../model/User");
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = "./uploads/ocr";
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      Date.now() +
-        "-" +
-        Math.round(Math.random() * 1e9) +
-        path.extname(file.originalname)
-    );
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  // Check file type
-  if (file.mimetype.startsWith("image/")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image files are allowed!"), false);
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 20 * 1024 * 1024, // Reduced to 20MB for faster processing
-  },
-});
-
-// OCR service URL
-const ocrServiceUrl = process.env.OCR_SERVICE_URL || "http://localhost:5001";
-
-// Create axios instance with optimized settings
-const ocrAxios = axios.create({
-  timeout: 300000, // 5 minutes timeout
-  headers: {
-    "Content-Type": "application/json",
-  },
-  maxContentLength: 50 * 1024 * 1024, // 50MB
-  maxBodyLength: 50 * 1024 * 1024, // 50MB
-});
-
-// Add request interceptor for logging
-ocrAxios.interceptors.request.use(
-  (config) => {
-    console.log(`🚀 OCR Request: ${config.method.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error("❌ OCR Request Error:", error.message);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for logging
-ocrAxios.interceptors.response.use(
-  (response) => {
-    console.log(`✅ OCR Response: ${response.status} (${response.config.url})`);
-    return response;
-  },
-  (error) => {
-    console.error(
-      `❌ OCR Response Error: ${error.response?.status || "Network Error"} (${
-        error.config?.url
-      })`
-    );
-    return Promise.reject(error);
-  }
-);
-
-// Helper function to compress base64 image if needed
-const compressImageIfNeeded = (base64Image, maxSizeKB = 2048) => {
-  try {
-    // Calculate approximate size in KB
-    const sizeKB = (base64Image.length * 3) / 4 / 1024;
-
-    if (sizeKB > maxSizeKB) {
-      console.log(
-        `📏 Image size ${sizeKB.toFixed(
-          1
-        )}KB exceeds ${maxSizeKB}KB, may need compression`
-      );
-      // Note: Actual compression would require image processing here
-      // For now, just log the warning
-    }
-
-    return base64Image;
-  } catch (error) {
-    console.error("Error checking image size:", error);
-    return base64Image;
-  }
-};
-
-// Extract text from single image
 const extractTextFromImage = async (req, res) => {
   const startTime = Date.now();
 
   try {
-    console.log("📨 Received OCR extraction request");
-    const { image, preprocess = true } = req.body;
+    console.log("📝 Starting Gemini OCR extraction...");
+
+    // Validate request
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    const { image } = req.body;
 
     if (!image) {
       return res.status(400).json({
@@ -119,202 +24,205 @@ const extractTextFromImage = async (req, res) => {
       });
     }
 
-    // Compress image if needed
-    const processedImage = compressImageIfNeeded(image);
-
-    console.log(`🔧 Processing settings: preprocess=${preprocess}`);
-
-    // Call Python OCR service with enhanced error handling
-    const response = await ocrAxios.post(`${ocrServiceUrl}/api/ocr/extract`, {
-      image: processedImage,
-      preprocess: preprocess,
-    });
-
-    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`⏱️  Total processing time: ${processingTime}s`);
-
-    if (response.data.success) {
-      console.log(
-        `✅ OCR Success: extracted ${response.data.data.text.length} characters`
-      );
-
-      return res.json({
-        success: true,
-        data: {
-          extractedText: response.data.data.text,
-          confidence: response.data.data.confidence,
-          words: response.data.data.words,
-          boundingBoxes: response.data.data.bounding_boxes,
-          processingTime: processingTime,
-        },
-      });
-    } else {
-      console.error("❌ OCR service returned error:", response.data.error);
-      return res.status(500).json({
-        success: false,
-        message: "OCR processing failed",
-        error: response.data.error,
-      });
-    }
-  } catch (error) {
-    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.error(`❌ OCR Error after ${processingTime}s:`, error.message);
-
-    let errorMessage = "Failed to process image";
-    let statusCode = 500;
-
-    if (error.code === "ECONNRESET" || error.code === "ECONNABORTED") {
-      errorMessage = `Processing timed out after ${processingTime}s. The image may be too complex or the service is overloaded. Try with a smaller image or enable preprocessing.`;
-      statusCode = 408;
-    } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
-      errorMessage =
-        "OCR service is not available. Please ensure the Python service is running on port 5001.";
-      statusCode = 503;
-    } else if (error.response?.status === 408) {
-      errorMessage = "Request timed out. Please try with a smaller image.";
-      statusCode = 408;
-    } else if (error.response?.status === 503) {
-      errorMessage = "OCR service is temporarily unavailable.";
-      statusCode = 503;
-    } else if (error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-      statusCode = error.response.status;
-    }
-
-    return res.status(statusCode).json({
-      success: false,
-      message: errorMessage,
-      error: error.message,
-      processingTime: processingTime,
-      suggestions: [
-        "Try with a smaller image (< 2MB)",
-        "Enable preprocessing for handwritten text",
-        "Ensure the Python OCR service is running",
-        "Check if system has enough memory available",
-      ],
-    });
-  }
-};
-
-// Extract text from uploaded file
-const extractTextFromFile = async (req, res) => {
-  const startTime = Date.now();
-
-  try {
-    console.log("📁 Received file upload OCR request");
-
-    if (!req.file) {
+    // Validate base64 format
+    if (!image.startsWith("data:image/")) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded",
+        message: "Invalid image format. Expected base64 data URL.",
       });
     }
 
-    const filePath = req.file.path;
+    // Get user with Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Get and decrypt Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+
+    console.log("🔑 Gemini API key found, processing image...");
+
+    // Extract base64 data and mime type
+    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid base64 image format",
+      });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    // Check image size (base64 is ~1.37x original size)
+    const sizeInMB = (base64Data.length * 0.75) / (1024 * 1024);
+    console.log(`📏 Image size: ${sizeInMB.toFixed(2)} MB`);
+
+    if (sizeInMB > 50) {
+      return res.status(400).json({
+        success: false,
+        message: `Image size (${sizeInMB.toFixed(
+          2
+        )} MB) exceeds 50MB limit. Please compress the image.`,
+      });
+    }
+
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+    // Prepare prompt for OCR
+    const prompt = `Extract all handwritten text from this image. 
+    
+Instructions:
+- Transcribe exactly what you see, maintaining the original layout and line breaks
+- If text is unclear or illegible, mark it as [unclear]
+- Preserve punctuation and formatting
+- If the image contains no text, respond with "No text detected"
+- Do not add explanations or commentary, only transcribe the text
+
+Return the extracted text in this JSON format:
+{
+  "extractedText": "the full extracted text here",
+  "confidence": 0.95,
+  "metadata": {
+    "language": "detected language",
+    "textType": "handwritten/printed/mixed",
+    "legibility": "high/medium/low",
+    "notes": "any relevant observations"
+  }
+}`;
+
+    console.log("🚀 Sending image to Gemini Vision API...");
+
+    // Call Gemini Vision API
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data,
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("📥 Received response from Gemini");
+
+    // Parse response
+    let ocrResult;
+    try {
+      // Clean response text
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+      ocrResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("❌ Failed to parse Gemini response:", parseError);
+      // Fallback: treat entire response as extracted text
+      ocrResult = {
+        extractedText: text.trim(),
+        confidence: 0.5,
+        metadata: {
+          language: "unknown",
+          textType: "unknown",
+          legibility: "unknown",
+          notes: "Response parsing failed, using raw text",
+        },
+      };
+    }
+
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log(`✅ OCR completed in ${processingTime}s`);
     console.log(
-      `📂 Processing file: ${req.file.originalname} (${(
-        req.file.size /
-        1024 /
-        1024
-      ).toFixed(2)}MB)`
+      `📊 Extracted ${ocrResult.extractedText.length} characters with ${(
+        ocrResult.confidence * 100
+      ).toFixed(0)}% confidence`
     );
 
-    // Convert file to base64
-    const imageBuffer = fs.readFileSync(filePath);
-    const base64Image = `data:${
-      req.file.mimetype
-    };base64,${imageBuffer.toString("base64")}`;
-
-    // Compress if needed
-    const processedImage = compressImageIfNeeded(base64Image);
-
-    // Call OCR service
-    const response = await ocrAxios.post(`${ocrServiceUrl}/api/ocr/extract`, {
-      image: processedImage,
-      preprocess: req.body.preprocess !== "false",
-    });
-
-    // Clean up uploaded file
-    try {
-      fs.unlinkSync(filePath);
-      console.log("🗑️  Cleaned up temporary file");
-    } catch (cleanupError) {
-      console.warn("⚠️  Could not clean up file:", cleanupError.message);
-    }
-
-    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`⏱️  File processing time: ${processingTime}s`);
-
-    if (response.data.success) {
-      console.log(
-        `✅ File OCR Success: extracted ${response.data.data.text.length} characters`
-      );
-
-      return res.json({
-        success: true,
-        data: {
-          extractedText: response.data.data.text,
-          confidence: response.data.data.confidence,
-          words: response.data.data.words,
-          boundingBoxes: response.data.data.bounding_boxes,
-          originalFileName: req.file.originalname,
-          processingTime: processingTime,
+    // Return result
+    return res.status(200).json({
+      success: true,
+      data: {
+        extractedText: ocrResult.extractedText,
+        confidence: ocrResult.confidence,
+        metadata: {
+          ...ocrResult.metadata,
+          processingTime: `${processingTime}s`,
+          imageSize: `${sizeInMB.toFixed(2)} MB`,
+          model: "gemini-1.5-flash",
         },
-      });
-    } else {
-      console.error("❌ File OCR service error:", response.data.error);
-      return res.status(500).json({
-        success: false,
-        message: "OCR processing failed",
-        error: response.data.error,
-      });
-    }
+      },
+      message: "Text extracted successfully",
+    });
   } catch (error) {
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.error(`❌ File OCR Error after ${processingTime}s:`, error.message);
+    console.error(`❌ Gemini OCR Error after ${processingTime}s:`, error);
 
-    // Clean up file if it exists
-    if (req.file && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log("🗑️  Cleaned up temporary file after error");
-      } catch (cleanupError) {
-        console.warn(
-          "⚠️  Could not clean up file after error:",
-          cleanupError.message
-        );
-      }
-    }
-
-    let errorMessage = "Failed to process uploaded file";
+    // Handle specific Gemini errors
+    let errorMessage = "Failed to extract text from image";
     let statusCode = 500;
 
-    if (error.code === "ECONNRESET" || error.code === "ECONNABORTED") {
-      errorMessage = `File processing timed out after ${processingTime}s. Try with a smaller image file.`;
-      statusCode = 408;
-    } else if (error.response?.status === 503) {
-      errorMessage = "OCR service is temporarily unavailable.";
-      statusCode = 503;
-    } else if (error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-      statusCode = error.response.status;
+    if (error.message?.includes("API_KEY_INVALID")) {
+      errorMessage =
+        "Invalid Gemini API key. Please check your API key in profile settings.";
+      statusCode = 401;
+    } else if (error.message?.includes("RESOURCE_EXHAUSTED")) {
+      errorMessage =
+        "Gemini API quota exceeded. Please try again later or check your API limits.";
+      statusCode = 429;
+    } else if (error.message?.includes("INVALID_ARGUMENT")) {
+      errorMessage =
+        "Invalid image format or size. Please ensure the image is valid.";
+      statusCode = 400;
+    } else if (error.message) {
+      errorMessage = error.message;
     }
 
     return res.status(statusCode).json({
       success: false,
       message: errorMessage,
-      error: error.message,
-      processingTime: processingTime,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      processingTime: `${processingTime}s`,
     });
   }
 };
 
-// Batch process multiple images
+/**
+ * Batch extract text from multiple images
+ * Processes images sequentially to avoid API rate limits
+ */
 const batchExtractText = async (req, res) => {
   const startTime = Date.now();
 
   try {
-    console.log("📊 Received batch OCR request");
+    console.log("📊 Starting batch OCR extraction...");
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
     const { images } = req.body;
 
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -324,172 +232,148 @@ const batchExtractText = async (req, res) => {
       });
     }
 
-    console.log(`📊 Processing ${images.length} images in batch`);
+    if (images.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum 10 images allowed per batch",
+      });
+    }
 
-    // Process images with smaller batches to prevent memory issues
-    const batchSize = 3; // Process 3 images at a time
+    // Get user with Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+
+    console.log(`📊 Processing ${images.length} images...`);
+
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     const results = [];
 
-    for (let i = 0; i < images.length; i += batchSize) {
-      const batch = images.slice(i, i + batchSize);
-      console.log(
-        `📊 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
-          images.length / batchSize
-        )}`
-      );
+    // Process images sequentially
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      console.log(`📝 Processing image ${i + 1}/${images.length}...`);
 
       try {
-        const response = await ocrAxios.post(
-          `${ocrServiceUrl}/api/ocr/batch-extract`,
-          {
-            images: batch,
-          }
-        );
-
-        if (response.data.success) {
-          results.push(
-            ...response.data.data.map((result) => ({
-              extractedText: result.text,
-              confidence: result.confidence,
-              words: result.words,
-              boundingBoxes: result.bounding_boxes,
-            }))
-          );
-        } else {
-          // Add error results for failed batch
-          batch.forEach(() => {
-            results.push({
-              extractedText: "",
-              confidence: 0,
-              words: [],
-              boundingBoxes: [],
-              error: response.data.error,
-            });
-          });
-        }
-      } catch (batchError) {
-        console.error(
-          `❌ Batch ${Math.floor(i / batchSize) + 1} failed:`,
-          batchError.message
-        );
-        // Add error results for failed batch
-        batch.forEach(() => {
+        // Validate image
+        if (!image.startsWith("data:image/")) {
           results.push({
+            success: false,
+            error: "Invalid image format",
             extractedText: "",
             confidence: 0,
-            words: [],
-            boundingBoxes: [],
-            error: batchError.message,
           });
-        });
-      }
+          continue;
+        }
 
-      // Small delay between batches to prevent overwhelming the service
-      if (i + batchSize < images.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches) {
+          results.push({
+            success: false,
+            error: "Invalid base64 format",
+            extractedText: "",
+            confidence: 0,
+          });
+          continue;
+        }
+
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+
+        // Same prompt as single extraction
+        const prompt = `Extract all handwritten text from this image. Return JSON with: extractedText, confidence, and metadata.`;
+
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data,
+            },
+          },
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+
+        let ocrResult;
+        try {
+          const cleanedText = text
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+          ocrResult = JSON.parse(cleanedText);
+        } catch (parseError) {
+          ocrResult = {
+            extractedText: text.trim(),
+            confidence: 0.5,
+            metadata: {},
+          };
+        }
+
+        results.push({
+          success: true,
+          extractedText: ocrResult.extractedText,
+          confidence: ocrResult.confidence,
+          metadata: ocrResult.metadata,
+        });
+
+        // Small delay to avoid rate limiting
+        if (i < images.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } catch (imageError) {
+        console.error(`❌ Error processing image ${i + 1}:`, imageError);
+        results.push({
+          success: false,
+          error: imageError.message,
+          extractedText: "",
+          confidence: 0,
+        });
       }
     }
 
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`⏱️  Batch processing completed in ${processingTime}s`);
+    const successCount = results.filter((r) => r.success).length;
 
-    return res.json({
+    console.log(
+      `✅ Batch processing completed: ${successCount}/${images.length} successful in ${processingTime}s`
+    );
+
+    return res.status(200).json({
       success: true,
       data: results,
-      processingTime: processingTime,
-      totalImages: images.length,
+      summary: {
+        total: images.length,
+        successful: successCount,
+        failed: images.length - successCount,
+        processingTime: `${processingTime}s`,
+      },
+      message: `Processed ${successCount}/${images.length} images successfully`,
     });
   } catch (error) {
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.error(
-      `❌ Batch OCR Error after ${processingTime}s:`,
-      error.message
-    );
+    console.error(`❌ Batch OCR Error after ${processingTime}s:`, error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to process images",
-      error: error.message,
-      processingTime: processingTime,
+      message: "Failed to process batch images",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      processingTime: `${processingTime}s`,
     });
-  }
-};
-
-// Check OCR service health with enhanced diagnostics
-const checkOCRServiceHealth = async (req, res) => {
-  try {
-    console.log("🏥 Checking OCR service health...");
-
-    const response = await axios.get(`${ocrServiceUrl}/health`, {
-      timeout: 10000, // 10 second timeout for health check
-    });
-
-    console.log("✅ OCR service health check passed");
-
-    return res.json({
-      success: true,
-      serviceStatus: response.data,
-      timestamp: new Date().toISOString(),
-      serviceUrl: ocrServiceUrl,
-    });
-  } catch (error) {
-    console.error("❌ OCR service health check failed:", error.message);
-
-    let healthStatus = {
-      status: "unhealthy",
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      serviceUrl: ocrServiceUrl,
-    };
-
-    // Provide more specific error information
-    if (error.code === "ECONNREFUSED") {
-      healthStatus.diagnosis = "Service is not running or not accessible";
-      healthStatus.suggestion =
-        "Start the Python OCR service with: python ocr_service_qwen.py";
-    } else if (error.code === "ENOTFOUND") {
-      healthStatus.diagnosis = "Service URL is not reachable";
-      healthStatus.suggestion = "Check if the service URL is correct";
-    } else if (error.code === "TIMEOUT") {
-      healthStatus.diagnosis = "Service is not responding";
-      healthStatus.suggestion = "Service may be overloaded or stuck";
-    }
-
-    return res.status(503).json({
-      success: false,
-      message: "OCR service is unavailable",
-      healthStatus: healthStatus,
-    });
-  }
-};
-
-// Save OCR result to database (optional implementation)
-const saveOCRResult = async (userId, ocrData) => {
-  try {
-    // Implement database saving logic here if needed
-    console.log(
-      `💾 Saving OCR result for user ${userId} (${ocrData.text.length} characters)`
-    );
-
-    // Example implementation:
-    // const ocrResult = new OCRResult({
-    //   userId: userId,
-    //   extractedText: ocrData.text,
-    //   confidence: ocrData.confidence,
-    //   timestamp: new Date(),
-    //   wordCount: ocrData.words ? ocrData.words.length : 0
-    // });
-    // await ocrResult.save();
-  } catch (error) {
-    console.error("❌ Error saving OCR result:", error);
   }
 };
 
 module.exports = {
   extractTextFromImage,
-  extractTextFromFile,
   batchExtractText,
-  checkOCRServiceHealth,
-  upload,
-  saveOCRResult, 
 };
