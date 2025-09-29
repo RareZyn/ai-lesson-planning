@@ -68,6 +68,8 @@ const sowRoutes = require("./route/sowRoutes");
 const lessonRoutes = require("./route/lessonRoutes");
 const communityRoutes = require("./route/communityRoute");
 const ocrRoutes = require("./route/ocrRoutes");
+const studentRoutes = require("./route/studentRoutes");
+const answerRoutes = require("./route/answerRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -80,7 +82,8 @@ app.use("/api/sow", sowRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/ocr", ocrRoutes);
-
+app.use("/api/students", studentRoutes);
+app.use("/api/answers", answerRoutes);
 // Health check route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
