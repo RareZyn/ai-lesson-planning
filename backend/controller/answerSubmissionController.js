@@ -345,8 +345,15 @@ exports.getSubmissionsByClass = async (req, res) => {
     const { classId } = req.params;
     const { assessmentId, status } = req.query;
 
-    const query = { classId };
+    // Build query object
+    const query = {};
 
+    // Handle special "all" case - fetch all user's submissions
+    if (classId !== "all") {
+      query.classId = classId;
+    }
+
+    // Add optional filters
     if (assessmentId) {
       query.assessmentId = assessmentId;
     }
@@ -358,6 +365,7 @@ exports.getSubmissionsByClass = async (req, res) => {
     const submissions = await StudentAnswer.find(query)
       .populate("studentId", "name studentId avatar")
       .populate("assessmentId", "title activityType")
+      .populate("classId", "className grade")
       .sort({ submittedAt: -1 });
 
     res.status(200).json({
