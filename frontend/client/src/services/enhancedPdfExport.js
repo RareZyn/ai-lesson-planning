@@ -145,9 +145,6 @@ class EnhancedPdfExport {
     }
   }
 
-  /**
-   * High-quality HTML to PDF conversion (alternative method)
-   */
   async exportHtmlElementToPdf(
     elementId,
     fileName = "document.pdf",
@@ -159,26 +156,17 @@ class EnhancedPdfExport {
         throw new Error(`Element with ID '${elementId}' not found`);
       }
 
-      // Temporarily modify styles for better PDF rendering
-      const originalStyles = this.prepareElementForPdf(element);
-
-      // Generate canvas from HTML
+      // Generate high-quality canvas
       const canvas = await html2canvas(element, {
-        scale: 2, // Higher resolution
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
         width: element.scrollWidth,
         height: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
       });
 
-      // Restore original styles
-      this.restoreElementStyles(element, originalStyles);
-
-      // Create PDF from canvas
       const imgData = canvas.toDataURL("image/png");
       const doc = new jsPDF({
         ...this.defaultOptions,
@@ -187,56 +175,22 @@ class EnhancedPdfExport {
 
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - (this.margins.left + this.margins.right);
+      const imgWidth = pageWidth - 20; // 10mm margins
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      let yPosition = this.margins.top;
-      let remainingHeight = imgHeight;
+      let heightLeft = imgHeight;
+      let position = 10;
 
-      // Handle multi-page documents
-      while (remainingHeight > 0) {
-        const pageContentHeight =
-          pageHeight - (this.margins.top + this.margins.bottom);
-        const currentPageHeight = Math.min(remainingHeight, pageContentHeight);
+      // Add first page
+      doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - 20;
 
-        // Calculate source positioning for this page
-        const sourceY = imgHeight - remainingHeight;
-        const sourceHeight = (currentPageHeight * canvas.height) / imgHeight;
-
-        // Create a temporary canvas for this page
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        const pageCtx = pageCanvas.getContext("2d");
-
-        pageCtx.drawImage(
-          canvas,
-          0,
-          (sourceY * canvas.height) / imgHeight,
-          canvas.width,
-          sourceHeight,
-          0,
-          0,
-          canvas.width,
-          sourceHeight
-        );
-
-        const pageImgData = pageCanvas.toDataURL("image/png");
-        doc.addImage(
-          pageImgData,
-          "PNG",
-          this.margins.left,
-          yPosition,
-          imgWidth,
-          currentPageHeight
-        );
-
-        remainingHeight -= currentPageHeight;
-
-        if (remainingHeight > 0) {
-          doc.addPage();
-          yPosition = this.margins.top;
-        }
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = -(pageHeight - 20 - heightLeft);
+        doc.addPage();
+        doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - 20;
       }
 
       doc.save(fileName);

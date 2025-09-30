@@ -365,35 +365,187 @@ const convertActivityToHTML = (activityContent, activityType) => {
   return html;
 };
 
-const convertAssessmentToHTML = (assessmentContent) => {
+// Enhanced CSS for PDF rendering - prevents page breaks and optimizes spacing
+const getEnhancedPdfStyles = () => `
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.3;
+      color: #333;
+      padding: 15px;
+    }
+    
+    h1 {
+      font-size: 15pt;
+      margin-bottom: 6px;
+      color: #1890ff;
+      page-break-after: avoid;
+    }
+    
+    h2, h3 {
+      font-size: 12pt;
+      margin: 8px 0 4px 0;
+      color: #262626;
+      page-break-after: avoid;
+    }
+    
+    h4 {
+      font-size: 11pt;
+      margin: 6px 0 3px 0;
+      font-weight: 600;
+      page-break-after: avoid;
+    }
+    
+    p {
+      margin: 3px 0;
+      font-size: 11pt;
+    }
+    
+    /* CRITICAL: Prevent page breaks inside questions */
+    .question, .question-wrapper, .answer-item, .exam-part {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      margin-bottom: 8px;
+    }
+    
+    /* Compact info boxes */
+    .student-info, .assessment-info, .answer-key-info {
+      padding: 4px 6px;
+      margin-bottom: 6px;
+      background: #f8f9fa;
+      border-radius: 3px;
+      font-size: 10pt;
+    }
+    
+    .instructions {
+      padding: 6px 8px;
+      margin-bottom: 8px;
+      background: #fff7e6;
+      border: 1px solid #ffa940;
+      border-radius: 3px;
+    }
+    
+    .instructions ul, .instructions ol {
+      margin: 2px 0;
+      padding-left: 18px;
+    }
+    
+    .instructions li {
+      margin-bottom: 1px;
+      font-size: 10pt;
+    }
+    
+    /* Question styling - keeps everything together */
+    .question {
+      padding: 8px;
+      border: 1px solid #e8e8e8;
+      border-radius: 3px;
+      background: #fafafa;
+    }
+    
+    .options {
+      margin: 4px 0 0 12px;
+    }
+    
+    .options p {
+      margin: 2px 0;
+    }
+    
+    .answer-space {
+      margin: 6px 0;
+      border: 1px solid #d9d9d9;
+      background: #fafafa;
+      border-radius: 2px;
+    }
+    
+    /* Answer key styling */
+    .answer-item {
+      padding: 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 3px;
+      background: #fafafa;
+      margin-bottom: 8px;
+    }
+    
+    .answer-item > div {
+      padding: 5px;
+      margin-bottom: 4px;
+      border-radius: 2px;
+      font-size: 10pt;
+    }
+    
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 8px 0;
+    }
+    
+    tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    
+    th, td {
+      padding: 4px 6px;
+      border: 1px solid #d9d9d9;
+      text-align: left;
+      font-size: 10pt;
+    }
+    
+    th {
+      background: #f0f0f0;
+      font-weight: 600;
+    }
+    
+    /* Print optimization */
+    @media print {
+      body {
+        padding: 10mm;
+      }
+      
+      .question, .question-wrapper, .answer-item, .exam-part {
+        page-break-inside: avoid !important;
+      }
+      
+      h1, h2, h3, h4 {
+        page-break-after: avoid !important;
+      }
+    }
+  </style>
+`;
+
+const convertAssessmentContentToHTML = (assessmentContent) => {
   if (!assessmentContent) return null;
 
-  let html = `
-    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${
-          assessmentContent.title || "Assessment"
-        }</h1>
-        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="assessment-content">
+      <div class="assessment-header">
+        <h1>${assessmentContent.title || "Assessment"}</h1>
+        <div class="student-info">
+          <p><strong>Name:</strong> _______________ <strong>Class:</strong> _________ <strong>Date:</strong> _________</p>
         </div>
-        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Time Allocation:</strong> ${
+        <div class="assessment-info">
+          <p><strong>Time:</strong> ${
             assessmentContent.timeAllocation || "60 minutes"
-          }</p>
-          <p style="margin: 0;"><strong>Total Questions:</strong> ${
-            assessmentContent.totalQuestions || "N/A"
-          }</p>
+          } | <strong>Questions:</strong> ${
+    assessmentContent.totalQuestions || "N/A"
+  }</p>
         </div>
-      </div>
-  `;
+      </div>`;
 
   if (assessmentContent.instructions) {
-    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
-      <h3 style="color: #fa8c16;">Instructions:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
+    html += `<div class="instructions"><strong>Instructions:</strong><ul>`;
     assessmentContent.instructions.forEach((instruction) => {
-      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+      html += `<li>${instruction}</li>`;
     });
     html += `</ul></div>`;
   }
@@ -401,43 +553,38 @@ const convertAssessmentToHTML = (assessmentContent) => {
   if (assessmentContent.questions && assessmentContent.questions.length > 0) {
     html += `<div class="questions">`;
     assessmentContent.questions.forEach((question) => {
-      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
-          question.questionNumber
-        } (${question.points} ${
+      html += `<div class="question-wrapper"><div class="question">
+        <h4>Question ${question.questionNumber} (${question.points} ${
         question.points === 1 ? "point" : "points"
       })</h4>
-        <p style="font-size: 16px; margin-bottom: 15px;">${
-          question.question
-        }</p>`;
+        <p>${question.question}</p>`;
 
       if (question.type === "multiple_choice" && question.options) {
-        html += `<div class="options" style="margin-left: 20px;">`;
+        html += `<div class="options">`;
         question.options.forEach((option) => {
-          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+          html += `<p>${option}</p>`;
         });
         html += `</div>`;
       } else if (question.answerSpace) {
         const height =
           question.answerSpace === "3 lines"
-            ? "80px"
+            ? "50px"
             : question.answerSpace === "5 lines"
-            ? "120px"
-            : "60px";
-        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+            ? "80px"
+            : "40px";
+        html += `<div class="answer-space" style="height: ${height};"></div>`;
       } else {
-        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+        html += `<div class="answer-space" style="height: 50px;"></div>`;
       }
 
-      html += `</div>`;
+      html += `</div></div>`;
     });
     html += `</div>`;
   }
 
-  html += `</div>`;
+  html += `</div></body></html>`;
   return html;
 };
-
 const convertRubricToHTML = (rubricContent) => {
   if (!rubricContent) return null;
 
@@ -507,255 +654,63 @@ const convertRubricToHTML = (rubricContent) => {
   return html;
 };
 
-const convertAnswerKeyToHTML = (answerKeyContent) => {
+const convertAnswerKeyContentToHTML = (answerKeyContent) => {
   if (!answerKeyContent) return null;
 
-  let html = `
-    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${
-        answerKeyContent.title || "Answer Key"
-      }</h1>
-      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <p><strong>Total Questions:</strong> ${
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="answer-key-content">
+      <h1>${answerKeyContent.title || "Answer Key"}</h1>
+      <div class="answer-key-info">
+        <p><strong>Questions:</strong> ${
           answerKeyContent.totalQuestions || "N/A"
-        }</p>
-        <p style="margin: 0;"><strong>Total Points:</strong> ${
-          answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
-        }</p>
-      </div>
-  `;
+        } | <strong>Points:</strong> ${
+    answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
+  }</p>
+      </div>`;
 
   if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
     html += `<div class="answers">`;
     answerKeyContent.answers.forEach((answer) => {
-      // Handle points/marks properly with fallback
       const points = answer.points || answer.marks || 1;
 
-      html += `
-        <div class="answer-item" style="margin-bottom: 25px; padding: 20px; border: 2px solid #d9d9d9; border-radius: 12px; background: #fafafa;">
-          <h3 style="color: #262626; margin-bottom: 15px; border-bottom: 1px solid #e8e8e8; padding-bottom: 8px;">
-            Question ${answer.questionNumber} (${points} ${
+      html += `<div class="answer-item">
+        <h4>Question ${answer.questionNumber} (${points} ${
         points === 1 ? "point" : "points"
-      })
-          </h3>
-          
-          <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
-            <p style="margin: 0; font-size: 16px;"><strong style="color: #52c41a;">Correct Answer:</strong> ${
-              answer.correctAnswer || "Not specified"
-            }</p>
-          </div>`;
+      })</h4>
+        <div style="background: #e6f7ff; border-left: 3px solid #1890ff;">
+          <p><strong>Answer:</strong> ${
+            answer.correctAnswer || "Not specified"
+          }</p>
+        </div>`;
 
-      // Add explanation if available and not undefined
       if (
         answer.explanation &&
         answer.explanation !== "undefined" &&
-        answer.explanation.trim() !== ""
+        answer.explanation.trim()
       ) {
-        html += `
-          <div style="background: #e6f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1890ff;">
-            <p style="margin: 0;"><strong style="color: #1890ff;">Explanation:</strong> ${answer.explanation}</p>
-          </div>`;
+        html += `<div style="background: #f6ffed; border-left: 3px solid #52c41a;">
+          <p><strong>Explanation:</strong> ${answer.explanation}</p>
+        </div>`;
       }
 
-      // Add marking guidance if available and not undefined
-      if (
-        answer.markingGuidance &&
-        answer.markingGuidance !== "undefined" &&
-        answer.markingGuidance.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #fff7e6; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa8c16;">
-            <p style="margin: 0;"><strong style="color: #fa8c16;">Marking Guidance:</strong> ${answer.markingGuidance}</p>
-          </div>`;
-      }
-
-      // Add marking notes if available and not undefined
       if (
         answer.markingNotes &&
         answer.markingNotes !== "undefined" &&
-        answer.markingNotes.trim() !== ""
+        answer.markingNotes.trim()
       ) {
-        html += `
-          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
-            <p style="margin: 0;"><strong style="color: #52c41a;">Marking Notes:</strong> ${answer.markingNotes}</p>
-          </div>`;
-      }
-
-      // Add acceptable alternatives if available and not "None" or undefined
-      if (
-        answer.acceptableAlternatives &&
-        answer.acceptableAlternatives !== "None" &&
-        answer.acceptableAlternatives !== "undefined" &&
-        answer.acceptableAlternatives.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
-            <p style="margin: 0;"><strong style="color: #722ed1;">Acceptable Alternatives:</strong> ${answer.acceptableAlternatives}</p>
-          </div>`;
-      }
-
-      // Add common errors if available and not undefined
-      if (
-        answer.commonErrors &&
-        answer.commonErrors !== "undefined" &&
-        answer.commonErrors.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #fff2e8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa541c;">
-            <p style="margin: 0;"><strong style="color: #fa541c;">Common Student Errors:</strong> ${answer.commonErrors}</p>
-          </div>`;
-      }
-
-      // Add text reference if available and not undefined
-      if (
-        answer.textReference &&
-        answer.textReference !== "undefined" &&
-        answer.textReference.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #f9f0ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
-            <p style="margin: 0;"><strong style="color: #722ed1;">Text Reference:</strong> ${answer.textReference}</p>
-          </div>`;
-      }
-
-      // Add grammar point if available and not undefined
-      if (
-        answer.grammarPoint &&
-        answer.grammarPoint !== "undefined" &&
-        answer.grammarPoint.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #e6fffb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #13c2c2;">
-            <p style="margin: 0;"><strong style="color: #13c2c2;">Grammar Point:</strong> ${answer.grammarPoint}</p>
-          </div>`;
-      }
-
-      // Add reading skill if available and not undefined
-      if (
-        answer.readingSkill &&
-        answer.readingSkill !== "undefined" &&
-        answer.readingSkill.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
-            <p style="margin: 0;"><strong style="color: #52c41a;">Reading Skill:</strong> ${answer.readingSkill}</p>
-          </div>`;
-      }
-
-      // Add discourse skill if available and not undefined
-      if (
-        answer.discourseSkill &&
-        answer.discourseSkill !== "undefined" &&
-        answer.discourseSkill.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #fff1f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff4d4f;">
-            <p style="margin: 0;"><strong style="color: #ff4d4f;">Discourse Skill:</strong> ${answer.discourseSkill}</p>
-          </div>`;
-      }
-
-      // Add transfer skill if available and not undefined
-      if (
-        answer.transferSkill &&
-        answer.transferSkill !== "undefined" &&
-        answer.transferSkill.trim() !== ""
-      ) {
-        html += `
-          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #597ef7;">
-            <p style="margin: 0;"><strong style="color: #597ef7;">Transfer Skill:</strong> ${answer.transferSkill}</p>
-          </div>`;
-      }
-
-      html += `</div>`; // Close answer-item div
-    });
-    html += `</div>`; // Close answers div
-  }
-
-  // Add part-specific guidance if available
-  if (answerKeyContent.partSpecificGuidance) {
-    html += `
-      <div style="margin-top: 30px; padding: 20px; background: #f0f2f5; border-radius: 12px;">
-        <h3 style="color: #262626; margin-bottom: 20px;">Part-Specific Marking Guidance</h3>`;
-
-    Object.entries(answerKeyContent.partSpecificGuidance).forEach(
-      ([part, guidance]) => {
-        html += `
-        <div style="margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; border-left: 4px solid #1890ff;">
-          <h4 style="color: #1890ff; margin-bottom: 10px;">${part.toUpperCase()}</h4>
-          <p><strong>Focus:</strong> ${guidance.focus}</p>
-          <p><strong>Marking Principle:</strong> ${
-            guidance.markingPrinciple
-          }</p>
-          ${
-            guidance.commonIssues
-              ? `<p><strong>Common Issues:</strong> ${guidance.commonIssues}</p>`
-              : ""
-          }
-          ${
-            guidance.teachingPoint
-              ? `<p><strong>Teaching Point:</strong> ${guidance.teachingPoint}</p>`
-              : ""
-          }
+        html += `<div style="background: #fff7e6; border-left: 3px solid #fa8c16;">
+          <p><strong>Marking:</strong> ${answer.markingNotes}</p>
         </div>`;
       }
-    );
 
-    html += `</div>`;
-  }
-
-  // Add marking scheme if available
-  if (answerKeyContent.markingScheme) {
-    html += `<div class="marking-scheme" style="margin-top: 25px; padding: 20px; background: #e6f7ff; border-radius: 12px;">
-      <h3 style="color: #1890ff; margin-bottom: 15px;">Marking Scheme</h3>`;
-
-    Object.entries(answerKeyContent.markingScheme).forEach(
-      ([section, description]) => {
-        html += `<p style="margin-bottom: 10px;"><strong>${
-          section.charAt(0).toUpperCase() + section.slice(1)
-        }:</strong> ${description}</p>`;
-      }
-    );
-
-    html += `</div>`;
-  }
-
-  // Add general marking principles if available
-  if (answerKeyContent.generalMarkingPrinciples) {
-    html += `
-      <div style="margin-top: 25px; padding: 20px; background: #fff7e6; border-radius: 12px;">
-        <h3 style="color: #fa8c16; margin-bottom: 15px;">General Marking Principles</h3>`;
-
-    Object.entries(answerKeyContent.generalMarkingPrinciples).forEach(
-      ([principle, description]) => {
-        html += `<p style="margin-bottom: 10px;"><strong>${
-          principle.charAt(0).toUpperCase() + principle.slice(1)
-        }:</strong> ${description}</p>`;
-      }
-    );
-
-    html += `</div>`;
-  }
-
-  // Add grading scale if available
-  if (answerKeyContent.gradingScale) {
-    html += `<div class="grading-scale" style="margin-top: 25px; padding: 20px; background: #f6ffed; border-radius: 12px;">
-      <h3 style="color: #52c41a; margin-bottom: 15px;">Grading Scale</h3>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">`;
-
-    Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
-      html += `
-        <div style="padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #d9d9d9;">
-          <strong style="color: #52c41a;">${level.toUpperCase()}:</strong> ${range}
-        </div>`;
+      html += `</div>`;
     });
-
-    html += `</div></div>`;
+    html += `</div>`;
   }
 
-  html += `</div>`;
+  html += `</div></body></html>`;
   return html;
 };
-
 const createStandaloneAssessment = async (req, res) => {
   try {
     console.log("📝 Creating standalone assessment:", req.body);
@@ -4047,74 +4002,83 @@ CRITICAL: Generate authentic SPM Paper 2 content with realistic scenarios connec
 };
 
 const convertExamToHTML = (examContent, paperType = "paper1") => {
-  if (!examContent) {
-    console.error("❌ No examContent provided to convertExamToHTML");
-    return null;
-  }
+  if (!examContent) return null;
 
-  console.log("🔧 Converting exam content to HTML:", {
-    paperType,
-    hasTitle: !!examContent.title,
-    hasSubtitle: !!examContent.subtitle,
-    hasParts: !!examContent.parts,
-    partsCount: examContent.parts?.length || 0,
-  });
-
-  try {
-    let html = `
-      <div class="exam-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-        <div class="exam-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-          <h1 style="color: #1890ff; margin-bottom: 5px;">${
-            examContent.title || "SPM English Examination"
-          }</h1>
-          <h2 style="color: #666; margin-bottom: 10px;">${
-            examContent.subtitle || "Reading and Use of English"
-          }</h2>
-          <div class="exam-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-            <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
-            <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
-            <p><strong>Duration:</strong> ${
-              examContent.duration || "1 hour 30 minutes"
-            }</p>
-            ${
-              paperType === "paper1"
-                ? `<p><strong>Questions:</strong> ${
-                    examContent.totalQuestions || 40
-                  } <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>`
-                : `<p><strong>Parts:</strong> ${
-                    examContent.totalParts || 3
-                  } <strong>Marks:</strong> ${examContent.totalMarks || 60}</p>`
-            }
-          </div>
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      ${getEnhancedPdfStyles()}
+    </head>
+    <body>
+    <div class="exam-content">
+      <div class="exam-header">
+        <h1>${examContent.title || "SPM English Examination"}</h1>
+        <h2>${examContent.subtitle || "Reading and Use of English"}</h2>
+        <div class="student-info">
+          <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
+          <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
+          <p><strong>Duration:</strong> ${
+            examContent.duration || "90 minutes"
+          } | <strong>${paperType === "paper1" ? "Questions:" : "Parts:"} ${
+    examContent.totalQuestions || examContent.totalParts || 40
+  }</strong> | <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>
         </div>
-    `;
+      </div>
+  `;
 
-    if (examContent.instructions && Array.isArray(examContent.instructions)) {
-      html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
-        <h3 style="color: #fa8c16;">Instructions:</h3>
-        <ul style="margin: 0; padding-left: 20px;">`;
-      examContent.instructions.forEach((instruction) => {
-        html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
-      });
-      html += `</ul></div>`;
-    }
-
-    if (examContent.parts && Array.isArray(examContent.parts)) {
-      if (paperType === "paper1") {
-        html += convertPaper1Parts(examContent.parts);
-      } else if (paperType === "paper2") {
-        html += convertPaper2Parts(examContent.parts);
-      }
-    }
-
-    html += `</div>`;
-
-    console.log("✅ Successfully converted exam to HTML, length:", html.length);
-    return html;
-  } catch (error) {
-    console.error("❌ Error in convertExamToHTML:", error);
-    return `<div class="error" style="color: red; padding: 20px;">Error generating exam HTML: ${error.message}</div>`;
+  if (examContent.instructions) {
+    html += `<div class="instructions">
+      <h3>Instructions:</h3>
+      <ul>`;
+    examContent.instructions.forEach((instruction) => {
+      html += `<li>${instruction}</li>`;
+    });
+    html += `</ul></div>`;
   }
+
+  if (examContent.parts && Array.isArray(examContent.parts)) {
+    examContent.parts.forEach((part) => {
+      if (!part) return;
+
+      html += `
+        <div class="exam-part">
+          <h3>${part.title || `Part ${part.partNumber}`}</h3>
+          <p><em>${part.instructions || ""}</em></p>`;
+
+      if (part.passage) {
+        html += `<div style="background: #f6ffed; padding: 10px; border-radius: 4px; margin: 8px 0;">
+          <p>${part.passage}</p>
+        </div>`;
+      }
+
+      if (part.questions && Array.isArray(part.questions)) {
+        part.questions.forEach((question) => {
+          if (!question) return;
+
+          html += `<div class="question-wrapper"><div class="question">
+            <p><strong>${question.questionNumber || ""}.</strong> ${
+            question.question || question.text || ""
+          }</p>`;
+
+          if (question.options && Array.isArray(question.options)) {
+            html += `<div class="options">`;
+            question.options.forEach((option) => {
+              html += `<p>${option}</p>`;
+            });
+            html += `</div>`;
+          }
+          html += `</div></div>`;
+        });
+      }
+
+      html += `</div>`;
+    });
+  }
+
+  html += `</div></body></html>`;
+  return html;
 };
 
 const convertPaper1Parts = (parts) => {
