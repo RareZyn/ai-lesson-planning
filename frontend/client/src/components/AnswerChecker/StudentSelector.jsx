@@ -1,9 +1,9 @@
 // frontend/client/src/components/AnswerChecker/StudentSelector.jsx
 import React, { useState, useEffect } from "react";
 import { Form, Button, Modal, Alert, Row, Col, Card } from "react-bootstrap";
-import { Spin, Tag, Empty } from "antd";
+import { Spin, Empty } from "antd";
 import { PlusOutlined, UserOutlined } from "@ant-design/icons";
-import { studentAPI, studentUtils } from "../../services/studentService";
+import { studentAPI } from "../../services/studentService";
 
 const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
   const [students, setStudents] = useState([]);
@@ -12,11 +12,9 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Form state for adding new student
+  // Simplified form state - only name is required
   const [newStudent, setNewStudent] = useState({
     name: "",
-    studentId: "",
-    email: "",
     rollNumber: "",
     notes: "",
   });
@@ -58,21 +56,9 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
     setError("");
     setSuccess("");
 
-    // Validate form
-    const validation = studentUtils.validateStudentData({
-      ...newStudent,
-      classId,
-      grade: "Standard 1", // Will be set from class
-    });
-
-    if (!validation.isValid) {
-      const errors = {};
-      validation.errors.forEach((err) => {
-        if (err.includes("name")) errors.name = err;
-        if (err.includes("studentId")) errors.studentId = err;
-        if (err.includes("email")) errors.email = err;
-      });
-      setFormErrors(errors);
+    // Simple validation - only name is required
+    if (!newStudent.name.trim()) {
+      setFormErrors({ name: "Student name is required" });
       return;
     }
 
@@ -80,18 +66,17 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
 
     try {
       const result = await studentAPI.addStudent({
-        ...newStudent,
+        name: newStudent.name.trim(),
         classId,
-        grade: "Standard 1", // This should be fetched from the class
+        rollNumber: newStudent.rollNumber || undefined,
+        notes: newStudent.notes.trim() || "",
       });
 
       if (result.success) {
-        setSuccess("Student added successfully!");
+        setSuccess(`Student added successfully! ID: ${result.data.studentId}`);
         setShowAddModal(false);
         setNewStudent({
           name: "",
-          studentId: "",
-          email: "",
           rollNumber: "",
           notes: "",
         });
@@ -172,7 +157,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               <option value="">Choose a student...</option>
               {students.map((student) => (
                 <option key={student._id} value={student._id}>
-                  {studentUtils.formatDisplayName(student)}
+                  {student.name} ({student.studentId})
                   {student.rollNumber ? ` - Roll #${student.rollNumber}` : ""}
                 </option>
               ))}
@@ -213,22 +198,13 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
                   {students.find((s) => s._id === selectedStudent)?.studentId ||
                     "N/A"}
                 </small>
-                {students.find((s) => s._id === selectedStudent)?.email && (
-                  <>
-                    <br />
-                    <small className="text-muted">
-                      Email:{" "}
-                      {students.find((s) => s._id === selectedStudent)?.email}
-                    </small>
-                  </>
-                )}
               </div>
             </div>
           </Card.Body>
         </Card>
       )}
 
-      {/* Add Student Modal */}
+      {/* Add Student Modal - SIMPLIFIED */}
       <Modal
         show={showAddModal}
         onHide={() => setShowAddModal(false)}
@@ -245,72 +221,31 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               </Alert>
             )}
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Student Name <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter full name"
-                    value={newStudent.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    isInvalid={!!formErrors.name}
-                    required
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {formErrors.name}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
+            <Alert variant="info" className="mb-3">
+              <i className="bi bi-info-circle me-2"></i>
+              Student ID will be automatically generated (Format: STU-YEAR-XXXX)
+            </Alert>
 
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Student ID <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="e.g., STU001"
-                    value={newStudent.studentId}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "studentId",
-                        e.target.value.toUpperCase()
-                      )
-                    }
-                    isInvalid={!!formErrors.studentId}
-                    required
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {formErrors.studentId}
-                  </Form.Control.Feedback>
-                  <Form.Text className="text-muted">
-                    Unique identifier for the student
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                Student Name <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter full name"
+                value={newStudent.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                isInvalid={!!formErrors.name}
+                required
+                autoFocus
+              />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.name}
+              </Form.Control.Feedback>
+            </Form.Group>
 
             <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Email (Optional)</Form.Label>
-                  <Form.Control
-                    type="email"
-                    placeholder="student@example.com"
-                    value={newStudent.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    isInvalid={!!formErrors.email}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {formErrors.email}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
+              <Col md={12}>
                 <Form.Group className="mb-3">
                   <Form.Label>Roll Number (Optional)</Form.Label>
                   <Form.Control
@@ -322,6 +257,9 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
                     }
                     min="1"
                   />
+                  <Form.Text className="text-muted">
+                    Class roll number for attendance
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -331,7 +269,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               <Form.Control
                 as="textarea"
                 rows={2}
-                placeholder="Any additional information..."
+                placeholder="Any additional information about the student..."
                 value={newStudent.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 maxLength={500}
@@ -341,10 +279,10 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               </Form.Text>
             </Form.Group>
 
-            <Alert variant="info" className="mb-0">
-              <i className="bi bi-info-circle me-2"></i>
+            <Alert variant="success" className="mb-0">
+              <i className="bi bi-check-circle me-2"></i>
               The student will be added to the selected class with active
-              status.
+              status. Grade will be automatically set from the class.
             </Alert>
           </Modal.Body>
 

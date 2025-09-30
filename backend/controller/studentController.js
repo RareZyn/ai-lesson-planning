@@ -3,29 +3,46 @@ const Student = require("../model/Student");
 const Class = require("../model/Class");
 
 /**
+ * Generate unique student ID
+ * Format: STU-YYYY-XXXX (e.g., STU-2025-0001)
+ */
+const generateStudentId = async () => {
+  const currentYear = new Date().getFullYear();
+  const prefix = `STU-${currentYear}-`;
+
+  // Find the last student ID for this year
+  const lastStudent = await Student.findOne({
+    studentId: new RegExp(`^${prefix}`),
+  })
+    .sort({ studentId: -1 })
+    .limit(1);
+
+  let nextNumber = 1;
+  if (lastStudent) {
+    const lastNumber = parseInt(lastStudent.studentId.split("-")[2]);
+    nextNumber = lastNumber + 1;
+  }
+
+  // Pad with zeros to make it 4 digits
+  const paddedNumber = String(nextNumber).padStart(4, "0");
+  return `${prefix}${paddedNumber}`;
+};
+
+/**
  * @desc    Add a new student to a class
  * @route   POST /api/students
  * @access  Private
  */
 exports.addStudent = async (req, res) => {
   try {
-    const {
-      name,
-      studentId,
-      email,
-      classId,
-      grade,
-      rollNumber,
-      dateOfBirth,
-      parentContact,
-      notes,
-    } = req.body;
+    const { name, classId, rollNumber, dateOfBirth, parentContact, notes } =
+      req.body;
 
-    // Validate required fields
-    if (!name || !studentId || !classId || !grade) {
+    // Validate required fields (only name and classId now)
+    if (!name || !classId) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: name, studentId, classId, grade",
+        message: "Missing required fields: name and classId",
       });
     }
 
@@ -45,28 +62,19 @@ exports.addStudent = async (req, res) => {
       });
     }
 
-    // Check for duplicate student ID
-    const existingStudent = await Student.findOne({
-      studentId: studentId.toUpperCase(),
-    });
-    if (existingStudent) {
-      return res.status(400).json({
-        success: false,
-        message: "Student with this ID already exists",
-      });
-    }
+    // Auto-generate student ID
+    const studentId = await generateStudentId();
 
     // Create student
     const student = await Student.create({
       name,
-      studentId: studentId.toUpperCase(),
-      email,
+      studentId,
       classId,
-      grade,
-      rollNumber,
-      dateOfBirth,
-      parentContact,
-      notes,
+      grade: classDoc.grade, // Get grade from class
+      rollNumber: rollNumber || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      parentContact: parentContact || undefined,
+      notes: notes || "",
       addedBy: req.user.id,
     });
 
@@ -199,7 +207,7 @@ exports.getStudentById = async (req, res) => {
 
 /**
  * @desc    Update student information
- * @route   PUT /api/students/:id
+ * @route   PUT /api/students/detail/:id
  * @access  Private
  */
 exports.updateStudent = async (req, res) => {
@@ -222,10 +230,9 @@ exports.updateStudent = async (req, res) => {
       });
     }
 
-    // Update allowed fields
+    // Update allowed fields (excluding studentId - it's auto-generated)
     const allowedUpdates = [
       "name",
-      "email",
       "rollNumber",
       "dateOfBirth",
       "parentContact",
@@ -261,7 +268,7 @@ exports.updateStudent = async (req, res) => {
 
 /**
  * @desc    Delete student
- * @route   DELETE /api/students/:id
+ * @route   DELETE /api/students/detail/:id
  * @access  Private
  */
 exports.deleteStudent = async (req, res) => {
@@ -393,44 +400,32 @@ exports.bulkImportStudents = async (req, res) => {
     const results = {
       successful: [],
       failed: [],
-      duplicates: [],
     };
 
     // Process each student
     for (const studentData of students) {
       try {
-        // Validate required fields
-        if (!studentData.name || !studentData.studentId) {
+        // Validate required fields (only name)
+        if (!studentData.name) {
           results.failed.push({
             data: studentData,
-            reason: "Missing required fields (name, studentId)",
+            reason: "Missing required field: name",
           });
           continue;
         }
 
-        // Check for duplicate
-        const existing = await Student.findOne({
-          studentId: studentData.studentId.toUpperCase(),
-        });
-
-        if (existing) {
-          results.duplicates.push({
-            data: studentData,
-            reason: `Student ID ${studentData.studentId} already exists`,
-          });
-          continue;
-        }
+        // Auto-generate student ID
+        const studentId = await generateStudentId();
 
         // Create student
         const student = await Student.create({
           name: studentData.name,
-          studentId: studentData.studentId.toUpperCase(),
-          email: studentData.email || "",
+          studentId,
           classId,
           grade: classDoc.grade,
-          rollNumber: studentData.rollNumber,
-          dateOfBirth: studentData.dateOfBirth,
-          parentContact: studentData.parentContact,
+          rollNumber: studentData.rollNumber || undefined,
+          dateOfBirth: studentData.dateOfBirth || undefined,
+          parentContact: studentData.parentContact || undefined,
           notes: studentData.notes || "",
           addedBy: req.user.id,
         });
