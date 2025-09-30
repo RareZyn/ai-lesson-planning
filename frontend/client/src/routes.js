@@ -17,7 +17,6 @@ import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner"
 import Community from "./pages/community/Community";
 import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
-import OCRPage from "./pages/answerChecker/OCRPage";
 
 // NEW IMPORTS - Answer Checker Module
 import SubmissionUploadPage from "./pages/answerChecker/SubmissionUploadPage";
@@ -35,9 +34,6 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: "", element: <HomePage /> },
-
-        // OCR standalone page
-        { path: "ocr", element: <OCRPage /> },
 
         // Assessment routes
         { path: "assessment", element: <AssessmentPage /> },
