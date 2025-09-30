@@ -1,8 +1,8 @@
-// src/routes.js
+// frontend/client/src/routes.js - UPDATED WITH NEW ROUTES
 import { createBrowserRouter } from "react-router-dom";
 import AssessmentPage from "./pages/assesstment/AssessmentPage";
-import ActivityViewerPage from "./pages/assesstment/ActivityViewerPage"; // Corrected import
-import RubricViewerPage from "./pages/assesstment/RubricViewerPage"; // Corrected import
+import ActivityViewerPage from "./pages/assesstment/ActivityViewerPage";
+import RubricViewerPage from "./pages/assesstment/RubricViewerPage";
 import MainLayout from "./layout/MainLayout";
 import HomePage from "./pages/general/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
@@ -17,7 +17,12 @@ import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner"
 import Community from "./pages/community/Community";
 import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
-import OCRPage from "./pages/answerChecker/OCRPage";
+
+// NEW IMPORTS - Answer Checker Module
+import SubmissionUploadPage from "./pages/answerChecker/SubmissionUploadPage";
+import SubmissionListPage from "./pages/answerChecker/SubmissionListPage";
+import SubmissionReviewPage from "./pages/answerChecker/SubmissionReviewPage";
+
 const router = createBrowserRouter(
   [
     {
@@ -29,12 +34,18 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: "", element: <HomePage /> },
-        { path: "ocr", element: <OCRPage /> },
-        // Assessment routes - corrected
+
+        // Assessment routes
         { path: "assessment", element: <AssessmentPage /> },
         { path: "assessment/:id", element: <ActivityViewerPage /> },
         { path: "assessment/:id/:id", element: <RubricViewerPage /> },
 
+        // NEW - Answer Checker / Submission routes
+        { path: "submissions", element: <SubmissionListPage /> },
+        { path: "submissions/upload", element: <SubmissionUploadPage /> },
+        { path: "submissions/:id/review", element: <SubmissionReviewPage /> },
+
+        // Existing routes
         { path: "downloads", element: <FileDownloadPage /> },
         { path: "lessons", element: <MyLessons /> },
         { path: "materials", element: <MaterialManagement /> },

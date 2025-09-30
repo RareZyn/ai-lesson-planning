@@ -89,6 +89,27 @@
     background-color: #ffe3e3;
 }
 
+/* New Section Styles */
+.section {
+    margin-bottom: 3rem;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sectionHeader h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #343a40;
+    margin: 0;
+}
+
 .lessonsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -102,7 +123,7 @@
     border-radius: 12px;
     border: 2px dashed #dee2e6;
 }
-.empty h2 {
+.empty h3 {
     color: #495057;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
@@ -131,4 +152,32 @@
 }
 .createButton:hover {
     background-color: #36459b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .headerActions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .actionButton {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .sectionHeader {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .createButton {
+        width: 100%;
+        justify-content: center;
+    }
 }

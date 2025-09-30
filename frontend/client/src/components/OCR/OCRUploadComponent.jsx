@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   Upload,
   Button,
@@ -7,17 +7,25 @@ import {
   Progress,
   Alert,
   Spin,
-  Switch,
   Image,
+  Space,
+  Divider,
+  Tag,
+  Statistic,
+  Row,
+  Col,
 } from "antd";
 import {
   InboxOutlined,
   EyeOutlined,
   DownloadOutlined,
   CopyOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import "bootstrap/dist/css/bootstrap.min.css";
-import axios from "axios";
+import { ocrAPI, ocrUtils } from "../../services/ocrService";
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
@@ -25,97 +33,67 @@ const { Dragger } = Upload;
 const OCRUploadComponent = () => {
   const [extractedText, setExtractedText] = useState("");
   const [confidence, setConfidence] = useState(0);
-  const [words, setWords] = useState([]);
+  const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
-  const [preprocess, setPreprocess] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const textAreaRef = useRef(null);
 
-  // Function to convert file to base64
-  const getBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-  // Upload configuration for Ant Design
+  // Upload configuration
   const uploadProps = {
     name: "image",
     multiple: false,
     accept: "image/*",
     showUploadList: false,
     beforeUpload: async (file) => {
-      console.log(`File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(
+        `📁 File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+      );
 
-      // Validate file type
-      const isImage = file.type.startsWith("image/");
-      if (!isImage) {
-        setError("You can only upload image files!");
+      // Validate file
+      const validation = ocrAPI.validateImage(file);
+
+      if (!validation.isValid) {
+        setError(validation.errors.join(". "));
         return false;
       }
 
-      // Validate file size (50MB)
-      const isLt50M = file.size / 1024 / 1024 < 50;
-      if (!isLt50M) {
-        setError(
-          `Image must be smaller than 50MB! Current size: ${(
-            file.size /
-            1024 /
-            1024
-          ).toFixed(2)} MB`
-        );
-        return false;
+      if (validation.warnings.length > 0) {
+        console.warn("⚠️ Warnings:", validation.warnings);
       }
 
+      // Reset state
       setError("");
       setSuccess("");
       setLoading(true);
 
       try {
-        // Convert to base64
-        const base64Image = await getBase64(file);
-        setUploadedImage(base64Image);
+        // Convert to base64 and display preview
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          setUploadedImage(reader.result);
+        };
 
-        // Extract text
-        await extractTextFromImage(base64Image);
+        // Extract text using Gemini
+        const result = await ocrAPI.extractText(file, true);
+
+        if (result.success) {
+          setExtractedText(result.data.extractedText);
+          setConfidence(result.data.confidence);
+          setMetadata(result.data.metadata);
+          setSuccess(result.message || "Text extracted successfully!");
+        } else {
+          setError(result.message);
+        }
       } catch (err) {
         setError("Failed to process image: " + err.message);
+      } finally {
         setLoading(false);
       }
 
       return false; // Prevent default upload
     },
-  };
-
-  // Extract text from image using API
-  const extractTextFromImage = async (imageData) => {
-    try {
-      const response = await axios.post("/api/ocr/extract-text", {
-        image: imageData,
-        preprocess: preprocess,
-      });
-
-      if (response.data.success) {
-        const data = response.data.data;
-        setExtractedText(data.extractedText);
-        setConfidence(Math.round(data.confidence * 100));
-        setWords(data.words || []);
-        setSuccess("Text extracted successfully!");
-      } else {
-        setError("Failed to extract text: " + response.data.message);
-      }
-    } catch (err) {
-      setError(
-        "Error extracting text: " + (err.response?.data?.message || err.message)
-      );
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Copy text to clipboard
@@ -131,28 +109,26 @@ const OCRUploadComponent = () => {
     const element = document.createElement("a");
     const file = new Blob([extractedText], { type: "text/plain" });
     element.href = URL.createObjectURL(file);
-    element.download = "extracted-text.txt";
+    element.download = `extracted-text-${Date.now()}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+    setSuccess("File downloaded successfully!");
+    setTimeout(() => setSuccess(""), 2000);
   };
 
   // Clear all data
   const clearAll = () => {
     setExtractedText("");
     setConfidence(0);
-    setWords([]);
+    setMetadata(null);
     setUploadedImage(null);
     setError("");
     setSuccess("");
   };
 
-  // Get confidence color
-  const getConfidenceColor = (conf) => {
-    if (conf >= 80) return "#52c41a"; // green
-    if (conf >= 60) return "#faad14"; // yellow
-    return "#ff4d4f"; // red
-  };
+  // Get confidence display info
+  const confidenceInfo = ocrUtils.getConfidenceColor(confidence);
 
   return (
     <div className="container-fluid py-4">
@@ -161,47 +137,28 @@ const OCRUploadComponent = () => {
           {/* Header */}
           <div className="mb-4 text-center">
             <Title level={2} className="mb-1">
-              AI-Powered Answer Recognition
+              <ThunderboltOutlined
+                className="me-2"
+                style={{ color: "#1890ff" }}
+              />
+              AI-Powered Handwriting Recognition
             </Title>
             <Text type="secondary" className="lead">
-              Upload student handwritten answers to extract text using OCR
-              technology
+              Powered by Google Gemini Vision AI - Extract text from handwritten
+              student answers
             </Text>
           </div>
-
-          {/* Settings */}
-          <Card className="mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <Text strong>Preprocessing: </Text>
-                <Switch
-                  checked={preprocess}
-                  onChange={setPreprocess}
-                  checkedChildren="ON"
-                  unCheckedChildren="OFF"
-                />
-                <br />
-                <Text type="secondary" className="small">
-                  Enable image preprocessing to improve OCR accuracy
-                </Text>
-              </div>
-              {(extractedText || uploadedImage) && (
-                <Button onClick={clearAll} type="default">
-                  Clear All
-                </Button>
-              )}
-            </div>
-          </Card>
 
           {/* Alerts */}
           {error && (
             <Alert
-              message="Error"
+              message="Processing Error"
               description={error}
               type="error"
               closable
               className="mb-3"
               onClose={() => setError("")}
+              showIcon
             />
           )}
 
@@ -212,6 +169,8 @@ const OCRUploadComponent = () => {
               type="success"
               className="mb-3"
               showIcon
+              closable
+              onClose={() => setSuccess("")}
             />
           )}
 
@@ -220,22 +179,37 @@ const OCRUploadComponent = () => {
             <div className="col-lg-6 mb-4">
               <Card
                 title={
-                  <div className="d-flex align-items-center">
-                    <InboxOutlined className="me-2" />
-                    Upload Image
+                  <div className="d-flex align-items-center justify-content-between">
+                    <span>
+                      <InboxOutlined className="me-2" />
+                      Upload Student Answer
+                    </span>
+                    {uploadedImage && (
+                      <Button
+                        size="small"
+                        onClick={clearAll}
+                        disabled={loading}
+                      >
+                        Clear
+                      </Button>
+                    )}
                   </div>
                 }
                 className="h-100"
               >
-                <Dragger {...uploadProps} className="mb-3">
+                <Dragger {...uploadProps} className="mb-3" disabled={loading}>
                   <p className="ant-upload-drag-icon">
                     <InboxOutlined />
                   </p>
                   <p className="ant-upload-text">
-                    Click or drag image to this area to upload
+                    Click or drag image to upload
                   </p>
                   <p className="ant-upload-hint">
-                    Support for JPG, PNG, GIF formats. Maximum file size: 50MB
+                    Supports JPG, PNG formats. Max 50MB.
+                    <br />
+                    <Text type="secondary" className="small">
+                      Large images will be automatically compressed
+                    </Text>
                   </p>
                 </Dragger>
 
@@ -249,6 +223,7 @@ const OCRUploadComponent = () => {
                         style={{
                           objectFit: "cover",
                           border: "1px solid #d9d9d9",
+                          borderRadius: "8px",
                         }}
                         src={uploadedImage}
                         preview={{
@@ -264,10 +239,15 @@ const OCRUploadComponent = () => {
                 )}
 
                 {loading && (
-                  <div className="text-center mt-3">
+                  <div className="text-center mt-4">
                     <Spin size="large" />
-                    <div className="mt-2">
-                      <Text>Processing image...</Text>
+                    <div className="mt-3">
+                      <Text>Processing with Gemini AI...</Text>
+                      <br />
+                      <Text type="secondary" className="small">
+                        This may take 10-30 seconds depending on image
+                        complexity
+                      </Text>
                     </div>
                   </div>
                 )}
@@ -284,12 +264,11 @@ const OCRUploadComponent = () => {
                       Extracted Text
                     </span>
                     {extractedText && (
-                      <div>
+                      <Space>
                         <Button
                           size="small"
                           icon={<CopyOutlined />}
                           onClick={copyToClipboard}
-                          className="me-2"
                           type="primary"
                           ghost
                         >
@@ -304,7 +283,7 @@ const OCRUploadComponent = () => {
                         >
                           Download
                         </Button>
-                      </div>
+                      </Space>
                     )}
                   </div>
                 }
@@ -312,24 +291,96 @@ const OCRUploadComponent = () => {
               >
                 {extractedText ? (
                   <div>
-                    {/* Confidence Score */}
-                    <div className="mb-3">
-                      <Text strong>Confidence Score:</Text>
-                      <Progress
-                        percent={confidence}
-                        strokeColor={getConfidenceColor(confidence)}
-                        className="mb-2"
-                      />
-                      <Text type="secondary" className="small">
-                        {confidence >= 80
-                          ? "High confidence"
-                          : confidence >= 60
-                          ? "Medium confidence"
-                          : "Low confidence"}
-                      </Text>
-                    </div>
+                    {/* Statistics */}
+                    <Row gutter={16} className="mb-3">
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Confidence"
+                            value={Math.round(confidence * 100)}
+                            suffix="%"
+                            valueStyle={{ color: confidenceInfo.color }}
+                            prefix={
+                              confidence >= 0.8 ? (
+                                <CheckCircleOutlined />
+                              ) : (
+                                <ExclamationCircleOutlined />
+                              )
+                            }
+                          />
+                          <Tag color={confidenceInfo.color} className="mt-2">
+                            {confidenceInfo.label}
+                          </Tag>
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Characters"
+                            value={extractedText.length}
+                            valueStyle={{ color: "#1890ff" }}
+                          />
+                        </Card>
+                      </Col>
+                      <Col span={8}>
+                        <Card size="small" style={{ textAlign: "center" }}>
+                          <Statistic
+                            title="Words"
+                            value={
+                              extractedText.split(/\s+/).filter(Boolean).length
+                            }
+                            valueStyle={{ color: "#52c41a" }}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
 
-                    {/* Extracted Text */}
+                    <Divider />
+
+                    {/* Metadata */}
+                    {metadata && (
+                      <div className="mb-3">
+                        <Space wrap>
+                          {metadata.language && (
+                            <Tag color="blue">
+                              Language: {metadata.language}
+                            </Tag>
+                          )}
+                          {metadata.textType && (
+                            <Tag color="purple">Type: {metadata.textType}</Tag>
+                          )}
+                          {metadata.legibility && (
+                            <Tag
+                              color={
+                                metadata.legibility === "high"
+                                  ? "green"
+                                  : metadata.legibility === "medium"
+                                  ? "orange"
+                                  : "red"
+                              }
+                            >
+                              Legibility: {metadata.legibility}
+                            </Tag>
+                          )}
+                          {metadata.processingTime && (
+                            <Tag color="cyan">
+                              Time: {metadata.processingTime}
+                            </Tag>
+                          )}
+                        </Space>
+                        {metadata.notes && (
+                          <Alert
+                            message={metadata.notes}
+                            type="info"
+                            className="mt-2"
+                            showIcon
+                            closable
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Extracted Text Display */}
                     <div>
                       <Text strong>Extracted Text:</Text>
                       <div
@@ -337,7 +388,7 @@ const OCRUploadComponent = () => {
                         style={{
                           backgroundColor: "#fafafa",
                           minHeight: "200px",
-                          maxHeight: "300px",
+                          maxHeight: "400px",
                           overflowY: "auto",
                         }}
                       >
@@ -346,57 +397,56 @@ const OCRUploadComponent = () => {
                             whiteSpace: "pre-wrap",
                             marginBottom: 0,
                             fontSize: "14px",
-                            lineHeight: "1.6",
+                            lineHeight: "1.8",
+                            fontFamily: "'Courier New', monospace",
                           }}
                         >
-                          {extractedText || "No text extracted"}
+                          {extractedText}
                         </Paragraph>
                       </div>
                     </div>
 
-                    {/* Word Details */}
-                    {words.length > 0 && (
-                      <div className="mt-3">
-                        <Text strong>Detected Words ({words.length}):</Text>
-                        <div
-                          className="mt-2 p-2 border rounded"
-                          style={{
-                            backgroundColor: "#f6ffed",
-                            maxHeight: "150px",
-                            overflowY: "auto",
-                          }}
-                        >
-                          {words.map((word, index) => (
-                            <span
-                              key={index}
-                              className="badge me-1 mb-1"
-                              style={{
-                                backgroundColor: getConfidenceColor(
-                                  word.confidence * 100
-                                ),
-                                fontSize: "11px",
-                              }}
-                              title={`Confidence: ${Math.round(
-                                word.confidence * 100
-                              )}%`}
-                            >
-                              {word.text}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                    {/* Confidence Guide */}
+                    {confidence < 0.8 && (
+                      <Alert
+                        message="Tips for Better Results"
+                        description={
+                          <ul className="mb-0 ps-3">
+                            <li>Ensure good lighting without shadows</li>
+                            <li>Keep text horizontal and properly oriented</li>
+                            <li>Use higher resolution images if possible</li>
+                            <li>Avoid blur or motion in the photo</li>
+                          </ul>
+                        }
+                        type="warning"
+                        className="mt-3"
+                        showIcon
+                        closable
+                      />
                     )}
                   </div>
                 ) : (
                   <div
                     className="d-flex align-items-center justify-content-center text-muted"
-                    style={{ minHeight: "200px" }}
+                    style={{ minHeight: "300px" }}
                   >
                     <div className="text-center">
-                      <EyeOutlined
-                        style={{ fontSize: "48px", marginBottom: "16px" }}
+                      <ThunderboltOutlined
+                        style={{
+                          fontSize: "64px",
+                          marginBottom: "16px",
+                          opacity: 0.3,
+                        }}
                       />
-                      <div>Upload an image to extract text</div>
+                      <div>
+                        <Text type="secondary">
+                          Upload a handwritten answer to extract text
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="small">
+                          Powered by Google Gemini Vision AI
+                        </Text>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -404,35 +454,84 @@ const OCRUploadComponent = () => {
             </div>
           </div>
 
-          {/* Instructions */}
-          <Card title="Instructions" className="mt-4">
-            <div className="row">
-              <div className="col-md-6">
-                <Title level={5}>Tips for Better OCR Results:</Title>
+          {/* Instructions & Best Practices */}
+          <Card
+            title="Best Practices for Handwriting Recognition"
+            className="mt-4"
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Title level={5}>
+                  <CheckCircleOutlined
+                    className="me-2"
+                    style={{ color: "#52c41a" }}
+                  />
+                  Do's
+                </Title>
                 <ul>
-                  <li>Use high-resolution images (at least 300 DPI)</li>
-                  <li>Ensure good lighting and contrast</li>
-                  <li>Keep text horizontal and properly oriented</li>
-                  <li>Avoid shadows and glare on the paper</li>
-                  <li>Use clear, legible handwriting</li>
+                  <li>Use well-lit, clear photos without shadows</li>
+                  <li>Keep the camera steady to avoid blur</li>
+                  <li>Capture text straight-on (not at an angle)</li>
+                  <li>Ensure handwriting is legible and not too small</li>
+                  <li>Use high contrast (dark ink on white paper)</li>
+                  <li>Include entire answer in frame</li>
                 </ul>
-              </div>
-              <div className="col-md-6">
-                <Title level={5}>Supported Features:</Title>
+              </Col>
+              <Col xs={24} md={12}>
+                <Title level={5}>
+                  <ExclamationCircleOutlined
+                    className="me-2"
+                    style={{ color: "#ff4d4f" }}
+                  />
+                  Don'ts
+                </Title>
                 <ul>
-                  <li>English and Malay language detection</li>
-                  <li>Handwritten and printed text recognition</li>
-                  <li>Automatic image preprocessing</li>
-                  <li>Confidence scoring for accuracy assessment</li>
-                  <li>Word-level detection and bounding boxes</li>
+                  <li>Avoid dim lighting or harsh shadows</li>
+                  <li>Don't upload blurry or out-of-focus images</li>
+                  <li>Avoid extreme angles or distorted perspectives</li>
+                  <li>Don't use images with excessive background noise</li>
+                  <li>Avoid low-resolution or heavily compressed images</li>
+                  <li>Don't crop text too tightly</li>
                 </ul>
-              </div>
-            </div>
+              </Col>
+            </Row>
+
+            <Divider />
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Title level={5}>Understanding Confidence Scores</Title>
+                <Space direction="vertical" className="w-100">
+                  <div>
+                    <Tag color="green">High (80-100%)</Tag>
+                    <Text>Excellent quality - text is highly accurate</Text>
+                  </div>
+                  <div>
+                    <Tag color="orange">Medium (60-79%)</Tag>
+                    <Text>Good quality - minor review recommended</Text>
+                  </div>
+                  <div>
+                    <Tag color="red">Low (&lt;60%)</Tag>
+                    <Text>Manual review required - verify accuracy</Text>
+                  </div>
+                </Space>
+              </Col>
+              <Col xs={24} md={12}>
+                <Title level={5}>Supported Features</Title>
+                <ul>
+                  <li>English and Malay handwritten text</li>
+                  <li>Mixed handwritten and printed text</li>
+                  <li>Mathematical expressions and symbols</li>
+                  <li>Various handwriting styles</li>
+                  <li>Automatic image compression for large files</li>
+                  <li>Real-time processing with AI</li>
+                </ul>
+              </Col>
+            </Row>
           </Card>
         </div>
       </div>
     </div>
   );
 };
-
 export default OCRUploadComponent;
