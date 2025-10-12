@@ -28,6 +28,64 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
+const convertAnswerKeyToHTML = (answerKeyContent) => {
+  if (!answerKeyContent) return null;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="answer-key-content">
+      <h1>${answerKeyContent.title || "Answer Key"}</h1>
+      <div class="answer-key-info">
+        <p><strong>Questions:</strong> ${
+          answerKeyContent.totalQuestions || "N/A"
+        } | <strong>Points:</strong> ${
+    answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
+  }</p>
+      </div>`;
+
+  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
+    html += `<div class="answers">`;
+    answerKeyContent.answers.forEach((answer) => {
+      const points = answer.points || answer.marks || 1;
+
+      html += `<div class="answer-item">
+        <h4>Question ${answer.questionNumber} (${points} ${
+        points === 1 ? "point" : "points"
+      })</h4>
+        <div style="background: #e6f7ff; border-left: 3px solid #1890ff;">
+          <p><strong>Answer:</strong> ${
+            answer.correctAnswer || "Not specified"
+          }</p>
+        </div>`;
+
+      if (
+        answer.explanation &&
+        answer.explanation !== "undefined" &&
+        answer.explanation.trim()
+      ) {
+        html += `<div style="background: #f6ffed; border-left: 3px solid #52c41a;">
+          <p><strong>Explanation:</strong> ${answer.explanation}</p>
+        </div>`;
+      }
+
+      if (
+        answer.markingNotes &&
+        answer.markingNotes !== "undefined" &&
+        answer.markingNotes.trim()
+      ) {
+        html += `<div style="background: #fff7e6; border-left: 3px solid #fa8c16;">
+          <p><strong>Marking:</strong> ${answer.markingNotes}</p>
+        </div>`;
+      }
+
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div></body></html>`;
+  return html;
+};
+
 const structureGeneratedContent = (
   generatedContent,
   activityType,
@@ -3296,13 +3354,34 @@ Create a complete SPM English Paper 1 examination based on the Malaysian KSSM cu
 - Test understanding of text organization and coherence
 
 **Part 5: Matching & Information Transfer (8 questions, 8 marks)**
-- 1 informational text with multiple sections/paragraphs
-- Questions 33-36: Match statements to paragraphs
-- Questions 37-40: Complete sentences with words from text
+- 1 informational text with 6 clearly labeled paragraphs (A-F)
+- Questions 33-36: Match 4 statements to the correct paragraph letter (A-F)
+- Questions 37-40: Complete 4 sentences using EXACTLY ONE WORD from the text
 
-## Output Requirements:
+## CRITICAL INSTRUCTIONS FOR PART 5:
 
-You MUST return a JSON object with this EXACT structure:
+### Part 5 Passage Requirements:
+1. Write ONE informational passage (350-450 words) divided into EXACTLY 6 paragraphs
+2. Label each paragraph clearly as A, B, C, D, E, F
+3. Each paragraph should cover a DISTINCT aspect of the topic
+4. Make paragraphs substantial (60-80 words each) with specific, extractable information
+
+### Questions 33-36 (Matching) Requirements:
+1. Create 4 clear statements that each match ONLY ONE specific paragraph
+2. Statements should paraphrase paragraph content, not quote directly
+3. Each statement must have an obvious answer from paragraph content
+4. Format: "Which paragraph (A-F) discusses [specific topic/information]?"
+
+### Questions 37-40 (Information Transfer) Requirements:
+1. Create 4 incomplete sentences that test vocabulary extraction
+2. Each sentence must have EXACTLY ONE clear answer word from the passage
+3. The missing word must be a key noun, verb, or adjective from the text
+4. Format: "Regular exercise helps to reduce _______ levels." (Answer: stress)
+5. CRITICAL: Ensure the exact word appears in the passage text
+
+## Output Format:
+
+Return a JSON object with this EXACT structure:
 
 {
   "examContent": {
@@ -3327,15 +3406,8 @@ You MUST return a JSON object with this EXACT structure:
         "questions": [
           {
             "questionNumber": 1,
-            "text": "You see this notice on a classroom door:\\n\\n'EXAM IN PROGRESS\\nPLEASE DO NOT DISTURB\\nAll mobile phones must be switched off'\\n\\nWhat does this notice tell you?",
-            "options": ["A) The exam has been cancelled", "B) Students should turn off their phones", "C) The classroom is closed for cleaning"],
-            "marks": 1
-          },
-          {
-            "questionNumber": 2,
-            "text": "Email: Hi Sarah, Can you pick me up at 3pm today? My car broke down this morning. Thanks! Mike",
-            "question": "Why does Mike need Sarah to pick him up?",
-            "options": ["A) He doesn't have a driving licence", "B) His car is not working", "C) He forgot where he parked"],
+            "text": "Complete short text with question",
+            "options": ["A) First option", "B) Second option", "C) Third option"],
             "marks": 1
           }
         ]
@@ -3346,16 +3418,11 @@ You MUST return a JSON object with this EXACT structure:
         "instructions": "Questions 9 to 18. Read the passage carefully and choose the best answer A, B, C or D to fill each blank.",
         "totalQuestions": 10,
         "marks": 10,
-        "passage": "Complete passage about health/environment topic with 10 numbered gaps (9) to (18) that test grammar and vocabulary related to the lesson topic",
+        "passage": "Complete passage with health/environment topic. The passage must contain 10 numbered gaps (9) to (18) that test grammar and vocabulary. Example: 'Maintaining a healthy lifestyle is crucial for overall well-being. We (9) _______ all prioritize our health...'",
         "questions": [
           {
             "questionNumber": 9,
             "options": ["A) should", "B) must", "C) ought", "D) might"],
-            "marks": 1
-          },
-          {
-            "questionNumber": 10,
-            "options": ["A) to exercise", "B) exercising", "C) exercise", "D) exercised"],
             "marks": 1
           }
         ]
@@ -3366,7 +3433,7 @@ You MUST return a JSON object with this EXACT structure:
         "instructions": "Questions 19 to 26. Read the passage carefully and choose the best answer A, B or C.",
         "totalQuestions": 8, 
         "marks": 8,
-        "passage": "A 350-word informative passage about health advice, environmental issues, or cultural topics that connects to the lesson theme",
+        "passage": "A complete 350-400 word informative passage about health advice, environmental issues, or cultural topics that connects to the lesson theme",
         "questions": [
           {
             "questionNumber": 19,
@@ -3379,24 +3446,24 @@ You MUST return a JSON object with this EXACT structure:
       {
         "partNumber": 4,
         "title": "Part 4",
-        "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap. There are two extra sentences you do not need to use.",
+        "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap (27-32). There are two extra sentences you do not need to use.",
         "totalQuestions": 6,
         "marks": 6,
-        "passage": "Coherent passage with 6 gaps marked (27) to (32) about health, environment, or cultural topic",
+        "passage": "Complete coherent passage (300-350 words) with 6 gaps marked (27), (28), (29), (30), (31), (32) about sustainable living or health topics. Example: 'Living sustainably is important. (27) _______ This involves making conscious choices...'",
         "sentenceOptions": [
-          "A: However, this requires consistent effort and dedication.",
-          "B: Many people find this advice difficult to follow.",
-          "C: Research shows that small changes can make a big difference.",
-          "D: Therefore, it is important to start with simple steps.",
-          "E: Most experts agree on the benefits of regular exercise.",
-          "F: This approach has been proven effective in many studies.", 
-          "G: Unfortunately, not everyone has access to proper facilities.",
-          "H: As a result, more people are becoming health-conscious."
+          "A: Sentence option that could fit one gap",
+          "B: Another sentence option",
+          "C: Third sentence option",
+          "D: Fourth sentence option",
+          "E: Fifth sentence option",
+          "F: Sixth sentence option", 
+          "G: Extra sentence 1 (distractor)",
+          "H: Extra sentence 2 (distractor)"
         ],
         "questions": [
           {
             "questionNumber": 27,
-            "gapPosition": "After the first paragraph discussing health benefits",
+            "gapContext": "Brief context about where gap 27 appears in passage",
             "marks": 1
           }
         ]
@@ -3407,21 +3474,44 @@ You MUST return a JSON object with this EXACT structure:
         "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
         "totalQuestions": 8,
         "marks": 8,
-        "passage": "Multi-paragraph informational text with clear sections (A-F) about health tips, environmental issues, or cultural practices",
+        "passage": "**CRITICAL: Create ONE complete informational passage (400-450 words) divided into EXACTLY 6 paragraphs labeled A, B, C, D, E, F. Each paragraph should be 60-80 words discussing a distinct aspect of the topic (health/environment/culture). Include specific vocabulary words that can be extracted for questions 37-40.**
+
+Example structure:
+A: The benefits of regular exercise (include words like 'stamina', 'cardiovascular', 'flexibility')
+B: Importance of balanced nutrition (include words like 'nutrients', 'metabolism', 'deficiency')  
+C: Role of adequate sleep (include words like 'rejuvenate', 'cognitive', 'immune')
+D: Managing stress effectively (include words like 'meditation', 'cortisol', 'anxiety')
+E: Staying hydrated (include words like 'hydration', 'dehydration', 'electrolytes')
+F: Regular health check-ups (include words like 'preventive', 'screening', 'diagnosis')",
+        "paragraphLabels": ["A", "B", "C", "D", "E", "F"],
         "questions": [
           {
             "questionType": "matching",
             "questionNumbers": "33-36",
-            "instructions": "Which paragraph (A-F) contains the following information?",
+            "instructions": "Which paragraph (A-F) contains the following information? Write the correct letter A-F for questions 33-36.",
             "questions": [
               {
                 "questionNumber": 33,
-                "statement": "The importance of getting enough sleep for health",
+                "statement": "The importance of drinking enough water for body functions",
+                "correctAnswer": "E",
                 "marks": 1
               },
               {
                 "questionNumber": 34,
-                "statement": "How stress affects our daily performance",
+                "statement": "How physical activity strengthens the heart and circulation system",
+                "correctAnswer": "A",
+                "marks": 1
+              },
+              {
+                "questionNumber": 35,
+                "statement": "The benefits of getting sufficient rest for brain function",
+                "correctAnswer": "C",
+                "marks": 1
+              },
+              {
+                "questionNumber": 36,
+                "statement": "Why early detection of health problems is important",
+                "correctAnswer": "F",
                 "marks": 1
               }
             ]
@@ -3429,16 +3519,34 @@ You MUST return a JSON object with this EXACT structure:
           {
             "questionType": "information_transfer",
             "questionNumbers": "37-40", 
-            "instructions": "Complete the sentences using information from the text. Choose no more than ONE word from the passage for each answer.",
+            "instructions": "Complete the notes below using information from the text. Write NO MORE THAN ONE WORD from the passage for each answer. Write your answers for questions 37-40.",
             "questions": [
               {
                 "questionNumber": 37,
-                "sentence": "Regular exercise can help reduce _______ levels in the body.",
+                "sentence": "Building physical _______ requires consistent exercise over time.",
+                "correctAnswer": "stamina",
+                "locationInText": "Paragraph A mentions 'Regular exercise builds stamina...'",
                 "marks": 1
               },
               {
                 "questionNumber": 38,
-                "sentence": "People _______ eat more vegetables to improve their health.",
+                "sentence": "A lack of essential _______ can lead to various health problems.",
+                "correctAnswer": "nutrients",
+                "locationInText": "Paragraph B states 'Without proper nutrients, the body cannot...'",
+                "marks": 1
+              },
+              {
+                "questionNumber": 39,
+                "sentence": "Adequate sleep helps to _______ the body and mind.",
+                "correctAnswer": "rejuvenate",
+                "locationInText": "Paragraph C explains 'Sleep helps rejuvenate both body and mind...'",
+                "marks": 1
+              },
+              {
+                "questionNumber": 40,
+                "sentence": "_______ care focuses on preventing diseases before they develop.",
+                "correctAnswer": "Preventive",
+                "locationInText": "Paragraph F discusses 'Preventive care through regular check-ups...'",
                 "marks": 1
               }
             ]
@@ -3453,135 +3561,53 @@ You MUST return a JSON object with this EXACT structure:
     "totalMarks": 40,
     "answers": [
       {
-        "questionNumber": 1,
-        "correctAnswer": "B",
-        "explanation": "The notice clearly states that mobile phones must be switched off during the exam",
-        "marks": 1,
-        "acceptableAlternatives": "None - must be exact answer B",
-        "commonErrors": "Students may choose A if they misread 'exam in progress' as 'exam cancelled'. Students may choose C if they focus on 'do not disturb' without reading the full context.",
-        "markingGuidance": "Award 1 mark for B only. No partial marks. Look for evidence that student understood the main instruction in the notice.",
-        "textReference": "Mobile phones must be switched off - this is a direct instruction to students"
-      },
-      {
-        "questionNumber": 2,
-        "correctAnswer": "B", 
-        "explanation": "Mike explicitly states 'My car broke down this morning' - indicating mechanical failure preventing him from driving",
-        "marks": 1,
-        "acceptableAlternatives": "None - must be exact answer B",
-        "commonErrors": "Students may choose C if they focus on 'pick me up' without reading the reason. Students may choose A if they misunderstand 'broke down' as a personal issue.",
-        "markingGuidance": "Award 1 mark for B only. Look for evidence of literal comprehension of cause and effect in the text.",
-        "textReference": "My car broke down this morning - clear statement of mechanical problem"
-      },
-      {
-        "questionNumber": 9,
-        "correctAnswer": "B",
-        "explanation": "Modal verb 'must' indicates strong necessity/obligation in health advice context",
-        "marks": 1,
-        "acceptableAlternatives": "None - grammar requires specific modal",
-        "commonErrors": "Students may choose 'should' (A) for weaker advice, or 'might' (D) for possibility rather than obligation",
-        "markingGuidance": "Award 1 mark for B only. This tests understanding of modal verb strength in context.",
-        "grammarPoint": "Must = strong obligation/necessity, Should = advice/recommendation"
-      },
-      {
-        "questionNumber": 19,
-        "correctAnswer": "B",
-        "explanation": "The passage emphasizes overall health maintenance as the primary benefit of regular exercise",
-        "marks": 1,
-        "acceptableAlternatives": "None - must identify main idea from passage",
-        "commonErrors": "Students may choose A (weight loss) if they focus on one detail rather than main theme. Students may choose C (professional athletics) if they misunderstand the target audience.",
-        "markingGuidance": "Award 1 mark for B only. This tests ability to identify main idea vs supporting details.",
-        "readingSkill": "Main idea identification - students must distinguish between primary purpose and supporting examples"
-      },
-      {
-        "questionNumber": 27,
-        "correctAnswer": "E",
-        "explanation": "Sentence E 'Most experts agree on the benefits of regular exercise' provides logical transition after introducing health benefits",
-        "marks": 1,
-        "acceptableAlternatives": "None - must fit discourse context",
-        "commonErrors": "Students may choose C or F if they don't consider discourse flow. Students may choose A if they jump ahead in logical sequence.",
-        "markingGuidance": "Award 1 mark for E only. This tests understanding of coherence and logical flow in academic text.",
-        "discourseSkill": "Coherence - sentence must provide appropriate transition and maintain topic development"
-      },
-      {
         "questionNumber": 33,
-        "correctAnswer": "C",
-        "explanation": "Paragraph C discusses sleep importance with specific details about sleep duration and health benefits",
+        "correctAnswer": "E",
+        "explanation": "Paragraph E discusses the importance of hydration and drinking water for body functions, mentioning how water regulates body temperature and transports nutrients.",
         "marks": 1,
-        "acceptableAlternatives": "None - information is in specific paragraph",
-        "commonErrors": "Students may choose B if they confuse sleep with rest. Students may choose A if they don't read carefully for specific sleep information.",
-        "markingGuidance": "Award 1 mark for C only. This tests ability to locate specific information within longer text.",
-        "readingSkill": "Information location - students must scan for specific content within multiple paragraphs"
+        "acceptableAlternatives": "None - must be letter E",
+        "markingGuidance": "Award 1 mark for E only. Student must identify that paragraph E contains information about water/hydration importance.",
+        "textReference": "Paragraph E: 'Staying hydrated by drinking plenty of water is crucial for regulating body temperature, transporting nutrients...'"
       },
       {
         "questionNumber": 37,
-        "correctAnswer": "stress",
-        "explanation": "The text states 'Regular exercise can help reduce stress levels in the body'",
+        "correctAnswer": "stamina",
+        "explanation": "The word 'stamina' appears in Paragraph A in the context of building physical endurance through regular exercise.",
         "marks": 1,
-        "acceptableAlternatives": "None - must be exact word from passage",
-        "commonErrors": "Students may write 'anxiety' or 'tension' if they use synonyms instead of passage words. Students may write multiple words instead of one.",
-        "markingGuidance": "Award 1 mark for 'stress' only. Must be exact word from passage, correctly spelled. Do not accept synonyms or multiple words.",
-        "transferSkill": "Word extraction - students must locate and transfer exact vocabulary from source text"
+        "acceptableAlternatives": "None - must be exact word 'stamina' from passage",
+        "commonErrors": "Students may write 'strength' or 'endurance' (synonyms not from text). Students may write 'physical stamina' (more than one word).",
+        "markingGuidance": "Award 1 mark for 'stamina' only. Must be spelled correctly and be exactly one word from the passage. Do not accept synonyms like 'endurance', 'strength', or 'fitness' even if they fit the sentence meaning.",
+        "textReference": "Paragraph A: 'Regular exercise builds stamina and improves cardiovascular health...'"
       }
     ],
     "partSpecificGuidance": {
-      "part1": {
-        "focus": "Literal comprehension of short authentic texts",
-        "markingPrinciple": "Award marks only for correct answers that show understanding of explicit information",
-        "commonIssues": "Students may overthink simple texts or miss key details",
-        "teachingPoint": "Emphasize careful reading of all text elements including titles, formatting, and context clues"
+      "part5_matching": {
+        "focus": "Information location and paragraph content matching",
+        "markingPrinciple": "Award marks only for correct paragraph letter that contains the specified information",
+        "commonIssues": "Students may choose paragraphs with related but not specific information",
+        "teachingPoint": "Each paragraph discusses ONE main aspect - students must match statement to the paragraph that SPECIFICALLY addresses that topic, not just mentions it briefly"
       },
-      "part2": {
-        "focus": "Grammar, vocabulary, and discourse markers in context",
-        "markingPrinciple": "Each gap tests specific language point - no partial credit",
-        "commonIssues": "Students may choose answers that are grammatically possible but don't fit context",
-        "teachingPoint": "Read whole passage first for context, then analyze each gap for grammar and meaning"
-      },
-      "part3": {
-        "focus": "Reading comprehension including inference and main ideas",
-        "markingPrinciple": "Answers must be supported by evidence in the passage",
-        "commonIssues": "Students may use prior knowledge instead of passage information",
-        "teachingPoint": "All answers must come from the passage - avoid using outside knowledge"
-      },
-      "part4": {
-        "focus": "Text organization and coherence",
-        "markingPrinciple": "Sentences must fit logically and grammatically in context",
-        "commonIssues": "Students may choose sentences that are thematically related but don't fit discourse flow",
-        "teachingPoint": "Consider both meaning and grammatical connections (pronouns, conjunctions, discourse markers)"
-      },
-      "part5": {
-        "focus": "Information location and vocabulary transfer",
-        "markingPrinciple": "Matching requires exact correspondence; word completion requires exact words from text",
-        "commonIssues": "Students may paraphrase instead of using exact text words",
-        "teachingPoint": "Use only words that appear in the passage - no synonyms or paraphrasing"
+      "part5_transfer": {
+        "focus": "Vocabulary extraction - exact words from passage",
+        "markingPrinciple": "Accept ONLY the exact word from the passage, correctly spelled. NO synonyms, NO paraphrasing.",
+        "commonIssues": "Students use synonyms instead of passage words; students write multiple words; spelling errors",
+        "teachingPoint": "The answer MUST be a word that appears in the passage. Students should locate the relevant section first, then extract the exact word that fits grammatically and semantically.",
+        "criticalRule": "ONE WORD ONLY - if student writes more than one word or uses a word not in the passage, award 0 marks even if meaning is correct"
       }
-    },
-    "markingScheme": {
-      "part1": "1 mark per correct answer (8 marks total) - no partial credit",
-      "part2": "1 mark per correct answer (10 marks total) - no partial credit", 
-      "part3": "1 mark per correct answer (8 marks total) - no partial credit",
-      "part4": "1 mark per correct answer (6 marks total) - no partial credit",
-      "part5": "1 mark per correct answer (8 marks total) - spelling must be accurate for word completion questions"
-    },
-    "gradingScale": {
-      "A": "34-40 marks (85-100%)",
-      "B": "28-33 marks (70-84%)", 
-      "C": "20-27 marks (50-69%)",
-      "D": "12-19 marks (30-49%)",
-      "E": "8-11 marks (20-29%)",
-      "G": "0-7 marks (0-19%)"
-    },
-    "generalMarkingPrinciples": {
-      "accuracy": "All answers must be exactly as specified - no partial credit for 'almost correct' responses",
-      "evidence": "Student responses should demonstrate understanding of the source text, not general knowledge",
-      "fairness": "Apply marking criteria consistently across all student responses",
-      "documentation": "Keep clear records of common errors for feedback and future teaching"
     }
   }
 }
 
-CRITICAL: Generate ALL 40 questions following authentic SPM format. Include complete passages, questions, and answer options. Base content on the lesson topic "${
-    data.lesson
-  }" while maintaining SPM standards.
+**CRITICAL PART 5 GENERATION CHECKLIST:**
+✓ Part 5 passage has EXACTLY 6 paragraphs labeled A-F
+✓ Each paragraph is 60-80 words with distinct topic
+✓ Questions 33-36 each match to ONE specific paragraph (A-F)
+✓ Questions 37-40 answers are SINGLE WORDS that appear verbatim in the passage
+✓ All 8 Part 5 questions are complete and properly structured
+✓ Passage contains vocabulary suitable for word extraction
+✓ Total questions = 40 (Parts 1-5: 8+10+8+6+8)
+
+Generate ALL 40 questions following authentic SPM format. Part 5 must have complete passage with labeled paragraphs and all 8 questions properly formatted.
 `;
 };
 
