@@ -1,4 +1,4 @@
-// Enhanced backend/controller/assessmentController.js - Added standalone assessment support
+// Enhanced backend/controller/assessmentController.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
@@ -13,7 +13,7 @@ const ACTIVITY_TYPE_MAPPING = {
 };
 const validateAndMapActivityType = (activityType) => {
   if (!activityType) {
-    return "activity"; // Default fallback
+    return "activity"; 
   }
 
   const mapped = ACTIVITY_TYPE_MAPPING[activityType.toLowerCase()];
@@ -4107,33 +4107,125 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
   }
 
   if (examContent.parts && Array.isArray(examContent.parts)) {
-    examContent.parts.forEach((part) => {
+    examContent.parts.forEach((part, partIndex) => {
       if (!part) return;
 
       html += `
-        <div class="exam-part">
-          <h3>${part.title || `Part ${part.partNumber}`}</h3>
-          <p><em>${part.instructions || ""}</em></p>`;
+        <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
+          <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+            part.title || `Part ${part.partNumber || partIndex + 1}`
+          }</h3>
+          <p style="font-style: italic; margin-bottom: 15px;">${
+            part.instructions || ""
+          }</p>
+          <p style="margin-bottom: 20px;"><strong>Total Questions:</strong> ${
+            part.totalQuestions || "N/A"
+          } | <strong>Marks:</strong> ${part.marks || "N/A"}</p>
+      `;
 
+      // Display passage if exists
       if (part.passage) {
-        html += `<div style="background: #f6ffed; padding: 10px; border-radius: 4px; margin: 8px 0;">
-          <p>${part.passage}</p>
+        html += `<div class="passage" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px; white-space: pre-wrap;">
+          ${part.passage}
         </div>`;
       }
 
-      if (part.questions && Array.isArray(part.questions)) {
+      // CRITICAL FIX: Handle Part 5's special structure
+      if (
+        part.partNumber === 5 &&
+        part.questions &&
+        Array.isArray(part.questions)
+      ) {
+        // Part 5 has nested question types
+        part.questions.forEach((questionGroup) => {
+          if (!questionGroup) return;
+
+          // Check if this is a matching question group (33-36)
+          if (questionGroup.questionType === "matching") {
+            html += `
+              <div class="question-group" style="margin: 20px 0; padding: 15px; background: #fff7e6; border-radius: 8px;">
+                <h4 style="color: #fa8c16; margin-bottom: 10px;">Questions ${
+                  questionGroup.questionNumbers || "33-36"
+                }</h4>
+                <p style="margin-bottom: 15px;"><strong>${
+                  questionGroup.instructions ||
+                  "Match the statements to the paragraphs"
+                }</strong></p>
+                
+                <div class="matching-questions">`;
+
+            if (
+              questionGroup.questions &&
+              Array.isArray(questionGroup.questions)
+            ) {
+              questionGroup.questions.forEach((q) => {
+                html += `
+                  <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #fa8c16; border-radius: 4px;">
+                    <p><strong>${q.questionNumber}.</strong> ${q.statement}</p>
+                    <p style="margin-top: 8px; color: #666;"><em>Answer: _______</em></p>
+                  </div>`;
+              });
+            }
+
+            html += `
+                </div>
+              </div>`;
+          }
+
+          // Check if this is an information transfer question group (37-40)
+          else if (questionGroup.questionType === "information_transfer") {
+            html += `
+              <div class="question-group" style="margin: 20px 0; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+                <h4 style="color: #1890ff; margin-bottom: 10px;">Questions ${
+                  questionGroup.questionNumbers || "37-40"
+                }</h4>
+                <p style="margin-bottom: 15px;"><strong>${
+                  questionGroup.instructions ||
+                  "Complete the sentences with ONE WORD from the passage"
+                }</strong></p>
+                ${
+                  questionGroup.title
+                    ? `<p style="font-weight: 600; margin-bottom: 10px;">${questionGroup.title}</p>`
+                    : ""
+                }
+                
+                <div class="transfer-questions">`;
+
+            if (
+              questionGroup.questions &&
+              Array.isArray(questionGroup.questions)
+            ) {
+              questionGroup.questions.forEach((q) => {
+                html += `
+                  <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #1890ff; border-radius: 4px;">
+                    <p><strong>${q.questionNumber}.</strong> ${q.sentence}</p>
+                    <div style="margin-top: 10px; padding: 8px; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 4px;">
+                      <p style="color: #666;"><em>Write your answer here: _________________</em></p>
+                    </div>
+                  </div>`;
+              });
+            }
+
+            html += `
+                </div>
+              </div>`;
+          }
+        });
+      }
+      // Regular question handling for Parts 1-4
+      else if (part.questions && Array.isArray(part.questions)) {
         part.questions.forEach((question) => {
           if (!question) return;
 
-          html += `<div class="question-wrapper"><div class="question">
+          html += `<div class="question-wrapper"><div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
             <p><strong>${question.questionNumber || ""}.</strong> ${
             question.question || question.text || ""
           }</p>`;
 
           if (question.options && Array.isArray(question.options)) {
-            html += `<div class="options">`;
+            html += `<div class="options" style="margin-left: 20px;">`;
             question.options.forEach((option) => {
-              html += `<p>${option}</p>`;
+              html += `<p style="margin: 5px 0;">${option}</p>`;
             });
             html += `</div>`;
           }
@@ -4141,7 +4233,17 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
         });
       }
 
-      html += `</div>`;
+      // Display sentence options for Part 4
+      if (part.sentenceOptions && Array.isArray(part.sentenceOptions)) {
+        html += `<div class="sentence-options" style="margin: 20px 0; padding: 15px; background: #f6ffed; border-radius: 8px;">
+          <h4 style="color: #52c41a;">Choose from these sentences:</h4>`;
+        part.sentenceOptions.forEach((option) => {
+          html += `<p style="margin: 8px 0; padding: 8px; background: white; border-left: 3px solid #52c41a; border-radius: 4px;">${option}</p>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`; // Close exam-part
     });
   }
 
