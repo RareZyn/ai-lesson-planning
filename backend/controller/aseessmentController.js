@@ -3354,30 +3354,60 @@ Create a complete SPM English Paper 1 examination based on the Malaysian KSSM cu
 - Test understanding of text organization and coherence
 
 **Part 5: Matching & Information Transfer (8 questions, 8 marks)**
-- 1 informational text with 6 clearly labeled paragraphs (A-F)
-- Questions 33-36: Match 4 statements to the correct paragraph letter (A-F)
-- Questions 37-40: Complete 4 sentences using EXACTLY ONE WORD from the text
 
-## CRITICAL INSTRUCTIONS FOR PART 5:
+CRITICAL PART 5 STRUCTURE:
+- ONE informational passage (400-450 words) divided into EXACTLY 6 paragraphs labeled A, B, C, D, E, F
+- Questions 33-36: Match statements to paragraph letters (4 questions, 4 marks)
+- Questions 37-40: Complete sentences with ONE WORD from passage (4 questions, 4 marks)
 
 ### Part 5 Passage Requirements:
-1. Write ONE informational passage (350-450 words) divided into EXACTLY 6 paragraphs
-2. Label each paragraph clearly as A, B, C, D, E, F
-3. Each paragraph should cover a DISTINCT aspect of the topic
-4. Make paragraphs substantial (60-80 words each) with specific, extractable information
+1. Write ONE complete informational text about "${
+    data.lesson
+  }" divided into 6 distinct paragraphs
+2. Each paragraph must be 60-80 words covering ONE specific aspect
+3. Label paragraphs clearly as A, B, C, D, E, F at the start of each paragraph
+4. Include extractable vocabulary words that appear verbatim in the text
+
+Example paragraph structure for health topic:
+**Paragraph A**: Benefits of regular exercise (60-75 words) - include words like "stamina", "cardiovascular", "flexibility"
+**Paragraph B**: Importance of balanced nutrition (60-75 words) - include words like "nutrients", "metabolism", "vitamins"
+**Paragraph C**: Role of adequate sleep (60-75 words) - include words like "rejuvenate", "cognitive", "immune"
+**Paragraph D**: Managing stress (60-75 words) - include words like "meditation", "anxiety", "relaxation"
+**Paragraph E**: Staying hydrated (60-75 words) - include words like "hydration", "dehydration", "regulate"
+**Paragraph F**: Regular health check-ups (60-75 words) - include words like "preventive", "screening", "early"
 
 ### Questions 33-36 (Matching) Requirements:
-1. Create 4 clear statements that each match ONLY ONE specific paragraph
-2. Statements should paraphrase paragraph content, not quote directly
-3. Each statement must have an obvious answer from paragraph content
-4. Format: "Which paragraph (A-F) discusses [specific topic/information]?"
+Create 4 statements that each clearly match to ONE specific paragraph only:
+- Statement must paraphrase the main idea of that paragraph
+- Should NOT use exact wording from paragraph
+- Each paragraph should be matchable by its unique content
+- Format: Which paragraph (A-F) discusses/mentions/contains [specific information]?
+
+Example:
+Q33: "The importance of drinking enough water for body functions" → Answer: E
+Q34: "How physical activity improves heart health" → Answer: A
 
 ### Questions 37-40 (Information Transfer) Requirements:
-1. Create 4 incomplete sentences that test vocabulary extraction
-2. Each sentence must have EXACTLY ONE clear answer word from the passage
-3. The missing word must be a key noun, verb, or adjective from the text
-4. Format: "Regular exercise helps to reduce _______ levels." (Answer: stress)
-5. CRITICAL: Ensure the exact word appears in the passage text
+Create 4 incomplete sentences where the answer is EXACTLY ONE WORD from the passage:
+- The missing word MUST appear verbatim in the passage text
+- Student must write the EXACT word (no synonyms accepted)
+- Each sentence should make grammatical sense when completed
+- Answers should be key content words (nouns, verbs, adjectives)
+
+Example format:
+Q37: "Regular exercise helps build physical _______." 
+- Correct answer: "stamina" (word must appear in Paragraph A)
+- In passage: "Regular exercise builds stamina and improves overall fitness"
+
+Q38: "A balanced diet provides essential _______ for the body."
+- Correct answer: "nutrients" (word must appear in Paragraph B)  
+- In passage: "Proper nutrition ensures the body receives all necessary nutrients"
+
+CRITICAL: For Q37-40, you MUST:
+1. Include the exact answer word somewhere in the passage text
+2. Ensure the word fits grammatically in the sentence
+3. Make the answer unambiguous (only ONE word can fit correctly)
+4. Use words that are clearly extractable and not too common (avoid "the", "and", "is")
 
 ## Output Format:
 
@@ -3418,7 +3448,7 @@ Return a JSON object with this EXACT structure:
         "instructions": "Questions 9 to 18. Read the passage carefully and choose the best answer A, B, C or D to fill each blank.",
         "totalQuestions": 10,
         "marks": 10,
-        "passage": "Complete passage with health/environment topic. The passage must contain 10 numbered gaps (9) to (18) that test grammar and vocabulary. Example: 'Maintaining a healthy lifestyle is crucial for overall well-being. We (9) _______ all prioritize our health...'",
+        "passage": "Complete passage with (9) to (18) gaps testing grammar and vocabulary",
         "questions": [
           {
             "questionNumber": 9,
@@ -3433,12 +3463,12 @@ Return a JSON object with this EXACT structure:
         "instructions": "Questions 19 to 26. Read the passage carefully and choose the best answer A, B or C.",
         "totalQuestions": 8, 
         "marks": 8,
-        "passage": "A complete 350-400 word informative passage about health advice, environmental issues, or cultural topics that connects to the lesson theme",
+        "passage": "Complete 350-400 word passage",
         "questions": [
           {
             "questionNumber": 19,
-            "question": "According to the passage, the main reason people should exercise regularly is",
-            "options": ["A) to lose weight quickly", "B) to maintain good health", "C) to become professional athletes"],
+            "question": "Question based on passage",
+            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
             "marks": 1
           }
         ]
@@ -3449,21 +3479,21 @@ Return a JSON object with this EXACT structure:
         "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap (27-32). There are two extra sentences you do not need to use.",
         "totalQuestions": 6,
         "marks": 6,
-        "passage": "Complete coherent passage (300-350 words) with 6 gaps marked (27), (28), (29), (30), (31), (32) about sustainable living or health topics. Example: 'Living sustainably is important. (27) _______ This involves making conscious choices...'",
+        "passage": "Complete passage with 6 gaps marked (27) to (32)",
         "sentenceOptions": [
-          "A: Sentence option that could fit one gap",
-          "B: Another sentence option",
-          "C: Third sentence option",
-          "D: Fourth sentence option",
-          "E: Fifth sentence option",
-          "F: Sixth sentence option", 
-          "G: Extra sentence 1 (distractor)",
-          "H: Extra sentence 2 (distractor)"
+          "A: Sentence option 1",
+          "B: Sentence option 2",
+          "C: Sentence option 3",
+          "D: Sentence option 4",
+          "E: Sentence option 5",
+          "F: Sentence option 6", 
+          "G: Extra sentence 1",
+          "H: Extra sentence 2"
         ],
         "questions": [
           {
             "questionNumber": 27,
-            "gapContext": "Brief context about where gap 27 appears in passage",
+            "gapContext": "Context about gap location",
             "marks": 1
           }
         ]
@@ -3474,80 +3504,92 @@ Return a JSON object with this EXACT structure:
         "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
         "totalQuestions": 8,
         "marks": 8,
-        "passage": "**CRITICAL: Create ONE complete informational passage (400-450 words) divided into EXACTLY 6 paragraphs labeled A, B, C, D, E, F. Each paragraph should be 60-80 words discussing a distinct aspect of the topic (health/environment/culture). Include specific vocabulary words that can be extracted for questions 37-40.**
+        "passage": "**CRITICAL: Write ONE complete passage (400-450 words) about '${
+          data.lesson || "maintaining a healthy lifestyle"
+        }' divided into EXACTLY 6 paragraphs.**
 
-Example structure:
-A: The benefits of regular exercise (include words like 'stamina', 'cardiovascular', 'flexibility')
-B: Importance of balanced nutrition (include words like 'nutrients', 'metabolism', 'deficiency')  
-C: Role of adequate sleep (include words like 'rejuvenate', 'cognitive', 'immune')
-D: Managing stress effectively (include words like 'meditation', 'cortisol', 'anxiety')
-E: Staying hydrated (include words like 'hydration', 'dehydration', 'electrolytes')
-F: Regular health check-ups (include words like 'preventive', 'screening', 'diagnosis')",
+**Paragraph A**: [First aspect - 60-75 words] Include words: [word1], [word2], [word3]
+**Paragraph B**: [Second aspect - 60-75 words] Include words: [word4], [word5], [word6]
+**Paragraph C**: [Third aspect - 60-75 words] Include words: [word7], [word8], [word9]
+**Paragraph D**: [Fourth aspect - 60-75 words] Include words: [word10], [word11], [word12]
+**Paragraph E**: [Fifth aspect - 60-75 words] Include words: [word13], [word14], [word15]
+**Paragraph F**: [Sixth aspect - 60-75 words] Include words: [word16], [word17], [word18]
+
+Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary words for Q37-40 are clearly present in the text.",
         "paragraphLabels": ["A", "B", "C", "D", "E", "F"],
         "questions": [
           {
             "questionType": "matching",
             "questionNumbers": "33-36",
-            "instructions": "Which paragraph (A-F) contains the following information? Write the correct letter A-F for questions 33-36.",
+            "instructions": "Questions 33 - 36: Which paragraph (A - F) describes the reasons for going viral. Mark your answers on the separate answer sheet.",
             "questions": [
               {
                 "questionNumber": 33,
-                "statement": "The importance of drinking enough water for body functions",
-                "correctAnswer": "E",
+                "statement": "Parents are responsible for making their children feel special.",
+                "correctAnswer": "F",
+                "explanation": "Paragraph F specifically discusses how parents tell children they are special",
                 "marks": 1
               },
               {
                 "questionNumber": 34,
-                "statement": "How physical activity strengthens the heart and circulation system",
-                "correctAnswer": "A",
+                "statement": "Their posts can increase the economy.",
+                "correctAnswer": "D",
+                "explanation": "Paragraph D mentions viral posts affecting stock/economy",
                 "marks": 1
               },
               {
                 "questionNumber": 35,
-                "statement": "The benefits of getting sufficient rest for brain function",
-                "correctAnswer": "C",
+                "statement": "Going extra lengths in pursuit of approval.",
+                "correctAnswer": "A",
+                "explanation": "Paragraph A discusses seeking approval on social media",
                 "marks": 1
               },
               {
                 "questionNumber": 36,
-                "statement": "Why early detection of health problems is important",
-                "correctAnswer": "F",
+                "statement": "The need to be seen and heard.",
+                "correctAnswer": "E",
+                "explanation": "Paragraph E talks about validation and attention",
                 "marks": 1
               }
             ]
           },
           {
             "questionType": "information_transfer",
-            "questionNumbers": "37-40", 
-            "instructions": "Complete the notes below using information from the text. Write NO MORE THAN ONE WORD from the passage for each answer. Write your answers for questions 37-40.",
+            "questionNumbers": "37-40",
+            "instructions": "Questions 37 - 40: Complete the notes below using information from the text. Choose no more than one word from the passage for each answer. Write your answers on the separate answer sheet.",
+            "title": "What we learn about going viral",
             "questions": [
               {
                 "questionNumber": 37,
-                "sentence": "Building physical _______ requires consistent exercise over time.",
-                "correctAnswer": "stamina",
-                "locationInText": "Paragraph A mentions 'Regular exercise builds stamina...'",
-                "marks": 1
+                "sentence": "People go for a/an (37) _______ to secure a job to show their worth.",
+                "correctAnswer": "interview",
+                "locationInText": "This exact word must appear in the passage - ensure 'interview' is mentioned in context of securing jobs",
+                "marks": 1,
+                "verification": "MUST verify 'interview' appears verbatim in passage text"
               },
               {
                 "questionNumber": 38,
-                "sentence": "A lack of essential _______ can lead to various health problems.",
-                "correctAnswer": "nutrients",
-                "locationInText": "Paragraph B states 'Without proper nutrients, the body cannot...'",
-                "marks": 1
+                "sentence": "When we become a public figure we lose our (38) _______ in the long run.",
+                "correctAnswer": "privacy",
+                "locationInText": "Word 'privacy' must be extractable from passage discussing consequences of fame",
+                "marks": 1,
+                "verification": "MUST verify 'privacy' appears verbatim in passage text"
               },
               {
                 "questionNumber": 39,
-                "sentence": "Adequate sleep helps to _______ the body and mind.",
-                "correctAnswer": "rejuvenate",
-                "locationInText": "Paragraph C explains 'Sleep helps rejuvenate both body and mind...'",
-                "marks": 1
+                "sentence": "The need to be (39) _______ is why people become Instafamous.",
+                "correctAnswer": "validated",
+                "locationInText": "Word 'validated' or 'validation' must appear when discussing reasons for social media fame",
+                "marks": 1,
+                "verification": "MUST verify 'validated' appears verbatim in passage text"
               },
               {
                 "questionNumber": 40,
-                "sentence": "_______ care focuses on preventing diseases before they develop.",
-                "correctAnswer": "Preventive",
-                "locationInText": "Paragraph F discusses 'Preventive care through regular check-ups...'",
-                "marks": 1
+                "sentence": "Many young people attend (40) _______ to seek fame and glory.",
+                "correctAnswer": "auditions",
+                "locationInText": "Word 'auditions' must be mentioned in context of seeking fame",
+                "marks": 1,
+                "verification": "MUST verify 'auditions' appears verbatim in passage text"
               }
             ]
           }
@@ -3562,52 +3604,52 @@ F: Regular health check-ups (include words like 'preventive', 'screening', 'diag
     "answers": [
       {
         "questionNumber": 33,
-        "correctAnswer": "E",
-        "explanation": "Paragraph E discusses the importance of hydration and drinking water for body functions, mentioning how water regulates body temperature and transports nutrients.",
+        "correctAnswer": "F",
+        "explanation": "Paragraph F discusses how parents make their children feel special by telling them they are unique and talented, which directly matches the statement.",
         "marks": 1,
-        "acceptableAlternatives": "None - must be letter E",
-        "markingGuidance": "Award 1 mark for E only. Student must identify that paragraph E contains information about water/hydration importance.",
-        "textReference": "Paragraph E: 'Staying hydrated by drinking plenty of water is crucial for regulating body temperature, transporting nutrients...'"
+        "markingGuidance": "Accept only letter F. Student must identify that paragraph F contains information about parental influence on children's self-perception.",
+        "textReference": "Paragraph F: 'Some people need to be the centre of attention to feel they are worthy of existing. Most parents tell their children that they are special and raise them to feel superior...'"
       },
       {
         "questionNumber": 37,
-        "correctAnswer": "stamina",
-        "explanation": "The word 'stamina' appears in Paragraph A in the context of building physical endurance through regular exercise.",
+        "correctAnswer": "interview",
+        "explanation": "The word 'interview' appears in the passage when discussing people wanting to prove their worth by showing their experience to secure a vacancy.",
         "marks": 1,
-        "acceptableAlternatives": "None - must be exact word 'stamina' from passage",
-        "commonErrors": "Students may write 'strength' or 'endurance' (synonyms not from text). Students may write 'physical stamina' (more than one word).",
-        "markingGuidance": "Award 1 mark for 'stamina' only. Must be spelled correctly and be exactly one word from the passage. Do not accept synonyms like 'endurance', 'strength', or 'fitness' even if they fit the sentence meaning.",
-        "textReference": "Paragraph A: 'Regular exercise builds stamina and improves cardiovascular health...'"
+        "acceptableAlternatives": "NONE - must be exact word 'interview' from passage",
+        "commonErrors": "Students may write 'job', 'work', or 'application' - these are INCORRECT even if logical",
+        "markingGuidance": "Award 1 mark ONLY for 'interview' spelled correctly. Do NOT accept synonyms. The word must be extracted exactly from the passage.",
+        "textReference": "Paragraph B: '...who want to appear in an interview to fill a vacancy and they want to prove their worth by showing their experience and quality...'"
       }
     ],
     "partSpecificGuidance": {
       "part5_matching": {
-        "focus": "Information location and paragraph content matching",
-        "markingPrinciple": "Award marks only for correct paragraph letter that contains the specified information",
-        "commonIssues": "Students may choose paragraphs with related but not specific information",
-        "teachingPoint": "Each paragraph discusses ONE main aspect - students must match statement to the paragraph that SPECIFICALLY addresses that topic, not just mentions it briefly"
+        "totalMarks": 4,
+        "markingPrinciple": "Each statement matches to exactly ONE paragraph. Award 1 mark for each correct paragraph letter.",
+        "commonIssues": "Students may choose paragraphs with similar topics. Each paragraph has ONE main distinct theme - match to that specific theme.",
+        "teachingPoint": "Students should identify the MAIN idea of each paragraph first, then match statements to the paragraph that PRIMARILY discusses that topic."
       },
       "part5_transfer": {
-        "focus": "Vocabulary extraction - exact words from passage",
-        "markingPrinciple": "Accept ONLY the exact word from the passage, correctly spelled. NO synonyms, NO paraphrasing.",
-        "commonIssues": "Students use synonyms instead of passage words; students write multiple words; spelling errors",
-        "teachingPoint": "The answer MUST be a word that appears in the passage. Students should locate the relevant section first, then extract the exact word that fits grammatically and semantically.",
-        "criticalRule": "ONE WORD ONLY - if student writes more than one word or uses a word not in the passage, award 0 marks even if meaning is correct"
+        "totalMarks": 4,
+        "markingPrinciple": "Accept ONLY the exact word from the passage. NO synonyms, NO paraphrasing, NO multiple words.",
+        "criticalRule": "ONE WORD ONLY from the passage. If student writes a synonym, two words, or a word not in passage = 0 marks",
+        "commonIssues": "Students writing synonyms instead of extracting exact words; spelling errors; writing multiple words",
+        "teachingPoint": "Answers MUST be words that appear verbatim in the text. Students should locate the relevant part of passage, then extract the EXACT word."
       }
     }
   }
 }
 
-**CRITICAL PART 5 GENERATION CHECKLIST:**
-✓ Part 5 passage has EXACTLY 6 paragraphs labeled A-F
-✓ Each paragraph is 60-80 words with distinct topic
-✓ Questions 33-36 each match to ONE specific paragraph (A-F)
-✓ Questions 37-40 answers are SINGLE WORDS that appear verbatim in the passage
-✓ All 8 Part 5 questions are complete and properly structured
-✓ Passage contains vocabulary suitable for word extraction
-✓ Total questions = 40 (Parts 1-5: 8+10+8+6+8)
+**VERIFICATION CHECKLIST BEFORE GENERATING:**
+✓ Part 5 passage has EXACTLY 6 paragraphs labeled A, B, C, D, E, F
+✓ Each paragraph is 60-80 words with ONE distinct main idea
+✓ Questions 33-36: 4 matching statements, each matching ONE specific paragraph
+✓ Questions 37-40: 4 incomplete sentences requiring ONE WORD answers
+✓ ALL answer words for Q37-40 appear VERBATIM in the passage text
+✓ Each answer word is contextually appropriate and grammatically correct
+✓ Answer key includes exact text references showing where words appear
+✓ Total questions = 40 (8+10+8+6+8)
 
-Generate ALL 40 questions following authentic SPM format. Part 5 must have complete passage with labeled paragraphs and all 8 questions properly formatted.
+Generate the complete examination following authentic SPM Paper 1 format exactly.
 `;
 };
 
