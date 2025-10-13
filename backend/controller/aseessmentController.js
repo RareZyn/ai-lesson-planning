@@ -13,7 +13,7 @@ const ACTIVITY_TYPE_MAPPING = {
 };
 const validateAndMapActivityType = (activityType) => {
   if (!activityType) {
-    return "activity"; 
+    return "activity";
   }
 
   const mapped = ACTIVITY_TYPE_MAPPING[activityType.toLowerCase()];
@@ -187,8 +187,6 @@ const structureGeneratedContent = (
           !!structuredContent.answerKeyHTML
         );
       }
-
-      // CRITICAL: Set flags correctly for SPM exams
       structuredContent.hasStudentContent = !!generatedContent.examContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
 
@@ -4420,6 +4418,79 @@ const convertPaper2Parts = (parts) => {
 
     html += `</div>`;
   });
+  return html;
+};
+
+const convertAssessmentToHTML = (assessmentContent) => {
+  if (!assessmentContent) return null;
+
+  let html = `
+    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          assessmentContent.title || "Assessment"
+        }</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Time Allocation:</strong> ${
+            assessmentContent.timeAllocation || "60 minutes"
+          }</p>
+          <p style="margin: 0;"><strong>Total Questions:</strong> ${
+            assessmentContent.totalQuestions || "N/A"
+          }</p>
+        </div>
+      </div>
+  `;
+
+  if (assessmentContent.instructions) {
+    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    assessmentContent.instructions.forEach((instruction) => {
+      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (assessmentContent.questions && assessmentContent.questions.length > 0) {
+    html += `<div class="questions">`;
+    assessmentContent.questions.forEach((question) => {
+      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
+          question.questionNumber
+        } (${question.points} ${
+        question.points === 1 ? "point" : "points"
+      })</h4>
+        <p style="font-size: 16px; margin-bottom: 15px;">${
+          question.question
+        }</p>`;
+
+      if (question.type === "multiple_choice" && question.options) {
+        html += `<div class="options" style="margin-left: 20px;">`;
+        question.options.forEach((option) => {
+          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+        });
+        html += `</div>`;
+      } else if (question.answerSpace) {
+        const height =
+          question.answerSpace === "3 lines"
+            ? "80px"
+            : question.answerSpace === "5 lines"
+            ? "120px"
+            : "60px";
+        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      } else {
+        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      }
+
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
   return html;
 };
 

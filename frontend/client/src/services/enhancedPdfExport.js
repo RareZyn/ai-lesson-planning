@@ -1,4 +1,4 @@
-// src/services/enhancedPdfExport.js - FIXED VERSION
+// src/services/enhancedPdfExport.js
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -20,6 +20,9 @@ class EnhancedPdfExport {
     };
   }
 
+  /**
+   * MAIN EXPORT FUNCTION - Question-by-question rendering
+   */
   async exportHtmlElementToPdf(
     elementId,
     fileName = "document.pdf",
@@ -36,8 +39,12 @@ class EnhancedPdfExport {
       const isSpmExam = this.detectSpmExam(element);
 
       if (isSpmExam) {
-        console.log("✅ Detected SPM exam format, using specialized export");
-        return await this.exportSpmExamToPdf(element, fileName, options);
+        console.log("✅ Detected SPM exam - using question-by-question export");
+        return await this.exportSpmExamQuestionByQuestion(
+          element,
+          fileName,
+          options
+        );
       }
 
       // Fallback for non-SPM content
@@ -48,144 +55,11 @@ class EnhancedPdfExport {
     }
   }
 
-  detectSpmExam(element) {
-    const content = element.textContent || element.innerText || "";
-    return (
-      content.includes("SPM English Paper") ||
-      content.includes("1119/1") ||
-      content.includes("1119/2") ||
-      content.includes("Reading and Use of English") ||
-      content.includes("Writing")
-    );
-  }
-
-  async exportSpmExamToPdf(element, fileName, options) {
-    const doc = new jsPDF({
-      ...this.defaultOptions,
-      ...options,
-    });
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 10;
-    const contentWidth = pageWidth - margin * 2;
-
-    console.log("📄 Creating SPM exam PDF");
-
-    // Extract and add header information
-    const headerInfo = this.extractSpmHeader(element);
-    this.addSpmHeaderPage(doc, headerInfo);
-
-    // Add a new page for content
-    doc.addPage();
-
-    // CRITICAL FIX: Use html2canvas to capture the ENTIRE content at once
-    // This prevents question splitting and blank pages
-    try {
-      console.log("📸 Capturing entire exam content...");
-
-      // Find the main content container (skip the header elements)
-      const contentElement = this.findExamContentElement(element);
-
-      if (!contentElement) {
-        console.error("❌ Could not find exam content element");
-        throw new Error("Exam content not found");
-      }
-
-      // Capture the entire content as one large canvas
-      const canvas = await html2canvas(contentElement, {
-        scale: 2, // High quality
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: contentElement.scrollWidth,
-        windowHeight: contentElement.scrollHeight,
-      });
-
-      console.log(`✅ Captured content: ${canvas.width}x${canvas.height}px`);
-
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Calculate how many pages we need
-      const pageContentHeight = pageHeight - margin * 2;
-      let heightLeft = imgHeight;
-      let position = margin;
-      let pageNumber = 2; // Start from page 2 (page 1 is header)
-
-      // Add the image across multiple pages
-      while (heightLeft > 0) {
-        // Calculate the position for this page
-        const yOffset = (pageNumber - 2) * pageContentHeight;
-
-        doc.addImage(
-          imgData,
-          "PNG",
-          margin,
-          position - yOffset,
-          imgWidth,
-          imgHeight
-        );
-
-        heightLeft -= pageContentHeight;
-
-        if (heightLeft > 0) {
-          doc.addPage();
-          pageNumber++;
-          position = margin;
-        }
-
-        console.log(
-          `✅ Added page ${pageNumber}, remaining height: ${heightLeft}mm`
-        );
-      }
-
-      doc.save(fileName);
-      console.log(`✅ SPM exam PDF saved as ${fileName}`);
-
-      return { success: true, fileName };
-    } catch (error) {
-      console.error("❌ Error capturing SPM exam content:", error);
-      throw error;
-    }
-  }
-
-  // Helper method to find the main exam content (skip header/instructions)
-  findExamContentElement(element) {
-    // Try to find the main content area by common class names
-    let contentElement =
-      element.querySelector(".exam-content") ||
-      element.querySelector(".assessment-content") ||
-      element.querySelector('[class*="content"]');
-
-    // If not found, look for elements that contain "Part 1" or "Question"
-    if (!contentElement) {
-      const allDivs = element.querySelectorAll("div");
-      for (let div of allDivs) {
-        const text = div.textContent;
-        if (text.includes("Part 1") || text.includes("Question 1")) {
-          contentElement = div;
-          break;
-        }
-      }
-    }
-
-    // Fallback: use the entire element
-    if (!contentElement) {
-      contentElement = element;
-    }
-
-    console.log(
-      "📍 Found content element:",
-      contentElement.className || "root element"
-    );
-    return contentElement;
-  }
-
-  // ALTERNATIVE METHOD: If the above doesn't work well, use this intelligent chunking method
-  async exportSpmExamToPdfChunked(element, fileName, options) {
+  /**
+   * CRITICAL FIX: Export SPM exam question-by-question
+   * This ensures NO question is ever split across pages
+   */
+  async exportSpmExamQuestionByQuestion(element, fileName, options) {
     const doc = new jsPDF({
       ...this.defaultOptions,
       ...options,
@@ -197,27 +71,30 @@ class EnhancedPdfExport {
     const contentWidth = pageWidth - margin * 2;
     const maxContentHeight = pageHeight - margin * 2;
 
-    console.log("📄 Creating SPM exam PDF with intelligent chunking");
+    console.log("📄 Creating SPM exam PDF with question-by-question rendering");
 
-    // Add header page
+    // Step 1: Add header page
     const headerInfo = this.extractSpmHeader(element);
     this.addSpmHeaderPage(doc, headerInfo);
 
-    // Get all Part sections
-    const parts = this.identifySpmParts(element);
-    console.log(`📊 Found ${parts.length} parts to process`);
+    // Step 2: Find ALL individual renderable elements (parts, passages, questions)
+    const renderableElements = this.findAllRenderableElements(element);
 
+    console.log(`📊 Found ${renderableElements.length} renderable elements`);
+
+    // Step 3: Add first content page
     doc.addPage();
     let currentY = margin;
 
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
+    // Step 4: Render each element
+    for (let i = 0; i < renderableElements.length; i++) {
+      const item = renderableElements[i];
+
+      console.log(`📝 Processing ${item.type} ${item.number || i + 1}...`);
 
       try {
-        console.log(`📝 Processing ${part.title}...`);
-
-        // Capture this part as an image
-        const canvas = await html2canvas(part.element, {
+        // Capture this element
+        const canvas = await html2canvas(item.element, {
           scale: 2,
           useCORS: true,
           allowTaint: false,
@@ -229,23 +106,29 @@ class EnhancedPdfExport {
         const imgWidth = contentWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        console.log(`📏 Part ${i + 1} size: ${imgWidth}x${imgHeight}mm`);
+        console.log(
+          `📏 ${item.type} ${item.number || i + 1}: ${imgWidth}x${imgHeight}mm`
+        );
 
-        // Check if this part fits on current page
+        // CRITICAL: Check if element fits on current page
         if (currentY + imgHeight > pageHeight - margin) {
-          // Add new page if needed
+          console.log(`📄 ${item.type} ${item.number || i + 1} needs new page`);
           doc.addPage();
           currentY = margin;
-          console.log(`📄 Added new page for ${part.title}`);
         }
 
-        // Add the image
+        // Add element to PDF
         doc.addImage(imgData, "PNG", margin, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 5; // Add small spacing
+        currentY += imgHeight + 3; // Small spacing
 
-        console.log(`✅ Added ${part.title} at Y=${currentY}mm`);
+        console.log(
+          `✅ Added ${item.type} ${item.number || i + 1} at Y=${currentY}mm`
+        );
       } catch (error) {
-        console.error(`❌ Failed to process ${part.title}:`, error);
+        console.error(
+          `❌ Failed to process ${item.type} ${item.number || i + 1}:`,
+          error
+        );
       }
     }
 
@@ -255,185 +138,427 @@ class EnhancedPdfExport {
     return { success: true, fileName };
   }
 
-  // Helper to identify SPM exam parts more accurately
-  identifySpmParts(element) {
-    const parts = [];
+  /**
+   * CRITICAL: Find ALL renderable elements in the exam
+   * Returns array of: part headers, passages, questions, question groups
+   */
+  findAllRenderableElements(element) {
+    const elements = [];
 
-    // Look for Part headers (Part 1, Part 2, etc.)
-    const partHeaders = element.querySelectorAll('h2, h3, [class*="part"]');
+    // Find all parts
+    const parts = element.querySelectorAll(
+      '[class*="exam-part"], section, .part'
+    );
 
-    partHeaders.forEach((header) => {
-      const text = header.textContent.trim();
-      if (text.match(/^Part\s+\d+/i)) {
-        // Find the parent container that includes this part's content
-        let partContainer =
-          header.closest(".exam-part") ||
-          header.closest('div[class*="part"]') ||
-          header.parentElement;
+    if (parts.length === 0) {
+      console.log("⚠️ No explicit parts found, analyzing by structure");
+      return this.findRenderableElementsByStructure(element);
+    }
 
-        // If we found a container, use it
-        if (partContainer) {
-          parts.push({
-            title: text,
-            element: partContainer,
-            header: header,
+    parts.forEach((part, partIndex) => {
+      const partText = part.textContent.substring(0, 100).trim();
+      const partNumber = partIndex + 1;
+
+      console.log(`🔍 Analyzing Part ${partNumber}...`);
+
+      // Check which part this is
+      if (partText.match(/Part 1/i)) {
+        elements.push(...this.extractPart1Elements(part));
+      } else if (partText.match(/Part 2/i)) {
+        elements.push(...this.extractPart2Elements(part));
+      } else if (partText.match(/Part 3/i)) {
+        elements.push(...this.extractPart3Elements(part));
+      } else if (partText.match(/Part 4/i)) {
+        elements.push(...this.extractPart4Elements(part));
+      } else if (partText.match(/Part 5/i)) {
+        elements.push(...this.extractPart5Elements(part));
+      } else {
+        // Generic part - extract all children
+        console.log(`⚠️ Unknown part structure, using generic extraction`);
+        elements.push(...this.extractGenericPartElements(part, partNumber));
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Extract Part 1 elements (simple questions)
+   */
+  extractPart1Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 1");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "1" });
+    }
+
+    // Find all questions
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && text.length > 20) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 1: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 2 elements (passage + cloze questions)
+   */
+  extractPart2Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 2");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "2" });
+    }
+
+    // Find passage (usually in green/colored box)
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage, p'
+    );
+    if (passage && passage.textContent.length > 100) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find all questions (9-18)
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 9 && parseInt(match[1]) <= 18) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 2: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 3 elements (passage + comprehension questions)
+   */
+  extractPart3Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 3");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "3" });
+    }
+
+    // Find passage
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage, p'
+    );
+    if (passage && passage.textContent.length > 100) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find all questions (19-26)
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 19 && parseInt(match[1]) <= 26) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 3: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 4 elements (passage + sentence matching)
+   */
+  extractPart4Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 4");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "4" });
+    }
+
+    // Find passage
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage'
+    );
+    if (passage) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find sentence options (green box)
+    const options = partElement.querySelector(
+      '[style*="background: rgb(245"], .options, .sentences'
+    );
+    if (options) {
+      elements.push({ type: "Options", element: options });
+    }
+
+    // Find question blanks (27-32)
+    const questionDivs = partElement.querySelectorAll("div");
+
+    questionDivs.forEach((div) => {
+      const text = div.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 27 && parseInt(match[1]) <= 32) {
+        elements.push({
+          type: "Question Blank",
+          element: div,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 4: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 5 elements (paragraphs A-F + matching questions)
+   */
+  extractPart5Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 5");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "5" });
+    }
+
+    // Find title section
+    const titleDiv = partElement.querySelector(
+      '[style*="background: rgb(255, 250, 230)"]'
+    );
+    if (titleDiv) {
+      elements.push({ type: "Title", element: titleDiv });
+    }
+
+    // Find all paragraphs (A-F)
+    const allDivs = Array.from(partElement.querySelectorAll("div, p"));
+
+    allDivs.forEach((div) => {
+      const text = div.textContent.trim();
+
+      // Match paragraph markers like **A**, **Paragraph A**, etc.
+      if (
+        text.match(/^\*\*[A-F]\*\*/) ||
+        text.match(/^\*\*Paragraph [A-F]\*\*/)
+      ) {
+        // Find the container that includes the full paragraph
+        let container = div;
+        while (container.parentElement && container.textContent.length < 200) {
+          container = container.parentElement;
+          if (container.classList.contains("exam-part")) break;
+        }
+
+        elements.push({
+          type: "Paragraph",
+          element: container,
+          number: text.match(/[A-F]/)[0],
+        });
+      }
+    });
+
+    // Find Questions section (orange box for 33-36)
+    const questionsSection1 = this.findQuestionsSection(partElement, 33, 36);
+    if (questionsSection1) {
+      elements.push({
+        type: "Questions Section",
+        element: questionsSection1,
+        number: "33-36",
+      });
+    }
+
+    // Find individual questions 33-36
+    const questions3336 = this.findIndividualQuestions(partElement, 33, 36);
+    elements.push(...questions3336);
+
+    // Find Questions section (orange box for 37-40)
+    const questionsSection2 = this.findQuestionsSection(partElement, 37, 40);
+    if (questionsSection2) {
+      elements.push({
+        type: "Questions Section",
+        element: questionsSection2,
+        number: "37-40",
+      });
+    }
+
+    // Find individual questions 37-40
+    const questions3740 = this.findIndividualQuestions(partElement, 37, 40);
+    elements.push(...questions3740);
+
+    console.log(`✓ Part 5: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Find questions section (the orange instruction box)
+   */
+  findQuestionsSection(container, startQ, endQ) {
+    const divs = container.querySelectorAll("div");
+
+    for (let div of divs) {
+      const text = div.textContent.trim();
+      if (
+        text.includes(`Questions ${startQ}`) ||
+        text.includes(`Questions ${startQ} -`)
+      ) {
+        return div;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find individual questions in a range
+   */
+  findIndividualQuestions(container, startQ, endQ) {
+    const questions = [];
+    const divs = container.querySelectorAll("div");
+
+    divs.forEach((div) => {
+      const text = div.textContent.trim();
+
+      for (let q = startQ; q <= endQ; q++) {
+        if (text.match(new RegExp(`^${q}\\.`))) {
+          questions.push({
+            type: "Question",
+            element: div,
+            number: q.toString(),
           });
-          console.log(`✓ Found part: ${text}`);
+          break;
         }
       }
     });
 
-    // If no parts found by headers, try to find by structure
-    if (parts.length === 0) {
-      const allSections = element.querySelectorAll(
-        'section, div.exam-part, div[class*="part"]'
-      );
-      allSections.forEach((section, index) => {
-        parts.push({
-          title: `Part ${index + 1}`,
-          element: section,
-        });
-      });
-    }
-
-    return parts;
+    return questions;
   }
 
-  // RECOMMENDED: Update the exportHtmlElementToPdf method to use the fixed version
-  async exportHtmlElementToPdf(
-    elementId,
-    fileName = "document.pdf",
-    options = {}
-  ) {
-    try {
-      const element = document.getElementById(elementId);
-      if (!element) {
-        throw new Error(`Element with ID '${elementId}' not found`);
-      }
-
-      console.log("🎯 Starting PDF export for element:", elementId);
-
-      const isSpmExam = this.detectSpmExam(element);
-
-      if (isSpmExam) {
-        console.log("✅ Detected SPM exam format, using specialized export");
-        // TRY THE MAIN METHOD FIRST
-        return await this.exportSpmExamToPdf(element, fileName, options);
-
-        // IF THAT DOESN'T WORK, UNCOMMENT THIS TO USE THE CHUNKED METHOD:
-        // return await this.exportSpmExamToPdfChunked(element, fileName, options);
-      }
-
-      // For non-SPM content, use the existing methods
-      const questionBlocks = this.identifyQuestionBlocks(element);
-
-      if (questionBlocks.length > 0) {
-        console.log(`✅ Found ${questionBlocks.length} question blocks`);
-        return await this.exportWithQuestionGrouping(
-          questionBlocks,
-          fileName,
-          options
-        );
-      } else {
-        console.log("⚠️ No question blocks found, using canvas method");
-        return await this.exportWithCanvas(element, fileName, options);
-      }
-    } catch (error) {
-      console.error("❌ Error exporting HTML to PDF:", error);
-      throw new Error("Failed to export to PDF");
-    }
-  }
-
-  getSpmContentSections(element) {
-    const sections = [];
-
-    // Find the main content container (skip the header that was already extracted)
-    let contentRoot = element;
-
-    // Try to find exam-content or assessment-content div
-    const examContent = element.querySelector(
-      ".exam-content, .assessment-content, .activity-content"
-    );
-    if (examContent) {
-      contentRoot = examContent;
-    }
-
-    // Look for Part sections
-    const partElements = contentRoot.querySelectorAll(
-      '.exam-part, [class*="part-"], section'
+  /**
+   * Extract part header (Part X title + instructions)
+   */
+  extractPartHeader(partElement, partName) {
+    // Look for the first heading or title div
+    const header = partElement.querySelector(
+      'h1, h2, h3, h4, .part-title, [class*="part-header"]'
     );
 
-    if (partElements.length > 0) {
-      console.log(`📋 Found ${partElements.length} part elements`);
+    if (header) {
+      return header;
+    }
 
-      partElements.forEach((partEl, idx) => {
-        // Skip if this is the header section
-        const text = partEl.textContent.substring(0, 100);
-        if (
-          text.includes("Duration:") &&
-          text.includes("Questions:") &&
-          idx === 0
-        ) {
-          console.log(`⏭️ Skipping header section`);
-          return;
-        }
-
-        sections.push({
-          element: partEl,
-          type: `Part ${idx + 1}`,
-          index: sections.length,
-        });
-      });
-    } else {
-      // Fallback: split by major headings
-      console.log(`📋 No part elements found, using heading-based split`);
-
-      const headings = contentRoot.querySelectorAll("h1, h2, h3");
-      let currentSection = null;
-
-      Array.from(contentRoot.children).forEach((child) => {
-        if (child.matches("h1, h2, h3")) {
-          if (currentSection) {
-            sections.push(currentSection);
-          }
-
-          const sectionDiv = document.createElement("div");
-          sectionDiv.appendChild(child.cloneNode(true));
-
-          currentSection = {
-            element: sectionDiv,
-            type: child.textContent.substring(0, 50),
-            index: sections.length,
-          };
-        } else if (currentSection) {
-          currentSection.element.appendChild(child.cloneNode(true));
-        }
-      });
-
-      if (currentSection) {
-        sections.push(currentSection);
+    // Look for the first div that contains "Part X"
+    const divs = partElement.querySelectorAll("div");
+    for (let div of divs) {
+      if (div.textContent.includes(partName)) {
+        return div;
       }
     }
 
-    return sections;
+    return null;
   }
 
+  /**
+   * Generic extraction for unknown part structure
+   */
+  extractGenericPartElements(partElement, partNumber) {
+    const elements = [];
+
+    const children = Array.from(partElement.children);
+
+    children.forEach((child, index) => {
+      if (child.textContent.trim().length > 20) {
+        elements.push({
+          type: `Part ${partNumber} Content`,
+          element: child,
+          number: (index + 1).toString(),
+        });
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Fallback: find by structure when no explicit parts
+   */
+  findRenderableElementsByStructure(element) {
+    const elements = [];
+    const topLevelDivs = Array.from(element.children);
+
+    topLevelDivs.forEach((div, index) => {
+      if (div.textContent.trim().length > 50) {
+        elements.push({
+          type: "Content Block",
+          element: div,
+          number: (index + 1).toString(),
+        });
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Detect if content is an SPM exam
+   */
+  detectSpmExam(element) {
+    const content = element.textContent || "";
+    return (
+      content.includes("SPM English Paper") ||
+      content.includes("1119/1") ||
+      content.includes("Reading and Use of English")
+    );
+  }
+
+  /**
+   * Extract SPM header info
+   */
   extractSpmHeader(element) {
     const content = element.textContent || "";
 
-    // Extract title
     const titleMatch = content.match(/SPM English Paper \d+[^\n]*/);
     const title = titleMatch ? titleMatch[0] : "SPM English Paper 1 (1119/1)";
 
-    // Extract subtitle
     let subtitle = "Reading and Use of English";
-    if (content.includes("Writing")) {
-      subtitle = "Writing";
-    } else if (content.includes("Reading and Use of English")) {
-      subtitle = "Reading and Use of English";
-    }
+    if (content.includes("Writing")) subtitle = "Writing";
 
-    // Extract metadata
     const durationMatch = content.match(/Duration[:\s]*(\d+\s*minutes)/i);
     const questionsMatch = content.match(/Questions?[:\s]*(\d+)/i);
     const marksMatch = content.match(/Marks?[:\s]*(\d+)/i);
@@ -447,22 +572,21 @@ class EnhancedPdfExport {
     };
   }
 
+  /**
+   * Add SPM header page
+   */
   addSpmHeaderPage(doc, headerInfo) {
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(24, 144, 255);
     doc.text(headerInfo.title, pageWidth / 2, 35, { align: "center" });
 
-    // Subtitle
     doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
     doc.text(headerInfo.subtitle, pageWidth / 2, 45, { align: "center" });
 
-    // Student information fields
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     let yPos = 65;
@@ -475,16 +599,12 @@ class EnhancedPdfExport {
     doc.text("Class: _____________", 120, yPos);
 
     yPos += 15;
-
-    // Exam information
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     const infoText = `Duration: ${headerInfo.duration} | Questions: ${headerInfo.questions} | Marks: ${headerInfo.marks}`;
     doc.text(infoText, pageWidth / 2, yPos, { align: "center" });
 
     yPos += 15;
-
-    // Instructions box
     doc.setDrawColor(255, 152, 0);
     doc.setFillColor(255, 243, 224);
     doc.roundedRect(15, yPos, pageWidth - 30, 60, 3, 3, "FD");
@@ -514,9 +634,11 @@ class EnhancedPdfExport {
     console.log("✅ SPM header page created");
   }
 
-  // Fallback method for non-SPM content
+  /**
+   * Fallback canvas export
+   */
   async exportWithCanvas(element, fileName, options) {
-    console.log("📸 Using standard canvas export method");
+    console.log("📸 Using canvas fallback");
 
     const canvas = await html2canvas(element, {
       scale: 2,
@@ -527,10 +649,7 @@ class EnhancedPdfExport {
     });
 
     const imgData = canvas.toDataURL("image/png");
-    const doc = new jsPDF({
-      ...this.defaultOptions,
-      ...options,
-    });
+    const doc = new jsPDF({ ...this.defaultOptions, ...options });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
