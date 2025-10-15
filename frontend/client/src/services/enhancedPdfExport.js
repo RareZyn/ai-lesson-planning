@@ -60,6 +60,12 @@ class EnhancedPdfExport {
    * This ensures NO question is ever split across pages
    */
   async exportSpmExamQuestionByQuestion(element, fileName, options) {
+    console.log("🎯 STARTING SPM EXAM EXPORT - FULL DEBUG MODE");
+
+    // Get the raw HTML to check what we're working with
+    console.log("📄 Total HTML length:", element.innerHTML.length);
+    console.log("📊 Total text content length:", element.textContent.length);
+
     const doc = new jsPDF({
       ...this.defaultOptions,
       ...options,
@@ -368,7 +374,6 @@ class EnhancedPdfExport {
       elements.push({ type: "Title", element: titleDiv });
     }
 
-    // Find all paragraphs (A-F)
     const allDivs = Array.from(partElement.querySelectorAll("div, p"));
 
     allDivs.forEach((div) => {
@@ -379,18 +384,34 @@ class EnhancedPdfExport {
         text.match(/^\*\*[A-F]\*\*/) ||
         text.match(/^\*\*Paragraph [A-F]\*\*/)
       ) {
-        // Find the container that includes the full paragraph
+        // FIXED: Don't limit the container search
         let container = div;
-        while (container.parentElement && container.textContent.length < 200) {
+
+        // Find the actual paragraph content container
+        // Look for the parent that contains substantial text
+        while (
+          container.parentElement &&
+          !container.classList.contains("exam-part") &&
+          container.parentElement.querySelectorAll("div, p").length < 10
+        ) {
           container = container.parentElement;
-          if (container.classList.contains("exam-part")) break;
         }
 
-        elements.push({
-          type: "Paragraph",
-          element: container,
-          number: text.match(/[A-F]/)[0],
-        });
+        // If we found a good container with content, use it
+        if (container.textContent.length > 50) {
+          elements.push({
+            type: "Paragraph",
+            element: container,
+            number: text.match(/[A-F]/)[0],
+          });
+        } else {
+          // Fallback: use the original div
+          elements.push({
+            type: "Paragraph",
+            element: div,
+            number: text.match(/[A-F]/)[0],
+          });
+        }
       }
     });
 
@@ -450,23 +471,48 @@ class EnhancedPdfExport {
    */
   findIndividualQuestions(container, startQ, endQ) {
     const questions = [];
-    const divs = container.querySelectorAll("div");
+    const divs = Array.from(container.querySelectorAll("div, p"));
+
+    console.log(`🔍 Searching for questions ${startQ}-${endQ} in ${divs.length} elements`);
 
     divs.forEach((div) => {
       const text = div.textContent.trim();
 
       for (let q = startQ; q <= endQ; q++) {
-        if (text.match(new RegExp(`^${q}\\.`))) {
-          questions.push({
-            type: "Question",
-            element: div,
-            number: q.toString(),
-          });
+        // Try multiple patterns to match questions
+        const patterns = [
+          new RegExp(`^${q}\\.\\s`),           // "37. "
+          new RegExp(`^${q}\\)`),              // "37)"
+          new RegExp(`Question ${q}`),          // "Question 37"
+          new RegExp(`^\\(${q}\\)`),           // "(37)"
+        ];
+
+        const matched = patterns.some(pattern => pattern.test(text));
+
+        if (matched && text.length > 10) {
+          // Find the container that includes the full question + answer space
+          let questionContainer = div;
+
+          // Look for answer input area in siblings or children
+          const hasAnswerArea =
+            div.querySelector('input, textarea, [class*="answer"]') ||
+            div.nextElementSibling?.textContent.includes('answer') ||
+            div.textContent.includes('Write your answer');
+
+          if (hasAnswerArea || text.length > 30) {
+            questions.push({
+              type: "Question",
+              element: questionContainer,
+              number: q.toString(),
+            });
+            console.log(`✓ Found Question ${q}: ${text.substring(0, 50)}...`);
+          }
           break;
         }
       }
     });
 
+    console.log(`✓ Found ${questions.length} questions in range ${startQ}-${endQ}`);
     return questions;
   }
 
@@ -711,9 +757,8 @@ class EnhancedPdfExport {
 
       this.addFooter(doc, activityData);
 
-      const fileName = `Activity_${
-        activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
+      const fileName = `Activity_${activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+        }.pdf`;
       doc.save(fileName);
 
       return { success: true, fileName };
@@ -754,9 +799,8 @@ class EnhancedPdfExport {
 
       this.addFooter(doc, rubricData);
 
-      const fileName = `Rubric_${
-        rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
+      const fileName = `Rubric_${rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+        }.pdf`;
       doc.save(fileName);
 
       return { success: true, fileName };
@@ -998,8 +1042,7 @@ class EnhancedPdfExport {
 
         contentBlocks.push(contentBlock);
         console.log(
-          `✓ Block ${contentBlock.index} (${
-            contentBlock.type
+          `✓ Block ${contentBlock.index} (${contentBlock.type
           }): ${contentText.substring(0, 50)}...`
         );
       } catch (err) {
@@ -1428,9 +1471,8 @@ class EnhancedPdfExport {
       doc.setFontSize(8);
       doc.setTextColor(140, 140, 140);
 
-      const footerLeft = `${
-        data.title || "Document"
-      } | Generated by AI Lesson Planner`;
+      const footerLeft = `${data.title || "Document"
+        } | Generated by AI Lesson Planner`;
       doc.text(footerLeft, this.margins.left, pageHeight - 10);
 
       const footerRight = `Page ${i} of ${pageCount}`;
