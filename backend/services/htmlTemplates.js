@@ -46,12 +46,14 @@ const getEnhancedPdfStyles = () => `
       font-size: 11pt;
     }
     
+    /* CRITICAL: Prevent page breaks inside questions */
     .question, .question-wrapper, .answer-item, .exam-part {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
       margin-bottom: 8px;
     }
     
+    /* Compact info boxes */
     .student-info, .assessment-info, .answer-key-info {
       padding: 4px 6px;
       margin-bottom: 6px;
@@ -78,6 +80,7 @@ const getEnhancedPdfStyles = () => `
       font-size: 10pt;
     }
     
+    /* Question styling - keeps everything together */
     .question {
       padding: 8px;
       border: 1px solid #e8e8e8;
@@ -100,6 +103,7 @@ const getEnhancedPdfStyles = () => `
       border-radius: 2px;
     }
     
+    /* Answer key styling */
     .answer-item {
       padding: 8px;
       border: 1px solid #d9d9d9;
@@ -115,6 +119,7 @@ const getEnhancedPdfStyles = () => `
       font-size: 10pt;
     }
     
+    /* Table styling */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -139,6 +144,7 @@ const getEnhancedPdfStyles = () => `
       font-weight: 600;
     }
     
+    /* Print optimization */
     @media print {
       body {
         padding: 10mm;
@@ -199,8 +205,8 @@ const generateSpmAnswerSheetHTML = () => {
           </thead>
           <tbody>
             ${Array.from({ length: 40 }, (_, i) => i + 1)
-              .map(
-                (qNum) => `
+      .map(
+        (qNum) => `
               <tr>
                 <td style="border: 1px solid #000; padding: 3px 8px; width: 25px; text-align: center; font-weight: bold;">
                   ${qNum}
@@ -208,29 +214,24 @@ const generateSpmAnswerSheetHTML = () => {
                 <td style="border: 1px solid #000; padding: 3px 8px; text-align: center;">
                   <div style="display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap;">
                     ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                      .map(
-                        (letter) => `
+            .map(
+              (letter) => `
                       <div style="display: inline-flex; align-items: center; gap: 2px;">
                         <span style="font-size: 8pt; font-weight: bold;">${letter}</span>
                         <div style="width: 12px; height: 12px; border: 1.5px solid #000; border-radius: 50%; background-color: #fff;"></div>
                       </div>
                     `
-                      )
-                      .join("")}
+            )
+            .join("")}
                   </div>
                 </td>
                 <td style="border: 1px solid #000; padding: 3px 8px;"></td>
               </tr>
             `
-              )
-              .join("")}
+      )
+      .join("")}
           </tbody>
         </table>
-      </div>
-
-      <!-- Footer Note -->
-      <div style="margin-top: 10px; text-align: right; font-size: 8pt; font-style: italic;">
-        [ Lihat halaman sebelah
       </div>
     </div>
   `;
@@ -245,9 +246,8 @@ const convertActivityToHTML = (activityContent, activityType) => {
   let html = `
     <div class="activity-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
       <div class="activity-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${
-          activityContent.title || "Activity"
-        }</h1>
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${activityContent.title || "Activity"
+    }</h1>
         <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
           <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
         </div>
@@ -315,6 +315,7 @@ const convertActivityToHTML = (activityContent, activityType) => {
       break;
 
     case "activity":
+    case "activityInClass":
       if (activityContent.activities && activityContent.activities.length > 0) {
         activityContent.activities.forEach((section) => {
           html += `<div class="activity-section" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
@@ -332,16 +333,13 @@ const convertActivityToHTML = (activityContent, activityType) => {
       if (activityContent.textbookReference) {
         html += `<div class="textbook-reference" style="margin-bottom: 20px; padding: 15px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
           <h3 style="color: #52c41a;">Textbook Reference:</h3>
-          <p><strong>Pages:</strong> ${
-            activityContent.textbookReference.pages
+          <p><strong>Pages:</strong> ${activityContent.textbookReference.pages
           }</p>
-          <p><strong>Chapter:</strong> ${
-            activityContent.textbookReference.chapter
+          <p><strong>Chapter:</strong> ${activityContent.textbookReference.chapter
           }</p>
-          ${
-            activityContent.textbookReference.section
-              ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>`
-              : ""
+          ${activityContent.textbookReference.section
+            ? `<p><strong>Section:</strong> ${activityContent.textbookReference.section}</p>`
+            : ""
           }
         </div>`;
       }
@@ -390,9 +388,8 @@ const convertActivityToHTML = (activityContent, activityType) => {
           <h3 style="color: #eb2f96;">Questions:</h3>`;
         activityContent.questions.forEach((question, index) => {
           html += `<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
-            <p><strong>Question ${index + 1} (${question.type}):</strong> ${
-            question.question
-          }</p>
+            <p><strong>Question ${index + 1} (${question.type}):</strong> ${question.question
+            }</p>
             <div style="height: 60px; border: 1px solid #d9d9d9; margin-top: 10px; background: #fafafa;"></div>
           </div>`;
         });
@@ -419,11 +416,9 @@ const convertAssessmentToHTML = (assessmentContent) => {
           <p><strong>Name:</strong> _______________ <strong>Class:</strong> _________ <strong>Date:</strong> _________</p>
         </div>
         <div class="assessment-info">
-          <p><strong>Time:</strong> ${
-            assessmentContent.timeAllocation || "60 minutes"
-          } | <strong>Questions:</strong> ${
-    assessmentContent.totalQuestions || "N/A"
-  }</p>
+          <p><strong>Time:</strong> ${assessmentContent.timeAllocation || "60 minutes"
+    } | <strong>Questions:</strong> ${assessmentContent.totalQuestions || "N/A"
+    }</p>
         </div>
       </div>`;
 
@@ -439,9 +434,8 @@ const convertAssessmentToHTML = (assessmentContent) => {
     html += `<div class="questions">`;
     assessmentContent.questions.forEach((question) => {
       html += `<div class="question-wrapper"><div class="question">
-        <h4>Question ${question.questionNumber} (${question.points} ${
-        question.points === 1 ? "point" : "points"
-      })</h4>
+        <h4>Question ${question.questionNumber} (${question.points} ${question.points === 1 ? "point" : "points"
+        })</h4>
         <p>${question.question}</p>`;
 
       if (question.type === "multiple_choice" && question.options) {
@@ -455,8 +449,8 @@ const convertAssessmentToHTML = (assessmentContent) => {
           question.answerSpace === "3 lines"
             ? "50px"
             : question.answerSpace === "5 lines"
-            ? "80px"
-            : "40px";
+              ? "80px"
+              : "40px";
         html += `<div class="answer-space" style="height: ${height};"></div>`;
       } else {
         html += `<div class="answer-space" style="height: 50px;"></div>`;
@@ -479,14 +473,12 @@ const convertRubricToHTML = (rubricContent) => {
 
   let html = `
     <div class="rubric-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.5;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${
-        rubricContent.title || "Assessment Rubric"
-      }</h1>
-      ${
-        rubricContent.description
-          ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>`
-          : ""
-      }
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${rubricContent.title || "Assessment Rubric"
+    }</h1>
+      ${rubricContent.description
+      ? `<p style="margin-bottom: 20px; font-style: italic;">${rubricContent.description}</p>`
+      : ""
+    }
   `;
 
   if (rubricContent.criteria && rubricContent.criteria.length > 0) {
@@ -522,16 +514,14 @@ const convertRubricToHTML = (rubricContent) => {
       </table>
       <div class="grading-info" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
         <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Information</h3>
-        <p><strong>Total Points:</strong> ${
-          rubricContent.totalPoints || "N/A"
-        }</p>`;
+        <p><strong>Total Points:</strong> ${rubricContent.totalPoints || "N/A"
+      }</p>`;
 
     if (rubricContent.gradingScale) {
       html += `<h4 style="margin-top: 15px; color: #1890ff;">Grading Scale:</h4><ul style="margin: 0; padding-left: 20px;">`;
       Object.entries(rubricContent.gradingScale).forEach(([level, range]) => {
-        html += `<li><strong>${
-          level.charAt(0).toUpperCase() + level.slice(1)
-        }:</strong> ${range}</li>`;
+        html += `<li><strong>${level.charAt(0).toUpperCase() + level.slice(1)
+          }:</strong> ${range}</li>`;
       });
       html += `</ul>`;
     }
@@ -553,11 +543,9 @@ const convertAnswerKeyToHTML = (answerKeyContent) => {
     <div class="answer-key-content">
       <h1>${answerKeyContent.title || "Answer Key"}</h1>
       <div class="answer-key-info">
-        <p><strong>Questions:</strong> ${
-          answerKeyContent.totalQuestions || "N/A"
-        } | <strong>Points:</strong> ${
-    answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
-  }</p>
+        <p><strong>Questions:</strong> ${answerKeyContent.totalQuestions || "N/A"
+    } | <strong>Points:</strong> ${answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
+    }</p>
       </div>`;
 
   if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
@@ -566,13 +554,11 @@ const convertAnswerKeyToHTML = (answerKeyContent) => {
       const points = answer.points || answer.marks || 1;
 
       html += `<div class="answer-item">
-        <h4>Question ${answer.questionNumber} (${points} ${
-        points === 1 ? "point" : "points"
-      })</h4>
+        <h4>Question ${answer.questionNumber} (${points} ${points === 1 ? "point" : "points"
+        })</h4>
         <div style="background: #e6f7ff; border-left: 3px solid #1890ff;">
-          <p><strong>Answer:</strong> ${
-            answer.correctAnswer || "Not specified"
-          }</p>
+          <p><strong>Answer:</strong> ${answer.correctAnswer || "Not specified"
+        }</p>
         </div>`;
 
       if (
@@ -626,11 +612,9 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
         <div class="student-info">
           <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
           <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
-          <p><strong>Duration:</strong> ${
-            examContent.duration || "90 minutes"
-          } | <strong>${paperType === "paper1" ? "Questions:" : "Parts:"} ${
-    examContent.totalQuestions || examContent.totalParts || 40
-  }</strong> | <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>
+          <p><strong>Duration:</strong> ${examContent.duration || "90 minutes"
+    } | <strong>${paperType === "paper1" ? "Questions:" : "Parts:"} ${examContent.totalQuestions || examContent.totalParts || 40
+    }</strong> | <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>
         </div>
       </div>
   `;
@@ -651,15 +635,12 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
 
       html += `
         <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
-          <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
-            part.title || `Part ${part.partNumber || partIndex + 1}`
-          }</h3>
-          <p style="font-style: italic; margin-bottom: 15px;">${
-            part.instructions || ""
-          }</p>
-          <p style="margin-bottom: 20px;"><strong>Total Questions:</strong> ${
-            part.totalQuestions || "N/A"
-          } | <strong>Marks:</strong> ${part.marks || "N/A"}</p>
+          <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${part.title || `Part ${part.partNumber || partIndex + 1}`
+        }</h3>
+          <p style="font-style: italic; margin-bottom: 15px;">${part.instructions || ""
+        }</p>
+          <p style="margin-bottom: 20px;"><strong>Total Questions:</strong> ${part.totalQuestions || "N/A"
+        } | <strong>Marks:</strong> ${part.marks || "N/A"}</p>
       `;
 
       // Display passage if exists
@@ -681,13 +662,11 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
           if (questionGroup.questionType === "matching") {
             html += `
               <div class="question-group" style="margin: 20px 0; padding: 15px; background: #fff7e6; border-radius: 8px;">
-                <h4 style="color: #fa8c16; margin-bottom: 10px;">Questions ${
-                  questionGroup.questionNumbers || "33-36"
-                }</h4>
-                <p style="margin-bottom: 15px;"><strong>${
-                  questionGroup.instructions ||
-                  "Match the statements to the paragraphs"
-                }</strong></p>
+                <h4 style="color: #fa8c16; margin-bottom: 10px;">Questions ${questionGroup.questionNumbers || "33-36"
+              }</h4>
+                <p style="margin-bottom: 15px;"><strong>${questionGroup.instructions ||
+              "Match the statements to the paragraphs"
+              }</strong></p>
                 
                 <div class="matching-questions">`;
 
@@ -710,18 +689,15 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
           } else if (questionGroup.questionType === "information_transfer") {
             html += `
               <div class="question-group" style="margin: 20px 0; padding: 15px; background: #e6f7ff; border-radius: 8px;">
-                <h4 style="color: #1890ff; margin-bottom: 10px;">Questions ${
-                  questionGroup.questionNumbers || "37-40"
-                }</h4>
-                <p style="margin-bottom: 15px;"><strong>${
-                  questionGroup.instructions ||
-                  "Complete the sentences with ONE WORD from the passage"
-                }</strong></p>
-                ${
-                  questionGroup.title
-                    ? `<p style="font-weight: 600; margin-bottom: 10px;">${questionGroup.title}</p>`
-                    : ""
-                }
+                <h4 style="color: #1890ff; margin-bottom: 10px;">Questions ${questionGroup.questionNumbers || "37-40"
+              }</h4>
+                <p style="margin-bottom: 15px;"><strong>${questionGroup.instructions ||
+              "Complete the sentences with ONE WORD from the passage"
+              }</strong></p>
+                ${questionGroup.title
+                ? `<p style="font-weight: 600; margin-bottom: 10px;">${questionGroup.title}</p>`
+                : ""
+              }
                 
                 <div class="transfer-questions">`;
 
@@ -731,18 +707,19 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
             ) {
               questionGroup.questions.forEach((q) => {
                 html += `
-                  <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #1890ff; border-radius: 4px;">
-                    <p><strong>${q.questionNumber}.</strong> ${q.sentence}</p>
-                    <div style="margin-top: 10px; padding: 8px; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 4px;">
-                      <p style="color: #666;"><em>Write your answer here: _________________</em></p>
-                    </div>
-                  </div>`;
+      <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #1890ff; border-radius: 4px;">
+        <p>
+          <strong>${q.questionNumber}.</strong> ${q.sentence}
+        </p>
+        <div style="margin-top: 10px; padding: 8px; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 4px;">
+          <p style="color: #666;">
+            <em>Write your answer here: _________________</em>
+          </p>
+        </div>
+      </div>`;
               });
             }
-
-            html += `
-                </div>
-              </div>`;
+            html += `</div></div>`;
           }
         });
       }
@@ -752,9 +729,8 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
           if (!question) return;
 
           html += `<div class="question-wrapper"><div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
-            <p><strong>${question.questionNumber || ""}.</strong> ${
-            question.question || question.text || ""
-          }</p>`;
+        <p><strong>${question.questionNumber || ""}.</strong> ${question.question || question.text || ""
+            }</p>`;
 
           if (question.options && Array.isArray(question.options)) {
             html += `<div class="options" style="margin-left: 20px;">`;
@@ -770,7 +746,7 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
       // Display sentence options for Part 4
       if (part.sentenceOptions && Array.isArray(part.sentenceOptions)) {
         html += `<div class="sentence-options" style="margin: 20px 0; padding: 15px; background: #f6ffed; border-radius: 8px;">
-          <h4 style="color: #52c41a;">Choose from these sentences:</h4>`;
+      <h4 style="color: #52c41a;">Choose from these sentences:</h4>`;
         part.sentenceOptions.forEach((option) => {
           html += `<p style="margin: 8px 0; padding: 8px; background: white; border-left: 3px solid #52c41a; border-radius: 4px;">${option}</p>`;
         });
@@ -780,9 +756,7 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
       html += `</div>`; // Close exam-part
     });
   }
-
   html += `</div></body></html>`;
-
   // CRITICAL: Append answer sheet ONLY for Paper 1
   if (paperType === "paper1") {
     console.log("✅ Appending SPM Paper 1 answer sheet");
@@ -791,10 +765,8 @@ const convertExamToHTML = (examContent, paperType = "paper1") => {
       generateSpmAnswerSheetHTML() + "</div></body></html>"
     );
   }
-
   return html;
 };
-
 // Export all template functions
 module.exports = {
   getEnhancedPdfStyles,
