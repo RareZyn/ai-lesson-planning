@@ -7,6 +7,8 @@ import ActivityInClassModal from "../../../components/Modal/LessonBasedAssessmen
 import EssayModal from "../../../components/Modal/LessonBasedAssessment/EssayLessonModal";
 import AssessmentModal from "../../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
 import TextBookModal from "../../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
+// NEW: Import SPM Exam modal
+import SPMExamModal from "../../../components/Modal/LessonBasedAssessment/SPMExamLessonModal";
 
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [sowLessons, setSowLessons] = useState([]);
@@ -90,6 +92,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       type: data.activityType,
       parameters: modalData,
       configuredAt: new Date().toISOString(),
+      configuredFor: modalData.configuredFor || data.activityType, // NEW: Add configuredFor field
     };
 
     updateData("activityConfiguration", activityConfig);
@@ -133,16 +136,19 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     onNext();
   };
 
+  // UPDATED: Include SPM Exam in activity type labels
   const getActivityTypeLabel = (type) => {
     const labels = {
       textbook: "Textbook-based Activity",
       essay: "Essay Writing",
       activityInClass: "In-class Activity",
       assessment: "Assessment / Test",
+      "spm-exam": "SPM English Examination", // NEW
     };
     return labels[type] || type;
   };
 
+  // UPDATED: Include SPM Exam configuration summary
   const getConfigurationSummary = () => {
     if (!data.activityConfiguration?.parameters) return "Not configured";
 
@@ -171,6 +177,17 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
             ? ` - ${params.additionalRequirement.substring(0, 50)}...`
             : ""
         }`;
+
+      // NEW: SPM Exam configuration summary
+      case "spm-exam":
+        const paperType = params.paperType === "paper1" ? "Paper 1" : "Paper 2";
+        const formLevel = params.form === "form4" ? "Form 4" : "Form 5";
+        const duration = params.timeAllocation || "90";
+        const topic = params.specificTopic || "General";
+        return `SPM ${paperType} (${formLevel}), ${duration} min, Topic: ${topic.substring(
+          0,
+          30
+        )}${topic.length > 30 ? "..." : ""}`;
 
       default:
         return "Configured";
@@ -248,7 +265,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           </small>
         </div>
 
-        {/* Activity Format - Updated with modal integration */}
+        {/* UPDATED: Activity Format with SPM Exam option */}
         <div className={styles.formGroup}>
           <label htmlFor="activityType">Primary Activity Format</label>
           <select
@@ -267,6 +284,10 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
               In-class Activity (e.g., group work, presentation)
             </option>
             <option value="assessment">Assessment / Test</option>
+            {/* NEW: SPM Exam option */}
+            <option value="spm-exam">
+              SPM English Examination (Paper 1 & 2)
+            </option>
           </select>
 
           {/* Show configuration status and summary */}
@@ -320,15 +341,36 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                 <div
                   style={{
                     padding: "12px",
-                    backgroundColor: "#fff7e6",
-                    border: "1px solid #ffd591",
+                    backgroundColor:
+                      data.activityType === "spm-exam"
+                        ? "#fff0f6" // Special background for SPM exam
+                        : "#fff7e6",
+                    border:
+                      data.activityType === "spm-exam"
+                        ? "1px solid #ffadd2" // Pink border for SPM exam
+                        : "1px solid #ffd591",
                     borderRadius: "6px",
-                    color: "#fa8c16",
+                    color:
+                      data.activityType === "spm-exam"
+                        ? "#eb2f96" // Pink text for SPM exam
+                        : "#fa8c16",
                     fontSize: "14px",
                   }}
                 >
-                  ⚠ Please configure your{" "}
-                  {getActivityTypeLabel(data.activityType)} settings
+                  {data.activityType === "spm-exam" ? "📊" : "⚠"} Please
+                  configure your {getActivityTypeLabel(data.activityType)}{" "}
+                  settings
+                  {data.activityType === "spm-exam" && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        marginTop: "4px",
+                        opacity: 0.8,
+                      }}
+                    >
+                      Choose between Paper 1 (Reading) or Paper 2 (Writing)
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -395,7 +437,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         </div>
       </form>
 
-      {/* Render Modals - All set to lesson planning mode */}
+      {/* UPDATED: Render Modals - All set to lesson planning mode with SPM Exam */}
       {activeModal === "activityInClass" && (
         <ActivityInClassModal
           isOpen={true}
@@ -437,6 +479,19 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           onClose={handleModalClose}
           onSubmit={handleModalSubmit}
           selectedLessonPlan={null}
+          isLessonPlanningMode={true}
+          existingConfiguration={data.activityConfiguration?.parameters}
+        />
+      )}
+
+      {/* NEW: SPM Exam Modal */}
+      {activeModal === "spm-exam" && (
+        <SPMExamModal
+          isOpen={true}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          selectedLessonPlan={null}
+          activityType="spm-exam"
           isLessonPlanningMode={true}
           existingConfiguration={data.activityConfiguration?.parameters}
         />

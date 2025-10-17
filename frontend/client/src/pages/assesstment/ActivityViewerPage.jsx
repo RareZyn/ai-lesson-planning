@@ -1,4 +1,4 @@
-// Updated src/pages/assessment/ActivityViewerPage.jsx - Added PDF export functionality
+// Updated src/pages/assessment/ActivityViewerPage.jsx - Fixed SPM exam content detection
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -165,6 +165,14 @@ const convertAssessmentContentToHTML = (assessmentContent) => {
           html += `<p style="margin-bottom: 8px;">${option}</p>`;
         });
         html += `</div>`;
+      } else if (question.answerSpace) {
+        const height =
+          question.answerSpace === "3 lines"
+            ? "80px"
+            : question.answerSpace === "5 lines"
+            ? "120px"
+            : "60px";
+        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
       } else {
         html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
       }
@@ -312,17 +320,19 @@ const ActivityViewerPage = () => {
       if (response.success && response.data) {
         setAssessment(response.data);
 
-        // Enhanced content validation with detailed logging
-        const { activityHTML, assessmentHTML, rubricHTML, answerKeyHTML } =
-          response.data.generatedContent || {};
-
-        // Check for student content based on activity type
+        // FIXED: Enhanced content validation for SPM exams
         const hasStudentContent = getStudentContentFromData(response.data);
 
         if (!hasStudentContent) {
           console.warn(
             "No student content found for activity type:",
-            response.data.activityType
+            response.data.activityType,
+            "Content status:",
+            {
+              activityHTML: !!response.data.generatedContent?.activityHTML,
+              assessmentHTML: !!response.data.generatedContent?.assessmentHTML,
+              examHTML: !!response.data.generatedContent?.examHTML,
+            }
           );
           setError("No student content found for this assessment.");
         }
@@ -339,40 +349,83 @@ const ActivityViewerPage = () => {
     }
   };
 
-  // Helper function to check content availability from raw data
+  // FIXED: Enhanced helper function to check content availability from raw data
   const getStudentContentFromData = (assessmentData) => {
     if (!assessmentData?.generatedContent) return null;
 
-    const { activityHTML, assessmentHTML } = assessmentData.generatedContent;
+    const { activityHTML, assessmentHTML, examHTML } =
+      assessmentData.generatedContent;
 
-    // For assessment type, use assessmentHTML; for others, use activityHTML
-    if (assessmentData.activityType === "assessment") {
+    // CRITICAL: Handle SPM exam content correctly
+    if (assessmentData.activityType === "spm-exam") {
+      // For SPM exams, check examHTML first, then assessmentHTML as fallback
+      return examHTML || assessmentHTML;
+    } else if (assessmentData.activityType === "assessment") {
+      // For regular assessments, use assessmentHTML
       return assessmentHTML;
     } else {
+      // For other activity types, use activityHTML
       return activityHTML;
     }
   };
 
+  // FIXED: Enhanced getStudentContent function with SPM exam support
   const getStudentContent = () => {
     if (!assessment?.generatedContent) {
       return null;
     }
 
-    const { activityHTML, assessmentHTML, activityContent, assessmentContent } =
-      assessment.generatedContent;
+    const {
+      activityHTML,
+      assessmentHTML,
+      examHTML,
+      activityContent,
+      assessmentContent,
+      examContent,
+    } = assessment.generatedContent;
 
-    // For assessment type, prefer assessmentHTML, fallback to assessmentContent
-    if (assessment.activityType === "assessment") {
+    console.log("🔍 Content detection for", assessment.activityType, {
+      activityHTML: !!activityHTML,
+      assessmentHTML: !!assessmentHTML,
+      examHTML: !!examHTML,
+      activityContent: !!activityContent,
+      assessmentContent: !!assessmentContent,
+      examContent: !!examContent,
+    });
+
+    if (assessment.activityType === "spm-exam") {
+      if (examHTML) {
+        console.log("✅ Using examHTML for SPM exam");
+        return examHTML;
+      } else if (assessmentHTML) {
+        console.log("✅ Using assessmentHTML for SPM exam");
+        return assessmentHTML;
+      } else if (examContent) {
+        console.log("✅ Converting examContent to HTML for SPM exam");
+        return convertAssessmentContentToHTML(examContent);
+      } else if (assessmentContent) {
+        console.log("✅ Converting assessmentContent to HTML for SPM exam");
+        return convertAssessmentContentToHTML(assessmentContent);
+      }
+    } else if (assessment.activityType === "assessment") {
+      // For regular assessments: assessmentHTML -> assessmentContent
       if (assessmentHTML) {
+        console.log("✅ Using assessmentHTML for assessment");
         return assessmentHTML;
       } else if (assessmentContent) {
+        console.log("✅ Converting assessmentContent to HTML for assessment");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else {
-      // For other types, prefer activityHTML, fallback to activityContent
+      // For other types: activityHTML -> activityContent
       if (activityHTML) {
+        console.log("✅ Using activityHTML for", assessment.activityType);
         return activityHTML;
       } else if (activityContent) {
+        console.log(
+          "✅ Converting activityContent to HTML for",
+          assessment.activityType
+        );
         return convertActivityContentToHTML(
           activityContent,
           assessment.activityType
@@ -380,25 +433,30 @@ const ActivityViewerPage = () => {
       }
     }
 
+    console.log("❌ No student content found for", assessment.activityType);
     return null;
   };
 
-  // Similarly update getTeacherContent
+  // FIXED: Enhanced getTeacherContent function with SPM exam support
   const getTeacherContent = () => {
     if (!assessment?.generatedContent) return null;
 
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    // For assessment type, prefer answerKeyHTML, fallback to answerKeyContent
-    if (assessment.activityType === "assessment") {
+    // CRITICAL: Handle SPM exam teacher content correctly
+    if (
+      assessment.activityType === "spm-exam" ||
+      assessment.activityType === "assessment"
+    ) {
+      // For SPM exams and assessments, use answer key content
       if (answerKeyHTML) {
         return answerKeyHTML;
       } else if (answerKeyContent) {
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
-      // For other types, prefer rubricHTML, fallback to rubricContent
+      // For other types, use rubric content
       if (rubricHTML) {
         return rubricHTML;
       } else if (rubricContent) {
@@ -493,7 +551,7 @@ const ActivityViewerPage = () => {
       const fileName = `${assessment.title.replace(
         /[^a-z0-9]/gi,
         "_"
-      )}_Activity.pdf`;
+      )}_${getContentTypeName().replace(" ", "_")}.pdf`;
       await exportElementToPdf("temp-activity-content", fileName, {
         format: "a4",
         orientation: "portrait",
@@ -521,18 +579,15 @@ const ActivityViewerPage = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${assessment.title}_${
-      assessment.activityType === "assessment" ? "Assessment" : "Activity"
-    }.html`;
+    a.download = `${assessment.title}_${getContentTypeName().replace(
+      " ",
+      "_"
+    )}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    message.success(
-      `${
-        assessment.activityType === "assessment" ? "Assessment" : "Activity"
-      } downloaded successfully!`
-    );
+    message.success(`${getContentTypeName()} downloaded successfully!`);
   };
 
   const handleViewRubric = () => {
@@ -540,9 +595,7 @@ const ActivityViewerPage = () => {
       navigate(`/app/assessment/${id}/${id}`);
     } else {
       message.warning(
-        `No ${
-          assessment.activityType === "assessment" ? "answer key" : "rubric"
-        } available for this assessment.`
+        `No ${getTeacherContentName()} available for this assessment.`
       );
     }
   };
@@ -551,13 +604,15 @@ const ActivityViewerPage = () => {
     navigate("/app/assessment");
   };
 
-  // Get appropriate content type name
+  // FIXED: Get appropriate content type name with SPM exam support
   const getContentTypeName = () => {
     if (!assessment) return "Content";
 
     switch (assessment.activityType) {
       case "assessment":
         return "Assessment Paper";
+      case "spm-exam":
+        return "SPM Examination Paper";
       case "essay":
         return "Essay Activity";
       case "textbook":
@@ -569,12 +624,13 @@ const ActivityViewerPage = () => {
     }
   };
 
-  // Get appropriate teacher content name
+  // FIXED: Get appropriate teacher content name with SPM exam support
   const getTeacherContentName = () => {
     if (!assessment) return "Teacher Content";
 
     switch (assessment.activityType) {
       case "assessment":
+      case "spm-exam":
         return "Answer Key";
       case "essay":
       case "textbook":
@@ -637,6 +693,7 @@ const ActivityViewerPage = () => {
                     activityHTML: !!assessment.generatedContent?.activityHTML,
                     assessmentHTML:
                       !!assessment.generatedContent?.assessmentHTML,
+                    examHTML: !!assessment.generatedContent?.examHTML,
                     rubricHTML: !!assessment.generatedContent?.rubricHTML,
                     answerKeyHTML: !!assessment.generatedContent?.answerKeyHTML,
                   })}
@@ -811,7 +868,9 @@ const ActivityViewerPage = () => {
               <div>
                 <div>
                   No{" "}
-                  {assessment.activityType === "assessment"
+                  {assessment.activityType === "spm-exam"
+                    ? "exam"
+                    : assessment.activityType === "assessment"
                     ? "assessment"
                     : "activity"}{" "}
                   content has been generated for this assessment.
@@ -822,7 +881,9 @@ const ActivityViewerPage = () => {
                   Activity Type: {assessment.activityType}
                   <br />
                   Expected Content:{" "}
-                  {assessment.activityType === "assessment"
+                  {assessment.activityType === "spm-exam"
+                    ? "examHTML or assessmentHTML"
+                    : assessment.activityType === "assessment"
                     ? "assessmentHTML"
                     : "activityHTML"}
                   <br />
@@ -831,6 +892,7 @@ const ActivityViewerPage = () => {
                     activityHTML: !!assessment.generatedContent?.activityHTML,
                     assessmentHTML:
                       !!assessment.generatedContent?.assessmentHTML,
+                    examHTML: !!assessment.generatedContent?.examHTML,
                   })}
                 </div>
               </div>
@@ -920,6 +982,57 @@ const ActivityViewerPage = () => {
               </div>
             )}
           </div>
+
+          {/* SPM Exam Configuration Display */}
+          {assessment.activityType === "spm-exam" &&
+            assessment.examConfiguration && (
+              <div>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  SPM Exam Configuration
+                </Text>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "8px",
+                  }}
+                >
+                  {assessment.examConfiguration.paperType && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Paper Type:{" "}
+                        {assessment.examConfiguration.paperType.toUpperCase()}
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.textSources?.length > 0 && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Text Sources:{" "}
+                        {assessment.examConfiguration.textSources.length}{" "}
+                        selected
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.readingLevel && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Reading Level:{" "}
+                        {assessment.examConfiguration.readingLevel}
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.communicationFormat && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Format:{" "}
+                        {assessment.examConfiguration.communicationFormat}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
           {assessment.skills && assessment.skills.length > 0 && (
             <div>

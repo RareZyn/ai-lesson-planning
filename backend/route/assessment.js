@@ -1,11 +1,11 @@
-// backend/route/assessment.js - Enhanced with standalone assessment routes
+// backend/route/assessment.js - Enhanced with SPM exam routes
 const express = require("express");
 const {
   generateFromLessonPlan,
-  createStandaloneAssessment, // NEW
-  getStandaloneAssessments, // NEW
-  updateStandaloneAssessment, // NEW
-  deleteStandaloneAssessment, // NEW
+  createStandaloneAssessment,
+  getStandaloneAssessments,
+  updateStandaloneAssessment,
+  deleteStandaloneAssessment,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -14,6 +14,7 @@ const {
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
   regenerateAssessment,
+  generateExamContent, // NEW: Import SPM exam generation function
 } = require("../controller/aseessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
@@ -30,9 +31,9 @@ router.post("/save", protect, saveAssessment);
 router.get("/available-lessons", protect, getLessonPlansWithoutAssessments);
 
 // ==============================================
-// STANDALONE ASSESSMENT ROUTES (NEW)
+// STANDALONE ASSESSMENT ROUTES
 // ==============================================
-// Create standalone assessment
+// Create standalone assessment (handles all activity types including SPM)
 router.post("/standalone", protect, createStandaloneAssessment);
 // Get standalone assessments only
 router.get("/standalone", protect, getStandaloneAssessments);
@@ -42,17 +43,25 @@ router.put("/standalone/:id", protect, updateStandaloneAssessment);
 router.delete("/standalone/:id", protect, deleteStandaloneAssessment);
 
 // ==============================================
+// SPM EXAM SPECIFIC ROUTES (NEW)
+// ==============================================
+// Create standalone SPM exam (alternative endpoint for clarity)
+router.post("/spm-exam", protect, createStandaloneAssessment);
+// Generate SPM exam from lesson plan (alternative endpoint for clarity)
+router.post("/spm-exam/from-lesson", protect, generateFromLessonPlan);
+
+// ==============================================
 // GENERAL ASSESSMENT ROUTES
 // ==============================================
-// Get user's assessments with filtering and pagination (handles both types)
+// Get user's assessments with filtering and pagination (handles all types)
 router.get("/my-assessments", protect, getUserAssessmentsFiltered);
-// Get specific assessment by ID (works for both lesson-based and standalone)
+// Get specific assessment by ID (works for all activity types)
 router.get("/:id", protect, getAssessmentById);
-// Update assessment (works for both types)
+// Update assessment (works for all types)
 router.put("/:id", protect, updateAssessment);
-// Regenerate assessment with new configuration (works for both types)
+// Regenerate assessment with new configuration (works for all types)
 router.put("/:id/regenerate", protect, regenerateAssessment);
-// Delete assessment (works for both types)
+// Delete assessment (works for all types)
 router.delete("/:id", protect, deleteAssessment);
 
 module.exports = router;

@@ -36,7 +36,14 @@ const AssessmentSchema = new mongoose.Schema(
     activityType: {
       type: String,
       required: true,
-      enum: ["assessment", "essay", "textbook", "activity"],
+      enum: [
+        "assessment",
+        "essay",
+        "textbook",
+        "activity",
+        "activityInClass",
+        "spm-exam",
+      ], // FIXED: Added activityInClass and spm-exam
     },
     assessmentType: {
       type: String,
@@ -68,7 +75,7 @@ const AssessmentSchema = new mongoose.Schema(
       },
     ],
 
-    // FIXED: Improved generatedContent schema with explicit HTML fields
+    // FIXED: Enhanced generatedContent schema with explicit SPM exam fields
     generatedContent: {
       // JSON Content Fields
       activityContent: {
@@ -87,8 +94,13 @@ const AssessmentSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.Mixed,
         default: null,
       },
+      examContent: {
+        // CRITICAL: SPM exam content
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
 
-      // CRITICAL: Explicitly define HTML fields as String type
+      // HTML Fields - These are what the frontend looks for
       activityHTML: {
         type: String,
         default: null,
@@ -102,6 +114,11 @@ const AssessmentSchema = new mongoose.Schema(
         default: null,
       },
       answerKeyHTML: {
+        type: String,
+        default: null,
+      },
+      examHTML: {
+        // CRITICAL: SPM exam HTML
         type: String,
         default: null,
       },
@@ -191,7 +208,34 @@ const AssessmentSchema = new mongoose.Schema(
     originalCreatedAt: {
       type: Date,
     },
+
+    // FIXED: Enhanced exam configuration for SPM exams
+    examConfiguration: {
+      paperType: {
+        type: String,
+        enum: ["paper1", "paper2"],
+      },
+      textSources: [String],
+      readingLevel: String,
+      topics: [String],
+      communicationFormat: String,
+      essayTypes: [String],
+      topicCategories: [String],
+      promptComplexity: String,
+      questionTypes: {
+        multipleChoiceOptions: Number,
+        clozeTestFocus: String,
+        matchingComplexity: String,
+      },
+    },
+
+    // FIXED: Add standalone flag
+    isStandalone: {
+      type: Boolean,
+      default: false,
+    },
   },
+
   {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -205,20 +249,21 @@ AssessmentSchema.index({ lessonPlanId: 1 });
 AssessmentSchema.index({ classId: 1 });
 AssessmentSchema.index({ activityType: 1, status: 1 });
 AssessmentSchema.index({ tags: 1 });
+AssessmentSchema.index({ isStandalone: 1 }); // FIXED: Add index for standalone assessments
 
 // Virtual for formatted creation date
 AssessmentSchema.virtual("formattedCreatedDate").get(function () {
   return this.createdAt.toLocaleDateString();
 });
 
-// UPDATED: Instance method to update usage statistics
+// FIXED: Enhanced instance method to update usage statistics
 AssessmentSchema.methods.recordUsage = function () {
   this.lastUsed = new Date();
   this.usageCount += 1;
   return this.save();
 };
 
-// UPDATED: Instance method to mark content generated based on activity type (now handles JSON)
+// FIXED: Enhanced method to mark content generated with SPM exam support
 AssessmentSchema.methods.markContentGenerated = function (
   studentContent,
   teacherContent,
@@ -226,6 +271,11 @@ AssessmentSchema.methods.markContentGenerated = function (
 ) {
   if (activityType === "assessment") {
     this.generatedContent.assessmentContent = studentContent;
+    this.generatedContent.answerKeyContent = teacherContent;
+  } else if (activityType === "spm-exam") {
+    // CRITICAL: Handle SPM exam content correctly
+    this.generatedContent.examContent = studentContent;
+    this.generatedContent.assessmentContent = studentContent; // Also populate assessmentContent
     this.generatedContent.answerKeyContent = teacherContent;
   } else {
     this.generatedContent.activityContent = studentContent;
@@ -241,13 +291,24 @@ AssessmentSchema.methods.markContentGenerated = function (
   return this.save();
 };
 
-// UPDATED: Static method to get user's assessments with filters
+// FIXED: Static method to get user's assessments with filters
 AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
   const query = { createdBy: userId };
 
   if (filters.classId) query.classId = filters.classId;
   if (filters.activityType) query.activityType = filters.activityType;
   if (filters.status) query.status = filters.status;
+  if (filters.hasLessonPlan !== undefined) {
+    if (filters.hasLessonPlan === "true") {
+      query.lessonPlanId = { $exists: true, $ne: null };
+    } else if (filters.hasLessonPlan === "false") {
+      query.$or = [
+        { lessonPlanId: { $exists: false } },
+        { lessonPlanId: null },
+        { isStandalone: true },
+      ];
+    }
+  }
   if (filters.search) {
     query.$or = [
       { title: { $regex: filters.search, $options: "i" } },
@@ -262,13 +323,22 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .sort({ createdAt: -1 });
 };
 
-// UPDATED: Pre-save middleware to update status and flags (now handles JSON content)
+// FIXED: Enhanced pre-save middleware with SPM exam support
 AssessmentSchema.pre("save", function (next) {
   // Update hasActivity and hasRubric based on content availability
   const content = this.generatedContent;
 
   if (this.activityType === "assessment") {
     this.hasActivity = !!(content.assessmentContent || content.assessmentHTML);
+    this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
+  } else if (this.activityType === "spm-exam") {
+    // CRITICAL: Handle SPM exam content correctly
+    this.hasActivity = !!(
+      content.examContent ||
+      content.examHTML ||
+      content.assessmentContent ||
+      content.assessmentHTML
+    );
     this.hasRubric = !!(content.answerKeyContent || content.answerKeyHTML);
   } else {
     this.hasActivity = !!(content.activityContent || content.activityHTML);

@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const morgan = require("morgan");
-const cookieParser = require("cookie-parser"); // Add this
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const app = express();
@@ -23,11 +23,12 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-// Middleware
+
+// middleware
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Add this line - IMPORTANT for cookie handling
+app.use(cookieParser()); 
 app.use(morgan("dev"));
 
 // Import routes
@@ -40,6 +41,12 @@ const classRoutes = require("./route/classRoutes");
 const sowRoutes = require("./route/sowRoutes");
 const lessonRoutes = require("./route/lessonRoutes");
 const communityRoutes = require("./route/communityRoute");
+const ocrRoutes = require("./route/ocrRoutes");
+const studentRoutes = require("./route/studentRoutes");
+const answerRoutes = require("./route/answerRoutes");
+const gradingRoutes = require("./route/gradingRoutes");
+const manualEditRoutes = require("./route/manualEditRoutes");
+const reviewRoutes = require("./route/reviewRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -51,6 +58,13 @@ app.use("/api/classes", classRoutes);
 app.use("/api/sow", sowRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/ocr", ocrRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/answers", answerRoutes);
+app.use("/api/grading", gradingRoutes); 
+app.use("/api/manual-edit", manualEditRoutes); 
+app.use("/api/review", reviewRoutes);  
+
 
 
 // Health check route
@@ -61,6 +75,7 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
 
 // 404 handler
 app.use((req, res) => {
@@ -73,6 +88,15 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+
+  // Handle timeout errors
+  if (err.code === "TIMEOUT" || err.message.includes("timeout")) {
+    return res.status(408).json({
+      success: false,
+      message: "Request timeout - processing took too long",
+      suggestion: "Try with a smaller image or enable preprocessing",
+    });
+  }
 
   // Mongoose duplicate key
   if (err.code === 11000) {

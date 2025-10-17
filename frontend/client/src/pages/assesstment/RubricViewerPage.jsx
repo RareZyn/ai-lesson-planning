@@ -1,4 +1,4 @@
-// Updated src/pages/assessment/RubricViewerPage.jsx - Added PDF export functionality
+//src/pages/assessment/RubricViewerPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -27,156 +27,219 @@ import { assessmentAPI } from "../../services/assessmentService";
 import { usePdfExport } from "../../hooks/usePdfExport";
 
 const { Title, Text } = Typography;
+
 // JSON to HTML conversion functions for fallback support
-const convertActivityContentToHTML = (activityContent, activityType) => {
-  if (!activityContent) return null;
+const convertAnswerKeyContentToHTML = (answerKeyContent) => {
+  if (!answerKeyContent) return null;
 
   let html = `
-    <div class="activity-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div class="activity-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${
-          activityContent.title || "Activity"
-        }</h1>
-        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
-        </div>
-      </div>
-  `;
-
-  if (activityContent.description) {
-    html += `<div class="activity-description" style="margin-bottom: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px;">
-      <p style="margin: 0;"><strong>Description:</strong> ${activityContent.description}</p>
-    </div>`;
-  }
-
-  // Essay-specific content
-  if (activityType === "essay") {
-    if (activityContent.essayType) {
-      html += `<div style="margin-bottom: 15px;">
-        <p><strong>Essay Type:</strong> ${
-          activityContent.essayType.charAt(0).toUpperCase() +
-          activityContent.essayType.slice(1)
+    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <h1 style="color: #52c41a; margin-bottom: 10px;">${
+        answerKeyContent.title || "Answer Key"
+      }</h1>
+      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p><strong>Total Questions:</strong> ${
+          answerKeyContent.totalQuestions || "N/A"
         }</p>
-      </div>`;
-    }
-
-    if (activityContent.topic) {
-      html += `<div style="margin-bottom: 15px;">
-        <p><strong>Topic:</strong> ${activityContent.topic}</p>
-      </div>`;
-    }
-
-    if (activityContent.prompt) {
-      html += `<div class="essay-prompt" style="margin-bottom: 20px; padding: 20px; background: #fff7e6; border: 2px solid #ffa940; border-radius: 8px;">
-        <h3 style="color: #fa8c16;">Essay Prompt:</h3>
-        <p style="font-size: 16px; font-weight: 500;">${activityContent.prompt}</p>
-      </div>`;
-    }
-
-    if (
-      activityContent.instructions &&
-      activityContent.instructions.length > 0
-    ) {
-      html += `<div class="instructions" style="margin-bottom: 25px;">
-        <h3 style="color: #fa8c16;">Instructions:</h3>
-        <ol style="padding-left: 20px;">`;
-      activityContent.instructions.forEach((instruction) => {
-        html += `<li style="margin-bottom: 8px;">${instruction}</li>`;
-      });
-      html += `</ol></div>`;
-    }
-
-    if (activityContent.requirements) {
-      html += `<div class="requirements" style="margin-bottom: 20px;">
-        <h3 style="color: #1890ff;">Requirements:</h3>
-        <ul>
-          <li><strong>Word Count:</strong> ${activityContent.requirements.wordCount}</li>
-          <li><strong>Duration:</strong> ${activityContent.requirements.duration}</li>
-          <li><strong>Format:</strong> ${activityContent.requirements.format}</li>
-        </ul>
-      </div>`;
-    }
-
-    if (activityContent.guidelines && activityContent.guidelines.length > 0) {
-      html += `<div class="guidelines" style="margin-bottom: 20px;">
-        <h3 style="color: #722ed1;">Guidelines:</h3>
-        <ul>`;
-      activityContent.guidelines.forEach((guideline) => {
-        html += `<li>${guideline}</li>`;
-      });
-      html += `</ul></div>`;
-    }
-  }
-
-  html += `</div>`;
-  return html;
-};
-
-const convertAssessmentContentToHTML = (assessmentContent) => {
-  if (!assessmentContent) return null;
-
-  let html = `
-    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${
-          assessmentContent.title || "Assessment"
-        }</h1>
-        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
-        </div>
-        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Time Allocation:</strong> ${
-            assessmentContent.timeAllocation || "60 minutes"
-          }</p>
-          <p style="margin: 0;"><strong>Total Questions:</strong> ${
-            assessmentContent.totalQuestions || "N/A"
-          }</p>
-        </div>
+        <p style="margin: 0;"><strong>Total Points:</strong> ${
+          answerKeyContent.totalPoints || "N/A"
+        }</p>
       </div>
   `;
 
-  if (assessmentContent.instructions) {
-    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
-      <h3 style="color: #fa8c16;">Instructions:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
-    assessmentContent.instructions.forEach((instruction) => {
-      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
-    });
-    html += `</ul></div>`;
-  }
+  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
+    html += `<div class="answers">`;
+    answerKeyContent.answers.forEach((answer) => {
+      // Handle points properly - check for marks field as fallback
+      const points = answer.points || answer.marks || 1;
 
-  if (assessmentContent.questions && assessmentContent.questions.length > 0) {
-    html += `<div class="questions">`;
-    assessmentContent.questions.forEach((question) => {
-      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
-          question.questionNumber
-        } (${question.points} ${
-        question.points === 1 ? "point" : "points"
-      })</h4>
-        <p style="font-size: 16px; margin-bottom: 15px;">${
-          question.question
-        }</p>`;
+      html += `
+        <div class="answer-item" style="margin-bottom: 25px; padding: 20px; border: 2px solid #d9d9d9; border-radius: 12px; background: #fafafa;">
+          <h3 style="color: #262626; margin-bottom: 15px; border-bottom: 1px solid #e8e8e8; padding-bottom: 8px;">
+            Question ${answer.questionNumber} (${points} ${
+        points === 1 ? "point" : "points"
+      })
+          </h3>
+          
+          <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0; font-size: 16px;"><strong style="color: #52c41a;">Correct Answer:</strong> ${
+              answer.correctAnswer
+            }</p>
+          </div>`;
 
-      if (question.type === "multiple_choice" && question.options) {
-        html += `<div class="options" style="margin-left: 20px;">`;
-        question.options.forEach((option) => {
-          html += `<p style="margin-bottom: 8px;">${option}</p>`;
-        });
-        html += `</div>`;
-      } else {
-        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      // Add explanation if available
+      if (answer.explanation) {
+        html += `
+          <div style="background: #e6f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1890ff;">
+            <p style="margin: 0;"><strong style="color: #1890ff;">Explanation:</strong> ${answer.explanation}</p>
+          </div>`;
       }
 
-      html += `</div>`;
+      // Add marking guidance if available
+      if (answer.markingGuidance && answer.markingGuidance !== "undefined") {
+        html += `
+          <div style="background: #fff7e6; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa8c16;">
+            <p style="margin: 0;"><strong style="color: #fa8c16;">Marking Guidance:</strong> ${answer.markingGuidance}</p>
+          </div>`;
+      }
+
+      // Add marking notes if available and not undefined
+      if (answer.markingNotes && answer.markingNotes !== "undefined") {
+        html += `
+          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0;"><strong style="color: #52c41a;">Marking Notes:</strong> ${answer.markingNotes}</p>
+          </div>`;
+      }
+
+      // Add acceptable alternatives if available
+      if (
+        answer.acceptableAlternatives &&
+        answer.acceptableAlternatives !== "None" &&
+        answer.acceptableAlternatives !== "undefined"
+      ) {
+        html += `
+          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
+            <p style="margin: 0;"><strong style="color: #722ed1;">Acceptable Alternatives:</strong> ${answer.acceptableAlternatives}</p>
+          </div>`;
+      }
+
+      // Add common errors if available
+      if (answer.commonErrors && answer.commonErrors !== "undefined") {
+        html += `
+          <div style="background: #fff2e8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #fa541c;">
+            <p style="margin: 0;"><strong style="color: #fa541c;">Common Student Errors:</strong> ${answer.commonErrors}</p>
+          </div>`;
+      }
+
+      // Add text reference if available
+      if (answer.textReference) {
+        html += `
+          <div style="background: #f9f0ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #722ed1;">
+            <p style="margin: 0;"><strong style="color: #722ed1;">Text Reference:</strong> ${answer.textReference}</p>
+          </div>`;
+      }
+
+      // Add grammar point if available
+      if (answer.grammarPoint) {
+        html += `
+          <div style="background: #e6fffb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #13c2c2;">
+            <p style="margin: 0;"><strong style="color: #13c2c2;">Grammar Point:</strong> ${answer.grammarPoint}</p>
+          </div>`;
+      }
+
+      // Add reading skill if available
+      if (answer.readingSkill) {
+        html += `
+          <div style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #52c41a;">
+            <p style="margin: 0;"><strong style="color: #52c41a;">Reading Skill:</strong> ${answer.readingSkill}</p>
+          </div>`;
+      }
+
+      // Add discourse skill if available
+      if (answer.discourseSkill) {
+        html += `
+          <div style="background: #fff1f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff4d4f;">
+            <p style="margin: 0;"><strong style="color: #ff4d4f;">Discourse Skill:</strong> ${answer.discourseSkill}</p>
+          </div>`;
+      }
+
+      // Add transfer skill if available
+      if (answer.transferSkill) {
+        html += `
+          <div style="background: #f0f5ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #597ef7;">
+            <p style="margin: 0;"><strong style="color: #597ef7;">Transfer Skill:</strong> ${answer.transferSkill}</p>
+          </div>`;
+      }
+
+      html += `</div>`; // Close answer-item div
     });
+    html += `</div>`; // Close answers div
+  }
+
+  // Add part-specific guidance if available
+  if (answerKeyContent.partSpecificGuidance) {
+    html += `
+      <div style="margin-top: 30px; padding: 20px; background: #f0f2f5; border-radius: 12px;">
+        <h3 style="color: #262626; margin-bottom: 20px;">Part-Specific Marking Guidance</h3>`;
+
+    Object.entries(answerKeyContent.partSpecificGuidance).forEach(
+      ([part, guidance]) => {
+        html += `
+        <div style="margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; border-left: 4px solid #1890ff;">
+          <h4 style="color: #1890ff; margin-bottom: 10px;">${part.toUpperCase()}</h4>
+          <p><strong>Focus:</strong> ${guidance.focus}</p>
+          <p><strong>Marking Principle:</strong> ${
+            guidance.markingPrinciple
+          }</p>
+          ${
+            guidance.commonIssues
+              ? `<p><strong>Common Issues:</strong> ${guidance.commonIssues}</p>`
+              : ""
+          }
+          ${
+            guidance.teachingPoint
+              ? `<p><strong>Teaching Point:</strong> ${guidance.teachingPoint}</p>`
+              : ""
+          }
+        </div>`;
+      }
+    );
+
     html += `</div>`;
   }
 
+  // Add marking scheme if available
+  if (answerKeyContent.markingScheme) {
+    html += `<div class="marking-scheme" style="margin-top: 25px; padding: 20px; background: #e6f7ff; border-radius: 12px;">
+      <h3 style="color: #1890ff; margin-bottom: 15px;">Marking Scheme</h3>`;
+
+    Object.entries(answerKeyContent.markingScheme).forEach(
+      ([section, description]) => {
+        html += `<p style="margin-bottom: 10px;"><strong>${
+          section.charAt(0).toUpperCase() + section.slice(1)
+        }:</strong> ${description}</p>`;
+      }
+    );
+
+    html += `</div>`;
+  }
+
+  // Add general marking principles if available
+  if (answerKeyContent.generalMarkingPrinciples) {
+    html += `
+      <div style="margin-top: 25px; padding: 20px; background: #fff7e6; border-radius: 12px;">
+        <h3 style="color: #fa8c16; margin-bottom: 15px;">General Marking Principles</h3>`;
+
+    Object.entries(answerKeyContent.generalMarkingPrinciples).forEach(
+      ([principle, description]) => {
+        html += `<p style="margin-bottom: 10px;"><strong>${
+          principle.charAt(0).toUpperCase() + principle.slice(1)
+        }:</strong> ${description}</p>`;
+      }
+    );
+
+    html += `</div>`;
+  }
+
+  // Add grading scale if available
+  if (answerKeyContent.gradingScale) {
+    html += `<div class="grading-scale" style="margin-top: 25px; padding: 20px; background: #f6ffed; border-radius: 12px;">
+      <h3 style="color: #52c41a; margin-bottom: 15px;">Grading Scale</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">`;
+
+    Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
+      html += `
+        <div style="padding: 10px; background: #fff; border-radius: 6px; border: 1px solid #d9d9d9;">
+          <strong style="color: #52c41a;">${level.toUpperCase()}:</strong> ${range}
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  }
+
   html += `</div>`;
   return html;
 };
-
 const convertRubricContentToHTML = (rubricContent) => {
   if (!rubricContent) return null;
 
@@ -247,47 +310,6 @@ const convertRubricContentToHTML = (rubricContent) => {
   return html;
 };
 
-const convertAnswerKeyContentToHTML = (answerKeyContent) => {
-  if (!answerKeyContent) return null;
-
-  let html = `
-    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${
-        answerKeyContent.title || "Answer Key"
-      }</h1>
-      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <p><strong>Total Questions:</strong> ${
-          answerKeyContent.totalQuestions || "N/A"
-        }</p>
-        <p style="margin: 0;"><strong>Total Points:</strong> ${
-          answerKeyContent.totalPoints || "N/A"
-        }</p>
-      </div>
-  `;
-
-  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
-    html += `<div class="answers">`;
-    answerKeyContent.answers.forEach((answer) => {
-      html += `
-        <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-          <h3 style="color: #262626; margin-bottom: 10px;">Question ${
-            answer.questionNumber
-          } (${answer.points} ${answer.points === 1 ? "point" : "points"})</h3>
-          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${
-            answer.correctAnswer
-          }</p>
-          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${
-            answer.markingNotes
-          }</p>
-        </div>`;
-    });
-    html += `</div>`;
-  }
-
-  html += `</div>`;
-  return html;
-};
-
 const RubricViewerPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -310,10 +332,25 @@ const RubricViewerPage = () => {
       if (response.success && response.data) {
         setAssessment(response.data);
 
-        // FIXED: Check for both rubricHTML and answerKeyHTML
+        // FIXED: Enhanced check for both rubricHTML and answerKeyHTML for SPM exams
         const hasTeacherContent = !!(
           response.data.generatedContent?.rubricHTML ||
-          response.data.generatedContent?.answerKeyHTML
+          response.data.generatedContent?.answerKeyHTML ||
+          response.data.generatedContent?.rubricContent ||
+          response.data.generatedContent?.answerKeyContent
+        );
+
+        console.log(
+          "🔍 Teacher content detection for",
+          response.data.activityType,
+          {
+            rubricHTML: !!response.data.generatedContent?.rubricHTML,
+            answerKeyHTML: !!response.data.generatedContent?.answerKeyHTML,
+            rubricContent: !!response.data.generatedContent?.rubricContent,
+            answerKeyContent:
+              !!response.data.generatedContent?.answerKeyContent,
+            hasTeacherContent,
+          }
         );
 
         if (!hasTeacherContent) {
@@ -331,72 +368,81 @@ const RubricViewerPage = () => {
     }
   };
 
-  // Enhanced getStudentContent function with JSON fallback
-  const getStudentContent = () => {
-    if (!assessment?.generatedContent) {
-      return null;
-    }
-
-    const { activityHTML, assessmentHTML, activityContent, assessmentContent } =
-      assessment.generatedContent;
-
-    // For assessment type, prefer assessmentHTML, fallback to assessmentContent
-    if (assessment.activityType === "assessment") {
-      if (assessmentHTML) {
-        return assessmentHTML;
-      } else if (assessmentContent) {
-        return convertAssessmentContentToHTML(assessmentContent);
-      }
-    } else {
-      // For other types, prefer activityHTML, fallback to activityContent
-      if (activityHTML) {
-        return activityHTML;
-      } else if (activityContent) {
-        return convertActivityContentToHTML(
-          activityContent,
-          assessment.activityType
-        );
-      }
-    }
-
-    return null;
-  };
-
-  // Similarly update getTeacherContent
+  // FIXED: Enhanced getTeacherContent function with proper SPM exam support
   const getTeacherContent = () => {
     if (!assessment?.generatedContent) return null;
 
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    // For assessment type, prefer answerKeyHTML, fallback to answerKeyContent
-    if (assessment.activityType === "assessment") {
+    console.log("🎯 Getting teacher content for", assessment.activityType, {
+      rubricHTML: !!rubricHTML,
+      answerKeyHTML: !!answerKeyHTML,
+      rubricContent: !!rubricContent,
+      answerKeyContent: !!answerKeyContent,
+    });
+
+    // CRITICAL: Handle SPM exam and assessment types - they should use answer key content
+    if (
+      assessment.activityType === "spm-exam" ||
+      assessment.activityType === "assessment"
+    ) {
       if (answerKeyHTML) {
+        console.log("✅ Using answerKeyHTML for", assessment.activityType);
         return answerKeyHTML;
       } else if (answerKeyContent) {
+        console.log(
+          "✅ Converting answerKeyContent to HTML for",
+          assessment.activityType
+        );
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
-      // For other types, prefer rubricHTML, fallback to rubricContent
+      // For other types (essay, textbook, activity), use rubric content
       if (rubricHTML) {
+        console.log("✅ Using rubricHTML for", assessment.activityType);
         return rubricHTML;
       } else if (rubricContent) {
+        console.log(
+          "✅ Converting rubricContent to HTML for",
+          assessment.activityType
+        );
         return convertRubricContentToHTML(rubricContent);
       }
     }
 
+    console.log("❌ No teacher content found for", assessment.activityType);
     return null;
   };
+
+  // Enhanced getStudentContent function (for completeness)
+  const getStudentContent = () => {
+    if (!assessment?.generatedContent) return null;
+
+    const { activityHTML, assessmentHTML, examHTML } =
+      assessment.generatedContent;
+
+    // CRITICAL: Handle SPM exam content correctly
+    if (assessment.activityType === "smp-exam") {
+      return examHTML || assessmentHTML;
+    } else if (assessment.activityType === "assessment") {
+      return assessmentHTML;
+    } else {
+      return activityHTML;
+    }
+  };
+
   const hasStudentContent = () => {
     return !!getStudentContent();
   };
 
-  // FIXED: Get appropriate content type names
+  // FIXED: Get appropriate content type names with SPM exam support
   const getTeacherContentName = () => {
     if (!assessment) return "Teacher Content";
 
     switch (assessment.activityType) {
       case "assessment":
+      case "spm-exam": // CRITICAL: SPM exams use answer keys
         return "Answer Key";
       case "essay":
       case "textbook":
@@ -413,6 +459,8 @@ const RubricViewerPage = () => {
     switch (assessment.activityType) {
       case "assessment":
         return "Assessment Paper";
+      case "spm-exam": 
+        return "SPM Examination Paper";
       case "essay":
         return "Essay Activity";
       case "textbook":
@@ -426,6 +474,11 @@ const RubricViewerPage = () => {
 
   const handlePrint = () => {
     const teacherContent = getTeacherContent();
+    if (!teacherContent) {
+      message.error("No content available to print");
+      return;
+    }
+
     const printWindow = window.open("", "_blank");
     if (printWindow && teacherContent) {
       printWindow.document.write(`
@@ -493,7 +546,8 @@ const RubricViewerPage = () => {
           </div>
           <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
             <strong>Instructions:</strong> ${
-              assessment.activityType === "assessment"
+              assessment.activityType === "assessment" ||
+              assessment.activityType === "smp-exam"
                 ? "Use this answer key to evaluate student responses efficiently."
                 : "Use this rubric to evaluate student performance consistently."
             }
@@ -506,7 +560,10 @@ const RubricViewerPage = () => {
       tempDiv.style.position = "absolute";
       tempDiv.style.left = "-9999px";
       tempDiv.style.width =
-        assessment.activityType === "assessment" ? "800px" : "1200px"; // Wider for rubrics
+        assessment.activityType === "assessment" ||
+        assessment.activityType === "smp-exam"
+          ? "800px"
+          : "1200px"; // Wider for rubrics
       document.body.appendChild(tempDiv);
 
       // Use the HTML element export method
@@ -517,7 +574,10 @@ const RubricViewerPage = () => {
       await exportElementToPdf("temp-rubric-content", fileName, {
         format: "a4",
         orientation:
-          assessment.activityType === "assessment" ? "portrait" : "landscape",
+          assessment.activityType === "assessment" ||
+          assessment.activityType === "smp-exam"
+            ? "portrait"
+            : "landscape",
       });
 
       // Clean up
@@ -605,7 +665,27 @@ const RubricViewerPage = () => {
       <div style={{ padding: "24px" }}>
         <Alert
           message={`Error Loading ${getTeacherContentName()}`}
-          description={error}
+          description={
+            <div>
+              <div>{error}</div>
+              {assessment && (
+                <div style={{ marginTop: "8px", fontSize: "12px" }}>
+                  <strong>Debug Info:</strong>
+                  <br />
+                  Activity Type: {assessment.activityType}
+                  <br />
+                  Teacher Content Available:{" "}
+                  {JSON.stringify({
+                    rubricHTML: !!assessment.generatedContent?.rubricHTML,
+                    answerKeyHTML: !!assessment.generatedContent?.answerKeyHTML,
+                    rubricContent: !!assessment.generatedContent?.rubricContent,
+                    answerKeyContent:
+                      !!assessment.generatedContent?.answerKeyContent,
+                  })}
+                </div>
+              )}
+            </div>
+          }
           type="error"
           showIcon
           action={
@@ -769,7 +849,38 @@ const RubricViewerPage = () => {
         ) : (
           <Alert
             message={`No ${getTeacherContentName()}`}
-            description={`No ${getTeacherContentName().toLowerCase()} content has been generated for this assessment.`}
+            description={
+              <div>
+                <div>
+                  No {getTeacherContentName().toLowerCase()} content has been
+                  generated for this assessment.
+                </div>
+                {assessment && (
+                  <div style={{ marginTop: "8px", fontSize: "12px" }}>
+                    <strong>Debug Info:</strong>
+                    <br />
+                    Activity Type: {assessment.activityType}
+                    <br />
+                    Expected Content:{" "}
+                    {assessment.activityType === "smp-exam" ||
+                    assessment.activityType === "assessment"
+                      ? "answerKeyHTML or answerKeyContent"
+                      : "rubricHTML or rubricContent"}
+                    <br />
+                    Content Available:{" "}
+                    {JSON.stringify({
+                      rubricHTML: !!assessment.generatedContent?.rubricHTML,
+                      answerKeyHTML:
+                        !!assessment.generatedContent?.answerKeyHTML,
+                      rubricContent:
+                        !!assessment.generatedContent?.rubricContent,
+                      answerKeyContent:
+                        !!assessment.generatedContent?.answerKeyContent,
+                    })}
+                  </div>
+                )}
+              </div>
+            }
             type="warning"
             showIcon
           />
@@ -782,7 +893,8 @@ const RubricViewerPage = () => {
           <Alert
             message={`How to Use This ${getTeacherContentName()}`}
             description={
-              assessment.activityType === "assessment"
+              assessment.activityType === "assessment" ||
+              assessment.activityType === "smp-exam"
                 ? "Use this answer key to evaluate student responses efficiently. Each question includes the correct answer and suggested marking criteria."
                 : "Use this rubric to evaluate student performance consistently. Each criterion should be assessed independently, and the total score should reflect the overall quality of the student's work."
             }
@@ -846,6 +958,57 @@ const RubricViewerPage = () => {
             )}
           </div>
 
+          {/* SPM Exam Configuration Display */}
+          {assessment.activityType === "smp-exam" &&
+            assessment.examConfiguration && (
+              <div>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  SPM Exam Configuration
+                </Text>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "8px",
+                  }}
+                >
+                  {assessment.examConfiguration.paperType && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Paper Type:{" "}
+                        {assessment.examConfiguration.paperType.toUpperCase()}
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.textSources?.length > 0 && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Text Sources:{" "}
+                        {assessment.examConfiguration.textSources.length}{" "}
+                        selected
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.readingLevel && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Reading Level:{" "}
+                        {assessment.examConfiguration.readingLevel}
+                      </Text>
+                    </div>
+                  )}
+                  {assessment.examConfiguration.communicationFormat && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        Format:{" "}
+                        {assessment.examConfiguration.communicationFormat}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           {assessment.skills && assessment.skills.length > 0 && (
             <div>
               <Text strong style={{ display: "block", marginBottom: "8px" }}>
@@ -856,6 +1019,19 @@ const RubricViewerPage = () => {
                   <Tag key={index} color="cyan">
                     {skill}
                   </Tag>
+                ))}
+              </Space>
+            </div>
+          )}
+
+          {assessment.tags && assessment.tags.length > 0 && (
+            <div>
+              <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                Tags
+              </Text>
+              <Space wrap>
+                {assessment.tags.map((tag, index) => (
+                  <Tag key={index}>{tag}</Tag>
                 ))}
               </Space>
             </div>

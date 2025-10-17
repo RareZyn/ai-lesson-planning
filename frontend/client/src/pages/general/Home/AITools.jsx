@@ -23,7 +23,7 @@ const AITools = () => {
       id: "answer-checker",
       title: "Answer Checker",
       icon: "/logo/survey.png",
-      path: "answer-checker",
+      path: "submissions",
     },
     {
       id: "downloads",

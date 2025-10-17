@@ -26,12 +26,15 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "joi": "^17.13.3",
+    "jsonrepair": "^3.13.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.1",
     "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
     "openai": "^4.103.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "http-proxy-middleware": "^2.0.6"
   }
 }

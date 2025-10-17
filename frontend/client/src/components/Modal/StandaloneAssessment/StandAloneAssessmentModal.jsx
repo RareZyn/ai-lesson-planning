@@ -19,7 +19,7 @@ import {
   ThunderboltOutlined,
   EditOutlined,
   BulbOutlined,
-  FormOutlined,
+  CalculatorOutlined,
 } from "@ant-design/icons";
 import { getAllClasses } from "../../../services/classService";
 import "./ModalStyles.css";
@@ -54,7 +54,7 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   // Activity type options
   const activityTypes = [
     {
-      key: "activity",
+      key: "activityInClass",
       title: "Activity in Class",
       description: "Interactive classroom activities and group work",
       icon: (
@@ -82,6 +82,15 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
       description: "Textbook-based activities and exercises",
       icon: <BookOutlined style={{ fontSize: "32px", color: "#722ed1" }} />,
       color: "#722ed1",
+    },
+    {
+      key: "spm-exam",
+      title: "SPM Examination",
+      description: "Collaborative group activities and group projects",
+      icon: (
+        <CalculatorOutlined style={{ fontSize: "32px", color: "#eb2f96" }} />
+      ),
+      color: "#eb2f96",
     },
   ];
 

@@ -1,24 +1,19 @@
-// Enhanced backend/controller/assessmentController.js - Added standalone assessment support
+// Enhanced backend/controller/assessmentController.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Assessment = require("../model/Assessment");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
-
-// Activity type mapping to ensure valid enum values
+const { jsonrepair } = require("jsonrepair");
 const ACTIVITY_TYPE_MAPPING = {
-  activityInClass: "activity",
-  "activity-in-class": "activity",
-  activity_in_class: "activity",
-  activity: "activity",
+  activityInClass: "activityInClass",
   essay: "essay",
   textbook: "textbook",
   assessment: "assessment",
+  "spm-exam": "spm-exam",
 };
-
-// Function to validate and map activity type
 const validateAndMapActivityType = (activityType) => {
   if (!activityType) {
-    return "activity"; // Default fallback
+    return "activity";
   }
 
   const mapped = ACTIVITY_TYPE_MAPPING[activityType.toLowerCase()];
@@ -33,10 +28,71 @@ const validateAndMapActivityType = (activityType) => {
   return mapped;
 };
 
-// [Previous structureGeneratedContent function remains the same]
-const structureGeneratedContent = (generatedContent, activityType) => {
-  console.log("Structuring content for activity type:", activityType);
-  console.log("Raw generated content:", Object.keys(generatedContent));
+const convertAnswerKeyToHTML = (answerKeyContent) => {
+  if (!answerKeyContent) return null;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="answer-key-content">
+      <h1>${answerKeyContent.title || "Answer Key"}</h1>
+      <div class="answer-key-info">
+        <p><strong>Questions:</strong> ${
+          answerKeyContent.totalQuestions || "N/A"
+        } | <strong>Points:</strong> ${
+    answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
+  }</p>
+      </div>`;
+
+  if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
+    html += `<div class="answers">`;
+    answerKeyContent.answers.forEach((answer) => {
+      const points = answer.points || answer.marks || 1;
+
+      html += `<div class="answer-item">
+        <h4>Question ${answer.questionNumber} (${points} ${
+        points === 1 ? "point" : "points"
+      })</h4>
+        <div style="background: #e6f7ff; border-left: 3px solid #1890ff;">
+          <p><strong>Answer:</strong> ${
+            answer.correctAnswer || "Not specified"
+          }</p>
+        </div>`;
+
+      if (
+        answer.explanation &&
+        answer.explanation !== "undefined" &&
+        answer.explanation.trim()
+      ) {
+        html += `<div style="background: #f6ffed; border-left: 3px solid #52c41a;">
+          <p><strong>Explanation:</strong> ${answer.explanation}</p>
+        </div>`;
+      }
+
+      if (
+        answer.markingNotes &&
+        answer.markingNotes !== "undefined" &&
+        answer.markingNotes.trim()
+      ) {
+        html += `<div style="background: #fff7e6; border-left: 3px solid #fa8c16;">
+          <p><strong>Marking:</strong> ${answer.markingNotes}</p>
+        </div>`;
+      }
+
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div></body></html>`;
+  return html;
+};
+
+const structureGeneratedContent = (
+  generatedContent,
+  activityType,
+  additionalData = {}
+) => {
+  console.log("🔧 Structuring content for activity type:", activityType);
+  console.log("🔧 Raw generated content:", Object.keys(generatedContent));
 
   // Initialize the content structure
   const structuredContent = {
@@ -44,11 +100,12 @@ const structureGeneratedContent = (generatedContent, activityType) => {
     rubricContent: null,
     assessmentContent: null,
     answerKeyContent: null,
-    // Add HTML versions for frontend compatibility
+    examContent: null,
     activityHTML: null,
     rubricHTML: null,
     assessmentHTML: null,
     answerKeyHTML: null,
+    examHTML: null,
     hasStudentContent: false,
     hasTeacherContent: false,
     generatedAt: new Date(),
@@ -65,22 +122,22 @@ const structureGeneratedContent = (generatedContent, activityType) => {
 
       // Convert JSON to HTML for frontend
       if (structuredContent.assessmentContent) {
-        console.log("Converting assessmentContent to HTML...");
+        console.log("🔧 Converting assessmentContent to HTML...");
         structuredContent.assessmentHTML = convertAssessmentToHTML(
           structuredContent.assessmentContent
         );
         console.log(
-          "Assessment HTML generated:",
+          "✅ Assessment HTML generated:",
           !!structuredContent.assessmentHTML
         );
       }
       if (structuredContent.answerKeyContent) {
-        console.log("Converting answerKeyContent to HTML...");
+        console.log("🔧 Converting answerKeyContent to HTML...");
         structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
           structuredContent.answerKeyContent
         );
         console.log(
-          "Answer Key HTML generated:",
+          "✅ Answer Key HTML generated:",
           !!structuredContent.answerKeyHTML
         );
       }
@@ -88,10 +145,56 @@ const structureGeneratedContent = (generatedContent, activityType) => {
       structuredContent.hasStudentContent =
         !!generatedContent.assessmentContent;
       structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
+      break;
 
-      console.log("Assessment content structured:", {
+    case "spm-exam":
+      console.log("🎯 Processing SPM exam content...");
+
+      structuredContent.examContent = generatedContent.examContent || null;
+      structuredContent.answerKeyContent =
+        generatedContent.answerKeyContent || null;
+
+      // CRITICAL: Also populate assessmentContent for frontend compatibility
+      structuredContent.assessmentContent =
+        generatedContent.examContent || null;
+
+      // Convert JSON to HTML for frontend
+      if (structuredContent.examContent) {
+        console.log("🔧 Converting examContent to HTML...");
+        const examHTML = convertExamToHTML(
+          structuredContent.examContent,
+          additionalData.paperType || "paper1"
+        );
+
+        // CRITICAL: Store HTML in BOTH examHTML and assessmentHTML fields
+        structuredContent.examHTML = examHTML;
+        structuredContent.assessmentHTML = examHTML; // Frontend compatibility
+
+        console.log("✅ Exam HTML generated:", !!structuredContent.examHTML);
+        console.log(
+          "✅ Assessment HTML (copy) generated:",
+          !!structuredContent.assessmentHTML
+        );
+      }
+
+      if (structuredContent.answerKeyContent) {
+        console.log("🔧 Converting exam answerKeyContent to HTML...");
+        structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
+          structuredContent.answerKeyContent
+        );
+        console.log(
+          "✅ Exam Answer Key HTML generated:",
+          !!structuredContent.answerKeyHTML
+        );
+      }
+      structuredContent.hasStudentContent = !!generatedContent.examContent;
+      structuredContent.hasTeacherContent = !!generatedContent.answerKeyContent;
+
+      console.log("📊 Exam content structured:", {
+        hasExamContent: !!structuredContent.examContent,
         hasAssessmentContent: !!structuredContent.assessmentContent,
         hasAnswerKeyContent: !!structuredContent.answerKeyContent,
+        hasExamHTML: !!structuredContent.examHTML,
         hasAssessmentHTML: !!structuredContent.assessmentHTML,
         hasAnswerKeyHTML: !!structuredContent.answerKeyHTML,
       });
@@ -108,51 +211,50 @@ const structureGeneratedContent = (generatedContent, activityType) => {
 
       // Convert JSON to HTML for frontend
       if (structuredContent.activityContent) {
-        console.log("Converting activityContent to HTML...");
+        console.log("🔧 Converting activityContent to HTML...");
         const htmlResult = convertActivityToHTML(
           structuredContent.activityContent,
           activityType
         );
         structuredContent.activityHTML = htmlResult;
         console.log(
-          "Activity HTML generated:",
+          "✅ Activity HTML generated:",
           !!structuredContent.activityHTML
         );
       }
 
       if (structuredContent.rubricContent) {
-        console.log("Converting rubricContent to HTML...");
+        console.log("🔧 Converting rubricContent to HTML...");
         const rubricHtmlResult = convertRubricToHTML(
           structuredContent.rubricContent
         );
         structuredContent.rubricHTML = rubricHtmlResult;
-        console.log("Rubric HTML generated:", !!structuredContent.rubricHTML);
+        console.log(
+          "✅ Rubric HTML generated:",
+          !!structuredContent.rubricHTML
+        );
       }
 
       structuredContent.hasStudentContent = !!generatedContent.activityContent;
       structuredContent.hasTeacherContent = !!generatedContent.rubricContent;
-
-      console.log("Activity content structured:", {
-        hasActivityContent: !!structuredContent.activityContent,
-        hasRubricContent: !!structuredContent.rubricContent,
-        hasActivityHTML: !!structuredContent.activityHTML,
-        hasRubricHTML: !!structuredContent.rubricHTML,
-      });
       break;
   }
 
-  console.log("Final structured content keys:", Object.keys(structuredContent));
-  console.log("Final HTML content status:", {
+  console.log(
+    "📦 Final structured content keys:",
+    Object.keys(structuredContent)
+  );
+  console.log("📊 Final HTML content status:", {
     activityHTML: !!structuredContent.activityHTML,
     rubricHTML: !!structuredContent.rubricHTML,
     assessmentHTML: !!structuredContent.assessmentHTML,
     answerKeyHTML: !!structuredContent.answerKeyHTML,
+    examHTML: !!structuredContent.examHTML,
   });
 
   return structuredContent;
 };
 
-// [All existing HTML conversion functions remain the same - keeping them for brevity]
 const convertActivityToHTML = (activityContent, activityType) => {
   if (!activityContent) return null;
 
@@ -319,35 +421,187 @@ const convertActivityToHTML = (activityContent, activityType) => {
   return html;
 };
 
-const convertAssessmentToHTML = (assessmentContent) => {
+// Enhanced CSS for PDF rendering - prevents page breaks and optimizes spacing
+const getEnhancedPdfStyles = () => `
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.3;
+      color: #333;
+      padding: 15px;
+    }
+    
+    h1 {
+      font-size: 15pt;
+      margin-bottom: 6px;
+      color: #1890ff;
+      page-break-after: avoid;
+    }
+    
+    h2, h3 {
+      font-size: 12pt;
+      margin: 8px 0 4px 0;
+      color: #262626;
+      page-break-after: avoid;
+    }
+    
+    h4 {
+      font-size: 11pt;
+      margin: 6px 0 3px 0;
+      font-weight: 600;
+      page-break-after: avoid;
+    }
+    
+    p {
+      margin: 3px 0;
+      font-size: 11pt;
+    }
+    
+    /* CRITICAL: Prevent page breaks inside questions */
+    .question, .question-wrapper, .answer-item, .exam-part {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      margin-bottom: 8px;
+    }
+    
+    /* Compact info boxes */
+    .student-info, .assessment-info, .answer-key-info {
+      padding: 4px 6px;
+      margin-bottom: 6px;
+      background: #f8f9fa;
+      border-radius: 3px;
+      font-size: 10pt;
+    }
+    
+    .instructions {
+      padding: 6px 8px;
+      margin-bottom: 8px;
+      background: #fff7e6;
+      border: 1px solid #ffa940;
+      border-radius: 3px;
+    }
+    
+    .instructions ul, .instructions ol {
+      margin: 2px 0;
+      padding-left: 18px;
+    }
+    
+    .instructions li {
+      margin-bottom: 1px;
+      font-size: 10pt;
+    }
+    
+    /* Question styling - keeps everything together */
+    .question {
+      padding: 8px;
+      border: 1px solid #e8e8e8;
+      border-radius: 3px;
+      background: #fafafa;
+    }
+    
+    .options {
+      margin: 4px 0 0 12px;
+    }
+    
+    .options p {
+      margin: 2px 0;
+    }
+    
+    .answer-space {
+      margin: 6px 0;
+      border: 1px solid #d9d9d9;
+      background: #fafafa;
+      border-radius: 2px;
+    }
+    
+    /* Answer key styling */
+    .answer-item {
+      padding: 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 3px;
+      background: #fafafa;
+      margin-bottom: 8px;
+    }
+    
+    .answer-item > div {
+      padding: 5px;
+      margin-bottom: 4px;
+      border-radius: 2px;
+      font-size: 10pt;
+    }
+    
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 8px 0;
+    }
+    
+    tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    
+    th, td {
+      padding: 4px 6px;
+      border: 1px solid #d9d9d9;
+      text-align: left;
+      font-size: 10pt;
+    }
+    
+    th {
+      background: #f0f0f0;
+      font-weight: 600;
+    }
+    
+    /* Print optimization */
+    @media print {
+      body {
+        padding: 10mm;
+      }
+      
+      .question, .question-wrapper, .answer-item, .exam-part {
+        page-break-inside: avoid !important;
+      }
+      
+      h1, h2, h3, h4 {
+        page-break-after: avoid !important;
+      }
+    }
+  </style>
+`;
+
+const convertAssessmentContentToHTML = (assessmentContent) => {
   if (!assessmentContent) return null;
 
-  let html = `
-    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h1 style="color: #1890ff; margin-bottom: 10px;">${
-          assessmentContent.title || "Assessment"
-        }</h1>
-        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="assessment-content">
+      <div class="assessment-header">
+        <h1>${assessmentContent.title || "Assessment"}</h1>
+        <div class="student-info">
+          <p><strong>Name:</strong> _______________ <strong>Class:</strong> _________ <strong>Date:</strong> _________</p>
         </div>
-        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-          <p><strong>Time Allocation:</strong> ${
+        <div class="assessment-info">
+          <p><strong>Time:</strong> ${
             assessmentContent.timeAllocation || "60 minutes"
-          }</p>
-          <p style="margin: 0;"><strong>Total Questions:</strong> ${
-            assessmentContent.totalQuestions || "N/A"
-          }</p>
+          } | <strong>Questions:</strong> ${
+    assessmentContent.totalQuestions || "N/A"
+  }</p>
         </div>
-      </div>
-  `;
+      </div>`;
 
   if (assessmentContent.instructions) {
-    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
-      <h3 style="color: #fa8c16;">Instructions:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
+    html += `<div class="instructions"><strong>Instructions:</strong><ul>`;
     assessmentContent.instructions.forEach((instruction) => {
-      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+      html += `<li>${instruction}</li>`;
     });
     html += `</ul></div>`;
   }
@@ -355,43 +609,38 @@ const convertAssessmentToHTML = (assessmentContent) => {
   if (assessmentContent.questions && assessmentContent.questions.length > 0) {
     html += `<div class="questions">`;
     assessmentContent.questions.forEach((question) => {
-      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
-          question.questionNumber
-        } (${question.points} ${
+      html += `<div class="question-wrapper"><div class="question">
+        <h4>Question ${question.questionNumber} (${question.points} ${
         question.points === 1 ? "point" : "points"
       })</h4>
-        <p style="font-size: 16px; margin-bottom: 15px;">${
-          question.question
-        }</p>`;
+        <p>${question.question}</p>`;
 
       if (question.type === "multiple_choice" && question.options) {
-        html += `<div class="options" style="margin-left: 20px;">`;
+        html += `<div class="options">`;
         question.options.forEach((option) => {
-          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+          html += `<p>${option}</p>`;
         });
         html += `</div>`;
       } else if (question.answerSpace) {
         const height =
           question.answerSpace === "3 lines"
-            ? "80px"
+            ? "50px"
             : question.answerSpace === "5 lines"
-            ? "120px"
-            : "60px";
-        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+            ? "80px"
+            : "40px";
+        html += `<div class="answer-space" style="height: ${height};"></div>`;
       } else {
-        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+        html += `<div class="answer-space" style="height: 50px;"></div>`;
       }
 
-      html += `</div>`;
+      html += `</div></div>`;
     });
     html += `</div>`;
   }
 
-  html += `</div>`;
+  html += `</div></body></html>`;
   return html;
 };
-
 const convertRubricToHTML = (rubricContent) => {
   if (!rubricContent) return null;
 
@@ -461,60 +710,63 @@ const convertRubricToHTML = (rubricContent) => {
   return html;
 };
 
-const convertAnswerKeyToHTML = (answerKeyContent) => {
+const convertAnswerKeyContentToHTML = (answerKeyContent) => {
   if (!answerKeyContent) return null;
 
-  let html = `
-    <div class="answer-key-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <h1 style="color: #52c41a; margin-bottom: 10px;">${
-        answerKeyContent.title || "Answer Key"
-      }</h1>
-      <div class="answer-key-info" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <p><strong>Total Questions:</strong> ${
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${getEnhancedPdfStyles()}</head><body>
+    <div class="answer-key-content">
+      <h1>${answerKeyContent.title || "Answer Key"}</h1>
+      <div class="answer-key-info">
+        <p><strong>Questions:</strong> ${
           answerKeyContent.totalQuestions || "N/A"
-        }</p>
-        <p style="margin: 0;"><strong>Total Points:</strong> ${
-          answerKeyContent.totalPoints || "N/A"
-        }</p>
-      </div>
-  `;
+        } | <strong>Points:</strong> ${
+    answerKeyContent.totalPoints || answerKeyContent.totalMarks || "N/A"
+  }</p>
+      </div>`;
 
   if (answerKeyContent.answers && answerKeyContent.answers.length > 0) {
     html += `<div class="answers">`;
     answerKeyContent.answers.forEach((answer) => {
-      html += `
-        <div class="answer-item" style="margin-bottom: 20px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
-          <h3 style="color: #262626; margin-bottom: 10px;">Question ${
-            answer.questionNumber
-          } (${answer.points} ${answer.points === 1 ? "point" : "points"})</h3>
-          <p style="margin-bottom: 10px;"><strong>Correct Answer:</strong> ${
-            answer.correctAnswer
-          }</p>
-          <p style="margin: 0; font-style: italic; color: #666;"><strong>Marking Notes:</strong> ${
-            answer.markingNotes
+      const points = answer.points || answer.marks || 1;
+
+      html += `<div class="answer-item">
+        <h4>Question ${answer.questionNumber} (${points} ${
+        points === 1 ? "point" : "points"
+      })</h4>
+        <div style="background: #e6f7ff; border-left: 3px solid #1890ff;">
+          <p><strong>Answer:</strong> ${
+            answer.correctAnswer || "Not specified"
           }</p>
         </div>`;
+
+      if (
+        answer.explanation &&
+        answer.explanation !== "undefined" &&
+        answer.explanation.trim()
+      ) {
+        html += `<div style="background: #f6ffed; border-left: 3px solid #52c41a;">
+          <p><strong>Explanation:</strong> ${answer.explanation}</p>
+        </div>`;
+      }
+
+      if (
+        answer.markingNotes &&
+        answer.markingNotes !== "undefined" &&
+        answer.markingNotes.trim()
+      ) {
+        html += `<div style="background: #fff7e6; border-left: 3px solid #fa8c16;">
+          <p><strong>Marking:</strong> ${answer.markingNotes}</p>
+        </div>`;
+      }
+
+      html += `</div>`;
     });
     html += `</div>`;
   }
 
-  if (answerKeyContent.gradingScale) {
-    html += `<div class="grading-scale" style="margin-top: 25px; padding: 15px; background: #e6f7ff; border-radius: 8px;">
-      <h3 style="color: #1890ff; margin-bottom: 15px;">Grading Scale:</h3>
-      <ul style="margin: 0; padding-left: 20px;">`;
-    Object.entries(answerKeyContent.gradingScale).forEach(([level, range]) => {
-      html += `<li><strong>${
-        level.charAt(0).toUpperCase() + level.slice(1)
-      }:</strong> ${range}</li>`;
-    });
-    html += `</ul></div>`;
-  }
-
-  html += `</div>`;
+  html += `</div></body></html>`;
   return html;
 };
-
-// NEW: Main standalone assessment creation endpoint
 const createStandaloneAssessment = async (req, res) => {
   try {
     console.log("📝 Creating standalone assessment:", req.body);
@@ -646,6 +898,15 @@ const createStandaloneAssessment = async (req, res) => {
         });
         break;
 
+      case "spm-exam":
+        generatedContent = await generateExamContent({
+          ...mockLessonPlanData,
+          geminiApiKey,
+          ...activityData,
+          paperType: activityData.paperType, // paper1 or paper2
+        });
+        break;
+
       default:
         console.warn(
           `Unhandled activity type for standalone: ${activityType}, falling back to activity`
@@ -664,7 +925,8 @@ const createStandaloneAssessment = async (req, res) => {
     // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: activityData.paperType }
     );
 
     console.log("📦 Structured standalone content:", {
@@ -700,7 +962,19 @@ const createStandaloneAssessment = async (req, res) => {
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: activityData.difficultyLevel || "Intermediate",
       skills: activityData.skills || [],
-
+      ...(activityType === "exam" && {
+        examConfiguration: {
+          paperType: activityData.paperType,
+          textSources: activityData.textSources,
+          readingLevel: activityData.readingLevel,
+          topics: activityData.topics,
+          communicationFormat: activityData.communicationFormat,
+          essayTypes: activityData.essayTypes,
+          topicCategories: activityData.topicCategories,
+          promptComplexity: activityData.promptComplexity,
+          questionTypes: activityData.questionTypes,
+        },
+      }),
       // Generated content
       generatedContent: structuredContent,
 
@@ -793,7 +1067,6 @@ const createStandaloneAssessment = async (req, res) => {
   }
 };
 
-// ENHANCED: Modified existing generateFromLessonPlan to handle both lesson-based and standalone
 const generateFromLessonPlan = async (req, res) => {
   try {
     // Check if this is a standalone assessment creation request
@@ -819,12 +1092,18 @@ const generateFromLessonPlan = async (req, res) => {
       ...activityData
     } = req.body;
 
-    console.log("📚 Processing lesson-based assessment:", req.body);
+    console.log("📚 Processing lesson-based assessment:", {
+      rawActivityType,
+      paperType: req.body.paperType,
+      lesson,
+      subject,
+      grade,
+    });
 
     // Validate and map activity type
     const activityType = validateAndMapActivityType(rawActivityType);
     console.log(
-      `Activity type validation: "${rawActivityType}" -> "${activityType}"`
+      `🎯 Activity type validation: "${rawActivityType}" -> "${activityType}"`
     );
 
     // Validate required fields for lesson-based assessments
@@ -856,6 +1135,11 @@ const generateFromLessonPlan = async (req, res) => {
           "No Gemini API key found. Please add your API key in your profile settings.",
       });
     }
+
+    console.log(
+      "🔑 Gemini API key found, starting generation for:",
+      activityType
+    );
 
     let generatedContent;
 
@@ -918,9 +1202,63 @@ const generateFromLessonPlan = async (req, res) => {
         });
         break;
 
+      case "spm-exam":
+        console.log("🎯 Generating SPM exam content...");
+
+        // Extract SPM-specific data from request body
+        const spmExamData = {
+          contentStandard,
+          learningStandard,
+          learningOutline,
+          lesson,
+          subject,
+          theme,
+          topic,
+          grade,
+          geminiApiKey,
+          paperType: req.body.paperType || activityData.paperType || "paper1",
+          form: req.body.form || activityData.form || grade,
+          timeAllocation:
+            req.body.timeAllocation || activityData.timeAllocation || "90",
+          difficultyLevel:
+            req.body.difficultyLevel ||
+            activityData.difficultyLevel ||
+            "Intermediate",
+          textSources: req.body.textSources ||
+            activityData.textSources || ["newspapers", "magazines"],
+          readingLevel:
+            req.body.readingLevel || activityData.readingLevel || grade,
+          topics: req.body.topics || activityData.topics || ["general"],
+          communicationFormat:
+            req.body.communicationFormat ||
+            activityData.communicationFormat ||
+            "email",
+          essayTypes: req.body.essayTypes ||
+            activityData.essayTypes || ["descriptive", "narrative"],
+          topicCategories: req.body.topicCategories ||
+            activityData.topicCategories || ["general"],
+          promptComplexity:
+            req.body.promptComplexity ||
+            activityData.promptComplexity ||
+            "moderate",
+          questionTypes:
+            req.body.questionTypes || activityData.questionTypes || {},
+        };
+
+        console.log("📋 SPM exam generation data:", {
+          paperType: spmExamData.paperType,
+          form: spmExamData.form,
+          timeAllocation: spmExamData.timeAllocation,
+          textSources: spmExamData.textSources?.length || 0,
+          topics: spmExamData.topics?.length || 0,
+        });
+
+        generatedContent = await generateExamContent(spmExamData);
+        break;
+
       default:
         console.warn(
-          `Unhandled activity type: ${activityType}, falling back to activity`
+          `⚠️ Unhandled activity type: ${activityType}, falling back to activity`
         );
         generatedContent = await generateActivityContent({
           contentStandard,
@@ -937,7 +1275,11 @@ const generateFromLessonPlan = async (req, res) => {
         break;
     }
 
-    console.log("Generated content from AI:", Object.keys(generatedContent));
+    console.log("✨ Generated content from AI:", Object.keys(generatedContent));
+
+    if (!generatedContent || Object.keys(generatedContent).length === 0) {
+      throw new Error("No content was generated from AI");
+    }
 
     // Ensure we have the user properly
     if (!req.user) {
@@ -947,16 +1289,18 @@ const generateFromLessonPlan = async (req, res) => {
     // Structure the content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: req.body.paperType || activityData.paperType }
     );
 
-    console.log("Creating lesson-based assessment with data:", {
+    console.log("📦 Creating lesson-based assessment with data:", {
       title: assessmentTitle || `${lesson} - ${activityType}`,
       activityType,
       lessonPlanId,
       classId,
       createdBy: req.user.id,
-      structuredContent,
+      hasStudentContent: structuredContent.hasStudentContent,
+      hasTeacherContent: structuredContent.hasTeacherContent,
     });
 
     // Save assessment to database with proper content structure
@@ -973,8 +1317,11 @@ const generateFromLessonPlan = async (req, res) => {
         .toUpperCase()}${activityType.slice(1)} Assessment`,
       questionCount: activityData.numberOfQuestions || 20,
       duration:
-        activityData.timeAllocation || activityData.duration || "60 minutes",
-      difficulty: "Intermediate",
+        req.body.timeAllocation ||
+        activityData.timeAllocation ||
+        activityData.duration ||
+        "60 minutes",
+      difficulty: req.body.difficultyLevel || "Intermediate",
       skills: [],
       generatedContent: structuredContent,
       lessonPlanSnapshot: {
@@ -988,9 +1335,32 @@ const generateFromLessonPlan = async (req, res) => {
       status: "Generated",
       hasActivity: structuredContent.hasStudentContent,
       hasRubric: structuredContent.hasTeacherContent,
+
+      // Add SPM exam configuration if applicable
+      ...(activityType === "spm-exam" && {
+        examConfiguration: {
+          paperType: req.body.paperType || "paper1",
+          textSources: req.body.textSources || [],
+          readingLevel: req.body.readingLevel || grade,
+          topics: req.body.topics || [],
+          communicationFormat: req.body.communicationFormat || "email",
+          essayTypes: req.body.essayTypes || [],
+          topicCategories: req.body.topicCategories || [],
+          promptComplexity: req.body.promptComplexity || "moderate",
+          questionTypes: req.body.questionTypes || {},
+        },
+      }),
     };
 
-    console.log("Assessment data to save:", assessmentData);
+    console.log("💾 Assessment data to save:", {
+      title: assessmentData.title,
+      activityType: assessmentData.activityType,
+      hasActivity: assessmentData.hasActivity,
+      hasRubric: assessmentData.hasRubric,
+      examConfiguration: assessmentData.examConfiguration
+        ? "Present"
+        : "Not present",
+    });
 
     const assessment = await Assessment.create(assessmentData);
 
@@ -1006,10 +1376,18 @@ const generateFromLessonPlan = async (req, res) => {
           },
         },
       });
-      console.log(`Updated lesson plan ${lessonPlanId} status to generated`);
+      console.log(`✅ Updated lesson plan ${lessonPlanId} status to generated`);
     } catch (lessonPlanError) {
-      console.error("Error updating lesson plan status:", lessonPlanError);
+      console.error("❌ Error updating lesson plan status:", lessonPlanError);
     }
+
+    console.log("🎉 Assessment generated successfully:", {
+      id: assessment._id,
+      title: assessment.title,
+      activityType: assessment.activityType,
+      hasActivity: assessment.hasActivity,
+      hasRubric: assessment.hasRubric,
+    });
 
     // Return the complete response with all content
     res.status(201).json({
@@ -1019,7 +1397,7 @@ const generateFromLessonPlan = async (req, res) => {
       generatedContent: assessment.generatedContent,
     });
   } catch (error) {
-    console.error("Error in generateFromLessonPlan:", error);
+    console.error("❌ Error in generateFromLessonPlan:", error);
 
     // Check if it's a Gemini API related error
     if (
@@ -1050,8 +1428,6 @@ const generateFromLessonPlan = async (req, res) => {
     });
   }
 };
-
-// NEW: Get standalone assessments only
 const getStandaloneAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1172,7 +1548,7 @@ const getStandaloneAssessments = async (req, res) => {
   }
 };
 
-// NEW: Update standalone assessment
+//Update standalone assessment
 const updateStandaloneAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1246,7 +1622,7 @@ const updateStandaloneAssessment = async (req, res) => {
   }
 };
 
-// NEW: Delete standalone assessment
+//Delete standalone assessment
 const deleteStandaloneAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1443,7 +1819,6 @@ const getUserAssessmentsFiltered = async (req, res) => {
   }
 };
 
-// [Keep all existing helper functions for generation - they remain the same]
 const generateActivityContent = async (data) => {
   const genAI = new GoogleGenerativeAI(data.geminiApiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -1643,8 +2018,6 @@ const retryAssessmentGeneration = async (data, numberOfQuestions) => {
   };
 };
 
-// [Keep all existing prompt building functions - they remain the same]
-// [Keep all existing prompt building functions - they remain the same]
 const buildActivityPrompt = (data) => {
   return `
 # Identity
@@ -2647,7 +3020,8 @@ const regenerateAssessment = async (req, res) => {
     // Structure the new content properly based on activity type
     const structuredContent = structureGeneratedContent(
       generatedContent,
-      activityType
+      activityType,
+      { paperType: activityData.paperType }
     );
 
     console.log("Structured regenerated content:", {
@@ -2785,13 +3159,1347 @@ const regenerateAssessment = async (req, res) => {
   }
 };
 
-// Update the module.exports to include all new standalone functions
+const generateExamContent = async (data) => {
+  console.log("🎯 Generating SPM exam content with data:", {
+    paperType: data.paperType,
+    lesson: data.lesson,
+    subject: data.subject,
+    grade: data.grade,
+  });
+
+  const genAI = new GoogleGenerativeAI(data.geminiApiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      temperature: 0.7,
+    },
+  });
+
+  try {
+    let prompt;
+    if (data.paperType === "paper1") {
+      prompt = buildPaper1Prompt(data);
+    } else if (data.paperType === "paper2") {
+      prompt = buildPaper2Prompt(data);
+    } else {
+      throw new Error("Invalid paper type. Must be 'paper1' or 'paper2'");
+    }
+
+    console.log("🚀 Sending request to Gemini AI for", data.paperType);
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("📥 Raw AI output length:", text.length);
+    console.log("📥 Raw AI output preview:", text.substring(0, 500) + "...");
+
+    if (!text || text.trim().length === 0) {
+      throw new Error("Empty response from AI");
+    }
+
+    let generatedContent;
+    let cleanedText;
+
+    try {
+      // Basic cleaning - remove markdown code blocks
+      cleanedText = text
+        .trim()
+        .replace(/```json\s*/g, "")
+        .replace(/```\s*/g, "")
+        .trim();
+
+      // Find the JSON object boundaries
+      const firstBrace = cleanedText.indexOf("{");
+      const lastBrace = cleanedText.lastIndexOf("}");
+
+      if (firstBrace === -1 || lastBrace === -1) {
+        throw new Error("No valid JSON object found in response");
+      }
+
+      // Extract only the JSON portion
+      cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+
+      console.log("🔧 Attempting to repair JSON...");
+
+      // Use jsonrepair to fix any malformed JSON
+      const repairedJson = jsonrepair(cleanedText);
+
+      console.log("✅ JSON successfully repaired");
+
+      generatedContent = JSON.parse(repairedJson);
+    } catch (parseError) {
+      console.error("❌ Failed to parse and repair JSON.");
+      console.error("Parse error:", parseError.message);
+
+      // Fallback: Try to extract specific sections manually
+      try {
+        console.log("🔄 Attempting manual content extraction...");
+
+        const examContentMatch = text.match(
+          /"examContent"\s*:\s*\{[\s\S]*?(?=,\s*"answerKeyContent")/
+        );
+        const answerKeyMatch = text.match(
+          /"answerKeyContent"\s*:\s*\{[\s\S]*?(?=\s*\}?\s*$)/
+        );
+
+        if (examContentMatch && answerKeyMatch) {
+          const examContentStr = examContentMatch[0] + "}";
+          const answerKeyStr = answerKeyMatch[0] + "}";
+
+          const reconstructedJson = `{${examContentStr}, ${answerKeyStr}}`;
+
+          // Try to repair the reconstructed JSON
+          const repairedReconstructedJson = jsonrepair(reconstructedJson);
+          generatedContent = JSON.parse(repairedReconstructedJson);
+
+          console.log(
+            "✅ Successfully extracted and repaired content manually"
+          );
+        } else {
+          throw new Error("Could not extract JSON structure from response");
+        }
+      } catch (altParseError) {
+        console.error(
+          "❌ Manual extraction also failed:",
+          altParseError.message
+        );
+        throw new Error(
+          `Unable to parse AI response as valid JSON: ${parseError.message}`
+        );
+      }
+    }
+
+    // Validate required fields for exam
+    if (!generatedContent.examContent || !generatedContent.answerKeyContent) {
+      console.error(
+        "❌ Missing required exam fields:",
+        Object.keys(generatedContent)
+      );
+      throw new Error("Missing required exam content fields in AI response");
+    }
+
+    const result_content = {
+      examContent: generatedContent.examContent,
+      answerKeyContent: generatedContent.answerKeyContent,
+    };
+
+    console.log(`✅ Generated exam content analysis:`, {
+      examContent: result_content.examContent ? "Generated" : "Missing",
+      answerKeyContent: result_content.answerKeyContent
+        ? "Generated"
+        : "Missing",
+      examContentKeys: result_content.examContent
+        ? Object.keys(result_content.examContent)
+        : [],
+    });
+
+    return result_content;
+  } catch (error) {
+    console.error("❌ Error in generateExamContent:", error);
+    throw error;
+  }
+};
+
+const buildPaper1Prompt = (data) => {
+  return `
+# CRITICAL: Generate SPM English Paper 1 (Reading & Use of English) Examination
+
+Create a complete SPM English Paper 1 examination based on the Malaysian KSSM curriculum format with exactly 40 questions across 5 parts.
+
+## Lesson Context:
+- Subject: ${data.subject || "English"}
+- Topic: ${data.lesson || "English Lesson"}  
+- Grade: ${data.grade || "Form 5"}
+- Theme: ${data.theme || "General"}
+- Learning Focus: ${
+    data.learningOutline?.during || "Grammar and vocabulary practice"
+  }
+
+## Paper Configuration:
+- Paper Type: Paper 1 (Reading & Use of English)
+- Duration: ${data.timeAllocation || "90"} minutes
+- Total Questions: 40 questions
+- Total Marks: 40 marks
+- Reading Level: ${data.readingLevel || "Form 5 level"}
+- Text Sources: ${data.textSources?.join(", ") || "Mixed authentic sources"}
+- Topics: ${
+    data.topics?.join(", ") || "Health, environment, people and culture"
+  }
+
+## Paper Structure (MANDATORY):
+
+**Part 1: Multiple Choice (8 questions, 8 marks)**
+- 8 short texts (notices, emails, signs, advertisements)
+- 3 answer choices (A, B, C) for each question
+- Focus on understanding main ideas and specific information
+
+**Part 2: Multiple Choice Cloze (10 questions, 10 marks)**  
+- 1 passage with 10 gaps numbered (9) to (18)
+- 4 answer choices (A, B, C, D) for each gap
+- Focus: ${
+    data.questionTypes?.clozeTestFocus || "grammar, vocabulary, and discourse"
+  }
+
+**Part 3: Multiple Choice Reading (8 questions, 8 marks)**
+- 1 longer passage (300-400 words)
+- 3 answer choices (A, B, C) for each question (19-26)
+- Test inference, main ideas, supporting details, author's purpose
+
+**Part 4: Gapped Text (6 questions, 6 marks)**
+- 1 passage with 6 removed sentences numbered (27) to (32)
+- 8 sentence options (A-H) to choose from (2 extras)
+- Test understanding of text organization and coherence
+
+**Part 5: Matching & Information Transfer (8 questions, 8 marks)**
+
+CRITICAL PART 5 STRUCTURE:
+- ONE informational passage (400-450 words) divided into EXACTLY 6 paragraphs labeled A, B, C, D, E, F
+- Questions 33-36: Match statements to paragraph letters (4 questions, 4 marks)
+- Questions 37-40: Complete sentences with ONE WORD from passage (4 questions, 4 marks)
+
+### Part 5 Passage Requirements:
+1. Write ONE complete informational text about "${
+    data.lesson
+  }" divided into 6 distinct paragraphs
+2. Each paragraph must be 60-80 words covering ONE specific aspect
+3. Label paragraphs clearly as A, B, C, D, E, F at the start of each paragraph
+4. Include extractable vocabulary words that appear verbatim in the text
+
+Example paragraph structure for health topic:
+**Paragraph A**: Benefits of regular exercise (60-75 words) - include words like "stamina", "cardiovascular", "flexibility"
+**Paragraph B**: Importance of balanced nutrition (60-75 words) - include words like "nutrients", "metabolism", "vitamins"
+**Paragraph C**: Role of adequate sleep (60-75 words) - include words like "rejuvenate", "cognitive", "immune"
+**Paragraph D**: Managing stress (60-75 words) - include words like "meditation", "anxiety", "relaxation"
+**Paragraph E**: Staying hydrated (60-75 words) - include words like "hydration", "dehydration", "regulate"
+**Paragraph F**: Regular health check-ups (60-75 words) - include words like "preventive", "screening", "early"
+
+### Questions 33-36 (Matching) Requirements:
+Create 4 statements that each clearly match to ONE specific paragraph only:
+- Statement must paraphrase the main idea of that paragraph
+- Should NOT use exact wording from paragraph
+- Each paragraph should be matchable by its unique content
+- Format: Which paragraph (A-F) discusses/mentions/contains [specific information]?
+
+Example:
+Q33: "The importance of drinking enough water for body functions" → Answer: E
+Q34: "How physical activity improves heart health" → Answer: A
+
+### Questions 37-40 (Information Transfer) Requirements:
+Create 4 incomplete sentences where the answer is EXACTLY ONE WORD from the passage:
+- The missing word MUST appear verbatim in the passage text
+- Student must write the EXACT word (no synonyms accepted)
+- Each sentence should make grammatical sense when completed
+- Answers should be key content words (nouns, verbs, adjectives)
+
+Example format:
+Q37: "Regular exercise helps build physical _______." 
+- Correct answer: "stamina" (word must appear in Paragraph A)
+- In passage: "Regular exercise builds stamina and improves overall fitness"
+
+Q38: "A balanced diet provides essential _______ for the body."
+- Correct answer: "nutrients" (word must appear in Paragraph B)  
+- In passage: "Proper nutrition ensures the body receives all necessary nutrients"
+
+CRITICAL: For Q37-40, you MUST:
+1. Include the exact answer word somewhere in the passage text
+2. Ensure the word fits grammatically in the sentence
+3. Make the answer unambiguous (only ONE word can fit correctly)
+4. Use words that are clearly extractable and not too common (avoid "the", "and", "is")
+
+## Output Format:
+
+Return a JSON object with this EXACT structure:
+
+{
+  "examContent": {
+    "title": "SPM English Paper 1 (1119/1)",
+    "subtitle": "Reading and Use of English",
+    "duration": "${data.timeAllocation || "90"} minutes",
+    "totalQuestions": 40,
+    "totalMarks": 40,
+    "instructions": [
+      "Answer all questions",
+      "For each question, choose the best answer and mark it on your answer sheet",
+      "Read all texts and questions carefully",
+      "Transfer your answers to the answer sheet in pencil"
+    ],
+    "parts": [
+      {
+        "partNumber": 1,
+        "title": "Part 1",
+        "instructions": "Questions 1 to 8. Read the text carefully in each question. Choose the best answer A, B or C.",
+        "totalQuestions": 8,
+        "marks": 8,
+        "questions": [
+          {
+            "questionNumber": 1,
+            "text": "Complete short text with question",
+            "options": ["A) First option", "B) Second option", "C) Third option"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 2,
+        "title": "Part 2", 
+        "instructions": "Questions 9 to 18. Read the passage carefully and choose the best answer A, B, C or D to fill each blank.",
+        "totalQuestions": 10,
+        "marks": 10,
+        "passage": "Complete passage with (9) to (18) gaps testing grammar and vocabulary",
+        "questions": [
+          {
+            "questionNumber": 9,
+            "options": ["A) should", "B) must", "C) ought", "D) might"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 3,
+        "title": "Part 3",
+        "instructions": "Questions 19 to 26. Read the passage carefully and choose the best answer A, B or C.",
+        "totalQuestions": 8, 
+        "marks": 8,
+        "passage": "Complete 350-400 word passage",
+        "questions": [
+          {
+            "questionNumber": 19,
+            "question": "Question based on passage",
+            "options": ["A) Option 1", "B) Option 2", "C) Option 3"],
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 4,
+        "title": "Part 4",
+        "instructions": "Questions 27 to 32. Six sentences have been removed from the passage. Choose from sentences A to H the one which fits each gap (27-32). There are two extra sentences you do not need to use.",
+        "totalQuestions": 6,
+        "marks": 6,
+        "passage": "Complete passage with 6 gaps marked (27) to (32)",
+        "sentenceOptions": [
+          "A: Sentence option 1",
+          "B: Sentence option 2",
+          "C: Sentence option 3",
+          "D: Sentence option 4",
+          "E: Sentence option 5",
+          "F: Sentence option 6", 
+          "G: Extra sentence 1",
+          "H: Extra sentence 2"
+        ],
+        "questions": [
+          {
+            "questionNumber": 27,
+            "gapContext": "Context about gap location",
+            "marks": 1
+          }
+        ]
+      },
+      {
+        "partNumber": 5,
+        "title": "Part 5", 
+        "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
+        "totalQuestions": 8,
+        "marks": 8,
+        "passage": "**CRITICAL: Write ONE complete passage (400-450 words) about '${
+          data.lesson || "maintaining a healthy lifestyle"
+        }' divided into EXACTLY 6 paragraphs.**
+
+**Paragraph A**: [First aspect - 60-75 words] Include words: [word1], [word2], [word3]
+**Paragraph B**: [Second aspect - 60-75 words] Include words: [word4], [word5], [word6]
+**Paragraph C**: [Third aspect - 60-75 words] Include words: [word7], [word8], [word9]
+**Paragraph D**: [Fourth aspect - 60-75 words] Include words: [word10], [word11], [word12]
+**Paragraph E**: [Fifth aspect - 60-75 words] Include words: [word13], [word14], [word15]
+**Paragraph F**: [Sixth aspect - 60-75 words] Include words: [word16], [word17], [word18]
+
+Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary words for Q37-40 are clearly present in the text.",
+        "paragraphLabels": ["A", "B", "C", "D", "E", "F"],
+        "questions": [
+          {
+            "questionType": "matching",
+            "questionNumbers": "33-36",
+            "instructions": "Questions 33 - 36: Which paragraph (A - F) describes the reasons for going viral. Mark your answers on the separate answer sheet.",
+            "questions": [
+              {
+                "questionNumber": 33,
+                "statement": "Parents are responsible for making their children feel special.",
+                "correctAnswer": "F",
+                "explanation": "Paragraph F specifically discusses how parents tell children they are special",
+                "marks": 1
+              },
+              {
+                "questionNumber": 34,
+                "statement": "Their posts can increase the economy.",
+                "correctAnswer": "D",
+                "explanation": "Paragraph D mentions viral posts affecting stock/economy",
+                "marks": 1
+              },
+              {
+                "questionNumber": 35,
+                "statement": "Going extra lengths in pursuit of approval.",
+                "correctAnswer": "A",
+                "explanation": "Paragraph A discusses seeking approval on social media",
+                "marks": 1
+              },
+              {
+                "questionNumber": 36,
+                "statement": "The need to be seen and heard.",
+                "correctAnswer": "E",
+                "explanation": "Paragraph E talks about validation and attention",
+                "marks": 1
+              }
+            ]
+          },
+          {
+            "questionType": "information_transfer",
+            "questionNumbers": "37-40",
+            "instructions": "Questions 37 - 40: Complete the notes below using information from the text. Choose no more than one word from the passage for each answer. Write your answers on the separate answer sheet.",
+            "title": "What we learn about going viral",
+            "questions": [
+              {
+                "questionNumber": 37,
+                "sentence": "People go for a/an (37) _______ to secure a job to show their worth.",
+                "correctAnswer": "interview",
+                "locationInText": "This exact word must appear in the passage - ensure 'interview' is mentioned in context of securing jobs",
+                "marks": 1,
+                "verification": "MUST verify 'interview' appears verbatim in passage text"
+              },
+              {
+                "questionNumber": 38,
+                "sentence": "When we become a public figure we lose our (38) _______ in the long run.",
+                "correctAnswer": "privacy",
+                "locationInText": "Word 'privacy' must be extractable from passage discussing consequences of fame",
+                "marks": 1,
+                "verification": "MUST verify 'privacy' appears verbatim in passage text"
+              },
+              {
+                "questionNumber": 39,
+                "sentence": "The need to be (39) _______ is why people become Instafamous.",
+                "correctAnswer": "validated",
+                "locationInText": "Word 'validated' or 'validation' must appear when discussing reasons for social media fame",
+                "marks": 1,
+                "verification": "MUST verify 'validated' appears verbatim in passage text"
+              },
+              {
+                "questionNumber": 40,
+                "sentence": "Many young people attend (40) _______ to seek fame and glory.",
+                "correctAnswer": "auditions",
+                "locationInText": "Word 'auditions' must be mentioned in context of seeking fame",
+                "marks": 1,
+                "verification": "MUST verify 'auditions' appears verbatim in passage text"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "ANSWER KEY - SPM English Paper 1 (1119/1)",
+    "totalQuestions": 40,
+    "totalMarks": 40,
+    "answers": [
+      {
+        "questionNumber": 33,
+        "correctAnswer": "F",
+        "explanation": "Paragraph F discusses how parents make their children feel special by telling them they are unique and talented, which directly matches the statement.",
+        "marks": 1,
+        "markingGuidance": "Accept only letter F. Student must identify that paragraph F contains information about parental influence on children's self-perception.",
+        "textReference": "Paragraph F: 'Some people need to be the centre of attention to feel they are worthy of existing. Most parents tell their children that they are special and raise them to feel superior...'"
+      },
+      {
+        "questionNumber": 37,
+        "correctAnswer": "interview",
+        "explanation": "The word 'interview' appears in the passage when discussing people wanting to prove their worth by showing their experience to secure a vacancy.",
+        "marks": 1,
+        "acceptableAlternatives": "NONE - must be exact word 'interview' from passage",
+        "commonErrors": "Students may write 'job', 'work', or 'application' - these are INCORRECT even if logical",
+        "markingGuidance": "Award 1 mark ONLY for 'interview' spelled correctly. Do NOT accept synonyms. The word must be extracted exactly from the passage.",
+        "textReference": "Paragraph B: '...who want to appear in an interview to fill a vacancy and they want to prove their worth by showing their experience and quality...'"
+      }
+    ],
+    "partSpecificGuidance": {
+      "part5_matching": {
+        "totalMarks": 4,
+        "markingPrinciple": "Each statement matches to exactly ONE paragraph. Award 1 mark for each correct paragraph letter.",
+        "commonIssues": "Students may choose paragraphs with similar topics. Each paragraph has ONE main distinct theme - match to that specific theme.",
+        "teachingPoint": "Students should identify the MAIN idea of each paragraph first, then match statements to the paragraph that PRIMARILY discusses that topic."
+      },
+      "part5_transfer": {
+        "totalMarks": 4,
+        "markingPrinciple": "Accept ONLY the exact word from the passage. NO synonyms, NO paraphrasing, NO multiple words.",
+        "criticalRule": "ONE WORD ONLY from the passage. If student writes a synonym, two words, or a word not in passage = 0 marks",
+        "commonIssues": "Students writing synonyms instead of extracting exact words; spelling errors; writing multiple words",
+        "teachingPoint": "Answers MUST be words that appear verbatim in the text. Students should locate the relevant part of passage, then extract the EXACT word."
+      }
+    }
+  }
+}
+
+**VERIFICATION CHECKLIST BEFORE GENERATING:**
+✓ Part 5 passage has EXACTLY 6 paragraphs labeled A, B, C, D, E, F
+✓ Each paragraph is 60-80 words with ONE distinct main idea
+✓ Questions 33-36: 4 matching statements, each matching ONE specific paragraph
+✓ Questions 37-40: 4 incomplete sentences requiring ONE WORD answers
+✓ ALL answer words for Q37-40 appear VERBATIM in the passage text
+✓ Each answer word is contextually appropriate and grammatically correct
+✓ Answer key includes exact text references showing where words appear
+✓ Total questions = 40 (8+10+8+6+8)
+
+Generate the complete examination following authentic SPM Paper 1 format exactly.
+`;
+};
+
+const buildPaper2Prompt = (data) => {
+  return `
+# CRITICAL: Generate SPM English Paper 2 (Writing) Examination
+
+Create a complete SPM English Paper 2 examination based on the Malaysian KSSM curriculum format.
+
+## Lesson Context:
+- Subject: ${data.subject || "English"}
+- Topic: ${data.lesson || "English Lesson"}
+- Grade: ${data.grade || "Form 5"}
+- Theme: ${data.theme || "General"}
+- Learning Focus: ${
+    data.learningOutline?.during || "Writing skills development"
+  }
+
+## Paper Configuration:
+- Paper Type: Paper 2 (Writing)
+- Duration: ${data.timeAllocation || "90"} minutes
+- Total Parts: 3 parts
+- Total Marks: 60 marks
+- Communication Format: ${data.communicationFormat || "Email"}
+- Essay Types: ${data.essayTypes?.join(", ") || "Article, Report, Story"}
+- Topic Categories: ${
+    data.topicCategories?.join(", ") || "Health, Environment, Culture"
+  }
+- Complexity: ${data.promptComplexity || "Intermediate"}
+
+## Paper Structure (MANDATORY):
+
+**Part 1: Short Communicative Message (20 marks)**
+- Format: ${data.communicationFormat || "Email"}
+- Word Count: About 80 words
+- Task: Respond to a given situation
+- Focus: Clear communication, appropriate format, accurate information
+
+**Part 2: Guided Writing (20 marks)**
+- Format: Essay with guided points
+- Word Count: 125-150 words  
+- Task: Write based on given notes/points related to "${data.lesson}"
+- Focus: Content development, organization, language accuracy
+
+**Part 3: Extended Writing (20 marks)**
+- Format: Choose 1 from 3 options
+- Options: ${data.essayTypes?.join(", ") || "Article, Report, Story"}
+- Word Count: 200-250 words
+- Focus: Content, organization, language range, communicative achievement
+
+## Output Requirements:
+
+You MUST return a JSON object with this EXACT structure:
+
+{
+  "examContent": {
+    "title": "SPM English Paper 2 (1119/2)", 
+    "subtitle": "Writing",
+    "duration": "${data.timeAllocation || "90"} minutes",
+    "totalParts": 3,
+    "totalMarks": 60,
+    "instructions": [
+      "Answer all questions",
+      "Write your answers in the spaces provided",
+      "Pay attention to word limits for each part",
+      "Plan your time: Part 1 (25 min), Part 2 (30 min), Part 3 (35 min)"
+    ],
+    "parts": [
+      {
+        "partNumber": 1,
+        "title": "Part 1: Short Communicative Message",
+        "marks": 20,
+        "wordCount": "About 80 words",
+        "timeAllocation": "25 minutes",
+        "instructions": "You must answer this question.",
+        "scenario": "Your friend Alex has asked for advice about maintaining a healthy lifestyle as they are feeling tired and stressed lately. They want to know about exercise, diet, and sleep habits.",
+        "task": "Write an ${
+          data.communicationFormat || "email"
+        } to Alex giving helpful advice about staying healthy",
+        "requiredContent": [
+          "Suggest suitable exercises for beginners",
+          "Recommend healthy eating habits", 
+          "Give advice about getting enough sleep",
+          "Encourage Alex to start making small changes"
+        ],
+        "format": "${data.communicationFormat || "Email"}",
+        "writingSpace": "Lined space for approximately 80 words"
+      },
+      {
+        "partNumber": 2,
+        "title": "Part 2: Guided Writing",
+        "marks": 20,
+        "wordCount": "125-150 words", 
+        "timeAllocation": "30 minutes",
+        "instructions": "You must answer this question.",
+        "topic": "The importance of ${
+          data.lesson || "healthy living"
+        } for teenagers",
+        "guidingPoints": [
+          "Physical benefits of ${data.lesson || "healthy habits"}",
+          "Mental and emotional advantages", 
+          "Ways to encourage teenagers to adopt healthier lifestyles"
+        ],
+        "taskInstructions": "Use all the notes above and give reasons for your point of view. Write your essay in an appropriate style.",
+        "writingSpace": "Lined space for approximately 125-150 words"
+      },
+      {
+        "partNumber": 3,
+        "title": "Part 3: Extended Writing", 
+        "marks": 20,
+        "wordCount": "200-250 words",
+        "timeAllocation": "35 minutes",
+        "instructions": "Choose ONE of the following questions. Answer in 200-250 words in an appropriate style.",
+        "options": [
+          {
+            "questionNumber": "3A",
+            "type": "${data.essayTypes?.[0] || "Article"}",
+            "topic": "Health and Wellness for Students",
+            "prompt": "Your school magazine is publishing articles about student health and wellness. Write an article discussing the challenges students face in maintaining a healthy lifestyle and suggest practical solutions.",
+            "notes": [
+              "Common health challenges for students",
+              "Impact of academic stress on health",
+              "Practical tips for staying healthy while studying"
+            ]
+          },
+          {
+            "questionNumber": "3B", 
+            "type": "${data.essayTypes?.[1] || "Report"}",
+            "topic": "School Health Initiative Report",
+            "prompt": "Your school wants to implement a new health and wellness program. Write a report for the school administration outlining the current health issues among students and recommending improvements.",
+            "notes": [
+              "Current health problems observed in school",
+              "Benefits of a comprehensive health program",
+              "Specific recommendations for implementation"
+            ]
+          },
+          {
+            "questionNumber": "3C",
+            "type": "${data.essayTypes?.[2] || "Story"}",
+            "topic": "A Life-Changing Health Decision",
+            "prompt": "Write a story about a teenager who decides to make a major change to improve their health. Your story should show the challenges they face and how they overcome them.",
+            "requirements": [
+              "Include realistic challenges and obstacles",
+              "Show character development and growth",
+              "Create an engaging narrative with a clear message"
+            ]
+          }
+        ],
+        "writingSpace": "Lined space for approximately 200-250 words"
+      }
+    ]
+  },
+  "answerKeyContent": {
+    "title": "MARKING SCHEME - SPM English Paper 2 (1119/2)",
+    "totalMarks": 60,
+    "assessmentCriteria": {
+      "part1": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 8,
+            "description": "Completeness and relevance of response to all required points"
+          },
+          {
+            "aspect": "Communicative Achievement", 
+            "marks": 6,
+            "description": "Appropriateness of format, register, and tone for ${
+              data.communicationFormat || "email"
+            }"
+          },
+          {
+            "aspect": "Organisation",
+            "marks": 3,
+            "description": "Logical structure and coherent flow"
+          },
+          {
+            "aspect": "Language",
+            "marks": 3,
+            "description": "Grammar accuracy and vocabulary appropriateness"
+          }
+        ],
+        "detailedMarkingGuide": {
+          "content": {
+            "fullMarks": "All 4 content points addressed completely and relevantly with appropriate detail and personal touch",
+            "goodMarks": "3-4 content points addressed with good development and relevant details", 
+            "satisfactoryMarks": "2-3 content points addressed adequately with basic development",
+            "lowMarks": "1-2 content points with limited development or missing key information"
+          },
+          "communicativeAchievement": {
+            "fullMarks": "Perfect email format (greeting, body, closing, sign-off), consistently appropriate friendly tone, natural register throughout",
+            "goodMarks": "Good email format with minor inconsistencies, generally appropriate tone with occasional lapses",
+            "satisfactoryMarks": "Basic email format present, generally appropriate tone but may be too formal or informal in places",
+            "lowMarks": "Poor format (missing essential email elements) or inappropriate tone affecting communication effectiveness"
+          },
+          "organisation": {
+            "fullMarks": "Clear logical flow with smooth transitions between points, ideas well-connected and easy to follow",
+            "goodMarks": "Good organisation with minor issues in transitions, generally logical flow",
+            "satisfactoryMarks": "Basic organisation present, some attempt at logical sequencing",
+            "lowMarks": "Poor organisation, disconnected ideas, difficult to follow"
+          },
+          "language": {
+            "fullMarks": "Wide range of vocabulary used accurately, complex structures handled well, minimal errors that don't impede communication",
+            "goodMarks": "Good vocabulary range with occasional errors, generally accurate grammar",
+            "satisfactoryMarks": "Adequate vocabulary for task, basic structures mostly accurate",
+            "lowMarks": "Limited vocabulary, frequent errors impeding communication"
+          }
+        },
+        "sampleMarkingComments": [
+          "Excellent response addressing all required points with natural, friendly tone and perfect email format - Full marks",
+          "Good advice given but missing encouragement point and informal greeting - deduct 2 marks from content, 1 from communicative achievement",
+          "Format issues: missing proper email greeting/closing, too formal tone for friend - deduct 3 marks from communicative achievement",
+          "All points covered but very brief development, needs more specific advice - deduct 2 marks from content",
+          "Language errors (verb tenses, prepositions) affecting clarity - deduct 2 marks from language"
+        ],
+        "contentPointsBreakdown": {
+          "exerciseAdvice": "2 marks - Must suggest specific, suitable exercises for beginners with brief explanation",
+          "dietAdvice": "2 marks - Must recommend specific healthy eating habits, not just 'eat healthy'",
+          "sleepAdvice": "2 marks - Must give specific advice about sleep duration, routine, or habits",
+          "encouragement": "2 marks - Must include motivational language to encourage Alex to start making changes"
+        },
+        "markingInstructions": [
+          "Read entire response first to assess overall communication effectiveness",
+          "Check systematically for each of the 4 required content points",
+          "Evaluate format appropriateness - must follow email conventions for full communicative achievement marks",
+          "Consider naturalness of language - should sound like genuine communication between friends",
+          "Deduct marks proportionally - missing content points result in significant deductions"
+        ]
+      },
+      "part2": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 9,
+            "description": "Development of all guided points with relevant elaboration"
+          },
+          {
+            "aspect": "Organisation",
+            "marks": 5,
+            "description": "Clear essay structure with introduction, body, conclusion"
+          },
+          {
+            "aspect": "Language",
+            "marks": 6,
+            "description": "Range and accuracy of vocabulary and grammar"
+          }
+        ],
+        "detailedMarkingGuide": {
+          "contentDevelopment": {
+            "fullMarks": "All 3 guided points fully developed with personal opinions, relevant examples, and clear explanations showing deep understanding",
+            "goodMarks": "All 3 points addressed with good development of 2-3 points, some personal opinions and examples provided",
+            "satisfactoryMarks": "All 3 points mentioned but limited development, basic examples or opinions included",
+            "lowMarks": "1-2 points missing or very poor development, lacks personal opinions or relevant examples"
+          },
+          "organisation": {
+            "fullMarks": "Clear introduction stating position, well-developed body paragraphs for each point, effective conclusion summarizing key ideas",
+            "goodMarks": "Good structure with minor issues in paragraph development or transitions",
+            "satisfactoryMarks": "Basic essay structure present with identifiable introduction, body, and conclusion",
+            "lowMarks": "Poor organisation affecting clarity, missing key structural elements"
+          },
+          "language": {
+            "fullMarks": "Wide vocabulary range, varied sentence structures, accurate grammar throughout, sophisticated expression",
+            "goodMarks": "Good vocabulary with some variety, generally accurate with minor errors",
+            "satisfactoryMarks": "Adequate vocabulary for task, basic structures mostly correct",
+            "lowMarks": "Limited vocabulary, frequent errors impeding understanding"
+          }
+        },
+        "guidedPointsBreakdown": {
+          "physicalBenefits": "3 marks - Must discuss specific physical health benefits with examples or explanation",
+          "mentalEmotionalAdvantages": "3 marks - Must address psychological/emotional benefits, not just repeat physical benefits", 
+          "encouragementWays": "3 marks - Must suggest practical, specific ways to encourage healthy lifestyle adoption"
+        },
+        "markingInstructions": [
+          "Each guided point must be present and developed - deduct 3 marks per completely missing point",
+          "Look for personal opinions and relevant examples - these demonstrate higher-order thinking",
+          "Assess language range and accuracy throughout - reward variety and sophistication",
+          "Consider coherence between guided points - should flow logically as unified essay",
+          "Award marks for creativity within appropriate boundaries of guided writing format"
+        ],
+        "qualityIndicators": {
+          "highQuality": "All points well-integrated with personal voice, clear stance, relevant examples from student experience or observation",
+          "averageQuality": "Points addressed but development uneven, some personal input but may rely heavily on general statements",
+          "lowQuality": "Points mentioned but not developed, lacks personal opinion or specific examples"
+        }
+      },
+      "part3": {
+        "marks": 20,
+        "criteria": [
+          {
+            "aspect": "Content",
+            "marks": 8,
+            "description": "Creativity, relevance, and development of ideas appropriate to chosen format"
+          },
+          {
+            "aspect": "Communicative Achievement",
+            "marks": 5,
+            "description": "Effectiveness in engaging reader and achieving purpose of text type"
+          },
+          {
+            "aspect": "Organisation", 
+            "marks": 4,
+            "description": "Logical structure appropriate to chosen text type (article/report/story)"
+          },
+          {
+            "aspect": "Language",
+            "marks": 3,
+            "description": "Vocabulary range, grammar accuracy, spelling and punctuation"
+          }
+        ],
+        "textTypeSpecificGuides": {
+          "article": {
+            "contentMarking": "Engaging headline (1 mark), clear introduction hooking reader (2 marks), informative body with specific examples and solutions (4 marks), effective conclusion with call to action or summary (1 mark)",
+            "achievementMarking": "Engaging reader interest through personal anecdotes or striking facts, appropriate article conventions (subheadings, quotes), clear informative purpose",
+            "organisationMarking": "Logical article structure with clear paragraphs and smooth transitions, appropriate use of subheadings or formatting",
+            "commonIssues": "Students often write as essay rather than article format, missing engaging elements, lack of specific examples",
+            "markingTips": "Look for article-specific features: headline, engaging opening, informative tone, practical advice"
+          },
+          "report": {
+            "contentMarking": "Clear executive summary/introduction (2 marks), detailed findings with evidence (4 marks), practical recommendations with justification (2 marks)",
+            "achievementMarking": "Objective tone maintained throughout, formal register appropriate for administration, professional presentation",
+            "organisationMarking": "Clear report structure with appropriate headings (Introduction, Findings, Recommendations), logical flow of information",
+            "commonIssues": "Students may be too informal, lack specific recommendations, or fail to provide evidence for findings",
+            "markingTips": "Assess objectivity, formality, and practical value of recommendations. Look for evidence-based conclusions."
+          },
+          "story": {
+            "contentMarking": "Engaging opening that establishes character and situation (2 marks), clear character development showing change (2 marks), realistic challenges and obstacles (2 marks), satisfying resolution with clear message (2 marks)",
+            "achievementMarking": "Reader engagement through descriptive language and realistic dialogue, appropriate narrative techniques, clear moral/message",
+            "organisationMarking": "Logical story structure with clear beginning, middle, end, effective use of chronological or other narrative structure",
+            "commonIssues": "Students often rush the ending, lack character development, or create unrealistic scenarios",
+            "markingTips": "Evaluate character growth, realism of challenges, and clarity of the health-related message"
+          }
+        },
+        "markingInstructions": [
+          "Identify which text type student chose before beginning assessment",
+          "Apply text-type specific criteria - don't mark article as essay or story as report",
+          "Reward creativity and originality within appropriate format boundaries",
+          "Consider target audience appropriateness for chosen text type",
+          "Assess whether student achieved the communicative purpose of their chosen format"
+        ],
+        "sampleResponses": {
+          "article": {
+            "excellentFeatures": "Catchy headline 'Health Hacks for Busy Students', engaging opening with statistics, subheadings organizing content, practical tips with examples, call to action in conclusion",
+            "markingExample": "Content: 7/8 (excellent examples and solutions), Achievement: 5/5 (perfect article format), Organisation: 4/4 (clear structure), Language: 3/3 (varied vocabulary)"
+          },
+          "report": {
+            "excellentFeatures": "Professional title, clear sections (Executive Summary, Current Issues, Recommendations), objective tone, specific data, actionable recommendations with timeline",
+            "markingExample": "Content: 8/8 (comprehensive findings and practical recommendations), Achievement: 4/5 (very formal and professional), Organisation: 4/4 (perfect structure), Language: 2/3 (minor errors)"
+          },
+          "story": {
+            "excellentFeatures": "Compelling character introduction, realistic health challenges (stress, poor diet), gradual character development, believable obstacles, inspiring but realistic conclusion",
+            "markingExample": "Content: 6/8 (good development but rushed ending), Achievement: 4/5 (engaging narrative), Organisation: 3/4 (good structure, abrupt transition), Language: 3/3 (excellent descriptive language)"
+          }
+        }
+      }
+    },
+    "comprehensiveMarkingGuide": {
+      "beforeMarking": [
+        "Read the entire response first to get overall impression and identify student's ability level",
+        "Identify which text type student attempted in Part 3 - this determines specific criteria to apply",
+        "Check word counts for all parts - deduct marks for significantly under word limits (more than 20% under) or over limits (more than 50% over)",
+        "Note overall language proficiency level to ensure consistent marking across all criteria",
+        "Review the specific content requirements for each part to ensure systematic assessment"
+      ],
+      "duringMarking": [
+        "Use positive marking approach - reward what students can do rather than penalizing what they cannot",
+        "Consider communicative effectiveness over perfect accuracy - does the message come across clearly?",
+        "Look for evidence of planning and organisation in structure and content development",
+        "Award marks for creativity and originality within appropriate format boundaries",
+        "Be consistent in applying criteria across all student responses",
+        "Make brief notes about strengths and areas for improvement for feedback purposes"
+      ],
+      "afterMarking": [
+        "Double-check addition of marks for each part and total",
+        "Ensure marks awarded align with the demonstrated ability level across all parts",
+        "Review any borderline cases to ensure fair and consistent application of criteria",
+        "Consider whether feedback comments match the marks awarded"
+      ],
+      "qualityIndicators": {
+        "excellent": "Natural, fluent expression with sophisticated vocabulary, complex structures used accurately, creative and engaging content, perfect format adherence",
+        "good": "Generally accurate language with good vocabulary range, minor errors don't impede communication, well-developed content, appropriate format",
+        "satisfactory": "Adequate expression with basic vocabulary sufficient for task, some errors but meaning generally clear, content addresses requirements",
+        "needsImprovement": "Frequent errors impede communication, limited vocabulary range, content lacks development, format issues affect communication"
+      },
+      "commonStudentErrors": {
+        "part1": "Too formal/informal tone, missing email elements, insufficient development of content points, word count issues",
+        "part2": "Missing guided points, lack of personal opinion, poor essay structure, repetition of points without development",
+        "part3": "Wrong text type features, inappropriate register, lack of creativity, rushing the conclusion"
+      },
+      "feedbackGuidelines": {
+        "strengths": "Always identify specific strengths in language use, content development, or format adherence",
+        "improvements": "Provide specific, actionable advice for improvement in weaker areas",
+        "encouragement": "Acknowledge effort and progress while indicating areas for further development",
+        "examples": "Where possible, provide brief examples of how improvements could be made"
+      }
+    },
+    "gradingScale": {
+      "A": "51-60 marks (85-100%)",
+      "B": "42-50 marks (70-84%)",
+      "C": "30-41 marks (50-69%)", 
+      "D": "18-29 marks (30-49%)",
+      "E": "12-17 marks (20-29%)",
+      "G": "0-11 marks (0-19%)"
+    },
+    "teacherGuidance": {
+      "timeManagement": "Allocate approximately 3-4 minutes per script for initial reading and marking, with additional time for borderline cases",
+      "consistency": "Use sample responses and marking criteria to calibrate marking standards, especially when multiple teachers are involved",
+      "documentation": "Keep records of common errors and successful approaches for future teaching reference",
+      "moderation": "Regular cross-marking and discussion of borderline cases ensures fair and consistent standards"
+    }
+  }
+}
+
+CRITICAL: Generate authentic SPM Paper 2 content with realistic scenarios connecting to the lesson topic "${
+    data.lesson
+  }". Ensure all parts are complete and follow official SPM format exactly.
+`;
+};
+
+const convertExamToHTML = (examContent, paperType = "paper1") => {
+  if (!examContent) return null;
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      ${getEnhancedPdfStyles()}
+    </head>
+    <body>
+    <div class="exam-content">
+      <div class="exam-header">
+        <h1>${examContent.title || "SPM English Examination"}</h1>
+        <h2>${examContent.subtitle || "Reading and Use of English"}</h2>
+        <div class="student-info">
+          <p><strong>Name:</strong> ___________________ <strong>IC No.:</strong> ___________________</p>
+          <p><strong>Index No.:</strong> ___________________ <strong>Class:</strong> ___________</p>
+          <p><strong>Duration:</strong> ${
+            examContent.duration || "90 minutes"
+          } | <strong>${paperType === "paper1" ? "Questions:" : "Parts:"} ${
+    examContent.totalQuestions || examContent.totalParts || 40
+  }</strong> | <strong>Marks:</strong> ${examContent.totalMarks || 40}</p>
+        </div>
+      </div>
+  `;
+
+  if (examContent.instructions) {
+    html += `<div class="instructions">
+      <h3>Instructions:</h3>
+      <ul>`;
+    examContent.instructions.forEach((instruction) => {
+      html += `<li>${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (examContent.parts && Array.isArray(examContent.parts)) {
+    examContent.parts.forEach((part, partIndex) => {
+      if (!part) return;
+
+      html += `
+        <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
+          <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+            part.title || `Part ${part.partNumber || partIndex + 1}`
+          }</h3>
+          <p style="font-style: italic; margin-bottom: 15px;">${
+            part.instructions || ""
+          }</p>
+          <p style="margin-bottom: 20px;"><strong>Total Questions:</strong> ${
+            part.totalQuestions || "N/A"
+          } | <strong>Marks:</strong> ${part.marks || "N/A"}</p>
+      `;
+
+      // Display passage if exists
+      if (part.passage) {
+        html += `<div class="passage" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px; white-space: pre-wrap;">
+          ${part.passage}
+        </div>`;
+      }
+
+      // CRITICAL FIX: Handle Part 5's special structure
+      if (
+        part.partNumber === 5 &&
+        part.questions &&
+        Array.isArray(part.questions)
+      ) {
+        // Part 5 has nested question types
+        part.questions.forEach((questionGroup) => {
+          if (!questionGroup) return;
+
+          // Check if this is a matching question group (33-36)
+          if (questionGroup.questionType === "matching") {
+            html += `
+              <div class="question-group" style="margin: 20px 0; padding: 15px; background: #fff7e6; border-radius: 8px;">
+                <h4 style="color: #fa8c16; margin-bottom: 10px;">Questions ${
+                  questionGroup.questionNumbers || "33-36"
+                }</h4>
+                <p style="margin-bottom: 15px;"><strong>${
+                  questionGroup.instructions ||
+                  "Match the statements to the paragraphs"
+                }</strong></p>
+                
+                <div class="matching-questions">`;
+
+            if (
+              questionGroup.questions &&
+              Array.isArray(questionGroup.questions)
+            ) {
+              questionGroup.questions.forEach((q) => {
+                html += `
+                  <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #fa8c16; border-radius: 4px;">
+                    <p><strong>${q.questionNumber}.</strong> ${q.statement}</p>
+                    <p style="margin-top: 8px; color: #666;"><em>Answer: _______</em></p>
+                  </div>`;
+              });
+            }
+
+            html += `
+                </div>
+              </div>`;
+          }
+
+          // Check if this is an information transfer question group (37-40)
+          else if (questionGroup.questionType === "information_transfer") {
+            html += `
+              <div class="question-group" style="margin: 20px 0; padding: 15px; background: #e6f7ff; border-radius: 8px;">
+                <h4 style="color: #1890ff; margin-bottom: 10px;">Questions ${
+                  questionGroup.questionNumbers || "37-40"
+                }</h4>
+                <p style="margin-bottom: 15px;"><strong>${
+                  questionGroup.instructions ||
+                  "Complete the sentences with ONE WORD from the passage"
+                }</strong></p>
+                ${
+                  questionGroup.title
+                    ? `<p style="font-weight: 600; margin-bottom: 10px;">${questionGroup.title}</p>`
+                    : ""
+                }
+                
+                <div class="transfer-questions">`;
+
+            if (
+              questionGroup.questions &&
+              Array.isArray(questionGroup.questions)
+            ) {
+              questionGroup.questions.forEach((q) => {
+                html += `
+                  <div class="question" style="margin-bottom: 15px; padding: 10px; background: white; border-left: 3px solid #1890ff; border-radius: 4px;">
+                    <p><strong>${q.questionNumber}.</strong> ${q.sentence}</p>
+                    <div style="margin-top: 10px; padding: 8px; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 4px;">
+                      <p style="color: #666;"><em>Write your answer here: _________________</em></p>
+                    </div>
+                  </div>`;
+              });
+            }
+
+            html += `
+                </div>
+              </div>`;
+          }
+        });
+      }
+      // Regular question handling for Parts 1-4
+      else if (part.questions && Array.isArray(part.questions)) {
+        part.questions.forEach((question) => {
+          if (!question) return;
+
+          html += `<div class="question-wrapper"><div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
+            <p><strong>${question.questionNumber || ""}.</strong> ${
+            question.question || question.text || ""
+          }</p>`;
+
+          if (question.options && Array.isArray(question.options)) {
+            html += `<div class="options" style="margin-left: 20px;">`;
+            question.options.forEach((option) => {
+              html += `<p style="margin: 5px 0;">${option}</p>`;
+            });
+            html += `</div>`;
+          }
+          html += `</div></div>`;
+        });
+      }
+
+      // Display sentence options for Part 4
+      if (part.sentenceOptions && Array.isArray(part.sentenceOptions)) {
+        html += `<div class="sentence-options" style="margin: 20px 0; padding: 15px; background: #f6ffed; border-radius: 8px;">
+          <h4 style="color: #52c41a;">Choose from these sentences:</h4>`;
+        part.sentenceOptions.forEach((option) => {
+          html += `<p style="margin: 8px 0; padding: 8px; background: white; border-left: 3px solid #52c41a; border-radius: 4px;">${option}</p>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`; // Close exam-part
+    });
+  }
+
+  html += `</div></body></html>`;
+  return html;
+};
+
+const convertPaper1Parts = (parts) => {
+  if (!Array.isArray(parts)) {
+    console.warn("⚠️ Parts is not an array:", parts);
+    return "";
+  }
+
+  let html = "";
+  parts.forEach((part, index) => {
+    if (!part) return;
+
+    html += `
+      <div class="exam-part" style="margin-bottom: 30px; page-break-before: auto;">
+        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+          part.title || `Part ${index + 1}`
+        }</h3>
+        <p style="font-style: italic; margin-bottom: 15px;">${
+          part.instructions || ""
+        }</p>
+        <p style="margin-bottom: 20px;"><strong>Questions ${
+          part.questions?.[0]?.questionNumber || part.partNumber || index + 1
+        } to ${
+      part.questions?.[part.questions?.length - 1]?.questionNumber ||
+      (part.totalQuestions
+        ? part.totalQuestions + (part.partNumber || index) * 10
+        : index + 8)
+    }</strong> (${part.marks || 8} marks)</p>
+    `;
+
+    if (part.passage) {
+      html += `<div class="passage" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p style="margin: 0;">${part.passage}</p>
+      </div>`;
+    }
+
+    if (part.questions && Array.isArray(part.questions)) {
+      part.questions.forEach((question) => {
+        if (!question) return;
+
+        html += `<div class="question" style="margin-bottom: 20px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 5px;">
+          <p><strong>${question.questionNumber || ""}.</strong> ${
+          question.question || question.text || ""
+        }</p>`;
+
+        if (question.options && Array.isArray(question.options)) {
+          question.options.forEach((option) => {
+            html += `<p style="margin-left: 20px;">${option}</p>`;
+          });
+        }
+        html += `</div>`;
+      });
+    }
+
+    if (part.sentenceOptions && Array.isArray(part.sentenceOptions)) {
+      html += `<div class="sentence-options" style="margin: 20px 0;">
+        <h4>Choose from these sentences:</h4>`;
+      part.sentenceOptions.forEach((option) => {
+        html += `<p style="margin: 5px 0;">${option}</p>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  });
+  return html;
+};
+
+// Helper function for Paper 2 parts
+const convertPaper2Parts = (parts) => {
+  if (!Array.isArray(parts)) {
+    console.warn("⚠️ Parts is not an array:", parts);
+    return "";
+  }
+
+  let html = "";
+  parts.forEach((part, index) => {
+    if (!part) return;
+
+    html += `
+      <div class="exam-part" style="margin-bottom: 40px; page-break-before: auto;">
+        <h3 style="color: #52c41a; border-bottom: 1px solid #b7eb8f; padding-bottom: 8px;">${
+          part.title || `Part ${index + 1}`
+        }</h3>
+        <div class="part-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Marks:</strong> ${
+            part.marks || 20
+          } | <strong>Word Count:</strong> ${
+      part.wordCount || "Not specified"
+    } | <strong>Time:</strong> ${part.timeAllocation || "Not specified"}</p>
+        </div>
+        <p style="font-style: italic; margin-bottom: 15px;">${
+          part.instructions || ""
+        }</p>
+    `;
+
+    if (part.scenario) {
+      html += `<div class="scenario" style="background: #f6ffed; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <h4>Scenario:</h4>
+        <p>${part.scenario}</p>
+      </div>`;
+    }
+
+    if (part.task) {
+      html += `<p><strong>Task:</strong> ${part.task}</p>`;
+    }
+
+    if (part.requiredContent && Array.isArray(part.requiredContent)) {
+      html += `<div class="required-content" style="margin: 15px 0;">
+        <h4>Your response must include:</h4>
+        <ul>`;
+      part.requiredContent.forEach((content) => {
+        html += `<li>${content}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    if (part.guidingPoints && Array.isArray(part.guidingPoints)) {
+      html += `<div class="guiding-points" style="margin: 15px 0;">
+        <h4>Use these points in your essay:</h4>
+        <ul>`;
+      part.guidingPoints.forEach((point) => {
+        html += `<li>${point}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    if (part.options && Array.isArray(part.options)) {
+      html += `<div class="writing-options" style="margin: 20px 0;">`;
+      part.options.forEach((option) => {
+        if (!option) return;
+
+        html += `
+          <div class="option" style="border: 1px solid #d9d9d9; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+            <h4>${option.questionNumber || ""} - ${
+          option.type || "Writing Task"
+        }</h4>
+            <h5>${option.topic || ""}</h5>
+            <p>${option.prompt || ""}</p>
+            ${
+              option.notes && Array.isArray(option.notes)
+                ? `<ul>${option.notes
+                    .map((note) => `<li>${note}</li>`)
+                    .join("")}</ul>`
+                : ""
+            }
+            ${
+              option.requirements && Array.isArray(option.requirements)
+                ? `<ul>${option.requirements
+                    .map((req) => `<li>${req}</li>`)
+                    .join("")}</ul>`
+                : ""
+            }
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Add writing space
+    const lineHeight =
+      part.partNumber === 1
+        ? "80px"
+        : part.partNumber === 2
+        ? "120px"
+        : "200px";
+    html += `<div class="writing-space" style="margin: 20px 0; padding: 15px; border: 1px solid #d9d9d9; border-radius: 5px; background: #fafafa; min-height: ${lineHeight};">
+      <p style="color: #666; font-style: italic;">Write your answer here...</p>
+    </div>`;
+
+    html += `</div>`;
+  });
+  return html;
+};
+
+const convertAssessmentToHTML = (assessmentContent) => {
+  if (!assessmentContent) return null;
+
+  let html = `
+    <div class="assessment-content" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+      <div class="assessment-header" style="border-bottom: 2px solid #1890ff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="color: #1890ff; margin-bottom: 10px;">${
+          assessmentContent.title || "Assessment"
+        }</h1>
+        <div class="student-info" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Name:</strong> ___________________ <strong>Class:</strong> ___________ <strong>Date:</strong> ___________</p>
+        </div>
+        <div class="assessment-info" style="background: #e6f7ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+          <p><strong>Time Allocation:</strong> ${
+            assessmentContent.timeAllocation || "60 minutes"
+          }</p>
+          <p style="margin: 0;"><strong>Total Questions:</strong> ${
+            assessmentContent.totalQuestions || "N/A"
+          }</p>
+        </div>
+      </div>
+  `;
+
+  if (assessmentContent.instructions) {
+    html += `<div class="instructions" style="margin-bottom: 25px; padding: 15px; background: #fff7e6; border: 1px solid #ffa940; border-radius: 8px;">
+      <h3 style="color: #fa8c16;">Instructions:</h3>
+      <ul style="margin: 0; padding-left: 20px;">`;
+    assessmentContent.instructions.forEach((instruction) => {
+      html += `<li style="margin-bottom: 5px;">${instruction}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (assessmentContent.questions && assessmentContent.questions.length > 0) {
+    html += `<div class="questions">`;
+    assessmentContent.questions.forEach((question) => {
+      html += `<div class="question" style="margin-bottom: 25px; padding: 15px; border: 1px solid #d9d9d9; border-radius: 8px;">
+        <h4 style="color: #262626; margin-bottom: 10px;">Question ${
+          question.questionNumber
+        } (${question.points} ${
+        question.points === 1 ? "point" : "points"
+      })</h4>
+        <p style="font-size: 16px; margin-bottom: 15px;">${
+          question.question
+        }</p>`;
+
+      if (question.type === "multiple_choice" && question.options) {
+        html += `<div class="options" style="margin-left: 20px;">`;
+        question.options.forEach((option) => {
+          html += `<p style="margin-bottom: 8px;">${option}</p>`;
+        });
+        html += `</div>`;
+      } else if (question.answerSpace) {
+        const height =
+          question.answerSpace === "3 lines"
+            ? "80px"
+            : question.answerSpace === "5 lines"
+            ? "120px"
+            : "60px";
+        html += `<div class="answer-space" style="height: ${height}; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      } else {
+        html += `<div class="answer-space" style="height: 80px; border: 1px solid #d9d9d9; margin: 15px 0; background: #fafafa; border-radius: 4px;"></div>`;
+      }
+
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+};
+
 module.exports = {
   generateFromLessonPlan,
-  createStandaloneAssessment, 
-  getStandaloneAssessments, 
-  updateStandaloneAssessment, 
-  deleteStandaloneAssessment, 
+  createStandaloneAssessment,
+  getStandaloneAssessments,
+  updateStandaloneAssessment,
+  deleteStandaloneAssessment,
   saveAssessment,
   getUserAssessments,
   getAssessmentById,
@@ -2800,4 +4508,5 @@ module.exports = {
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
   regenerateAssessment,
+  generateExamContent,
 };

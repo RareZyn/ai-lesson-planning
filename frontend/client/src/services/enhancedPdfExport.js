@@ -1,10 +1,7 @@
-// src/services/enhancedPdfExport.js - Advanced PDF export with preserved styling
+// src/services/enhancedPdfExport.js
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-/**
- * Enhanced PDF Export Service with High-Quality Styling Preservation
- */
 class EnhancedPdfExport {
   constructor() {
     this.defaultOptions = {
@@ -21,132 +18,10 @@ class EnhancedPdfExport {
       bottom: 15,
       left: 15,
     };
-
-    this.colors = {
-      primary: "#1890ff",
-      secondary: "#52c41a",
-      text: "#262626",
-      textSecondary: "#8c8c8c",
-      border: "#f0f0f0",
-      background: "#ffffff",
-    };
   }
 
   /**
-   * Export Activity View to PDF with preserved styling
-   */
-  async exportActivityToPdf(activityData, options = {}) {
-    try {
-      const doc = new jsPDF({
-        ...this.defaultOptions,
-        ...options,
-      });
-
-      let yPosition = this.margins.top;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const contentWidth = pageWidth - (this.margins.left + this.margins.right);
-
-      // Add header
-      yPosition = this.addHeader(doc, activityData, yPosition, contentWidth);
-
-      // Add activity details
-      yPosition = this.addActivityDetails(
-        doc,
-        activityData,
-        yPosition,
-        contentWidth
-      );
-
-      // Add instructions section
-      if (activityData.instructions) {
-        yPosition = this.addInstructions(
-          doc,
-          activityData.instructions,
-          yPosition,
-          contentWidth
-        );
-      }
-
-      // Add activities/questions
-      if (activityData.activities) {
-        yPosition = this.addActivitiesSection(
-          doc,
-          activityData.activities,
-          yPosition,
-          contentWidth
-        );
-      }
-
-      // Add footer
-      this.addFooter(doc, activityData);
-
-      // Save the PDF
-      const fileName = `Activity_${
-        activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
-      doc.save(fileName);
-
-      return { success: true, fileName };
-    } catch (error) {
-      console.error("Error exporting activity to PDF:", error);
-      throw new Error("Failed to export activity to PDF");
-    }
-  }
-
-  /**
-   * Export Rubric View to PDF with preserved styling
-   */
-  async exportRubricToPdf(rubricData, options = {}) {
-    try {
-      const doc = new jsPDF({
-        ...this.defaultOptions,
-        orientation: "landscape", // Rubrics often need more width
-        ...options,
-      });
-
-      let yPosition = this.margins.top;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const contentWidth = pageWidth - (this.margins.left + this.margins.right);
-
-      // Add header
-      yPosition = this.addRubricHeader(
-        doc,
-        rubricData,
-        yPosition,
-        contentWidth
-      );
-
-      // Add rubric table
-      yPosition = this.addRubricTable(doc, rubricData, yPosition, contentWidth);
-
-      // Add additional notes if any
-      if (rubricData.notes) {
-        yPosition = this.addNotes(
-          doc,
-          rubricData.notes,
-          yPosition,
-          contentWidth
-        );
-      }
-
-      // Add footer
-      this.addFooter(doc, rubricData);
-
-      // Save the PDF
-      const fileName = `Rubric_${
-        rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
-      doc.save(fileName);
-
-      return { success: true, fileName };
-    } catch (error) {
-      console.error("Error exporting rubric to PDF:", error);
-      throw new Error("Failed to export rubric to PDF");
-    }
-  }
-
-  /**
-   * High-quality HTML to PDF conversion (alternative method)
+   * MAIN EXPORT FUNCTION - Question-by-question rendering
    */
   async exportHtmlElementToPdf(
     elementId,
@@ -159,103 +34,1147 @@ class EnhancedPdfExport {
         throw new Error(`Element with ID '${elementId}' not found`);
       }
 
-      // Temporarily modify styles for better PDF rendering
-      const originalStyles = this.prepareElementForPdf(element);
+      console.log("🎯 Starting PDF export for element:", elementId);
 
-      // Generate canvas from HTML
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher resolution
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
+      const isSpmExam = this.detectSpmExam(element);
 
-      // Restore original styles
-      this.restoreElementStyles(element, originalStyles);
-
-      // Create PDF from canvas
-      const imgData = canvas.toDataURL("image/png");
-      const doc = new jsPDF({
-        ...this.defaultOptions,
-        ...options,
-      });
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - (this.margins.left + this.margins.right);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let yPosition = this.margins.top;
-      let remainingHeight = imgHeight;
-
-      // Handle multi-page documents
-      while (remainingHeight > 0) {
-        const pageContentHeight =
-          pageHeight - (this.margins.top + this.margins.bottom);
-        const currentPageHeight = Math.min(remainingHeight, pageContentHeight);
-
-        // Calculate source positioning for this page
-        const sourceY = imgHeight - remainingHeight;
-        const sourceHeight = (currentPageHeight * canvas.height) / imgHeight;
-
-        // Create a temporary canvas for this page
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        const pageCtx = pageCanvas.getContext("2d");
-
-        pageCtx.drawImage(
-          canvas,
-          0,
-          (sourceY * canvas.height) / imgHeight,
-          canvas.width,
-          sourceHeight,
-          0,
-          0,
-          canvas.width,
-          sourceHeight
+      if (isSpmExam) {
+        console.log("✅ Detected SPM exam - using question-by-question export");
+        return await this.exportSpmExamQuestionByQuestion(
+          element,
+          fileName,
+          options
         );
-
-        const pageImgData = pageCanvas.toDataURL("image/png");
-        doc.addImage(
-          pageImgData,
-          "PNG",
-          this.margins.left,
-          yPosition,
-          imgWidth,
-          currentPageHeight
-        );
-
-        remainingHeight -= currentPageHeight;
-
-        if (remainingHeight > 0) {
-          doc.addPage();
-          yPosition = this.margins.top;
-        }
       }
 
-      doc.save(fileName);
-      return { success: true, fileName };
+      // Fallback for non-SPM content
+      return await this.exportWithCanvas(element, fileName, options);
     } catch (error) {
-      console.error("Error exporting HTML to PDF:", error);
+      console.error("❌ Error exporting HTML to PDF:", error);
       throw new Error("Failed to export to PDF");
     }
   }
 
   /**
-   * Add styled header to PDF
+   * CRITICAL FIX: Export SPM exam question-by-question
+   * This ensures NO question is ever split across pages
    */
+  async exportSpmExamQuestionByQuestion(element, fileName, options) {
+    const doc = new jsPDF({
+      ...this.defaultOptions,
+      ...options,
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pageWidth - margin * 2;
+    const maxContentHeight = pageHeight - margin * 2;
+
+    console.log("📄 Creating SPM exam PDF with question-by-question rendering");
+
+    // Step 1: Add header page
+    const headerInfo = this.extractSpmHeader(element);
+    this.addSpmHeaderPage(doc, headerInfo);
+
+    // Step 2: Find ALL individual renderable elements (parts, passages, questions)
+    const renderableElements = this.findAllRenderableElements(element);
+
+    console.log(`📊 Found ${renderableElements.length} renderable elements`);
+
+    // Step 3: Add first content page
+    doc.addPage();
+    let currentY = margin;
+
+    // Step 4: Render each element
+    for (let i = 0; i < renderableElements.length; i++) {
+      const item = renderableElements[i];
+
+      console.log(`📝 Processing ${item.type} ${item.number || i + 1}...`);
+
+      try {
+        // Capture this element
+        const canvas = await html2canvas(item.element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        console.log(
+          `📏 ${item.type} ${item.number || i + 1}: ${imgWidth}x${imgHeight}mm`
+        );
+
+        // CRITICAL: Check if element fits on current page
+        if (currentY + imgHeight > pageHeight - margin) {
+          console.log(`📄 ${item.type} ${item.number || i + 1} needs new page`);
+          doc.addPage();
+          currentY = margin;
+        }
+
+        // Add element to PDF
+        doc.addImage(imgData, "PNG", margin, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 3; // Small spacing
+
+        console.log(
+          `✅ Added ${item.type} ${item.number || i + 1} at Y=${currentY}mm`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to process ${item.type} ${item.number || i + 1}:`,
+          error
+        );
+      }
+    }
+
+    doc.save(fileName);
+    console.log(`✅ SPM exam PDF saved as ${fileName}`);
+
+    return { success: true, fileName };
+  }
+
+  /**
+   * CRITICAL: Find ALL renderable elements in the exam
+   * Returns array of: part headers, passages, questions, question groups
+   */
+  findAllRenderableElements(element) {
+    const elements = [];
+
+    // Find all parts
+    const parts = element.querySelectorAll(
+      '[class*="exam-part"], section, .part'
+    );
+
+    if (parts.length === 0) {
+      console.log("⚠️ No explicit parts found, analyzing by structure");
+      return this.findRenderableElementsByStructure(element);
+    }
+
+    parts.forEach((part, partIndex) => {
+      const partText = part.textContent.substring(0, 100).trim();
+      const partNumber = partIndex + 1;
+
+      console.log(`🔍 Analyzing Part ${partNumber}...`);
+
+      // Check which part this is
+      if (partText.match(/Part 1/i)) {
+        elements.push(...this.extractPart1Elements(part));
+      } else if (partText.match(/Part 2/i)) {
+        elements.push(...this.extractPart2Elements(part));
+      } else if (partText.match(/Part 3/i)) {
+        elements.push(...this.extractPart3Elements(part));
+      } else if (partText.match(/Part 4/i)) {
+        elements.push(...this.extractPart4Elements(part));
+      } else if (partText.match(/Part 5/i)) {
+        elements.push(...this.extractPart5Elements(part));
+      } else {
+        // Generic part - extract all children
+        console.log(`⚠️ Unknown part structure, using generic extraction`);
+        elements.push(...this.extractGenericPartElements(part, partNumber));
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Extract Part 1 elements (simple questions)
+   */
+  extractPart1Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 1");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "1" });
+    }
+
+    // Find all questions
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && text.length > 20) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 1: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 2 elements (passage + cloze questions)
+   */
+  extractPart2Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 2");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "2" });
+    }
+
+    // Find passage (usually in green/colored box)
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage, p'
+    );
+    if (passage && passage.textContent.length > 100) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find all questions (9-18)
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 9 && parseInt(match[1]) <= 18) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 2: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 3 elements (passage + comprehension questions)
+   */
+  extractPart3Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 3");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "3" });
+    }
+
+    // Find passage
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage, p'
+    );
+    if (passage && passage.textContent.length > 100) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find all questions (19-26)
+    const questions = partElement.querySelectorAll(
+      '[class*="question"], .question, div'
+    );
+
+    questions.forEach((q) => {
+      const text = q.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 19 && parseInt(match[1]) <= 26) {
+        elements.push({
+          type: "Question",
+          element: q,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 3: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 4 elements (passage + sentence matching)
+   */
+  extractPart4Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 4");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "4" });
+    }
+
+    // Find passage
+    const passage = partElement.querySelector(
+      '[style*="background"], .passage'
+    );
+    if (passage) {
+      elements.push({ type: "Passage", element: passage });
+    }
+
+    // Find sentence options (green box)
+    const options = partElement.querySelector(
+      '[style*="background: rgb(245"], .options, .sentences'
+    );
+    if (options) {
+      elements.push({ type: "Options", element: options });
+    }
+
+    // Find question blanks (27-32)
+    const questionDivs = partElement.querySelectorAll("div");
+
+    questionDivs.forEach((div) => {
+      const text = div.textContent.trim();
+      const match = text.match(/^(\d+)\./);
+
+      if (match && parseInt(match[1]) >= 27 && parseInt(match[1]) <= 32) {
+        elements.push({
+          type: "Question Blank",
+          element: div,
+          number: match[1],
+        });
+      }
+    });
+
+    console.log(`✓ Part 4: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Extract Part 5 elements (paragraphs A-F + matching questions)
+   */
+  extractPart5Elements(partElement) {
+    const elements = [];
+
+    // Add part header
+    const header = this.extractPartHeader(partElement, "Part 5");
+    if (header) {
+      elements.push({ type: "Part Header", element: header, number: "5" });
+    }
+
+    // Find title section
+    const titleDiv = partElement.querySelector(
+      '[style*="background: rgb(255, 250, 230)"]'
+    );
+    if (titleDiv) {
+      elements.push({ type: "Title", element: titleDiv });
+    }
+
+    // Find all paragraphs (A-F)
+    const allDivs = Array.from(partElement.querySelectorAll("div, p"));
+
+    allDivs.forEach((div) => {
+      const text = div.textContent.trim();
+
+      // Match paragraph markers like **A**, **Paragraph A**, etc.
+      if (
+        text.match(/^\*\*[A-F]\*\*/) ||
+        text.match(/^\*\*Paragraph [A-F]\*\*/)
+      ) {
+        // Find the container that includes the full paragraph
+        let container = div;
+        while (container.parentElement && container.textContent.length < 200) {
+          container = container.parentElement;
+          if (container.classList.contains("exam-part")) break;
+        }
+
+        elements.push({
+          type: "Paragraph",
+          element: container,
+          number: text.match(/[A-F]/)[0],
+        });
+      }
+    });
+
+    // Find Questions section (orange box for 33-36)
+    const questionsSection1 = this.findQuestionsSection(partElement, 33, 36);
+    if (questionsSection1) {
+      elements.push({
+        type: "Questions Section",
+        element: questionsSection1,
+        number: "33-36",
+      });
+    }
+
+    // Find individual questions 33-36
+    const questions3336 = this.findIndividualQuestions(partElement, 33, 36);
+    elements.push(...questions3336);
+
+    // Find Questions section (orange box for 37-40)
+    const questionsSection2 = this.findQuestionsSection(partElement, 37, 40);
+    if (questionsSection2) {
+      elements.push({
+        type: "Questions Section",
+        element: questionsSection2,
+        number: "37-40",
+      });
+    }
+
+    // Find individual questions 37-40
+    const questions3740 = this.findIndividualQuestions(partElement, 37, 40);
+    elements.push(...questions3740);
+
+    console.log(`✓ Part 5: ${elements.length} elements`);
+    return elements;
+  }
+
+  /**
+   * Find questions section (the orange instruction box)
+   */
+  findQuestionsSection(container, startQ, endQ) {
+    const divs = container.querySelectorAll("div");
+
+    for (let div of divs) {
+      const text = div.textContent.trim();
+      if (
+        text.includes(`Questions ${startQ}`) ||
+        text.includes(`Questions ${startQ} -`)
+      ) {
+        return div;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find individual questions in a range
+   */
+  findIndividualQuestions(container, startQ, endQ) {
+    const questions = [];
+    const divs = container.querySelectorAll("div");
+
+    divs.forEach((div) => {
+      const text = div.textContent.trim();
+
+      for (let q = startQ; q <= endQ; q++) {
+        if (text.match(new RegExp(`^${q}\\.`))) {
+          questions.push({
+            type: "Question",
+            element: div,
+            number: q.toString(),
+          });
+          break;
+        }
+      }
+    });
+
+    return questions;
+  }
+
+  /**
+   * Extract part header (Part X title + instructions)
+   */
+  extractPartHeader(partElement, partName) {
+    // Look for the first heading or title div
+    const header = partElement.querySelector(
+      'h1, h2, h3, h4, .part-title, [class*="part-header"]'
+    );
+
+    if (header) {
+      return header;
+    }
+
+    // Look for the first div that contains "Part X"
+    const divs = partElement.querySelectorAll("div");
+    for (let div of divs) {
+      if (div.textContent.includes(partName)) {
+        return div;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Generic extraction for unknown part structure
+   */
+  extractGenericPartElements(partElement, partNumber) {
+    const elements = [];
+
+    const children = Array.from(partElement.children);
+
+    children.forEach((child, index) => {
+      if (child.textContent.trim().length > 20) {
+        elements.push({
+          type: `Part ${partNumber} Content`,
+          element: child,
+          number: (index + 1).toString(),
+        });
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Fallback: find by structure when no explicit parts
+   */
+  findRenderableElementsByStructure(element) {
+    const elements = [];
+    const topLevelDivs = Array.from(element.children);
+
+    topLevelDivs.forEach((div, index) => {
+      if (div.textContent.trim().length > 50) {
+        elements.push({
+          type: "Content Block",
+          element: div,
+          number: (index + 1).toString(),
+        });
+      }
+    });
+
+    return elements;
+  }
+
+  /**
+   * Detect if content is an SPM exam
+   */
+  detectSpmExam(element) {
+    const content = element.textContent || "";
+    return (
+      content.includes("SPM English Paper") ||
+      content.includes("1119/1") ||
+      content.includes("Reading and Use of English")
+    );
+  }
+
+  /**
+   * Extract SPM header info
+   */
+  extractSpmHeader(element) {
+    const content = element.textContent || "";
+
+    const titleMatch = content.match(/SPM English Paper \d+[^\n]*/);
+    const title = titleMatch ? titleMatch[0] : "SPM English Paper 1 (1119/1)";
+
+    let subtitle = "Reading and Use of English";
+    if (content.includes("Writing")) subtitle = "Writing";
+
+    const durationMatch = content.match(/Duration[:\s]*(\d+\s*minutes)/i);
+    const questionsMatch = content.match(/Questions?[:\s]*(\d+)/i);
+    const marksMatch = content.match(/Marks?[:\s]*(\d+)/i);
+
+    return {
+      title,
+      subtitle,
+      duration: durationMatch ? durationMatch[1] : "90 minutes",
+      questions: questionsMatch ? questionsMatch[1] : "40",
+      marks: marksMatch ? marksMatch[1] : "40",
+    };
+  }
+
+  /**
+   * Add SPM header page
+   */
+  addSpmHeaderPage(doc, headerInfo) {
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(24, 144, 255);
+    doc.text(headerInfo.title, pageWidth / 2, 35, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text(headerInfo.subtitle, pageWidth / 2, 45, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    let yPos = 65;
+
+    doc.text("Name: _________________________________", 20, yPos);
+    doc.text("IC No.: _________________________________", 120, yPos);
+
+    yPos += 10;
+    doc.text("Index No.: _________________________________", 20, yPos);
+    doc.text("Class: _____________", 120, yPos);
+
+    yPos += 15;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    const infoText = `Duration: ${headerInfo.duration} | Questions: ${headerInfo.questions} | Marks: ${headerInfo.marks}`;
+    doc.text(infoText, pageWidth / 2, yPos, { align: "center" });
+
+    yPos += 15;
+    doc.setDrawColor(255, 152, 0);
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(15, yPos, pageWidth - 30, 60, 3, 3, "FD");
+
+    yPos += 12;
+    doc.setFontSize(14);
+    doc.setTextColor(255, 87, 34);
+    doc.text("Instructions:", 20, yPos);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    yPos += 10;
+
+    const instructions = [
+      "• Answer all questions",
+      "• For each question, choose the best answer and mark it on your answer sheet",
+      "• Read all texts and questions carefully",
+      "• Transfer your answers to the answer sheet in pencil",
+    ];
+
+    instructions.forEach((instruction) => {
+      doc.text(instruction, 25, yPos);
+      yPos += 8;
+    });
+
+    console.log("✅ SPM header page created");
+  }
+
+  /**
+   * Fallback canvas export
+   */
+  async exportWithCanvas(element, fileName, options) {
+    console.log("📸 Using canvas fallback");
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const doc = new jsPDF({ ...this.defaultOptions, ...options });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 10;
+
+    doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight - 20;
+
+    while (heightLeft > 0) {
+      position = -(pageHeight - 20 - heightLeft);
+      doc.addPage();
+      doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - 20;
+    }
+
+    doc.save(fileName);
+    return { success: true, fileName };
+  }
+  async exportActivityToPdf(activityData, options = {}) {
+    try {
+      const doc = new jsPDF({
+        ...this.defaultOptions,
+        ...options,
+      });
+
+      let yPosition = this.margins.top;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const contentWidth = pageWidth - (this.margins.left + this.margins.right);
+
+      yPosition = this.addHeader(doc, activityData, yPosition, contentWidth);
+      yPosition = this.addActivityDetails(
+        doc,
+        activityData,
+        yPosition,
+        contentWidth
+      );
+
+      if (activityData.instructions) {
+        yPosition = this.addInstructions(
+          doc,
+          activityData.instructions,
+          yPosition,
+          contentWidth
+        );
+      }
+
+      if (activityData.activities) {
+        yPosition = this.addActivitiesSection(
+          doc,
+          activityData.activities,
+          yPosition,
+          contentWidth
+        );
+      }
+
+      this.addFooter(doc, activityData);
+
+      const fileName = `Activity_${
+        activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+      }.pdf`;
+      doc.save(fileName);
+
+      return { success: true, fileName };
+    } catch (error) {
+      console.error("Error exporting activity to PDF:", error);
+      throw new Error("Failed to export activity to PDF");
+    }
+  }
+
+  async exportRubricToPdf(rubricData, options = {}) {
+    try {
+      const doc = new jsPDF({
+        ...this.defaultOptions,
+        orientation: "landscape",
+        ...options,
+      });
+
+      let yPosition = this.margins.top;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const contentWidth = pageWidth - (this.margins.left + this.margins.right);
+
+      yPosition = this.addRubricHeader(
+        doc,
+        rubricData,
+        yPosition,
+        contentWidth
+      );
+      yPosition = this.addRubricTable(doc, rubricData, yPosition, contentWidth);
+
+      if (rubricData.notes) {
+        yPosition = this.addNotes(
+          doc,
+          rubricData.notes,
+          yPosition,
+          contentWidth
+        );
+      }
+
+      this.addFooter(doc, rubricData);
+
+      const fileName = `Rubric_${
+        rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+      }.pdf`;
+      doc.save(fileName);
+
+      return { success: true, fileName };
+    } catch (error) {
+      console.error("Error exporting rubric to PDF:", error);
+      throw new Error("Failed to export rubric to PDF");
+    }
+  }
+
+  async exportHtmlElementToPdf(
+    elementId,
+    fileName = "document.pdf",
+    options = {}
+  ) {
+    try {
+      const element = document.getElementById(elementId);
+      if (!element) {
+        throw new Error(`Element with ID '${elementId}' not found`);
+      }
+
+      console.log("🎯 Starting PDF export for element:", elementId);
+
+      const isSpmExam = this.detectSpmExam(element);
+
+      if (isSpmExam) {
+        console.log("✅ Detected SPM exam format, using specialized export");
+        return await this.exportSpmExamToPdf(element, fileName, options);
+      }
+
+      const questionBlocks = this.identifyQuestionBlocks(element);
+
+      if (questionBlocks.length > 0) {
+        console.log(`✅ Found ${questionBlocks.length} unique question blocks`);
+        return await this.exportWithQuestionGrouping(
+          questionBlocks,
+          fileName,
+          options
+        );
+      } else {
+        console.log("⚠️ No question blocks found, using fallback method");
+        return await this.exportWithCanvas(element, fileName, options);
+      }
+    } catch (error) {
+      console.error("❌ Error exporting HTML to PDF:", error);
+      throw new Error("Failed to export to PDF");
+    }
+  }
+
+  detectSpmExam(element) {
+    const content = element.textContent || element.innerText || "";
+
+    const isSpm =
+      content.includes("SPM English Paper") ||
+      content.includes("1119/1") ||
+      content.includes("Reading and Use of English");
+
+    return isSpm;
+  }
+
+  async exportSpmExamToPdf(element, fileName, options) {
+    const doc = new jsPDF({
+      ...this.defaultOptions,
+      ...options,
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    console.log("📄 Creating SPM exam PDF with header page");
+
+    const headerInfo = this.extractSpmHeader(element);
+    this.addSpmHeaderPage(doc, headerInfo);
+
+    const contentBlocks = this.identifySpmContentBlocks(element);
+
+    console.log(`📊 Processing ${contentBlocks.length} content blocks`);
+
+    doc.addPage();
+    let currentY = 15;
+
+    for (let i = 0; i < contentBlocks.length; i++) {
+      const block = contentBlocks[i];
+
+      try {
+        const canvas = await html2canvas(block.element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const imgWidth = pageWidth - 30;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        console.log(`📊 Block ${block.index}: ${imgWidth}x${imgHeight}mm`);
+
+        if (currentY + imgHeight > pageHeight - 15) {
+          console.log(`📄 Block ${block.index} needs new page`);
+          doc.addPage();
+          currentY = 15;
+        }
+
+        doc.addImage(imgData, "PNG", 15, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 5;
+      } catch (error) {
+        console.error(`❌ Failed to process block ${block.index}:`, error);
+      }
+    }
+
+    doc.save(fileName);
+    console.log(`✅ SPM exam PDF saved as ${fileName}`);
+
+    return { success: true, fileName };
+  }
+
+  extractSpmHeader(element) {
+    const content = element.textContent || "";
+
+    const titleMatch = content.match(/SPM English Paper \d+[^\n]*/);
+    const title = titleMatch ? titleMatch[0] : "SPM English Paper 1 (1119/1)";
+
+    const subtitle = content.includes("Reading and Use of English")
+      ? "Reading and Use of English"
+      : "Writing";
+
+    const durationMatch = content.match(/Duration:\s*(\d+\s*minutes)/i);
+    const questionsMatch = content.match(/Questions?:\s*(\d+)/i);
+    const marksMatch = content.match(/Marks?:\s*(\d+)/i);
+
+    return {
+      title,
+      subtitle,
+      duration: durationMatch ? durationMatch[1] : "90 minutes",
+      questions: questionsMatch ? questionsMatch[1] : "40",
+      marks: marksMatch ? marksMatch[1] : "40",
+    };
+  }
+
+  addSpmHeaderPage(doc, headerInfo) {
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(33, 150, 243);
+    doc.text(headerInfo.title, pageWidth / 2, 30, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text(headerInfo.subtitle, pageWidth / 2, 40, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    let yPos = 60;
+
+    doc.text("Name: ___________________________", 20, yPos);
+    doc.text("IC No.: ___________________________", 120, yPos);
+
+    yPos += 10;
+    doc.text("Index No.: ___________________________", 20, yPos);
+    doc.text("Class: ___________", 120, yPos);
+
+    yPos += 15;
+    doc.setFont("helvetica", "bold");
+    const infoText = `Duration: ${headerInfo.duration} | Questions: ${headerInfo.questions} | Marks: ${headerInfo.marks}`;
+    doc.text(infoText, pageWidth / 2, yPos, { align: "center" });
+
+    yPos += 15;
+    doc.setDrawColor(255, 152, 0);
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(15, yPos, pageWidth - 30, 50, 3, 3, "FD");
+
+    yPos += 10;
+    doc.setFontSize(13);
+    doc.setTextColor(255, 87, 34);
+    doc.text("Instructions:", 20, yPos);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    yPos += 8;
+
+    const instructions = [
+      "• Answer all questions",
+      "• For each question, choose the best answer and mark it on your answer sheet",
+      "• Read all texts and questions carefully",
+      "• Transfer your answers to the answer sheet in pencil",
+    ];
+
+    instructions.forEach((instruction) => {
+      doc.text(instruction, 25, yPos);
+      yPos += 7;
+    });
+
+    console.log("✅ Added SPM header page with instructions");
+  }
+
+  identifySpmContentBlocks(element) {
+    const contentBlocks = [];
+    const seenContent = new Set();
+
+    let partElements = element.querySelectorAll(
+      '[class*="part"], .exam-part, section'
+    );
+
+    if (partElements.length === 0) {
+      const allDivs = element.querySelectorAll("div");
+      partElements = Array.from(allDivs).filter((div) => {
+        const text = div.textContent.trim();
+        return (
+          text.match(/^Part\s+\d+/i) ||
+          text.match(/^Questions?\s+\d+/i) ||
+          text.querySelector(".question, .passage, .article")
+        );
+      });
+    }
+
+    console.log(`🔍 Found ${partElements.length} part/section elements`);
+
+    partElements.forEach((partEl, index) => {
+      try {
+        const contentText = partEl.textContent.trim().substring(0, 150);
+
+        if (seenContent.has(contentText)) {
+          console.log(`⏭️  Skipping duplicate part ${index + 1}`);
+          return;
+        }
+
+        seenContent.add(contentText);
+
+        const contentBlock = {
+          element: partEl,
+          index: contentBlocks.length + 1,
+          height: partEl.offsetHeight || 0,
+          type: this.detectBlockType(partEl),
+          text: contentText,
+        };
+
+        contentBlocks.push(contentBlock);
+        console.log(
+          `✓ Block ${contentBlock.index} (${
+            contentBlock.type
+          }): ${contentText.substring(0, 50)}...`
+        );
+      } catch (err) {
+        console.warn(`Failed to process part element ${index}:`, err);
+      }
+    });
+
+    return contentBlocks;
+  }
+
+  detectBlockType(element) {
+    const text = element.textContent;
+
+    if (text.match(/^Part\s+\d+/i)) return "part-header";
+    if (element.querySelector(".passage, .article, p")) return "passage";
+    if (element.querySelector(".question")) return "questions";
+
+    return "content";
+  }
+
+  identifyUniqueQuestionBlocks(element) {
+    const questionBlocks = [];
+    const seenQuestions = new Set();
+
+    let questionElements = element.querySelectorAll(
+      ".question-wrapper, .question"
+    );
+
+    if (questionElements.length === 0) {
+      questionElements = element.querySelectorAll('div[class*="question"]');
+    }
+
+    console.log(`🔍 Found ${questionElements.length} question elements`);
+
+    questionElements.forEach((questionEl, index) => {
+      try {
+        const questionText = questionEl.textContent.trim().substring(0, 100);
+
+        if (seenQuestions.has(questionText)) {
+          console.log(`⏭️  Skipping duplicate question ${index + 1}`);
+          return;
+        }
+
+        seenQuestions.add(questionText);
+
+        const questionBlock = {
+          element: questionEl,
+          index: questionBlocks.length + 1,
+          height: questionEl.offsetHeight || 0,
+          hasOptions: questionEl.querySelector(".options") !== null,
+          hasAnswerSpace: questionEl.querySelector(".answer-space") !== null,
+          text: questionText,
+        };
+
+        questionBlocks.push(questionBlock);
+        console.log(
+          `✓ Unique Question ${questionBlock.index}: ${questionText.substring(
+            0,
+            50
+          )}...`
+        );
+      } catch (err) {
+        console.warn(`Failed to process question element ${index}:`, err);
+      }
+    });
+
+    return questionBlocks;
+  }
+
+  identifyQuestionBlocks(element) {
+    return this.identifyUniqueQuestionBlocks(element);
+  }
+
+  async exportWithQuestionGrouping(questionBlocks, fileName, options) {
+    const doc = new jsPDF({
+      ...this.defaultOptions,
+      ...options,
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const contentWidth = pageWidth - 20;
+
+    let currentY = 15;
+
+    console.log(
+      `📄 Starting PDF generation with ${questionBlocks.length} blocks`
+    );
+
+    for (let i = 0; i < questionBlocks.length; i++) {
+      const block = questionBlocks[i];
+
+      try {
+        const canvas = await html2canvas(block.element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+          width: block.element.scrollWidth,
+          height: block.element.scrollHeight,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        console.log(`📊 Block ${i + 1}: ${imgWidth}x${imgHeight}mm`);
+
+        if (currentY + imgHeight > pageHeight - 15) {
+          console.log(`📄 Block ${i + 1} needs new page`);
+          doc.addPage();
+          currentY = 15;
+        }
+
+        doc.addImage(imgData, "PNG", 10, currentY, imgWidth, imgHeight);
+        console.log(`✅ Added block ${i + 1} at Y=${currentY}mm`);
+
+        currentY += imgHeight + 5;
+      } catch (error) {
+        console.error(`❌ Failed to process block ${i + 1}:`, error);
+      }
+    }
+
+    doc.save(fileName);
+    console.log(`✅ PDF saved as ${fileName}`);
+
+    return { success: true, fileName };
+  }
+
+  async exportWithCanvas(element, fileName, options) {
+    console.log("📸 Using canvas fallback method");
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const doc = new jsPDF({
+      ...this.defaultOptions,
+      ...options,
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 10;
+
+    doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight - 20;
+
+    while (heightLeft > 0) {
+      position = -(pageHeight - 20 - heightLeft);
+      doc.addPage();
+      doc.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - 20;
+    }
+
+    doc.save(fileName);
+    return { success: true, fileName };
+  }
+
   addHeader(doc, data, yPosition, contentWidth) {
-    // Background header
-    doc.setFillColor(24, 144, 255); // Primary blue
+    doc.setFillColor(24, 144, 255);
     doc.rect(this.margins.left, yPosition - 5, contentWidth, 25, "F");
 
-    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(255, 255, 255);
@@ -265,7 +1184,6 @@ class EnhancedPdfExport {
       yPosition + 10
     );
 
-    // Subtitle/Date
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
     const dateStr = new Date().toLocaleDateString();
@@ -274,15 +1192,10 @@ class EnhancedPdfExport {
     return yPosition + 35;
   }
 
-  /**
-   * Add rubric header to PDF
-   */
   addRubricHeader(doc, data, yPosition, contentWidth) {
-    // Background header
-    doc.setFillColor(82, 196, 26); // Green for rubrics
+    doc.setFillColor(82, 196, 26);
     doc.rect(this.margins.left, yPosition - 5, contentWidth, 25, "F");
 
-    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(255, 255, 255);
@@ -292,7 +1205,6 @@ class EnhancedPdfExport {
       yPosition + 10
     );
 
-    // Subtitle
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
     const dateStr = new Date().toLocaleDateString();
@@ -301,9 +1213,6 @@ class EnhancedPdfExport {
     return yPosition + 35;
   }
 
-  /**
-   * Add activity details section
-   */
   addActivityDetails(doc, data, yPosition, contentWidth) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
@@ -311,7 +1220,6 @@ class EnhancedPdfExport {
     doc.text("Activity Details", this.margins.left, yPosition);
     yPosition += 10;
 
-    // Details box
     doc.setDrawColor(240, 240, 240);
     doc.setFillColor(248, 249, 250);
     doc.rect(this.margins.left, yPosition, contentWidth, 30, "FD");
@@ -336,9 +1244,6 @@ class EnhancedPdfExport {
     return yPosition + 40;
   }
 
-  /**
-   * Add instructions section
-   */
   addInstructions(doc, instructions, yPosition, contentWidth) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
@@ -363,9 +1268,6 @@ class EnhancedPdfExport {
     return yPosition + 10;
   }
 
-  /**
-   * Add activities/questions section
-   */
   addActivitiesSection(doc, activities, yPosition, contentWidth) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
@@ -374,19 +1276,16 @@ class EnhancedPdfExport {
     yPosition += 15;
 
     activities.forEach((activity, index) => {
-      // Check if we need a new page
       if (yPosition > doc.internal.pageSize.getHeight() - 50) {
         doc.addPage();
         yPosition = this.margins.top;
       }
 
-      // Activity number
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.setTextColor(24, 144, 255);
       doc.text(`${index + 1}. `, this.margins.left, yPosition);
 
-      // Activity content
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
       doc.setTextColor(89, 89, 89);
@@ -408,9 +1307,6 @@ class EnhancedPdfExport {
     return yPosition;
   }
 
-  /**
-   * Add rubric table
-   */
   addRubricTable(doc, rubricData, yPosition, contentWidth) {
     if (!rubricData.criteria || !Array.isArray(rubricData.criteria)) {
       return yPosition;
@@ -422,11 +1318,9 @@ class EnhancedPdfExport {
     doc.text("Assessment Criteria", this.margins.left, yPosition);
     yPosition += 15;
 
-    const tableStartY = yPosition;
     const rowHeight = 20;
-    const colWidth = contentWidth / 5; // Assuming 5 columns (criteria + 4 levels)
+    const colWidth = contentWidth / 5;
 
-    // Table headers
     const headers = [
       "Criteria",
       "Excellent (4)",
@@ -435,7 +1329,6 @@ class EnhancedPdfExport {
       "Poor (1)",
     ];
 
-    // Header row
     doc.setFillColor(24, 144, 255);
     doc.rect(this.margins.left, yPosition, contentWidth, rowHeight, "F");
 
@@ -450,20 +1343,17 @@ class EnhancedPdfExport {
 
     yPosition += rowHeight;
 
-    // Table rows
     rubricData.criteria.forEach((criterion, rowIndex) => {
       if (yPosition > doc.internal.pageSize.getHeight() - 40) {
         doc.addPage();
         yPosition = this.margins.top;
       }
 
-      // Alternating row colors
       if (rowIndex % 2 === 0) {
         doc.setFillColor(248, 249, 250);
         doc.rect(this.margins.left, yPosition, contentWidth, rowHeight, "F");
       }
 
-      // Border
       doc.setDrawColor(240, 240, 240);
       doc.rect(this.margins.left, yPosition, contentWidth, rowHeight, "D");
 
@@ -471,14 +1361,12 @@ class EnhancedPdfExport {
       doc.setFontSize(9);
       doc.setTextColor(89, 89, 89);
 
-      // Criterion name
       const criterionText = doc.splitTextToSize(
         criterion.name || criterion.title,
         colWidth - 10
       );
       doc.text(criterionText, this.margins.left + 5, yPosition + 10);
 
-      // Performance levels
       const levels = criterion.levels || [];
       levels.forEach((level, levelIndex) => {
         const xPos = this.margins.left + (levelIndex + 1) * colWidth + 5;
@@ -495,9 +1383,6 @@ class EnhancedPdfExport {
     return yPosition + 10;
   }
 
-  /**
-   * Add notes section
-   */
   addNotes(doc, notes, yPosition, contentWidth) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -522,16 +1407,12 @@ class EnhancedPdfExport {
     return yPosition;
   }
 
-  /**
-   * Add footer to PDF
-   */
   addFooter(doc, data) {
     const pageCount = doc.internal.getNumberOfPages();
 
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
 
-      // Footer line
       const pageHeight = doc.internal.pageSize.getHeight();
       const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -543,18 +1424,15 @@ class EnhancedPdfExport {
         pageHeight - 20
       );
 
-      // Footer text
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(140, 140, 140);
 
-      // Left side - document info
       const footerLeft = `${
         data.title || "Document"
       } | Generated by AI Lesson Planner`;
       doc.text(footerLeft, this.margins.left, pageHeight - 10);
 
-      // Right side - page number
       const footerRight = `Page ${i} of ${pageCount}`;
       const footerRightWidth = doc.getTextWidth(footerRight);
       doc.text(
@@ -565,13 +1443,9 @@ class EnhancedPdfExport {
     }
   }
 
-  /**
-   * Prepare HTML element for better PDF rendering
-   */
   prepareElementForPdf(element) {
     const originalStyles = new Map();
 
-    // Store original styles
     const computedStyle = window.getComputedStyle(element);
     originalStyles.set(element, {
       backgroundColor: element.style.backgroundColor,
@@ -579,11 +1453,9 @@ class EnhancedPdfExport {
       fontSize: element.style.fontSize,
     });
 
-    // Apply PDF-friendly styles temporarily
     element.style.backgroundColor = "#ffffff";
     element.style.color = "#000000";
 
-    // Process child elements
     const allElements = element.querySelectorAll("*");
     allElements.forEach((el) => {
       originalStyles.set(el, {
@@ -592,7 +1464,6 @@ class EnhancedPdfExport {
         boxShadow: el.style.boxShadow,
       });
 
-      // Make backgrounds white and text black for better PDF contrast
       if (window.getComputedStyle(el).backgroundColor !== "rgba(0, 0, 0, 0)") {
         el.style.backgroundColor = "#ffffff";
       }
@@ -603,9 +1474,6 @@ class EnhancedPdfExport {
     return originalStyles;
   }
 
-  /**
-   * Restore original element styles
-   */
   restoreElementStyles(element, originalStyles) {
     originalStyles.forEach((styles, el) => {
       Object.keys(styles).forEach((prop) => {
@@ -615,6 +1483,5 @@ class EnhancedPdfExport {
   }
 }
 
-// Export singleton instance
 export const pdfExportService = new EnhancedPdfExport();
 export default pdfExportService;

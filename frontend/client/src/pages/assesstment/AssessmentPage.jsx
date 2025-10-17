@@ -1,4 +1,4 @@
-// UPDATED: src/pages/assessment/AssessmentPage.jsx - Added standalone assessment functionality
+//src/pages/assessment/AssessmentPage.jsx 
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -27,6 +27,7 @@ import {
   FileExclamationOutlined,
   ThunderboltOutlined,
   RedoOutlined,
+  CalculatorOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +42,7 @@ import ActivityInClassLessonModal from "../../components/Modal/LessonBasedAssess
 import EssayLessonModal from "../../components/Modal/LessonBasedAssessment/EssayLessonModal";
 import AssessmentLessonModal from "../../components/Modal/LessonBasedAssessment/AssessmentLessonModal";
 import TextbookLessonModal from "../../components/Modal/LessonBasedAssessment/TextbookLessonModal";
+import SPMExamLessonModal from "../../components/Modal/LessonBasedAssessment/SPMExamLessonModal";
 
 // Import modals for standalone assessments
 import StandAloneAssessmentModal from "../../components/Modal/StandaloneAssessment/StandAloneAssessmentModal";
@@ -48,11 +50,53 @@ import ActivityInClassStandaloneModal from "../../components/Modal/StandaloneAss
 import AssessmentStandaloneModal from "../../components/Modal/StandaloneAssessment/AssessmentStandaloneModal";
 import EssayStandaloneModal from "../../components/Modal/StandaloneAssessment/EssayStandaloneModal";
 import TextbookStandaloneModal from "../../components/Modal/StandaloneAssessment/TextbookStandaloneModal";
+import SPMExamStandaloneModal from "../../components/Modal/StandaloneAssessment/SPMExamStandaloneModal";
 
 import "./AssessmentPage.css";
 
 const { Search } = Input;
 const { Option } = Select;
+
+// FIXED: Activity types with proper SPM exam configuration
+const activityTypes = [
+  {
+    key: "activityInClass",
+    title: "Activity in Class",
+    description: "Interactive classroom activities and group work",
+    icon: (
+      <ThunderboltOutlined style={{ fontSize: "32px", color: "#1890ff" }} />
+    ),
+    color: "#1890ff",
+  },
+  {
+    key: "assessment",
+    title: "Assessment (Exam)",
+    description: "Formal assessments, tests, and examinations",
+    icon: <FileTextOutlined style={{ fontSize: "32px", color: "#52c41a" }} />,
+    color: "#52c41a",
+  },
+  {
+    key: "essay",
+    title: "Essay Writing",
+    description: "Essay prompts and writing assignments",
+    icon: <EditOutlined style={{ fontSize: "32px", color: "#fa8c16" }} />,
+    color: "#fa8c16",
+  },
+  {
+    key: "textbook",
+    title: "Textbook Exercise",
+    description: "Textbook-based activities and exercises",
+    icon: <BookOutlined style={{ fontSize: "32px", color: "#722ed1" }} />,
+    color: "#722ed1",
+  },
+  {
+    key: "spm-exam",
+    title: "SPM Examination",
+    description: "Malaysian SPM English Paper 1 & 2 examinations",
+    icon: <CalculatorOutlined style={{ fontSize: "32px", color: "#eb2f96" }} />,
+    color: "#eb2f96",
+  },
+];
 
 const AssessmentPage = () => {
   const navigate = useNavigate();
@@ -103,6 +147,133 @@ const AssessmentPage = () => {
     }
   }, [activeTab, filters]);
 
+  // FIXED: Helper functions for activity type handling with SPM exam support
+  const getActivityTypeDisplay = (activityType) => {
+    const displayMap = {
+      activityInClass: "Activity",
+      activity: "Activity",
+      assessment: "Assessment",
+      essay: "Essay",
+      textbook: "Textbook",
+      "spm-exam": "SPM Exam",
+    };
+    return displayMap[activityType] || activityType?.toUpperCase() || "Unknown";
+  };
+
+  const getActivityTypeColor = (activityType) => {
+    const colorMap = {
+      activityInClass: "blue",
+      activity: "blue",
+      assessment: "green",
+      essay: "orange",
+      textbook: "purple",
+      "spm-exam": "magenta", // Handle legacy typo
+      "spm-exam": "magenta",
+    };
+    return colorMap[activityType] || "default";
+  };
+
+  // FIXED: Enhanced content checking function for SPM exams
+  const hasStudentContent = (record) => {
+    if (record.assessments?.length > 0) {
+      return record.assessments.some((assessment) => {
+        const content = assessment.generatedContent || {};
+        return !!(
+          (
+            assessment.hasActivity ||
+            content.activityHTML ||
+            content.assessmentHTML ||
+            content.examHTML
+          ) // CRITICAL: Check for SPM exam HTML
+        );
+      });
+    }
+    return false;
+  };
+
+  const hasTeacherContent = (record) => {
+    if (record.assessments?.length > 0) {
+      return record.assessments.some((assessment) => {
+        const content = assessment.generatedContent || {};
+        return !!(
+          assessment.hasRubric ||
+          content.rubricHTML ||
+          content.answerKeyHTML
+        );
+      });
+    }
+    return false;
+  };
+
+  // FIXED: Enhanced view activity handler with SPM exam support
+  const handleViewActivity = (record) => {
+    if (
+      record.assessmentStatus === "generated" &&
+      record.assessments?.length > 0
+    ) {
+      // Find the first assessment with activity content (including SPM exams)
+      const assessmentWithActivity = record.assessments.find((assessment) => {
+        const content = assessment.generatedContent || {};
+        return !!(
+          (
+            assessment.hasActivity ||
+            content.activityHTML ||
+            content.assessmentHTML ||
+            content.examHTML
+          ) // CRITICAL: Include SPM exam content
+        );
+      });
+
+      if (assessmentWithActivity) {
+        console.log("🎯 Navigating to assessment:", {
+          assessmentId: assessmentWithActivity._id,
+          activityType: assessmentWithActivity.activityType,
+          hasActivity: assessmentWithActivity.hasActivity,
+          contentStatus: {
+            activityHTML:
+              !!assessmentWithActivity.generatedContent?.activityHTML,
+            assessmentHTML:
+              !!assessmentWithActivity.generatedContent?.assessmentHTML,
+            examHTML: !!assessmentWithActivity.generatedContent?.examHTML,
+          },
+        });
+        navigate(`/app/assessment/${assessmentWithActivity._id}`);
+      } else {
+        message.warning("No activity content available for this assessment");
+      }
+    } else {
+      message.warning("No assessment activity available for this lesson plan");
+    }
+  };
+
+  // Enhanced view rubric handler
+  const handleViewRubric = (record) => {
+    if (
+      record.assessmentStatus === "generated" &&
+      record.assessments?.length > 0
+    ) {
+      // Find the first assessment with rubric/answer key
+      const assessmentWithRubric = record.assessments.find((assessment) => {
+        const content = assessment.generatedContent || {};
+        return !!(
+          assessment.hasRubric ||
+          content.rubricHTML ||
+          content.answerKeyHTML
+        );
+      });
+
+      if (assessmentWithRubric) {
+        navigate(
+          `/app/assessment/${assessmentWithRubric._id}/${assessmentWithRubric._id}`
+        );
+      } else {
+        message.warning("No rubric/answer key available for this assessment");
+      }
+    } else {
+      message.warning("No assessment rubric available for this lesson plan");
+    }
+  };
+
   const loadInitialData = async () => {
     if (!userId) return;
 
@@ -116,13 +287,13 @@ const AssessmentPage = () => {
       setLessonPlans(Array.isArray(lessonPlansData) ? lessonPlansData : []);
       setClasses(Array.isArray(classesData) ? classesData : []);
     } catch (error) {
+      console.error("Error loading initial data:", error);
       message.error("Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
-  // FIXED: Completely rewritten loadLessonBasedData function
   const loadLessonBasedData = async () => {
     try {
       setLoading(true);
@@ -139,6 +310,7 @@ const AssessmentPage = () => {
       const assessmentsWithLessonPlans = assessmentResponse.success
         ? assessmentResponse.data || []
         : [];
+
       // Create a map of lesson plan IDs to their assessments
       const lessonPlanAssessmentMap = {};
       assessmentsWithLessonPlans.forEach((assessment) => {
@@ -155,37 +327,36 @@ const AssessmentPage = () => {
         }
       });
 
-      // FIXED: Transform lesson plans with correct assessment status logic
+      // Transform lesson plans with correct assessment status logic
       let lessonPlanRows = allLessonPlans.map((lessonPlan) => {
         const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
         const hasAssessments = assessments.length > 0;
 
-        // CRITICAL FIX: Determine assessment status correctly
+        // Determine assessment status correctly
         const assessmentStatus = hasAssessments ? "generated" : "not_generated";
 
         const row = {
           ...lessonPlan,
-          assessmentStatus: assessmentStatus, // This is the key field for filtering
+          assessmentStatus: assessmentStatus,
           assessments: assessments,
-          hasActivity: assessments.some((a) => a.hasActivity),
-          hasRubric: assessments.some((a) => a.hasRubric),
+          hasActivity: hasStudentContent({ assessments }),
+          hasRubric: hasTeacherContent({ assessments }),
           title: lessonPlan.parameters?.specificTopic || "Untitled Lesson",
           description: lessonPlan.plan?.learningObjective || "",
           activityType: lessonPlan.parameters?.activityType || "lesson",
           createdAt: lessonPlan.createdAt,
           updatedAt: lessonPlan.updatedAt,
-          status: hasAssessments ? "Generated" : "Not Generated", // Display status
+          status: hasAssessments ? "Generated" : "Not Generated",
         };
 
         return row;
       });
 
-      // FIXED: Apply filters correctly with proper logging
-      let filteredRows = [...lessonPlanRows]; // Create a copy
+      // Apply filters correctly
+      let filteredRows = [...lessonPlanRows];
 
       // Search filter
       if (filters.search) {
-        const beforeCount = filteredRows.length;
         filteredRows = filteredRows.filter(
           (row) =>
             row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -195,7 +366,6 @@ const AssessmentPage = () => {
 
       // Class filter
       if (filters.classId) {
-        const beforeCount = filteredRows.length;
         filteredRows = filteredRows.filter(
           (row) =>
             row.classId?._id === filters.classId ||
@@ -203,11 +373,8 @@ const AssessmentPage = () => {
         );
       }
 
-      // CRITICAL FIX: Status filter logic
+      // Status filter
       if (filters.status) {
-        const beforeCount = filteredRows.length;
-
-        // FIXED: Use the correct field and values for filtering
         if (filters.status === "Generated") {
           filteredRows = filteredRows.filter(
             (row) => row.assessmentStatus === "generated"
@@ -218,6 +385,7 @@ const AssessmentPage = () => {
           );
         }
       }
+
       setAssessments(filteredRows);
     } catch (error) {
       console.error("❌ Error in loadLessonBasedData:", error);
@@ -239,6 +407,7 @@ const AssessmentPage = () => {
         setAssessments(response.data || []);
       }
     } catch (error) {
+      console.error("Error loading standalone assessments:", error);
       message.error("Failed to load assessments");
     } finally {
       setLoading(false);
@@ -272,7 +441,7 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Handle regenerate assessment button click
+  // Handle regenerate assessment button click
   const handleRegenerateAssessment = (record) => {
     // Get the activity type from the lesson plan configuration
     const activityConfig = record.parameters?.activityConfiguration;
@@ -298,7 +467,7 @@ const AssessmentPage = () => {
     setRegenerateModalOpen(true);
   };
 
-  // NEW: Handle modal submission for regeneration
+  // Handle modal submission for regeneration
   const handleRegenerateModalSubmit = async (formData) => {
     try {
       setGeneratingAssessment(regeneratingLessonPlan._id);
@@ -396,7 +565,7 @@ const AssessmentPage = () => {
     }
   };
 
-  // NEW: Close regenerate modal and reset states
+  // Close regenerate modal and reset states
   const handleCloseRegenerateModal = () => {
     setRegenerateModalOpen(false);
     setRegenerateModalType(null);
@@ -443,6 +612,12 @@ const AssessmentPage = () => {
         configuredFor: activityConfig.configuredFor,
       };
 
+      console.log("🚀 Generating assessment with:", {
+        activityType: activityConfig.type,
+        lessonPlanId: record._id,
+        hasConfiguration: !!activityConfig,
+      });
+
       // Call the API to generate assessment
       const response = await assessmentAPI.generateFromLessonPlan(
         lessonPlanData,
@@ -457,6 +632,10 @@ const AssessmentPage = () => {
 
         // Navigate to view the generated assessment
         if (response.data?._id) {
+          console.log(
+            "✅ Assessment generated, navigating to:",
+            response.data._id
+          );
           setTimeout(() => {
             navigate(`/app/assessment/${response.data._id}`);
           }, 1000);
@@ -479,28 +658,36 @@ const AssessmentPage = () => {
 
     setStandaloneActivityType(activityType);
     setStandaloneAssessmentData(assessmentData);
-    setStandaloneModalOpen(false); // Close first modal
-    setStandaloneActivityModalOpen(true); // Open activity modal
+    setStandaloneModalOpen(false);
+    setStandaloneActivityModalOpen(true);
   };
 
+  // FIXED: Handle standalone activity submission with proper activity type mapping
   const handleStandaloneActivitySubmit = async (formData) => {
     try {
       setLoading(true);
       console.log("📝 Submitting standalone activity:", {
         formData,
         standaloneAssessmentData,
+        activityType: standaloneActivityType,
       });
+
+      let mappedActivityType = standaloneActivityType;
 
       // Prepare the data for standalone assessment creation
       const standaloneData = {
         ...standaloneAssessmentData,
         ...formData,
-        activityType: standaloneActivityType,
+        activityType: mappedActivityType, // Use mapped type
         isStandalone: true,
-        assessmentTitle: `${standaloneAssessmentData.subject} ${standaloneActivityType} - ${standaloneAssessmentData.grade}`,
+        assessmentTitle: `${
+          standaloneAssessmentData.subject
+        } ${getActivityTypeDisplay(mappedActivityType)} - ${
+          standaloneAssessmentData.grade
+        }`,
         assessmentDescription:
           formData.additionalRequirement ||
-          `Standalone ${standaloneActivityType} assessment`,
+          `Standalone ${getActivityTypeDisplay(mappedActivityType)} assessment`,
       };
 
       console.log("🔄 Calling API with:", standaloneData);
@@ -523,6 +710,10 @@ const AssessmentPage = () => {
 
         // Navigate to view the created assessment
         if (response.data?._id) {
+          console.log(
+            "✅ Standalone assessment created, navigating to:",
+            response.data._id
+          );
           setTimeout(() => {
             navigate(`/app/assessment/${response.data._id}`);
           }, 1000);
@@ -550,56 +741,6 @@ const AssessmentPage = () => {
     setStandaloneActivityModalOpen(false);
     setStandaloneActivityType(null);
     setStandaloneAssessmentData(null);
-  };
-
-  // Enhanced view activity handler with better error handling
-  const handleViewActivity = (record) => {
-    if (
-      record.assessmentStatus === "generated" &&
-      record.assessments?.length > 0
-    ) {
-      // Find the first assessment with activity
-      const assessmentWithActivity = record.assessments.find(
-        (a) =>
-          a.hasActivity ||
-          a.generatedContent?.activityHTML ||
-          a.generatedContent?.assessmentHTML
-      );
-
-      if (assessmentWithActivity) {
-        navigate(`/app/assessment/${assessmentWithActivity._id}`);
-      } else {
-        message.warning("No activity content available for this assessment");
-      }
-    } else {
-      message.warning("No assessment activity available for this lesson plan");
-    }
-  };
-
-  // Enhanced view rubric handler
-  const handleViewRubric = (record) => {
-    if (
-      record.assessmentStatus === "generated" &&
-      record.assessments?.length > 0
-    ) {
-      // Find the first assessment with rubric/answer key
-      const assessmentWithRubric = record.assessments.find(
-        (a) =>
-          a.hasRubric ||
-          a.generatedContent?.rubricHTML ||
-          a.generatedContent?.answerKeyHTML
-      );
-
-      if (assessmentWithRubric) {
-        navigate(
-          `/app/assessment/${assessmentWithRubric._id}/${assessmentWithRubric._id}`
-        );
-      } else {
-        message.warning("No rubric/answer key available for this assessment");
-      }
-    } else {
-      message.warning("No assessment rubric available for this lesson plan");
-    }
   };
 
   // Handle deleting assessment
@@ -636,6 +777,7 @@ const AssessmentPage = () => {
     }));
   };
 
+  // FIXED: Lesson-based columns with enhanced SPM exam content checking
   const lessonBasedColumns = [
     {
       title: "Lesson Plan",
@@ -659,7 +801,12 @@ const AssessmentPage = () => {
                 </Tag>
               </>
             )}
-            <Tag color="purple">{record.activityType}</Tag>
+            <Tag
+              color={getActivityTypeColor(record.activityType)}
+              data-activity={record.activityType}
+            >
+              {getActivityTypeDisplay(record.activityType)}
+            </Tag>
             {record.parameters?.activityConfiguration && (
               <Tag color="cyan">Configured</Tag>
             )}
@@ -695,38 +842,27 @@ const AssessmentPage = () => {
       key: "content",
       width: 150,
       render: (_, record) => {
-        // Enhanced content checking
-        const hasStudentContent = record.assessments?.some(
-          (a) =>
-            a.hasActivity ||
-            a.generatedContent?.activityHTML ||
-            a.generatedContent?.assessmentHTML
-        );
-        const hasTeacherContent = record.assessments?.some(
-          (a) =>
-            a.hasRubric ||
-            a.generatedContent?.rubricHTML ||
-            a.generatedContent?.answerKeyHTML
-        );
+        const hasStudentContentFlag = hasStudentContent(record);
+        const hasTeacherContentFlag = hasTeacherContent(record);
 
         return (
           <Space>
-            {hasStudentContent && (
+            {hasStudentContentFlag && (
               <Tag
                 color="blue"
                 style={{ cursor: "pointer" }}
                 onClick={() => handleViewActivity(record)}
               >
-                Activity
+                {record.activityType === "spm-exam" ? "Exam" : "Activity"}
               </Tag>
             )}
-            {hasTeacherContent && (
+            {hasTeacherContentFlag && (
               <Tag
                 color="green"
                 style={{ cursor: "pointer" }}
                 onClick={() => handleViewRubric(record)}
               >
-                Rubric
+                {record.activityType === "spm-exam" ? "Answer Key" : "Rubric"}
               </Tag>
             )}
             {record.assessmentStatus === "not_generated" && (
@@ -748,19 +884,8 @@ const AssessmentPage = () => {
       key: "actions",
       width: 220,
       render: (_, record) => {
-        // Enhanced action button logic
-        const hasStudentContent = record.assessments?.some(
-          (a) =>
-            a.hasActivity ||
-            a.generatedContent?.activityHTML ||
-            a.generatedContent?.assessmentHTML
-        );
-        const hasTeacherContent = record.assessments?.some(
-          (a) =>
-            a.hasRubric ||
-            a.generatedContent?.rubricHTML ||
-            a.generatedContent?.answerKeyHTML
-        );
+        const hasStudentContentFlag = hasStudentContent(record);
+        const hasTeacherContentFlag = hasTeacherContent(record);
 
         const isGenerating = generatingAssessment === record._id;
         const hasActivityConfig = record.parameters?.activityConfiguration;
@@ -802,22 +927,26 @@ const AssessmentPage = () => {
               </Button>
             )}
 
-            {hasStudentContent && (
+            {hasStudentContentFlag && (
               <Button
                 type="text"
                 icon={<EyeOutlined />}
                 size="small"
                 onClick={() => handleViewActivity(record)}
-                title="View Activity"
+                title={`View ${
+                  record.activityType === "spm-exam" ? "Exam" : "Activity"
+                }`}
               />
             )}
-            {hasTeacherContent && (
+            {hasTeacherContentFlag && (
               <Button
                 type="text"
                 icon={<FileExclamationOutlined />}
                 size="small"
                 onClick={() => handleViewRubric(record)}
-                title="View Rubric"
+                title={`View ${
+                  record.activityType === "spm-exam" ? "Answer Key" : "Rubric"
+                }`}
               />
             )}
             {record.assessments?.length > 0 && (
@@ -847,7 +976,12 @@ const AssessmentPage = () => {
           <div className="assessment-title">{record.title}</div>
           <div className="assessment-description">{record.description}</div>
           <div className="assessment-meta">
-            <Tag color="blue">{record.activityType?.toUpperCase()}</Tag>
+            <Tag
+              color={getActivityTypeColor(record.activityType)}
+              data-activity={record.activityType}
+            >
+              {getActivityTypeDisplay(record.activityType)}
+            </Tag>
             <Tag color="green">{record.grade}</Tag>
             <Tag color="purple">{record.subject}</Tag>
             <Tag color="orange">Standalone</Tag>
@@ -880,7 +1014,7 @@ const AssessmentPage = () => {
               style={{ cursor: "pointer" }}
               onClick={() => navigate(`/app/assessment/${record._id}`)}
             >
-              Activity
+              {record.activityType === "spm-exam" ? "Exam" : "Activity"}
             </Tag>
           )}
           {record.hasRubric && (
@@ -891,7 +1025,7 @@ const AssessmentPage = () => {
                 navigate(`/app/assessment/${record._id}/${record._id}`)
               }
             >
-              Rubric
+              {record.activityType === "spm-exam" ? "Answer Key" : "Rubric"}
             </Tag>
           )}
         </Space>
@@ -958,7 +1092,7 @@ const AssessmentPage = () => {
     </Option>
   ));
 
-  // NEW: Render the appropriate regeneration modal
+  // Render the appropriate regeneration modal with SPM exam support
   const renderRegenerateModal = () => {
     if (
       !regenerateModalOpen ||
@@ -988,11 +1122,16 @@ const AssessmentPage = () => {
       case "textbook":
         return <TextbookLessonModal {...commonProps} />;
       case "activity":
+      case "activityInClass":
         return <ActivityInClassLessonModal {...commonProps} />;
+      case "spm-exam":
+        return <SPMExamLessonModal {...commonProps} />;
       default:
         return <ActivityInClassLessonModal {...commonProps} />;
     }
   };
+
+  // Render standalone activity modal with SPM exam support
   const renderStandaloneActivityModal = () => {
     console.log("🎭 Rendering standalone activity modal:", {
       isOpen: standaloneActivityModalOpen,
@@ -1015,6 +1154,7 @@ const AssessmentPage = () => {
 
     switch (standaloneActivityType) {
       case "activity":
+      case "activityInClass":
         return <ActivityInClassStandaloneModal {...commonProps} />;
       case "assessment":
         return <AssessmentStandaloneModal {...commonProps} />;
@@ -1022,13 +1162,15 @@ const AssessmentPage = () => {
         return <EssayStandaloneModal {...commonProps} />;
       case "textbook":
         return <TextbookStandaloneModal {...commonProps} />;
+      case "spm-exam":
+        return <SPMExamStandaloneModal {...commonProps} />;
       default:
         console.warn("⚠️ Unknown activity type:", standaloneActivityType);
         return <ActivityInClassStandaloneModal {...commonProps} />;
     }
   };
 
-  // Define tab items for the new Tabs API
+  // Define tab items with enhanced activity type filtering
   const tabItems = [
     {
       key: "lesson-based",
@@ -1058,6 +1200,29 @@ const AssessmentPage = () => {
                 onChange={(value) => handleFilterChange("classId", value)}
               >
                 {classOptions}
+              </Select>
+              <Select
+                placeholder="Filter by activity type"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.activityType}
+                onChange={(value) => handleFilterChange("activityType", value)}
+              >
+                <Option value="activity">Activity in Class</Option>
+                <Option value="assessment">Assessment</Option>
+                <Option value="essay">Essay</Option>
+                <Option value="textbook">Textbook</Option>
+                <Option value="spm-exam">SPM Exam</Option>
+              </Select>
+              <Select
+                placeholder="Filter by status"
+                style={{ width: 150 }}
+                allowClear
+                value={filters.status}
+                onChange={(value) => handleFilterChange("status", value)}
+              >
+                <Option value="Generated">Generated</Option>
+                <Option value="Not Generated">Not Generated</Option>
               </Select>
             </div>
           </div>
@@ -1123,6 +1288,16 @@ const AssessmentPage = () => {
                 <Option value="assessment">Assessment</Option>
                 <Option value="essay">Essay</Option>
                 <Option value="textbook">Textbook</Option>
+                <Option value="spm-exam">SPM Exam</Option>
+              </Select>
+              <Select
+                placeholder="Filter by class"
+                style={{ width: 200 }}
+                allowClear
+                value={filters.classId}
+                onChange={(value) => handleFilterChange("classId", value)}
+              >
+                {classOptions}
               </Select>
             </div>
           </div>
@@ -1177,7 +1352,7 @@ const AssessmentPage = () => {
             </h2>
             <p>
               Generate assessments from lesson plans or create standalone
-              assessments
+              assessments including SPM examinations
             </p>
           </div>
         </div>
@@ -1193,17 +1368,17 @@ const AssessmentPage = () => {
         />
       </Card>
 
-      {/* Regeneration Modal for Lesson-based assessments */}
+      {/* Regeneration Modal for Lesson-based assessments with SPM support */}
       {renderRegenerateModal()}
 
-      {/* Standalone Assessment Modals */}
+      {/* Standalone Assessment Modals with SPM support */}
       <StandAloneAssessmentModal
         isOpen={standaloneModalOpen}
         onClose={handleCloseStandaloneModals}
         onActivitySelect={handleStandaloneActivitySelect}
       />
 
-      {/* Standalone Activity Modal */}
+      {/* Standalone Activity Modal with SPM support */}
       {renderStandaloneActivityModal()}
     </div>
   );
