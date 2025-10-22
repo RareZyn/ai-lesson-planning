@@ -23,7 +23,7 @@ const gradeAnswer = async (gradingData) => {
 
     // For subjective questions, use AI grading
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = buildGradingPrompt(
       questionText,

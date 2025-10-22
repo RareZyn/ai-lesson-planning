@@ -629,18 +629,20 @@ CRITICAL RULES:
       studentId,
       submissionMethod: "upload_image",
       processingStatus: "completed",
+      answerSheetImage: image, // Store image once for entire sheet
       answers: detectionResult.answers.map((detected, index) => {
         const gradingResult = gradingResults.results[index];
         return {
           questionNumber: detected.questionNumber,
           questionText: `Question ${detected.questionNumber}`,
-          originalImage: image,
+          // originalImage removed - use answerSheetImage at document level
           ocrData: {
             extractedText: detected.selectedAnswer,
             confidence: detected.confidence,
             metadata: {
               detectionMethod: "bubble_detection",
               model: "gemini-2.0-flash-exp",
+              answerType: detected.answerType, // Store answer type (mcq/written)
             },
             processedAt: new Date(),
           },
