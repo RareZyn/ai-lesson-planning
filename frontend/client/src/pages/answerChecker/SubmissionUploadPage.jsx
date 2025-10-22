@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import StudentSelector from "../../components/AnswerChecker/StudentSelector";
 import AssessmentSelector from "../../components/AnswerChecker/AssessmentSelector";
 import ImageUploader from "../../components/AnswerChecker/ImageUploader";
+import SpmAnswerSheetUploader from "../../components/AnswerChecker/SpmAnswerSheetUploader";
 import { submissionService } from "../../services/submissionService";
 import { ocrAPI } from "../../services/ocrService";
 import axios from "axios";
@@ -79,11 +80,19 @@ const SubmissionUploadPage = () => {
       setAssessmentDetails(assessment);
 
       // Initialize image slots based on question count
-      const questionCount =
-        assessment.questionCount ||
-        assessment.generatedContent?.assessmentContent?.questions?.length ||
-        assessment.generatedContent?.examContent?.totalQuestions ||
-        1;
+      // For SPM exams, prioritize examContent.totalQuestions (40 questions for Paper 1)
+      let questionCount;
+      if (assessment.activityType === "spm-exam") {
+        questionCount =
+          assessment.generatedContent?.examContent?.totalQuestions ||
+          assessment.questionCount ||
+          40; // Default to 40 for SPM Paper 1
+      } else {
+        questionCount =
+          assessment.questionCount ||
+          assessment.generatedContent?.assessmentContent?.questions?.length ||
+          1;
+      }
 
       const imageSlots = {};
       for (let i = 1; i <= questionCount; i++) {
@@ -328,35 +337,70 @@ const SubmissionUploadPage = () => {
           {/* STEP 2: Upload Images */}
           {currentStep === 2 && (
             <div>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="mb-0">Step 3: Upload Answer Images</h4>
-                <Badge
-                  bg={
-                    getUploadedCount() === getTotalQuestions()
-                      ? "success"
-                      : "warning"
-                  }
-                >
-                  {getUploadedCount()} / {getTotalQuestions()} Uploaded
-                </Badge>
-              </div>
+              {/* SPM Paper 1 - Single Answer Sheet Upload */}
+              {assessmentDetails?.activityType === "spm-exam" ? (
+                <div>
+                  <h4 className="mb-4">Step 3: Upload SPM Paper 1 Answer Sheet</h4>
 
-              <Alert variant="info" className="mb-4">
-                <i className="bi bi-info-circle me-2"></i>
-                Upload a clear image for each question. Ensure handwriting is
-                legible and the image is well-lit without shadows.
-              </Alert>
+                  <Alert variant="info" className="mb-4">
+                    <i className="bi bi-info-circle me-2"></i>
+                    For SPM Paper 1, upload <strong>ONE answer sheet image</strong> containing all 40 answers.
+                    The system will automatically detect and grade all questions.
+                  </Alert>
 
-              {Object.keys(images).map((questionNumber) => (
-                <ImageUploader
-                  key={questionNumber}
-                  questionNumber={parseInt(questionNumber)}
-                  questionText={`Answer for Question ${questionNumber}`}
-                  onImageChange={handleImageChange}
-                  initialImage={images[questionNumber]}
-                  disabled={submitting}
-                />
-              ))}
+                  <SpmAnswerSheetUploader
+                    assessmentId={selectedAssessment}
+                    classId={selectedClass}
+                    studentId={selectedStudent}
+                    studentName={
+                      classes
+                        .find((c) => c._id === selectedClass)
+                        ?.students?.find((s) => s._id === selectedStudent)?.name || "Student"
+                    }
+                    onUploadComplete={(results) => {
+                      message.success("Answer sheet processed successfully!");
+                      // Navigate to review page after a short delay
+                      setTimeout(() => {
+                        navigate(`/app/answer-checker/review/${results.submissionId}`);
+                      }, 1500);
+                    }}
+                    disabled={submitting}
+                  />
+                </div>
+              ) : (
+                /* Regular Assessment - Multiple Question Upload */
+                <div>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h4 className="mb-0">Step 3: Upload Answer Images</h4>
+                    <Badge
+                      bg={
+                        getUploadedCount() === getTotalQuestions()
+                          ? "success"
+                          : "warning"
+                      }
+                    >
+                      {getUploadedCount()} / {getTotalQuestions()} Uploaded
+                    </Badge>
+                  </div>
+
+                  <Alert variant="info" className="mb-4">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Upload a clear image for each question. Ensure handwriting is
+                    legible and the image is well-lit without shadows.
+                  </Alert>
+
+                  {Object.keys(images).map((questionNumber) => (
+                    <ImageUploader
+                      key={questionNumber}
+                      questionNumber={parseInt(questionNumber)}
+                      questionText={`Answer for Question ${questionNumber}`}
+                      onImageChange={handleImageChange}
+                      initialImage={images[questionNumber]}
+                      disabled={submitting}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -377,45 +421,61 @@ const SubmissionUploadPage = () => {
           )}
 
           {/* Navigation Buttons */}
-          <div className="d-flex justify-content-between mt-4">
-            <Button
-              variant="secondary"
-              onClick={handlePrevious}
-              disabled={currentStep === 0 || submitting}
-            >
-              Previous
-            </Button>
+          {/* Hide submit button for SPM exams - the SpmAnswerSheetUploader handles submission */}
+          {!(currentStep === 2 && assessmentDetails?.activityType === "spm-exam") && (
+            <div className="d-flex justify-content-between mt-4">
+              <Button
+                variant="secondary"
+                onClick={handlePrevious}
+                disabled={currentStep === 0 || submitting}
+              >
+                Previous
+              </Button>
 
-            <div>
-              {currentStep < 2 ? (
-                <Button
-                  variant="primary"
-                  onClick={handleNext}
-                  disabled={submitting}
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button
-                  variant="success"
-                  onClick={handleSubmit}
-                  disabled={submitting || getUploadedCount() === 0}
-                >
-                  {submitting ? (
-                    <>
-                      <LoadingOutlined className="me-2" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleOutlined className="me-2" />
-                      Submit Answers
-                    </>
-                  )}
-                </Button>
-              )}
+              <div>
+                {currentStep < 2 ? (
+                  <Button
+                    variant="primary"
+                    onClick={handleNext}
+                    disabled={submitting}
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    variant="success"
+                    onClick={handleSubmit}
+                    disabled={submitting || getUploadedCount() === 0}
+                  >
+                    {submitting ? (
+                      <>
+                        <LoadingOutlined className="me-2" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleOutlined className="me-2" />
+                        Submit Answers
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Back button for SPM exams */}
+          {currentStep === 2 && assessmentDetails?.activityType === "spm-exam" && (
+            <div className="d-flex justify-content-start mt-4">
+              <Button
+                variant="secondary"
+                onClick={handlePrevious}
+                disabled={submitting}
+              >
+                Previous
+              </Button>
+            </div>
+          )}
         </Card.Body>
       </Card>
     </div>

@@ -253,7 +253,7 @@ AssessmentSchema.index({ isStandalone: 1 }); // FIXED: Add index for standalone 
 
 // Virtual for formatted creation date
 AssessmentSchema.virtual("formattedCreatedDate").get(function () {
-  return this.createdAt.toLocaleDateString();
+  return this.createdAt ? this.createdAt.toLocaleDateString() : null;
 });
 
 // FIXED: Enhanced instance method to update usage statistics

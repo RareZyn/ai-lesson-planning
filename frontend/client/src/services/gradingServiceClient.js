@@ -27,6 +27,46 @@ apiClient.interceptors.request.use(
 );
 
 export const gradingService = {
+  /**
+   * Process and grade SPM Paper 1 answer sheet (MCQ bubble detection)
+   * @param {string} image - Base64 encoded image of answer sheet
+   * @param {string} assessmentId - Assessment ID
+   * @param {string} classId - Class ID
+   * @param {string} studentId - Student ID
+   * @returns {Promise<Object>} Processing and grading results
+   */
+  processAndGradeSpmAnswerSheet: async (image, assessmentId, classId, studentId) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/grading/process-and-grade-spm`,
+        {
+          image,
+          assessmentId,
+          classId,
+          studentId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          withCredentials: true,
+        }
+      );
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.error("SPM answer sheet processing error:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to process answer sheet",
+        error: error.response?.data?.error,
+      };
+    }
+  },
+
   scoreSubmission: async (submissionId) => {
     try {
       const response = await axios.post(

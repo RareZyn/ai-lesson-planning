@@ -150,12 +150,12 @@ const createStandaloneAssessment = async (req, res) => {
       assessmentType: `Standalone ${activityType
         .charAt(0)
         .toUpperCase()}${activityType.slice(1)} Assessment`,
-      questionCount: activityData.numberOfQuestions || 20,
+      questionCount: activityData.numberOfQuestions,
       duration:
         activityData.timeAllocation || activityData.duration || "60 minutes",
       difficulty: activityData.difficultyLevel || "Intermediate",
       skills: activityData.skills || [],
-      
+
       // Add SPM exam configuration if applicable
       ...(activityType === "spm-exam" && {
         examConfiguration: {
@@ -170,7 +170,7 @@ const createStandaloneAssessment = async (req, res) => {
           questionTypes: activityData.questionTypes,
         },
       }),
-      
+
       // Generated content
       generatedContent: structuredContent,
 
@@ -432,7 +432,7 @@ const generateFromLessonPlan = async (req, res) => {
       assessmentType: `${activityType
         .charAt(0)
         .toUpperCase()}${activityType.slice(1)} Assessment`,
-      questionCount: activityData.numberOfQuestions || 20,
+      questionCount: activityData.numberOfQuestions,
       duration:
         req.body.timeAllocation ||
         activityData.timeAllocation ||
@@ -985,123 +985,123 @@ const saveAssessment = async (req, res) => {
         success: false,
         message:
           "Missing required fields: title, lessonPlanId, classId, activityType",
-});
-}
-// Create assessment
-const assessment = await Assessment.create({
-  title,
-  description,
-  createdBy: req.user.id,
-  lessonPlanId,
-  classId,
-  activityType: activityType,
-  assessmentType: assessmentType || "General Assessment",
-  questionCount: questionCount || 20,
-  duration: duration || "60 minutes",
-  difficulty: difficulty || "Intermediate",
-  skills: skills || [],
-  generatedContent: generatedContent || {},
-  lessonPlanSnapshot: lessonPlanSnapshot || {},
-  tags: tags || [],
-  notes: notes || "",
-  status: generatedContent ? "Generated" : "Draft",
-  hasActivity: !!(
-    generatedContent &&
-    (generatedContent.activityContent || generatedContent.assessmentContent)
-  ),
-  hasRubric: !!(
-    generatedContent &&
-    (generatedContent.rubricContent || generatedContent.answerKeyContent)
-  ),
-});
+      });
+    }
+    // Create assessment
+    const assessment = await Assessment.create({
+      title,
+      description,
+      createdBy: req.user.id,
+      lessonPlanId,
+      classId,
+      activityType: activityType,
+      assessmentType: assessmentType || "General Assessment",
+      questionCount: questionCount,
+      duration: duration || "60 minutes",
+      difficulty: difficulty || "Intermediate",
+      skills: skills || [],
+      generatedContent: generatedContent || {},
+      lessonPlanSnapshot: lessonPlanSnapshot || {},
+      tags: tags || [],
+      notes: notes || "",
+      status: generatedContent ? "Generated" : "Draft",
+      hasActivity: !!(
+        generatedContent &&
+        (generatedContent.activityContent || generatedContent.assessmentContent)
+      ),
+      hasRubric: !!(
+        generatedContent &&
+        (generatedContent.rubricContent || generatedContent.answerKeyContent)
+      ),
+    });
 
-// Populate the response
-const populatedAssessment = await Assessment.findById(assessment._id)
-  .populate("lessonPlanId", "parameters plan")
-  .populate("classId", "className grade subject")
-  .populate("createdBy", "name");
+    // Populate the response
+    const populatedAssessment = await Assessment.findById(assessment._id)
+      .populate("lessonPlanId", "parameters plan")
+      .populate("classId", "className grade subject")
+      .populate("createdBy", "name");
 
-res.status(201).json({
-  success: true,
-  message: "Assessment saved successfully",
-  data: populatedAssessment,
-});
-} catch (error) {
-console.error("Save assessment error:", error);
-res.status(500).json({
-success: false,
-message: "Error saving assessment",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+    res.status(201).json({
+      success: true,
+      message: "Assessment saved successfully",
+      data: populatedAssessment,
+    });
+  } catch (error) {
+    console.error("Save assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error saving assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 /**
 
 Get User Assessments
 */
 const getUserAssessments = async (req, res) => {
-try {
-// Check if user is authenticated
-if (!req.user || !req.user.id) {
-return res.status(401).json({
-success: false,
-message: "Authentication required. User not found in request.",
-});
-}
-const {
-page = 1,
-limit = 10,
-classId,
-activityType: rawActivityType,
-status,
-search,
-} = req.query;
-// Build filter object
-const filter = { createdBy: req.user.id };
-if (classId) filter.classId = classId;
-// Validate activity type filter
-if (rawActivityType) {
-const mappedActivityType = validateAndMapActivityType(rawActivityType);
-filter.activityType = mappedActivityType;
-}
-if (status) filter.status = status;
-if (search) {
-filter.$or = [
-{ title: { $regex: search, $options: "i" } },
-{ description: { $regex: search, $options: "i" } },
-{ assessmentType: { $regex: search, $options: "i" } },
-];
-}
-// Execute query with pagination
-const assessments = await Assessment.find(filter)
-.populate({
-path: "lessonPlanId",
-select: "parameters plan",
-})
-.populate({
-path: "classId",
-select: "className grade subject year",
-})
-.sort({ createdAt: -1 })
-.limit(limit * 1)
-.skip((page - 1) * limit);
-const total = await Assessment.countDocuments(filter);
-res.status(200).json({
-success: true,
-count: assessments.length,
-total,
-totalPages: Math.ceil(total / limit),
-currentPage: parseInt(page),
-data: assessments,
-});
-} catch (error) {
-console.error("Get user assessments error:", error);
-res.status(500).json({
-success: false,
-message: "Error fetching assessments",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+    const {
+      page = 1,
+      limit = 10,
+      classId,
+      activityType: rawActivityType,
+      status,
+      search,
+    } = req.query;
+    // Build filter object
+    const filter = { createdBy: req.user.id };
+    if (classId) filter.classId = classId;
+    // Validate activity type filter
+    if (rawActivityType) {
+      const mappedActivityType = validateAndMapActivityType(rawActivityType);
+      filter.activityType = mappedActivityType;
+    }
+    if (status) filter.status = status;
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { assessmentType: { $regex: search, $options: "i" } },
+      ];
+    }
+    // Execute query with pagination
+    const assessments = await Assessment.find(filter)
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    const total = await Assessment.countDocuments(filter);
+    res.status(200).json({
+      success: true,
+      count: assessments.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      data: assessments,
+    });
+  } catch (error) {
+    console.error("Get user assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 /**
@@ -1109,52 +1109,52 @@ error: process.env.NODE_ENV === "development" ? error.message : undefined,
 Get Assessment By ID
 */
 const getAssessmentById = async (req, res) => {
-try {
-// Check if user is authenticated
-if (!req.user || !req.user.id) {
-return res.status(401).json({
-success: false,
-message: "Authentication required. User not found in request.",
-});
-}
-const assessment = await Assessment.findById(req.params.id)
-.populate({
-path: "lessonPlanId",
-select: "parameters plan",
-})
-.populate({
-path: "classId",
-select: "className grade subject year",
-})
-.populate({
-path: "createdBy",
-select: "name",
-});
-if (!assessment) {
-return res.status(404).json({
-success: false,
-message: "Assessment not found",
-});
-}
-// Check if user owns this assessment
-if (assessment.createdBy._id.toString() !== req.user.id) {
-return res.status(403).json({
-success: false,
-message: "Not authorized to access this assessment",
-});
-}
-res.status(200).json({
-success: true,
-data: assessment,
-});
-} catch (error) {
-console.error("Get assessment by ID error:", error);
-res.status(500).json({
-success: false,
-message: "Error fetching assessment",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+    const assessment = await Assessment.findById(req.params.id)
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .populate({
+        path: "createdBy",
+        select: "name",
+      });
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+    // Check if user owns this assessment
+    if (assessment.createdBy._id.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to access this assessment",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: assessment,
+    });
+  } catch (error) {
+    console.error("Get assessment by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 /**
@@ -1162,73 +1162,73 @@ error: process.env.NODE_ENV === "development" ? error.message : undefined,
 Delete Assessment
 */
 const deleteAssessment = async (req, res) => {
-try {
-// Check if user is authenticated
-if (!req.user || !req.user.id) {
-return res.status(401).json({
-success: false,
-message: "Authentication required. User not found in request.",
-});
-}
-const assessment = await Assessment.findById(req.params.id);
-if (!assessment) {
-return res.status(404).json({
-success: false,
-message: "Assessment not found",
-});
-}
-// Check if user owns this assessment
-if (assessment.createdBy.toString() !== req.user.id) {
-return res.status(403).json({
-success: false,
-message: "Not authorized to delete this assessment",
-});
-}
-// Also update the lesson plan status when deleting assessment
-if (assessment.lessonPlanId) {
-try {
-// Check if this is the only assessment for this lesson plan
-const otherAssessments = await Assessment.countDocuments({
-lessonPlanId: assessment.lessonPlanId,
-_id: { $ne: assessment._id },
-});
- if (otherAssessments === 0) {
-   // If this is the only assessment, update lesson plan status back to not_generated
-   await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
-     assessmentStatus: "not_generated",
-     $pull: {
-       generatedAssessments: { assessmentId: assessment._id },
-     },
-   });
- } else {
-   // Just remove this assessment from the array
-   await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
-     $pull: {
-       generatedAssessments: { assessmentId: assessment._id },
-     },
-   });
- }
-} catch (lessonPlanError) {
-console.error(
-"Error updating lesson plan after deletion:",
-lessonPlanError
-);
-}
-}
-await assessment.deleteOne();
-res.status(200).json({
-success: true,
-message: "Assessment deleted successfully",
-data: {},
-});
-} catch (error) {
-console.error("Delete assessment error:", error);
-res.status(500).json({
-success: false,
-message: "Error deleting assessment",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+    const assessment = await Assessment.findById(req.params.id);
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this assessment",
+      });
+    }
+    // Also update the lesson plan status when deleting assessment
+    if (assessment.lessonPlanId) {
+      try {
+        // Check if this is the only assessment for this lesson plan
+        const otherAssessments = await Assessment.countDocuments({
+          lessonPlanId: assessment.lessonPlanId,
+          _id: { $ne: assessment._id },
+        });
+        if (otherAssessments === 0) {
+          // If this is the only assessment, update lesson plan status back to not_generated
+          await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
+            assessmentStatus: "not_generated",
+            $pull: {
+              generatedAssessments: { assessmentId: assessment._id },
+            },
+          });
+        } else {
+          // Just remove this assessment from the array
+          await LessonPlan.findByIdAndUpdate(assessment.lessonPlanId, {
+            $pull: {
+              generatedAssessments: { assessmentId: assessment._id },
+            },
+          });
+        }
+      } catch (lessonPlanError) {
+        console.error(
+          "Error updating lesson plan after deletion:",
+          lessonPlanError
+        );
+      }
+    }
+    await assessment.deleteOne();
+    res.status(200).json({
+      success: true,
+      message: "Assessment deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    console.error("Delete assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 /**
@@ -1236,74 +1236,74 @@ error: process.env.NODE_ENV === "development" ? error.message : undefined,
 Update Assessment
 */
 const updateAssessment = async (req, res) => {
-try {
-// Check if user is authenticated
-if (!req.user || !req.user.id) {
-return res.status(401).json({
-success: false,
-message: "Authentication required. User not found in request.",
-});
-}
-const {
-title,
-description,
-generatedContent,
-status,
-hasActivity,
-hasRubric,
-notes,
-tags,
-activityType: rawActivityType,
-} = req.body;
-const assessment = await Assessment.findById(req.params.id);
-if (!assessment) {
-return res.status(404).json({
-success: false,
-message: "Assessment not found",
-});
-}
-// Check if user owns this assessment
-if (assessment.createdBy.toString() !== req.user.id) {
-return res.status(403).json({
-success: false,
-message: "Not authorized to update this assessment",
-});
-}
-// Update fields
-if (title) assessment.title = title;
-if (description) assessment.description = description;
-if (generatedContent) assessment.generatedContent = generatedContent;
-if (status) assessment.status = status;
-if (hasActivity !== undefined) assessment.hasActivity = hasActivity;
-if (hasRubric !== undefined) assessment.hasRubric = hasRubric;
-if (notes) assessment.notes = notes;
-if (tags) assessment.tags = tags;
-// Validate activity type if provided
-if (rawActivityType) {
-assessment.activityType = validateAndMapActivityType(rawActivityType);
-}
-// Update usage tracking
-assessment.usageCount += 1;
-assessment.lastUsed = new Date();
-await assessment.save();
-// Return populated assessment
-const updatedAssessment = await Assessment.findById(assessment._id)
-.populate("lessonPlanId", "parameters plan")
-.populate("classId", "className grade subject")
-.populate("createdBy", "name");
-res.status(200).json({
-success: true,
-message: "Assessment updated successfully",
-data: updatedAssessment,
-});
-} catch (error) {
-console.error("Update assessment error:", error);
-res.status(500).json({
-success: false,
-message: "Error updating assessment",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+    const {
+      title,
+      description,
+      generatedContent,
+      status,
+      hasActivity,
+      hasRubric,
+      notes,
+      tags,
+      activityType: rawActivityType,
+    } = req.body;
+    const assessment = await Assessment.findById(req.params.id);
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+    // Check if user owns this assessment
+    if (assessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this assessment",
+      });
+    }
+    // Update fields
+    if (title) assessment.title = title;
+    if (description) assessment.description = description;
+    if (generatedContent) assessment.generatedContent = generatedContent;
+    if (status) assessment.status = status;
+    if (hasActivity !== undefined) assessment.hasActivity = hasActivity;
+    if (hasRubric !== undefined) assessment.hasRubric = hasRubric;
+    if (notes) assessment.notes = notes;
+    if (tags) assessment.tags = tags;
+    // Validate activity type if provided
+    if (rawActivityType) {
+      assessment.activityType = validateAndMapActivityType(rawActivityType);
+    }
+    // Update usage tracking
+    assessment.usageCount += 1;
+    assessment.lastUsed = new Date();
+    await assessment.save();
+    // Return populated assessment
+    const updatedAssessment = await Assessment.findById(assessment._id)
+      .populate("lessonPlanId", "parameters plan")
+      .populate("classId", "className grade subject")
+      .populate("createdBy", "name");
+    res.status(200).json({
+      success: true,
+      message: "Assessment updated successfully",
+      data: updatedAssessment,
+    });
+  } catch (error) {
+    console.error("Update assessment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 /**
@@ -1311,214 +1311,214 @@ error: process.env.NODE_ENV === "development" ? error.message : undefined,
 Regenerate Assessment
 */
 const regenerateAssessment = async (req, res) => {
-try {
-// Check if user is authenticated
-if (!req.user || !req.user.id) {
-return res.status(401).json({
-success: false,
-message: "Authentication required. User not found in request.",
-});
-}
-const assessmentId = req.params.id;
-const { lessonPlanData, activityFormData } = req.body;
-console.log("Regenerating assessment:", {
-assessmentId,
-lessonPlanData,
-activityFormData,
-});
-// Find the existing assessment
-const existingAssessment = await Assessment.findById(assessmentId);
-if (!existingAssessment) {
-return res.status(404).json({
-success: false,
-message: "Assessment not found",
-});
-}
-// Check if user owns this assessment
-if (existingAssessment.createdBy.toString() !== req.user.id) {
-return res.status(403).json({
-success: false,
-message: "Not authorized to regenerate this assessment",
-});
-}
-// Get the user with their Gemini API key
-const user = await User.findById(req.user.id).select("+geminiApiKey");
-if (!user) {
-return res.status(404).json({
-success: false,
-message: "User not found.",
-});
-}
-// Get and decrypt the user's Gemini API key
-const geminiApiKey = user.getGeminiApiKey();
-if (!geminiApiKey) {
-return res.status(400).json({
-success: false,
-message:
-"No Gemini API key found. Please add your API key in profile settings.",
-});
-}
-// Extract activity type and validate mapping
-const rawActivityType =
-activityFormData.activityType || existingAssessment.activityType;
-const activityType = validateAndMapActivityType(rawActivityType);
-  console.log(
-    `Regenerating with activity type validation: "${rawActivityType}" -> "${activityType}"`
-  );
-// Prepare generation data
-const generationData = {
-...lessonPlanData,
-geminiApiKey,
-...activityFormData,
-};
-// Generate new content using the generator service
-const generator = new AssessmentGenerator(geminiApiKey);
-const generatedContent = await generator.generateByType(
-activityType,
-generationData
-);
-console.log(
-"Generated new content for regeneration:",
-Object.keys(generatedContent)
-);
-// Structure the new content properly based on activity type
-const structuredContent = structureGeneratedContent(
-generatedContent,
-activityType,
-{ paperType: activityFormData.paperType }
-);
-console.log("Structured regenerated content:", {
-activityHTML: !!structuredContent.activityHTML,
-rubricHTML: !!structuredContent.rubricHTML,
-assessmentHTML: !!structuredContent.assessmentHTML,
-answerKeyHTML: !!structuredContent.answerKeyHTML,
-});
-// Update the existing assessment with new content and metadata
-const updateData = {
-// Update title to indicate regeneration
-title:
-lessonPlanData.assessmentTitle ||
-existingAssessment.title + " (Regenerated)",
-description:
-lessonPlanData.assessmentDescription || existingAssessment.description,
-// Update activity type if changed
-activityType: activityType,
-// Replace the generated content entirely
-generatedContent: structuredContent,
-// Update lesson plan snapshot if provided
-...(lessonPlanData.contentStandard && {
-lessonPlanSnapshot: {
-title: lessonPlanData.lesson,
-subject: lessonPlanData.subject,
-grade: lessonPlanData.grade,
-contentStandard: lessonPlanData.contentStandard,
-learningStandard: lessonPlanData.learningStandard,
-learningOutline: lessonPlanData.learningOutline,
-},
-}),
-// Update status and flags
-status: "Generated",
-hasActivity: structuredContent.hasStudentContent,
-hasRubric: structuredContent.hasTeacherContent,
-// Update usage tracking
-usageCount: existingAssessment.usageCount + 1,
-lastUsed: new Date(),
-// Add regeneration metadata
-regeneratedAt: new Date(),
-regenerationCount: (existingAssessment.regenerationCount || 0) + 1,
-// Preserve original creation date if this is the first regeneration
-...(!(existingAssessment.regenerationCount > 0) && {
-originalCreatedAt: existingAssessment.createdAt,
-}),
-};
-console.log("Updating assessment with data:", {
-id: assessmentId,
-newTitle: updateData.title,
-hasNewActivity: updateData.hasActivity,
-hasNewRubric: updateData.hasRubric,
-regenerationCount: updateData.regenerationCount,
-});
-// Update the assessment
-const updatedAssessment = await Assessment.findByIdAndUpdate(
-assessmentId,
-updateData,
-{ new: true, runValidators: true }
-)
-.populate({
-path: "lessonPlanId",
-select: "parameters plan",
-})
-.populate({
-path: "classId",
-select: "className grade subject",
-})
-.populate({
-path: "createdBy",
-select: "name",
-});
-if (!updatedAssessment) {
-return res.status(404).json({
-success: false,
-message: "Failed to update assessment",
-});
-}
-console.log("Assessment successfully regenerated:", {
-id: updatedAssessment._id,
-title: updatedAssessment.title,
-hasActivity: updatedAssessment.hasActivity,
-hasRubric: updatedAssessment.hasRubric,
-regenerationCount: updatedAssessment.regenerationCount,
-});
-// Return the updated assessment
-res.status(200).json({
-success: true,
-message: "Assessment regenerated successfully",
-data: updatedAssessment,
-generatedContent: updatedAssessment.generatedContent,
-});
-} catch (error) {
-console.error("Error in regenerateAssessment:", error);
-// Check if it's a Gemini API related error
-if (
-error.message.includes("API_KEY") ||
-error.message.includes("401") ||
-error.message.includes("Invalid API key")
-) {
-return res.status(401).json({
-success: false,
-message:
-"Invalid Gemini API key. Please check your API key in profile settings.",
-});
-}
-// Check if it's a quota error
-if (error.message.includes("quota") || error.message.includes("429")) {
-return res.status(429).json({
-success: false,
-message:
-"Gemini API quota exceeded. Please try again later or check your API limits.",
-});
-}
-res.status(500).json({
-success: false,
-message: "Error regenerating assessment",
-error: process.env.NODE_ENV === "development" ? error.message : undefined,
-});
-}
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+    const assessmentId = req.params.id;
+    const { lessonPlanData, activityFormData } = req.body;
+    console.log("Regenerating assessment:", {
+      assessmentId,
+      lessonPlanData,
+      activityFormData,
+    });
+    // Find the existing assessment
+    const existingAssessment = await Assessment.findById(assessmentId);
+    if (!existingAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+    // Check if user owns this assessment
+    if (existingAssessment.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to regenerate this assessment",
+      });
+    }
+    // Get the user with their Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+    // Get and decrypt the user's Gemini API key
+    const geminiApiKey = user.getGeminiApiKey();
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+    // Extract activity type and validate mapping
+    const rawActivityType =
+      activityFormData.activityType || existingAssessment.activityType;
+    const activityType = validateAndMapActivityType(rawActivityType);
+    console.log(
+      `Regenerating with activity type validation: "${rawActivityType}" -> "${activityType}"`
+    );
+    // Prepare generation data
+    const generationData = {
+      ...lessonPlanData,
+      geminiApiKey,
+      ...activityFormData,
+    };
+    // Generate new content using the generator service
+    const generator = new AssessmentGenerator(geminiApiKey);
+    const generatedContent = await generator.generateByType(
+      activityType,
+      generationData
+    );
+    console.log(
+      "Generated new content for regeneration:",
+      Object.keys(generatedContent)
+    );
+    // Structure the new content properly based on activity type
+    const structuredContent = structureGeneratedContent(
+      generatedContent,
+      activityType,
+      { paperType: activityFormData.paperType }
+    );
+    console.log("Structured regenerated content:", {
+      activityHTML: !!structuredContent.activityHTML,
+      rubricHTML: !!structuredContent.rubricHTML,
+      assessmentHTML: !!structuredContent.assessmentHTML,
+      answerKeyHTML: !!structuredContent.answerKeyHTML,
+    });
+    // Update the existing assessment with new content and metadata
+    const updateData = {
+      // Update title to indicate regeneration
+      title:
+        lessonPlanData.assessmentTitle ||
+        existingAssessment.title + " (Regenerated)",
+      description:
+        lessonPlanData.assessmentDescription || existingAssessment.description,
+      // Update activity type if changed
+      activityType: activityType,
+      // Replace the generated content entirely
+      generatedContent: structuredContent,
+      // Update lesson plan snapshot if provided
+      ...(lessonPlanData.contentStandard && {
+        lessonPlanSnapshot: {
+          title: lessonPlanData.lesson,
+          subject: lessonPlanData.subject,
+          grade: lessonPlanData.grade,
+          contentStandard: lessonPlanData.contentStandard,
+          learningStandard: lessonPlanData.learningStandard,
+          learningOutline: lessonPlanData.learningOutline,
+        },
+      }),
+      // Update status and flags
+      status: "Generated",
+      hasActivity: structuredContent.hasStudentContent,
+      hasRubric: structuredContent.hasTeacherContent,
+      // Update usage tracking
+      usageCount: existingAssessment.usageCount + 1,
+      lastUsed: new Date(),
+      // Add regeneration metadata
+      regeneratedAt: new Date(),
+      regenerationCount: (existingAssessment.regenerationCount || 0) + 1,
+      // Preserve original creation date if this is the first regeneration
+      ...(!(existingAssessment.regenerationCount > 0) && {
+        originalCreatedAt: existingAssessment.createdAt,
+      }),
+    };
+    console.log("Updating assessment with data:", {
+      id: assessmentId,
+      newTitle: updateData.title,
+      hasNewActivity: updateData.hasActivity,
+      hasNewRubric: updateData.hasRubric,
+      regenerationCount: updateData.regenerationCount,
+    });
+    // Update the assessment
+    const updatedAssessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      updateData,
+      { new: true, runValidators: true }
+    )
+      .populate({
+        path: "lessonPlanId",
+        select: "parameters plan",
+      })
+      .populate({
+        path: "classId",
+        select: "className grade subject",
+      })
+      .populate({
+        path: "createdBy",
+        select: "name",
+      });
+    if (!updatedAssessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Failed to update assessment",
+      });
+    }
+    console.log("Assessment successfully regenerated:", {
+      id: updatedAssessment._id,
+      title: updatedAssessment.title,
+      hasActivity: updatedAssessment.hasActivity,
+      hasRubric: updatedAssessment.hasRubric,
+      regenerationCount: updatedAssessment.regenerationCount,
+    });
+    // Return the updated assessment
+    res.status(200).json({
+      success: true,
+      message: "Assessment regenerated successfully",
+      data: updatedAssessment,
+      generatedContent: updatedAssessment.generatedContent,
+    });
+  } catch (error) {
+    console.error("Error in regenerateAssessment:", error);
+    // Check if it's a Gemini API related error
+    if (
+      error.message.includes("API_KEY") ||
+      error.message.includes("401") ||
+      error.message.includes("Invalid API key")
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid Gemini API key. Please check your API key in profile settings.",
+      });
+    }
+    // Check if it's a quota error
+    if (error.message.includes("quota") || error.message.includes("429")) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Gemini API quota exceeded. Please try again later or check your API limits.",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error regenerating assessment",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 // Export all controller functions
 module.exports = {
-generateFromLessonPlan,
-createStandaloneAssessment,
-getStandaloneAssessments,
-updateStandaloneAssessment,
-deleteStandaloneAssessment,
-saveAssessment,
-getUserAssessments,
-getAssessmentById,
-deleteAssessment,
-updateAssessment,
-getLessonPlansWithoutAssessments,
-getUserAssessmentsFiltered,
-regenerateAssessment,
+  generateFromLessonPlan,
+  createStandaloneAssessment,
+  getStandaloneAssessments,
+  updateStandaloneAssessment,
+  deleteStandaloneAssessment,
+  saveAssessment,
+  getUserAssessments,
+  getAssessmentById,
+  deleteAssessment,
+  updateAssessment,
+  getLessonPlansWithoutAssessments,
+  getUserAssessmentsFiltered,
+  regenerateAssessment,
 };

@@ -26,9 +26,9 @@ const corsOptions = {
 
 // middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); 
+app.use(express.json({ limit: '50mb' })); // Increased limit for image uploads
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Increased limit for image uploads
+app.use(cookieParser());
 app.use(morgan("dev"));
 
 // Import routes

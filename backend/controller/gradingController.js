@@ -2,9 +2,11 @@
 const StudentAnswer = require("../model/StudentAnswer");
 const Assessment = require("../model/Assessment");
 const User = require("../model/User");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const {
   gradeSubmission,
   regradeAnswer,
+  gradeSpmAnswerSheet,
 } = require("../services/gradingService");
 
 /**
@@ -444,6 +446,263 @@ exports.getGradingStatus = async (req, res) => {
       success: false,
       message: "Error fetching grading status",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Process and Grade SPM Paper 1 Answer Sheet (Combined)
+ * @route   POST /api/grading/process-and-grade-spm
+ * @access  Private
+ */
+exports.processAndGradeSpmAnswerSheet = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    console.log("📝 Processing and Grading SPM Paper 1 Answer Sheet...");
+
+    const { image, assessmentId, classId, studentId } = req.body;
+
+    // Validate required fields
+    if (!image || !assessmentId || !classId || !studentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: image, assessmentId, classId, studentId",
+      });
+    }
+
+    // Validate base64 format
+    if (!image.startsWith("data:image/")) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image format. Expected base64 data URL.",
+      });
+    }
+
+    // Get user with Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message: "No Gemini API key found.",
+      });
+    }
+
+    // Get assessment with answer key
+    const assessment = await Assessment.findById(assessmentId);
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Verify it's an SPM exam
+    if (assessment.activityType !== "spm-exam") {
+      return res.status(400).json({
+        success: false,
+        message: "This endpoint is only for SPM Paper 1 exams",
+      });
+    }
+
+    // Get answer key
+    const answerKey = assessment.generatedContent?.answerKeyContent?.answers || [];
+    if (answerKey.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Assessment does not have an answer key",
+      });
+    }
+
+    console.log("🔑 Using Gemini for bubble detection...");
+
+    // Extract base64 data
+    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid base64 image format",
+      });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    // Initialize Gemini for OCR
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+    // Hybrid detection prompt (bubbles for Q1-36, text for Q37-40)
+    const prompt = `You are analyzing an SPM Paper 1 answer sheet with 40 questions.
+
+ANSWER SHEET STRUCTURE:
+The answer sheet has a table with 3 columns:
+1. Question numbers (1-40) in the left column
+2. Answer bubbles (A-H circles) in the middle column - for MCQ answers
+3. "SPACE FOR ANSWER THAT ARE A WORD, PHRASE OR NUMBER" in the right column - for written answers
+
+DETECTION RULES:
+- **Questions 1-36**: MCQ only - detect which bubble (A-H) is filled/darkened
+- **Questions 37-40**: Written answers only - extract the word/phrase/number from the RIGHT COLUMN (third column)
+
+Your task:
+1. For Q1-36: Detect filled bubbles (A-H). Return letter only.
+   - If no bubble filled, return "BLANK"
+   - If multiple bubbles filled, return "MULTIPLE"
+
+2. For Q37-40: Extract text from the RIGHT COLUMN (written answer space).
+   - Return the exact word/phrase/number written
+   - If nothing written, return "BLANK"
+   - Ignore bubbles for Q37-40
+
+Return a JSON object with this EXACT structure:
+{
+  "answers": [
+    {"questionNumber": 1, "selectedAnswer": "A", "confidence": 0.95, "answerType": "mcq"},
+    {"questionNumber": 2, "selectedAnswer": "B", "confidence": 0.90, "answerType": "mcq"},
+    ...questions 1-36 are "mcq" type...
+    {"questionNumber": 37, "selectedAnswer": "photosynthesis", "confidence": 0.85, "answerType": "written"},
+    {"questionNumber": 38, "selectedAnswer": "enzyme", "confidence": 0.90, "answerType": "written"},
+    {"questionNumber": 39, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
+    {"questionNumber": 40, "selectedAnswer": "mitochondria", "confidence": 0.88, "answerType": "written"}
+  ],
+  "overallConfidence": 0.92,
+  "metadata": {
+    "totalQuestions": 40,
+    "mcqQuestions": 36,
+    "writtenQuestions": 4,
+    "answeredQuestions": 38,
+    "blankQuestions": 2,
+    "ambiguousQuestions": 0,
+    "notes": "Any relevant observations"
+  }
+}
+
+CRITICAL RULES:
+- Return ALL 40 questions even if blank
+- Confidence should be 0.0-1.0
+- Q1-36: Look for filled/darkened circles next to letters A-H in MIDDLE column
+- Q37-40: Extract handwritten/printed text from RIGHT column (word/phrase/number space)
+- Be conservative: if uncertain, mark as "BLANK" with low confidence
+- For Q37-40, ignore the bubbles completely - only read the written answer space`;
+
+    // Call Gemini Vision API
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { mimeType, data: base64Data } },
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse OCR response
+    let detectionResult;
+    try {
+      const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      detectionResult = JSON.parse(cleanedText);
+
+      if (!detectionResult.answers || detectionResult.answers.length !== 40) {
+        throw new Error(`Expected 40 answers, got ${detectionResult.answers?.length || 0}`);
+      }
+    } catch (parseError) {
+      console.error("❌ Failed to parse detection results:", parseError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to parse answer sheet detection results",
+        error: parseError.message,
+      });
+    }
+
+    console.log(`✅ Detected ${detectionResult.metadata?.answeredQuestions || 0}/40 answers`);
+    console.log("🎯 Now grading answers...");
+
+    // Grade the detected answers
+    const gradingResults = gradeSpmAnswerSheet(detectionResult.answers, answerKey);
+
+    // Create submission record
+    const submission = new StudentAnswer({
+      assessmentId,
+      lessonPlanId: assessment.lessonPlanId,
+      classId,
+      studentId,
+      submissionMethod: "upload_image",
+      processingStatus: "completed",
+      answers: detectionResult.answers.map((detected, index) => {
+        const gradingResult = gradingResults.results[index];
+        return {
+          questionNumber: detected.questionNumber,
+          questionText: `Question ${detected.questionNumber}`,
+          originalImage: image,
+          ocrData: {
+            extractedText: detected.selectedAnswer,
+            confidence: detected.confidence,
+            metadata: {
+              detectionMethod: "bubble_detection",
+              model: "gemini-2.0-flash-exp",
+            },
+            processedAt: new Date(),
+          },
+          grading: {
+            aiScore: {
+              score: gradingResult.score,
+              maxScore: gradingResult.maxScore,
+              percentage: gradingResult.isCorrect ? 100 : 0,
+              feedback: gradingResult.feedback,
+              reasoning: gradingResult.feedback,
+              scoredAt: new Date(),
+            },
+            finalScore: gradingResult.score,
+            isManuallyAdjusted: false,
+          },
+          status: "graded",
+        };
+      }),
+      overallStats: {
+        totalQuestions: gradingResults.summary.totalQuestions,
+        questionsAttempted: gradingResults.summary.correctAnswers + gradingResults.summary.incorrectAnswers,
+        totalScore: gradingResults.summary.totalScore,
+        maxPossibleScore: gradingResults.summary.maxPossibleScore,
+        percentage: parseFloat(gradingResults.summary.percentage),
+        averageConfidence: parseFloat(gradingResults.summary.averageConfidence),
+        processingTime: (Date.now() - startTime) / 1000,
+      },
+    });
+
+    await submission.save();
+
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log(`✅ Processing and grading completed in ${processingTime}s`);
+    console.log(`📊 Final Score: ${gradingResults.summary.totalScore}/${gradingResults.summary.maxPossibleScore} (${gradingResults.summary.percentage}%)`);
+
+    res.status(200).json({
+      success: true,
+      message: "SPM answer sheet processed and graded successfully",
+      data: {
+        submissionId: submission._id,
+        detectionResults: {
+          answers: detectionResult.answers,
+          metadata: detectionResult.metadata,
+        },
+        gradingResults: {
+          results: gradingResults.results,
+          summary: gradingResults.summary,
+        },
+        overallStats: submission.overallStats,
+        processingTime: `${processingTime}s`,
+      },
+    });
+  } catch (error) {
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`❌ Process and grade error after ${processingTime}s:`, error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error processing and grading answer sheet",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      processingTime: `${processingTime}s`,
     });
   }
 };

@@ -7,10 +7,14 @@ const {
   scoreAnswer,
   batchGradeSubmissions,
   getGradingStatus,
+  processAndGradeSpmAnswerSheet,
 } = require("../controller/gradingController");
 
 // Apply authentication to all routes
 router.use(protect);
+
+// SPM Answer Sheet Processing (Combined OCR + Grading)
+router.post("/process-and-grade-spm", processAndGradeSpmAnswerSheet); // POST /api/grading/process-and-grade-spm
 
 // Grading routes
 router.post("/score-submission/:submissionId", scoreSubmission); // POST /api/grading/score-submission/:submissionId

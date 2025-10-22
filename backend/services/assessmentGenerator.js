@@ -178,7 +178,7 @@ class AssessmentGenerator {
   async generateAssessment(data) {
     console.log("✅ Generating assessment content...");
 
-    const numberOfQuestions = data.numberOfQuestions || 20;
+    const numberOfQuestions = data.numberOfQuestions || 40;
     console.log(`Generating assessment with ${numberOfQuestions} questions`);
 
     try {
