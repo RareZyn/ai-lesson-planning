@@ -40,6 +40,11 @@ const studentAnswerSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Answer Sheet Image (for SPM - store once instead of per answer)
+    answerSheetImage: {
+      type: String, // Base64 or URL - stored once for entire sheet
+    },
+
     // Question-Answer Pairs (Array for multiple questions)
     answers: [
       {

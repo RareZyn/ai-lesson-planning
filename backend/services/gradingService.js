@@ -23,7 +23,7 @@ const gradeAnswer = async (gradingData) => {
 
     // For subjective questions, use AI grading
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = buildGradingPrompt(
       questionText,
@@ -331,10 +331,192 @@ const regradeAnswer = async (answer, keyAnswer, geminiApiKey) => {
   return gradingResult;
 };
 
+/**
+ * Grade SPM Answer Sheet (Hybrid: 36 MCQ + 4 written answers)
+ * @param {Array} detectedAnswers - Array of detected answers from OCR [{questionNumber, selectedAnswer, confidence, answerType}]
+ * @param {Array} answerKey - Answer key from assessment
+ * @returns {Object} Grading results with score breakdown
+ */
+const gradeSpmAnswerSheet = (detectedAnswers, answerKey) => {
+  if (!detectedAnswers || !Array.isArray(detectedAnswers)) {
+    throw new Error("Invalid detected answers format");
+  }
+
+  if (!answerKey || !Array.isArray(answerKey)) {
+    throw new Error("Invalid answer key format");
+  }
+
+  const results = [];
+  let totalScore = 0;
+  let totalQuestions = 0;
+  let correctAnswers = 0;
+  let incorrectAnswers = 0;
+  let blankAnswers = 0;
+  let ambiguousAnswers = 0;
+  let mcqCorrect = 0;
+  let writtenCorrect = 0;
+
+  // Process each detected answer
+  detectedAnswers.forEach((detected) => {
+    const questionNumber = detected.questionNumber;
+    const studentAnswer = detected.selectedAnswer;
+    const confidence = detected.confidence || 0;
+    const answerType = detected.answerType || "mcq"; // Default to MCQ for backward compatibility
+
+    // Find corresponding answer key
+    const keyAnswer = answerKey.find((key) => key.questionNumber === questionNumber);
+
+    if (!keyAnswer) {
+      results.push({
+        questionNumber,
+        studentAnswer,
+        correctAnswer: "N/A",
+        isCorrect: false,
+        score: 0,
+        maxScore: 1,
+        confidence,
+        answerType,
+        status: "no_answer_key",
+        feedback: "No answer key found for this question",
+      });
+      return;
+    }
+
+    const correctAnswer = normalizeAnswer(keyAnswer.correctAnswer);
+    const normalizedStudentAnswer = normalizeAnswer(studentAnswer);
+    const maxScore = keyAnswer.points || keyAnswer.marks || 1;
+
+    totalQuestions++;
+
+    // Handle special cases
+    if (studentAnswer === "BLANK" || !studentAnswer) {
+      blankAnswers++;
+      results.push({
+        questionNumber,
+        studentAnswer: "BLANK",
+        correctAnswer: keyAnswer.correctAnswer,
+        isCorrect: false,
+        score: 0,
+        maxScore,
+        confidence,
+        answerType,
+        status: "blank",
+        feedback: "Question was not answered",
+      });
+      return;
+    }
+
+    if (studentAnswer === "MULTIPLE") {
+      ambiguousAnswers++;
+      results.push({
+        questionNumber,
+        studentAnswer: "MULTIPLE",
+        correctAnswer: keyAnswer.correctAnswer,
+        isCorrect: false,
+        score: 0,
+        maxScore,
+        confidence,
+        answerType,
+        status: "multiple",
+        feedback: "Multiple answers detected - requires manual review",
+      });
+      return;
+    }
+
+    // Check if answer is correct
+    const isCorrect = normalizedStudentAnswer === correctAnswer;
+    const score = isCorrect ? maxScore : 0;
+
+    if (isCorrect) {
+      correctAnswers++;
+      if (answerType === "mcq") {
+        mcqCorrect++;
+      } else if (answerType === "written") {
+        writtenCorrect++;
+      }
+    } else {
+      incorrectAnswers++;
+    }
+
+    totalScore += score;
+
+    results.push({
+      questionNumber,
+      studentAnswer,
+      correctAnswer: keyAnswer.correctAnswer,
+      isCorrect,
+      score,
+      maxScore,
+      confidence,
+      answerType,
+      status: isCorrect ? "correct" : "incorrect",
+      feedback: isCorrect
+        ? "Correct!"
+        : `Incorrect. Correct answer: ${keyAnswer.correctAnswer}`,
+    });
+  });
+
+  // Calculate statistics
+  const maxPossibleScore = totalQuestions; // Assuming 1 mark per question
+  const percentage = totalQuestions > 0 ? (totalScore / maxPossibleScore) * 100 : 0;
+  const averageConfidence =
+    detectedAnswers.length > 0
+      ? detectedAnswers.reduce((sum, a) => sum + (a.confidence || 0), 0) / detectedAnswers.length
+      : 0;
+
+  // Breakdown by answer type
+  const mcqCount = detectedAnswers.filter((a) => a.answerType === "mcq").length;
+  const writtenCount = detectedAnswers.filter((a) => a.answerType === "written").length;
+
+  return {
+    results,
+    summary: {
+      totalQuestions,
+      correctAnswers,
+      incorrectAnswers,
+      blankAnswers,
+      ambiguousAnswers,
+      totalScore,
+      maxPossibleScore,
+      percentage: percentage.toFixed(2),
+      averageConfidence: averageConfidence.toFixed(2),
+      grade: calculateGrade(percentage),
+      breakdown: {
+        mcq: {
+          total: mcqCount,
+          correct: mcqCorrect,
+          percentage: mcqCount > 0 ? ((mcqCorrect / mcqCount) * 100).toFixed(2) : "0.00",
+        },
+        written: {
+          total: writtenCount,
+          correct: writtenCorrect,
+          percentage: writtenCount > 0 ? ((writtenCorrect / writtenCount) * 100).toFixed(2) : "0.00",
+        },
+      },
+    },
+    scoredAt: new Date(),
+  };
+};
+
+/**
+ * Calculate grade based on percentage
+ */
+const calculateGrade = (percentage) => {
+  if (percentage >= 90) return "A+";
+  if (percentage >= 80) return "A";
+  if (percentage >= 70) return "B";
+  if (percentage >= 60) return "C";
+  if (percentage >= 50) return "D";
+  if (percentage >= 40) return "E";
+  return "F";
+};
+
 module.exports = {
   gradeAnswer,
   gradeSubmission,
   regradeAnswer,
   gradeObjectiveQuestion,
+  gradeSpmAnswerSheet,
   normalizeAnswer,
+  calculateGrade,
 };

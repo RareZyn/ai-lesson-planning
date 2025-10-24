@@ -8,6 +8,7 @@ const {
   batchProcessOCR,
   getOCRStatus,
   retryFailedOCR,
+  processSpmAnswerSheet,
 } = require("../controller/ocrController");
 
 // Apply authentication to all routes
@@ -15,6 +16,9 @@ router.use(protect);
 
 // Standalone OCR routes
 router.post("/extract", extractTextFromImage); // POST /api/ocr/extract
+
+// SPM Answer Sheet Processing (MCQ bubble detection)
+router.post("/process-spm-answer-sheet", processSpmAnswerSheet); // POST /api/ocr/process-spm-answer-sheet
 
 // Submission-based OCR routes
 router.post("/process-submission/:submissionId", processSubmissionOCR); // POST /api/ocr/process-submission/:submissionId

@@ -96,10 +96,117 @@
     color: #5f6368;
 }
 
+.settings-item {
+    color: #202124;
+}
+
+.settings-item:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
 .logout-item {
     color: #d32f2f;
 }
 
 .logout-item .menu-icon {
     color: inherit;
+}
+
+/* Settings Modal Styles */
+.settings-modal .ant-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+    padding: 20px 24px;
+}
+
+.settings-modal .ant-modal-title {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.settings-modal .ant-modal-close {
+    color: white;
+}
+
+.settings-modal .ant-modal-close:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.settings-modal .ant-modal-body {
+    padding: 24px;
+}
+
+.settings-modal .ant-form-item-label > label {
+    font-weight: 500;
+    color: #202124;
+    font-size: 14px;
+}
+
+.settings-modal .ant-input,
+.settings-modal .ant-input-password {
+    border-radius: 8px;
+    border: 1px solid #d9d9d9;
+    transition: all 0.3s;
+}
+
+.settings-modal .ant-input:focus,
+.settings-modal .ant-input-password:focus,
+.settings-modal .ant-input-password .ant-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.settings-modal .ant-input:disabled {
+    background-color: #f5f5f5;
+    color: #8c8c8c;
+    cursor: not-allowed;
+}
+
+.settings-modal .ant-form-item-explain-error {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.settings-modal .ant-btn {
+    border-radius: 8px;
+    font-weight: 500;
+    height: 40px;
+    padding: 0 24px;
+}
+
+.settings-modal .ant-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.settings-modal .ant-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5568d3 0%, #65408b 100%);
+}
+
+.settings-modal .ant-btn-default {
+    border: 1px solid #d9d9d9;
+    color: #595959;
+}
+
+.settings-modal .ant-btn-default:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Bootstrap utility classes compatibility */
+.d-flex {
+    display: flex !important;
+}
+
+.justify-content-end {
+    justify-content: flex-end !important;
+}
+
+.gap-2 {
+    gap: 8px !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
 }

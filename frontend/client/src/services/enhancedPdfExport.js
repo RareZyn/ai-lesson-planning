@@ -60,6 +60,8 @@ class EnhancedPdfExport {
    * This ensures NO question is ever split across pages
    */
   async exportSpmExamQuestionByQuestion(element, fileName, options) {
+    console.log("🎯 STARTING SPM EXAM EXPORT - FULL DEBUG MODE");
+
     const doc = new jsPDF({
       ...this.defaultOptions,
       ...options,
@@ -69,17 +71,13 @@ class EnhancedPdfExport {
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 10;
     const contentWidth = pageWidth - margin * 2;
-    const maxContentHeight = pageHeight - margin * 2;
-
-    console.log("📄 Creating SPM exam PDF with question-by-question rendering");
 
     // Step 1: Add header page
     const headerInfo = this.extractSpmHeader(element);
     this.addSpmHeaderPage(doc, headerInfo);
 
-    // Step 2: Find ALL individual renderable elements (parts, passages, questions)
+    // Step 2: Find ALL renderable elements
     const renderableElements = this.findAllRenderableElements(element);
-
     console.log(`📊 Found ${renderableElements.length} renderable elements`);
 
     // Step 3: Add first content page
@@ -89,11 +87,9 @@ class EnhancedPdfExport {
     // Step 4: Render each element
     for (let i = 0; i < renderableElements.length; i++) {
       const item = renderableElements[i];
-
       console.log(`📝 Processing ${item.type} ${item.number || i + 1}...`);
 
       try {
-        // Capture this element
         const canvas = await html2canvas(item.element, {
           scale: 2,
           useCORS: true,
@@ -106,36 +102,78 @@ class EnhancedPdfExport {
         const imgWidth = contentWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        console.log(
-          `📏 ${item.type} ${item.number || i + 1}: ${imgWidth}x${imgHeight}mm`
-        );
+        console.log(`📏 ${item.type} ${item.number || i + 1}: ${imgWidth}x${imgHeight}mm`);
 
-        // CRITICAL: Check if element fits on current page
+        // Check if element fits on current page
         if (currentY + imgHeight > pageHeight - margin) {
           console.log(`📄 ${item.type} ${item.number || i + 1} needs new page`);
           doc.addPage();
           currentY = margin;
         }
 
-        // Add element to PDF
         doc.addImage(imgData, "PNG", margin, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 3; // Small spacing
+        currentY += imgHeight + 3;
 
-        console.log(
-          `✅ Added ${item.type} ${item.number || i + 1} at Y=${currentY}mm`
-        );
+        console.log(`✅ Added ${item.type} ${item.number || i + 1} at Y=${currentY}mm`);
       } catch (error) {
-        console.error(
-          `❌ Failed to process ${item.type} ${item.number || i + 1}:`,
-          error
-        );
+        console.error(`❌ Failed to process ${item.type} ${item.number || i + 1}:`, error);
       }
+    }
+
+    // **FIX: Append answer sheet for Paper 1**
+    if (headerInfo.title.includes("Paper 1") || headerInfo.title.includes("1119/1")) {
+      console.log("📋 Appending SPM Paper 1 answer sheet...");
+      this.addSpmAnswerSheet(doc);
     }
 
     doc.save(fileName);
     console.log(`✅ SPM exam PDF saved as ${fileName}`);
 
     return { success: true, fileName };
+  }
+
+  /**
+   * Add SPM Paper 1 Answer Sheet (MCQ Bubble Sheet)
+   */
+  addSpmAnswerSheet(doc) {
+    doc.addPage();
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("NAMA:", margin, margin + 5);
+    doc.text("ANGKA GILIRAN:", margin, margin + 10);
+    doc.text("TINGKATAN:", pageWidth - 50, margin + 10);
+
+    // Answer grid
+    doc.setFontSize(8);
+    doc.text("ANSWER BOX FOR LETTERS (MULTIPLE CHOICE)", margin, margin + 20);
+
+    const startY = margin + 25;
+    const rowHeight = 5;
+    const colWidth = 12;
+
+    for (let q = 1; q <= 40; q++) {
+      const y = startY + (q - 1) * rowHeight;
+
+      // Question number
+      doc.setFont("helvetica", "bold");
+      doc.text(q.toString(), margin, y);
+
+      // Answer bubbles A-H
+      doc.setFont("helvetica", "normal");
+      const options = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      options.forEach((opt, i) => {
+        const x = margin + 10 + i * colWidth;
+        doc.circle(x, y - 1.5, 2, 'S'); // Draw empty circle
+        doc.text(opt, x - 1, y);
+      });
+    }
+
+    console.log("✅ Answer sheet added");
   }
 
   /**
@@ -360,114 +398,227 @@ class EnhancedPdfExport {
       elements.push({ type: "Part Header", element: header, number: "5" });
     }
 
-    // Find title section
-    const titleDiv = partElement.querySelector(
-      '[style*="background: rgb(255, 250, 230)"]'
+    console.log("🔍 Extracting Part 5 elements...");
+
+    // Find the complete passage with all 6 paragraphs
+    // Look for the green background div that contains the full text
+    const passageContainer = partElement.querySelector(
+      '[style*="background: rgb(246, 255, 237)"], [style*="background:#f6ffed"], .passage'
     );
-    if (titleDiv) {
-      elements.push({ type: "Title", element: titleDiv });
-    }
 
-    // Find all paragraphs (A-F)
-    const allDivs = Array.from(partElement.querySelectorAll("div, p"));
+    if (passageContainer && passageContainer.textContent.length > 500) {
+      console.log("✅ Found complete passage container");
 
-    allDivs.forEach((div) => {
-      const text = div.textContent.trim();
+      // Extract individual paragraphs A-F from within the passage
+      const paragraphLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const passageText = passageContainer.textContent;
 
-      // Match paragraph markers like **A**, **Paragraph A**, etc.
-      if (
-        text.match(/^\*\*[A-F]\*\*/) ||
-        text.match(/^\*\*Paragraph [A-F]\*\*/)
-      ) {
-        // Find the container that includes the full paragraph
-        let container = div;
-        while (container.parentElement && container.textContent.length < 200) {
-          container = container.parentElement;
-          if (container.classList.contains("exam-part")) break;
+      // Try to find each paragraph by looking for its label
+      paragraphLabels.forEach(label => {
+        // Look for paragraph markers: **A**, **Paragraph A**, etc.
+        const regex = new RegExp(`\\*\\*${label}\\*\\*|\\*\\*Paragraph ${label}\\*\\*`, 'i');
+
+        if (regex.test(passageText)) {
+          // Find the element containing this paragraph
+          const paragraphElements = Array.from(
+            passageContainer.querySelectorAll('div, p')
+          );
+
+          for (let el of paragraphElements) {
+            if (regex.test(el.textContent) && el.textContent.length > 40) {
+              // Find the container with the full paragraph content
+              let container = el;
+
+              // Walk up to find a container with substantial content (60+ words)
+              while (
+                container.parentElement &&
+                container.parentElement !== passageContainer &&
+                container.textContent.split(/\s+/).length < 50
+              ) {
+                container = container.parentElement;
+              }
+
+              // Verify this container has enough content
+              if (container.textContent.length > 50) {
+                elements.push({
+                  type: "Paragraph",
+                  element: container,
+                  number: label,
+                });
+                console.log(`✅ Found Paragraph ${label}: ${container.textContent.substring(0, 60)}...`);
+                break;
+              }
+            }
+          }
         }
+      });
 
+      // If we didn't find individual paragraphs, add the whole passage
+      if (elements.filter(e => e.type === "Paragraph").length === 0) {
+        console.log("⚠️ Could not extract individual paragraphs, using full passage");
         elements.push({
-          type: "Paragraph",
-          element: container,
-          number: text.match(/[A-F]/)[0],
+          type: "Full Passage",
+          element: passageContainer,
+          number: "A-F"
         });
       }
-    });
+    }
 
-    // Find Questions section (orange box for 33-36)
-    const questionsSection1 = this.findQuestionsSection(partElement, 33, 36);
-    if (questionsSection1) {
+    // Find Questions 33-36 section (orange box)
+    const questionsSection1 = partElement.querySelector(
+      '[style*="background: rgb(255, 243, 224)"]'
+    );
+
+    if (questionsSection1 && questionsSection1.textContent.includes("33")) {
       elements.push({
         type: "Questions Section",
         element: questionsSection1,
         number: "33-36",
       });
+      console.log("✅ Found Questions 33-36 section");
     }
 
     // Find individual questions 33-36
-    const questions3336 = this.findIndividualQuestions(partElement, 33, 36);
-    elements.push(...questions3336);
+    console.log("🔍 Searching for questions 33-36...");
+    const questions3336 = this.collectQuestionsRange(partElement, 33, 36);
+    if (questions3336.length > 0) {
+      elements.push(...questions3336);
+      console.log(`✅ Found ${questions3336.length} questions (33-36)`);
+    }
 
-    // Find Questions section (orange box for 37-40)
-    const questionsSection2 = this.findQuestionsSection(partElement, 37, 40);
-    if (questionsSection2) {
-      elements.push({
-        type: "Questions Section",
-        element: questionsSection2,
-        number: "37-40",
-      });
+    // Find Questions 37-40 section (orange box)
+    const allOrangeBoxes = partElement.querySelectorAll(
+      '[style*="background: rgb(255, 243, 224)"]'
+    );
+
+    for (let box of allOrangeBoxes) {
+      if (box.textContent.includes("37") && box.textContent.includes("40")) {
+        elements.push({
+          type: "Questions Section",
+          element: box,
+          number: "37-40",
+        });
+        console.log("✅ Found Questions 37-40 section");
+        break;
+      }
     }
 
     // Find individual questions 37-40
-    const questions3740 = this.findIndividualQuestions(partElement, 37, 40);
-    elements.push(...questions3740);
+    console.log("🔍 Searching for questions 37-40...");
+    const questions3740 = this.collectQuestionsRange(partElement, 37, 40);
+    if (questions3740.length > 0) {
+      elements.push(...questions3740);
+      console.log(`✅ Found ${questions3740.length} questions (37-40)`);
+    }
 
-    console.log(`✓ Part 5: ${elements.length} elements`);
+    console.log(`✅ Part 5 complete: ${elements.length} total elements`);
     return elements;
   }
 
-  /**
-   * Find questions section (the orange instruction box)
-   */
-  findQuestionsSection(container, startQ, endQ) {
-    const divs = container.querySelectorAll("div");
 
-    for (let div of divs) {
-      const text = div.textContent.trim();
-      if (
-        text.includes(`Questions ${startQ}`) ||
-        text.includes(`Questions ${startQ} -`)
-      ) {
-        return div;
-      }
-    }
-
-    return null;
+  isQuestionStartText(text, qNum) {
+    if (!text) return false;
+    const t = text.trim();
+    // Accept several common formats (case-insensitive where appropriate)
+    const patterns = [
+      new RegExp(`^${qNum}\\.\\s+`),        // "18. "
+      new RegExp(`^${qNum}\\)`),            // "18)"
+      new RegExp(`^\\(${qNum}\\)`),         // "(18)"
+      new RegExp(`^Question\\s+${qNum}\\b`, 'i'), // "Question 18"
+      new RegExp(`\\b${qNum}\\.\\s+\\w+`)   // "18. Some text" (fallback)
+    ];
+    return patterns.some(p => p.test(t));
   }
 
   /**
-   * Find individual questions in a range
+   * Clone and expand `matchEl` into a wrapper that includes subsequent sibling nodes
+   * until we detect the next question start (or reach safety limit).
+   * Returns a DOM element (wrapper) that can be rendered by html2canvas.
    */
-  findIndividualQuestions(container, startQ, endQ) {
-    const questions = [];
-    const divs = container.querySelectorAll("div");
+  expandToFullQuestionContainer(matchEl, nextQuestionNumber) {
+    // Create wrapper with same display characteristics so layout stays stable
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'block';
+    wrapper.style.boxSizing = 'border-box';
+    // copy computed width if available (keeps rendering consistent)
+    try {
+      const rect = matchEl.getBoundingClientRect();
+      if (rect && rect.width) wrapper.style.width = rect.width + 'px';
+    } catch (e) { /* non-blocking */ }
 
-    divs.forEach((div) => {
-      const text = div.textContent.trim();
+    // Append clone of matched element first
+    wrapper.appendChild(matchEl.cloneNode(true));
 
-      for (let q = startQ; q <= endQ; q++) {
-        if (text.match(new RegExp(`^${q}\\.`))) {
-          questions.push({
-            type: "Question",
-            element: div,
-            number: q.toString(),
-          });
+    // Walk subsequent siblings of the original element and append clones
+    let sibling = matchEl.nextElementSibling;
+    let safety = 0;
+    const MAX_SIBLINGS = 50; // safety guard
+    while (sibling && safety < MAX_SIBLINGS) {
+      const sText = (sibling.textContent || '').trim();
+
+      // Stop collecting if the sibling *looks like* the next question start
+      if (nextQuestionNumber && this.isQuestionStartText(sText, nextQuestionNumber)) {
+        break;
+      }
+
+      // Append sibling clone
+      wrapper.appendChild(sibling.cloneNode(true));
+
+      sibling = sibling.nextElementSibling;
+      safety++;
+    }
+
+    return wrapper;
+  }
+
+  /**
+   * Collect full question containers for questions in range startQ..endQ (inclusive).
+   * Returns array of { type: "Question", element: HTMLElement, number: '18' }.
+   *
+   * Usage:
+   *   const questions3336 = this.collectQuestionsRange(partElement, 33, 36);
+   */
+  collectQuestionsRange(container, startQ, endQ) {
+    const found = [];
+    if (!container) return found;
+
+    // gather candidates once to improve speed
+    const candidates = Array.from(container.querySelectorAll('div, p, section, li, span'));
+
+    for (let q = startQ; q <= endQ; q++) {
+      let matchedEl = null;
+
+      // Prefer the first candidate whose trimmed text begins with the question number
+      for (let el of candidates) {
+        const txt = (el.textContent || '').trim();
+        if (txt.length === 0) continue;
+
+        if (this.isQuestionStartText(txt, q)) {
+          matchedEl = el;
           break;
         }
       }
-    });
 
-    return questions;
+      if (!matchedEl) {
+        console.warn(`collectQuestionsRange: Question ${q} not found in container`);
+        continue;
+      }
+
+      // Expand to include siblings until next question start
+      const nextQ = q + 1;
+      const fullContainer = this.expandToFullQuestionContainer(matchedEl, nextQ);
+
+      found.push({
+        type: 'Question',
+        element: fullContainer,
+        number: q.toString(),
+      });
+
+      console.log(`collectQuestionsRange: found Question ${q} (${(matchedEl.textContent || '').substring(0, 60)})`);
+    }
+
+    console.log(`collectQuestionsRange: collected ${found.length}/${endQ - startQ + 1} questions`);
+    return found;
   }
 
   /**
@@ -711,9 +862,8 @@ class EnhancedPdfExport {
 
       this.addFooter(doc, activityData);
 
-      const fileName = `Activity_${
-        activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
+      const fileName = `Activity_${activityData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+        }.pdf`;
       doc.save(fileName);
 
       return { success: true, fileName };
@@ -754,9 +904,8 @@ class EnhancedPdfExport {
 
       this.addFooter(doc, rubricData);
 
-      const fileName = `Rubric_${
-        rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
-      }.pdf`;
+      const fileName = `Rubric_${rubricData.title?.replace(/[^a-z0-9]/gi, "_") || "Document"
+        }.pdf`;
       doc.save(fileName);
 
       return { success: true, fileName };
@@ -998,8 +1147,7 @@ class EnhancedPdfExport {
 
         contentBlocks.push(contentBlock);
         console.log(
-          `✓ Block ${contentBlock.index} (${
-            contentBlock.type
+          `✓ Block ${contentBlock.index} (${contentBlock.type
           }): ${contentText.substring(0, 50)}...`
         );
       } catch (err) {
@@ -1428,9 +1576,8 @@ class EnhancedPdfExport {
       doc.setFontSize(8);
       doc.setTextColor(140, 140, 140);
 
-      const footerLeft = `${
-        data.title || "Document"
-      } | Generated by AI Lesson Planner`;
+      const footerLeft = `${data.title || "Document"
+        } | Generated by AI Lesson Planner`;
       doc.text(footerLeft, this.margins.left, pageHeight - 10);
 
       const footerRight = `Page ${i} of ${pageCount}`;

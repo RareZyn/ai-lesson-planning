@@ -45,6 +45,11 @@ const router = createBrowserRouter(
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
         { path: "submissions/:id/review", element: <SubmissionReviewPage /> },
 
+        // Answer Checker alias routes (alternative paths)
+        { path: "answer-checker", element: <SubmissionListPage /> },
+        { path: "answer-checker/upload", element: <SubmissionUploadPage /> },
+        { path: "answer-checker/review/:id", element: <SubmissionReviewPage /> },
+
         // Existing routes
         { path: "downloads", element: <FileDownloadPage /> },
         { path: "lessons", element: <MyLessons /> },

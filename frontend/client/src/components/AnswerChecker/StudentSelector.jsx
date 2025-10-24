@@ -204,17 +204,20 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
         </Card>
       )}
 
-      {/* Add Student Modal - SIMPLIFIED */}
+      {/* Add Student Modal */}
       <Modal
         show={showAddModal}
         onHide={() => setShowAddModal(false)}
         size="lg"
+        centered
+        scrollable
       >
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Student</Modal.Title>
-        </Modal.Header>
         <Form onSubmit={handleAddStudent}>
-          <Modal.Body>
+          <Modal.Header closeButton>
+            <Modal.Title>Add New Student</Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body style={{ maxHeight: "60vh", overflowY: "auto" }}>
             {error && (
               <Alert variant="danger" dismissible onClose={() => setError("")}>
                 {error}
@@ -286,15 +289,26 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
             </Alert>
           </Modal.Body>
 
-          <Modal.Footer>
+          <Modal.Footer className="d-flex justify-content-end border-top">
             <Button
               variant="secondary"
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                setShowAddModal(false);
+                setError("");
+                setNewStudent({ name: "", rollNumber: "", notes: "" });
+                setFormErrors({});
+              }}
               disabled={loading}
+              className="me-2"
             >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={loading}
+              style={{ minWidth: "120px" }}
+            >
               {loading ? (
                 <>
                   <Spin size="small" className="me-2" />

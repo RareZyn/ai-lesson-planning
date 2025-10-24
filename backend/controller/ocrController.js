@@ -842,10 +842,260 @@ const retryFailedOCR = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Process SPM Paper 1 Answer Sheet (MCQ bubble detection)
+ * @route   POST /api/ocr/process-spm-answer-sheet
+ * @access  Private
+ */
+const processSpmAnswerSheet = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    console.log("📝 Processing SPM Paper 1 Answer Sheet...");
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    const { image, assessmentId } = req.body;
+
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: "No image data provided",
+      });
+    }
+
+    if (!assessmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Assessment ID is required",
+      });
+    }
+
+    // Validate base64 format
+    if (!image.startsWith("data:image/")) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image format. Expected base64 data URL.",
+      });
+    }
+
+    // Get user with Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+
+    console.log("🔑 Gemini API key found, processing answer sheet...");
+
+    // Extract base64 data and mime type
+    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid base64 image format",
+      });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+    // Specialized prompt for SPM answer sheet - HYBRID DETECTION
+    const prompt = `You are analyzing an SPM Paper 1 answer sheet with 40 questions.
+
+ANSWER SHEET STRUCTURE:
+The answer sheet has a table with 3 columns:
+1. Question numbers (1-40) in the left column
+2. Answer bubbles (A-H circles) in the middle column - for MCQ answers
+3. "SPACE FOR ANSWER THAT ARE A WORD, PHRASE OR NUMBER" in the right column - for written answers
+
+MCQ BUBBLE FORMAT (Questions 1-36):
+Each question row shows: A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝
+- The letter (A, B, C, D, E, F, G, or H) appears to the LEFT of each circle
+- When a student selects an answer, they FILL/BLACKEN/SHADE the circle next to that letter
+- Look for the FILLED/DARKENED/SHADED circle (⚫ or ●) and return the LETTER that appears to its LEFT
+- Example: If you see "A ⃝ B ● C ⃝ D ⃝", the answer is "B" (because B's circle is filled)
+- Example: If you see "A ⃝ B ⃝ C ⃝ D ⚫", the answer is "D" (because D's circle is filled)
+
+DETECTION RULES:
+- **Questions 1-36**: MCQ only - detect which circle is FILLED/BLACKENED, then return the LETTER to its left
+- **Questions 37-40**: Written answers only - extract the word/phrase/number from the RIGHT COLUMN (third column)
+
+Your task:
+1. For Q1-36: Find the FILLED/BLACKENED circle and return the letter to its LEFT.
+   - Scan the pattern: A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝
+   - Identify which circle is darkened/filled (looks like ⚫ or ● or completely shaded)
+   - Return the LETTER that appears immediately to the left of that filled circle
+   - If no circle is filled, return "BLANK"
+   - If multiple circles are filled, return "MULTIPLE"
+
+2. For Q37-40: Extract text from the RIGHT COLUMN (written answer space).
+   - Return the exact word/phrase/number written
+   - If nothing written, return "BLANK"
+   - Ignore bubbles for Q37-40
+
+Return a JSON object with this EXACT structure:
+{
+  "answers": [
+    {"questionNumber": 1, "selectedAnswer": "A", "confidence": 0.95, "answerType": "mcq"},
+    {"questionNumber": 2, "selectedAnswer": "B", "confidence": 0.90, "answerType": "mcq"},
+    ...questions 1-36 are "mcq" type...
+    {"questionNumber": 37, "selectedAnswer": "photosynthesis", "confidence": 0.85, "answerType": "written"},
+    {"questionNumber": 38, "selectedAnswer": "enzyme", "confidence": 0.90, "answerType": "written"},
+    {"questionNumber": 39, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
+    {"questionNumber": 40, "selectedAnswer": "mitochondria", "confidence": 0.88, "answerType": "written"}
+  ],
+  "overallConfidence": 0.92,
+  "metadata": {
+    "totalQuestions": 40,
+    "mcqQuestions": 36,
+    "writtenQuestions": 4,
+    "answeredQuestions": 38,
+    "blankQuestions": 2,
+    "ambiguousQuestions": 0,
+    "notes": "Any relevant observations"
+  }
+}
+
+CRITICAL RULES:
+- Return ALL 40 questions even if blank
+- Confidence should be 0.0-1.0
+- Q1-36: The format is "LETTER ⃝" repeated (A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝)
+- When a circle is FILLED/BLACK (⚫), return the letter to its LEFT
+- Q37-40: Extract handwritten/printed text from RIGHT column (word/phrase/number space)
+- Be conservative: if uncertain, mark as "BLANK" with low confidence
+- For Q37-40, ignore the bubbles completely - only read the written answer space`;
+
+    console.log("🚀 Sending answer sheet to Gemini Vision API...");
+
+    // Call Gemini Vision API
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data,
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("📥 Received response from Gemini");
+
+    // Parse response
+    let detectionResult;
+    try {
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+      detectionResult = JSON.parse(cleanedText);
+
+      // Validate structure
+      if (
+        !detectionResult.answers ||
+        !Array.isArray(detectionResult.answers) ||
+        detectionResult.answers.length !== 40
+      ) {
+        throw new Error(
+          `Invalid response structure: expected 40 answers, got ${detectionResult.answers?.length || 0}`
+        );
+      }
+    } catch (parseError) {
+      console.error("❌ Failed to parse Gemini response:", parseError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to parse answer sheet detection results",
+        error: parseError.message,
+        rawResponse: text.substring(0, 500), // First 500 chars for debugging
+      });
+    }
+
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log(`✅ Answer sheet processed in ${processingTime}s`);
+    console.log(
+      `📊 Detected ${detectionResult.metadata?.answeredQuestions || 0}/40 answers`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        answers: detectionResult.answers,
+        overallConfidence: detectionResult.overallConfidence,
+        metadata: {
+          ...detectionResult.metadata,
+          processingTime: `${processingTime}s`,
+          model: "gemini-2.0-flash-exp",
+        },
+      },
+      message: "Answer sheet processed successfully",
+    });
+  } catch (error) {
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(
+      `❌ SPM Answer Sheet Processing Error after ${processingTime}s:`,
+      error
+    );
+
+    let errorMessage = "Failed to process answer sheet";
+    let statusCode = 500;
+
+    if (error.message?.includes("API_KEY_INVALID")) {
+      errorMessage =
+        "Invalid Gemini API key. Please check your API key in profile settings.";
+      statusCode = 401;
+    } else if (error.message?.includes("RESOURCE_EXHAUSTED")) {
+      errorMessage =
+        "Gemini API quota exceeded. Please try again later or check your API limits.";
+      statusCode = 429;
+    } else if (error.message?.includes("INVALID_ARGUMENT")) {
+      errorMessage =
+        "Invalid image format or size. Please ensure the image is valid.";
+      statusCode = 400;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      processingTime: `${processingTime}s`,
+    });
+  }
+};
+
 module.exports = {
   extractTextFromImage,
   processSubmissionOCR,
   batchProcessOCR,
   getOCRStatus,
   retryFailedOCR,
+  processSpmAnswerSheet,
 };
