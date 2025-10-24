@@ -1,6 +1,8 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
+const Assessment = require("../model/Assessment");
+const StudentAnswer = require("../model/StudentAnswer");
 const { lessonPlanValidationSchema } = require("../utils/validationSchema");
 
 exports.createLesson = async (req, res, next) => {
@@ -334,7 +336,7 @@ exports.updateLessonPlan = async (req, res, next) => {
   }
 };
 /**
- * @desc    Delete a lesson plan by its ID
+ * @desc    Delete a lesson plan by its ID (with cascade deletion)
  * @route   DELETE /api/lessons/:id
  * @access  Private
  */
@@ -357,12 +359,43 @@ exports.deleteLessonPlan = async (req, res, next) => {
       });
     }
 
-    // In Mongoose 6+, 'remove()' is deprecated. Use 'deleteOne()'.
+    // Cascade deletion: Delete all related data
+    const lessonPlanId = req.params.id;
+
+    // Step 1: Find all assessments based on this lesson plan
+    const assessments = await Assessment.find({ lessonPlanId: lessonPlanId });
+    const assessmentIds = assessments.map((assessment) => assessment._id);
+
+    console.log(
+      `Found ${assessments.length} assessments to delete for lesson plan ${lessonPlanId}`
+    );
+
+    // Step 2: Delete all student answer submissions related to these assessments
+    if (assessmentIds.length > 0) {
+      const studentAnswersResult = await StudentAnswer.deleteMany({
+        assessmentId: { $in: assessmentIds },
+      });
+      console.log(
+        `Deleted ${studentAnswersResult.deletedCount} student answer submissions`
+      );
+
+      // Step 3: Delete all assessments related to this lesson plan
+      const assessmentsResult = await Assessment.deleteMany({
+        lessonPlanId: lessonPlanId,
+      });
+      console.log(`Deleted ${assessmentsResult.deletedCount} assessments`);
+    }
+
+    // Step 4: Delete the lesson plan itself
     await lessonPlan.deleteOne();
 
     res.status(200).json({
       success: true,
-      data: {}, // Return an empty object on successful deletion
+      message: "Lesson plan and all related data deleted successfully",
+      data: {
+        deletedAssessments: assessmentIds.length,
+        deletedSubmissions: assessmentIds.length > 0 ? "multiple" : 0,
+      },
     });
   } catch (error) {
     console.error("Error in deleteLessonPlan:", error);

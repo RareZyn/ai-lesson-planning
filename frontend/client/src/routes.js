@@ -22,6 +22,7 @@ import ClassLessonsPage from "./pages/class/ClassLessonsPage";
 import SubmissionUploadPage from "./pages/answerChecker/SubmissionUploadPage";
 import SubmissionListPage from "./pages/answerChecker/SubmissionListPage";
 import SubmissionReviewPage from "./pages/answerChecker/SubmissionReviewPage";
+import AssessmentSubmissionsPage from "./pages/answerChecker/AssessmentSubmissionsPage";
 
 const router = createBrowserRouter(
   [
@@ -43,12 +44,12 @@ const router = createBrowserRouter(
         // NEW - Answer Checker / Submission routes
         { path: "submissions", element: <SubmissionListPage /> },
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
-        { path: "submissions/:id/review", element: <SubmissionReviewPage /> },
+        { path: "submissions/:assessmentId", element: <AssessmentSubmissionsPage /> },
+        { path: "submissions/:assessmentId/:submissionId", element: <SubmissionReviewPage /> },
 
         // Answer Checker alias routes (alternative paths)
         { path: "answer-checker", element: <SubmissionListPage /> },
         { path: "answer-checker/upload", element: <SubmissionUploadPage /> },
-        { path: "answer-checker/review/:id", element: <SubmissionReviewPage /> },
 
         // Existing routes
         { path: "downloads", element: <FileDownloadPage /> },

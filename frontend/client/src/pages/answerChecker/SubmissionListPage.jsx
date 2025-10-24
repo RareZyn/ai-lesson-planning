@@ -1,19 +1,16 @@
 // frontend/client/src/pages/answerChecker/SubmissionListPage.jsx
 import React, { useState, useEffect } from "react";
-import { Card, Button, Badge, Table, Alert, Form } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin } from "antd";
+import { Card, Button, Badge, Table, Alert, Form, Row, Col } from "react-bootstrap";
+import { Tag, Tooltip, Empty, Spin, Progress } from "antd";
 import {
   EyeOutlined,
-  DeleteOutlined,
   ReloadOutlined,
   PlusOutlined,
   FilterOutlined,
+  FileTextOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import {
-  submissionService,
-  submissionUtils,
-} from "../../services/submissionService";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -22,31 +19,23 @@ const SubmissionListPage = () => {
   const navigate = useNavigate();
 
   // State
-  const [submissions, setSubmissions] = useState([]);
+  const [assessments, setAssessments] = useState([]);
+  const [assessmentStats, setAssessmentStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [classes, setClasses] = useState([]);
-  const [assessments, setAssessments] = useState([]);
 
   // Filters
   const [filterClass, setFilterClass] = useState("");
-  const [filterAssessment, setFilterAssessment] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
 
   useEffect(() => {
     fetchClasses();
-    fetchSubmissions();
+    fetchAssessments();
   }, []);
 
   useEffect(() => {
-    if (filterClass) {
-      fetchAssessmentsByClass(filterClass);
-    }
+    fetchAssessments();
   }, [filterClass]);
-
-  useEffect(() => {
-    fetchSubmissions();
-  }, [filterClass, filterAssessment, filterStatus]);
 
   const fetchClasses = async () => {
     try {
@@ -61,83 +50,72 @@ const SubmissionListPage = () => {
     }
   };
 
-  const fetchAssessmentsByClass = async (classId) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${API_BASE_URL}/assessment/my-assessments`,
-        {
-          params: { classId },
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }
-      );
-      setAssessments(response.data.data);
-    } catch (err) {
-      console.error("Failed to fetch assessments:", err);
-    }
-  };
-
-  const fetchSubmissions = async () => {
+  const fetchAssessments = async () => {
     setLoading(true);
     setError("");
 
     try {
-      let result;
+      const token = localStorage.getItem("authToken");
+      const params = {};
 
-      if (filterClass && filterAssessment) {
-        result = await submissionService.getSubmissionsByAssessment(
-          filterAssessment,
-          {
-            status: filterStatus || undefined,
-          }
-        );
-      } else if (filterClass) {
-        result = await submissionService.getSubmissionsByClass(filterClass, {
-          assessmentId: filterAssessment || undefined,
-          status: filterStatus || undefined,
-        });
-      } else {
-        // Fetch all user's submissions
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get(`${API_BASE_URL}/answers/class/all`, {
+      if (filterClass) {
+        params.classId = filterClass;
+      }
+
+      const response = await axios.get(
+        `${API_BASE_URL}/assessment/my-assessments`,
+        {
+          params,
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
-        });
-        result = { success: true, data: response.data.data };
-      }
+        }
+      );
 
-      if (result.success) {
-        setSubmissions(result.data);
+      if (response.data.success) {
+        setAssessments(response.data.data);
+        // Fetch submission stats for each assessment
+        fetchSubmissionStats(response.data.data);
       } else {
-        setError(result.message);
+        setError(response.data.message);
       }
     } catch (err) {
-      setError("Failed to load submissions");
+      setError("Failed to load assessments");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this submission?"))
-      return;
+  const fetchSubmissionStats = async (assessmentList) => {
+    const token = localStorage.getItem("authToken");
+    const stats = {};
 
-    try {
-      const result = await submissionService.deleteSubmission(id);
-      if (result.success) {
-        fetchSubmissions();
-      } else {
-        alert(result.message);
+    // Fetch stats for each assessment
+    for (const assessment of assessmentList) {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/answers/assessment/${assessment._id}/stats`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+
+        if (response.data.success) {
+          stats[assessment._id] = response.data.data.statistics;
+        }
+      } catch (err) {
+        // If stats not available, just skip
+        stats[assessment._id] = {
+          totalSubmissions: 0,
+          totalStudentsInClass: 0,
+          submissionRate: 0,
+          overallAverage: 0,
+        };
       }
-    } catch (err) {
-      alert("Failed to delete submission");
     }
-  };
 
-  const getStatusBadge = (status) => {
-    const color = submissionUtils.getStatusColor(status);
-    return <Badge bg={color}>{status.replace(/_/g, " ").toUpperCase()}</Badge>;
+    setAssessmentStats(stats);
   };
 
   const formatDate = (date) => {
@@ -145,9 +123,23 @@ const SubmissionListPage = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
+  };
+
+  const getActivityTypeBadge = (type) => {
+    const typeColors = {
+      activity: "primary",
+      essay: "info",
+      textbook: "warning",
+      assessment: "success",
+      activityInClass: "secondary",
+      "spm-exam": "danger",
+    };
+    return (
+      <Badge bg={typeColors[type] || "secondary"}>
+        {type?.toUpperCase().replace(/-/g, " ")}
+      </Badge>
+    );
   };
 
   return (
@@ -157,9 +149,9 @@ const SubmissionListPage = () => {
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2 className="mb-2">Student Submissions</h2>
+              <h2 className="mb-2">Answer Recognition - Assessments</h2>
               <p className="text-muted mb-0">
-                View and manage all student answer submissions
+                Select an assessment to view student submissions
               </p>
             </div>
             <Button
@@ -167,7 +159,7 @@ const SubmissionListPage = () => {
               onClick={() => navigate("/app/submissions/upload")}
             >
               <PlusOutlined className="me-2" />
-              New Submission
+              Upload Submission
             </Button>
           </div>
         </Card.Body>
@@ -176,18 +168,15 @@ const SubmissionListPage = () => {
       {/* Filters */}
       <Card className="mb-4">
         <Card.Body>
-          <div className="row g-3">
-            <div className="col-md-3">
+          <Row className="g-3">
+            <Col md={6}>
               <Form.Label>
                 <FilterOutlined className="me-2" />
                 Filter by Class
               </Form.Label>
               <Form.Select
                 value={filterClass}
-                onChange={(e) => {
-                  setFilterClass(e.target.value);
-                  setFilterAssessment("");
-                }}
+                onChange={(e) => setFilterClass(e.target.value)}
               >
                 <option value="">All Classes</option>
                 {classes.map((cls) => (
@@ -196,51 +185,19 @@ const SubmissionListPage = () => {
                   </option>
                 ))}
               </Form.Select>
-            </div>
+            </Col>
 
-            <div className="col-md-3">
-              <Form.Label>Filter by Assessment</Form.Label>
-              <Form.Select
-                value={filterAssessment}
-                onChange={(e) => setFilterAssessment(e.target.value)}
-                disabled={!filterClass}
-              >
-                <option value="">All Assessments</option>
-                {assessments.map((assessment) => (
-                  <option key={assessment._id} value={assessment._id}>
-                    {assessment.title}
-                  </option>
-                ))}
-              </Form.Select>
-            </div>
-
-            <div className="col-md-3">
-              <Form.Label>Filter by Status</Form.Label>
-              <Form.Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="processing_ocr">Processing OCR</option>
-                <option value="processing_grading">Grading</option>
-                <option value="completed">Completed</option>
-                <option value="requires_review">Requires Review</option>
-                <option value="error">Error</option>
-              </Form.Select>
-            </div>
-
-            <div className="col-md-3 d-flex align-items-end">
+            <Col md={6} className="d-flex align-items-end">
               <Button
                 variant="outline-secondary"
-                onClick={fetchSubmissions}
-                className="w-100"
+                onClick={fetchAssessments}
+                className="w-40"
               >
-                <ReloadOutlined className="me-2" />
+                <ReloadOutlined className="me-2 " />
                 Refresh
               </Button>
-            </div>
-          </div>
+            </Col>
+          </Row>
         </Card.Body>
       </Card>
 
@@ -251,120 +208,127 @@ const SubmissionListPage = () => {
         </Alert>
       )}
 
-      {/* Submissions Table */}
+      {/* Assessments Table */}
       <Card>
         <Card.Body>
+          <h5 className="mb-3">Assessments with Submissions</h5>
           {loading ? (
             <div className="text-center py-5">
               <Spin size="large" />
-              <p className="mt-3 text-muted">Loading submissions...</p>
+              <p className="mt-3 text-muted">Loading assessments...</p>
             </div>
-          ) : submissions.length === 0 ? (
+          ) : assessments.length === 0 ? (
             <Empty
-              description="No submissions found"
+              description="No assessments found"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
               <Button
                 variant="primary"
-                onClick={() => navigate("/app/submissions/upload")}
+                onClick={() => navigate("/app/assessment")}
               >
-                Create First Submission
+                Create Assessment
               </Button>
             </Empty>
           ) : (
             <Table responsive hover>
               <thead>
                 <tr>
-                  <th>Student</th>
                   <th>Assessment</th>
+                  <th>Type</th>
                   <th>Class</th>
-                  <th>Questions</th>
-                  <th>Score</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
+                  <th>Students</th>
+                  <th>Submissions</th>
+                  <th>Progress</th>
+                  <th>Average Score</th>
+                  <th>Created</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((submission) => (
-                  <tr key={submission._id}>
-                    <td>
-                      <strong>{submission.studentId?.name}</strong>
-                      <br />
-                      <small className="text-muted">
-                        {submission.studentId?.studentId}
-                      </small>
-                    </td>
-                    <td>{submission.assessmentId?.title || "N/A"}</td>
-                    <td>
-                      {submission.classId?.className || "N/A"}
-                      <br />
-                      <small className="text-muted">
-                        {submission.classId?.grade}
-                      </small>
-                    </td>
-                    <td className="text-center">
-                      {submission.overallStats?.questionsAttempted || 0} /{" "}
-                      {submission.overallStats?.totalQuestions || 0}
-                    </td>
-                    <td>
-                      {submission.processingStatus === "completed" ? (
-                        <div>
-                          <strong>
-                            {submission.overallStats?.totalScore || 0}/
-                            {submission.overallStats?.maxPossibleScore || 0}
-                          </strong>
-                          <br />
+                {assessments.map((assessment) => {
+                  const stats = assessmentStats[assessment._id] || {
+                    totalSubmissions: 0,
+                    totalStudentsInClass: 0,
+                    submissionRate: 0,
+                    overallAverage: 0,
+                  };
+
+                  return (
+                    <tr
+                      key={assessment._id}
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        navigate(`/app/submissions/${assessment._id}`)
+                      }
+                    >
+                      <td>
+                        <strong>{assessment.title}</strong>
+                      </td>
+                      <td>{getActivityTypeBadge(assessment.activityType)}</td>
+                      <td>
+                        {assessment.classId?.className || "N/A"}
+                        <br />
+                        <small className="text-muted">
+                          {assessment.classId?.grade}
+                        </small>
+                      </td>
+                      <td className="text-center">
+                        <TeamOutlined className="me-1" />
+                        {stats.totalStudentsInClass || 0}
+                      </td>
+                      <td className="text-center">
+                        <FileTextOutlined className="me-1" />
+                        {stats.totalSubmissions || 0}
+                      </td>
+                      <td style={{ minWidth: "150px" }}>
+                        <Progress
+                          percent={parseFloat(stats.submissionRate || 0)}
+                          size="small"
+                          status={
+                            stats.submissionRate >= 80
+                              ? "success"
+                              : stats.submissionRate >= 50
+                              ? "normal"
+                              : "exception"
+                          }
+                        />
+                      </td>
+                      <td>
+                        {stats.completedSubmissions > 0 ? (
                           <Badge
                             bg={
-                              submission.overallStats?.percentage >= 80
+                              stats.overallAverage >= 80
                                 ? "success"
-                                : submission.overallStats?.percentage >= 60
+                                : stats.overallAverage >= 60
                                 ? "warning"
                                 : "danger"
                             }
                           >
-                            {submission.overallStats?.percentage?.toFixed(1) ||
-                              0}
-                            %
+                            {stats.overallAverage}%
                           </Badge>
-                        </div>
-                      ) : (
-                        <span className="text-muted">Pending</span>
-                      )}
-                    </td>
-                    <td>{getStatusBadge(submission.processingStatus)}</td>
-                    <td>
-                      <small>{formatDate(submission.submittedAt)}</small>
-                    </td>
-                    <td>
-                      <div className="d-flex gap-2">
-                        <Tooltip title="View Details">
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td>
+                        <small>{formatDate(assessment.createdAt)}</small>
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <Tooltip title="View Submissions">
                           <Button
                             variant="outline-primary"
                             size="sm"
                             onClick={() =>
-                              navigate(
-                                `/app/submissions/${submission._id}/review`
-                              )
+                              navigate(`/app/submissions/${assessment._id}`)
                             }
                           >
                             <EyeOutlined />
                           </Button>
                         </Tooltip>
-                        <Tooltip title="Delete">
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(submission._id)}
-                          >
-                            <DeleteOutlined />
-                          </Button>
-                        </Tooltip>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </Table>
           )}

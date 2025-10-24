@@ -101,7 +101,7 @@ const SowSchema = new mongoose.Schema(
 );
 
 // Create indexes for better query performance
-SowSchema.index({ form: 1 });
+// Note: 'form' field already has unique index, no need to create duplicate
 SowSchema.index({ "lessons.lessonNo": 1 });
 
 module.exports = mongoose.model("Sow", SowSchema);
