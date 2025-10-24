@@ -8,7 +8,8 @@ const {
     getRecentLessonPlans,
     deleteLessonPlan,
     getLessonPlansByClass,
-    updateLessonPlan
+    updateLessonPlan,
+    enhanceLessonSection
 } = require('../controller/lessonController');
 
 // Middleware to protect routes (if needed)
@@ -30,5 +31,7 @@ router.route('/:id')
     .delete(deleteLessonPlan); // GET /api/lessons/:id
 
 router.get('/by-class/:classId', getLessonPlansByClass);
+
+router.route("/enhance").post(enhanceLessonSection);
 
 module.exports = router;

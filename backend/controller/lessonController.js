@@ -69,14 +69,13 @@ exports.createLesson = async (req, res, next) => {
       - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
       - Additional Notes: ${additionalNotes || "None"}
       - Type of Activity: ${activityType}
-      ${
-        activityConfiguration
-          ? `- Activity Configuration: ${JSON.stringify(
-              activityConfiguration,
-              null,
-              2
-            )}`
-          : ""
+      ${activityConfiguration
+        ? `- Activity Configuration: ${JSON.stringify(
+          activityConfiguration,
+          null,
+          2
+        )}`
+        : ""
       }
 
       Generate a creative and practical lesson plan based on the SoW's learning outline.
@@ -451,5 +450,116 @@ exports.getLessonPlansByClass = async (req, res, next) => {
   } catch (error) {
     console.error("Error fetching lesson plans by class:", error);
     next(error);
+  }
+};
+
+// Add this new function to your lessonController.js
+
+/**
+ * @desc    Enhance a specific section of a lesson plan using AI
+ * @route   POST /api/lessons/enhance
+ * @access  Private
+ */
+exports.enhanceLessonSection = async (req, res, next) => {
+  try {
+    const { sectionKey, currentContent, userPrompt, context } = req.body;
+
+    // 1. --- Validate Input ---
+    if (!sectionKey || !currentContent || !userPrompt || !context) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for enhancement.",
+      });
+    }
+
+    // 2. --- Get User and Gemini API Key (Same as createLesson) ---
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    const geminiApiKey = user.getGeminiApiKey();
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message: "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+    // 3. --- Craft the Enhancement Prompt ---
+    const isArray = Array.isArray(currentContent);
+    const outputFormatInstruction = isArray
+      ? 'The response MUST be a valid JSON array of strings. Example: ["New item 1.", "New item 2."]'
+      : 'The response MUST be a single JSON string. Example: "This is the new, enhanced content."';
+
+    const prompt = `
+      You are an expert curriculum designer and teacher's assistant. Your task is to refine and enhance a specific section of an existing lesson plan based on a teacher's request.
+
+      Here is the context for the lesson:
+      - Grade: ${context.grade || "Not specified"}
+      - Subject: ${context.subject || "Not specified"}
+      - Topic: ${context.topic || "Not specified"}
+
+      Here is the section you need to enhance:
+      - Section Name: "${sectionKey}"
+      - Current Content of the Section:
+      ${JSON.stringify(currentContent, null, 2)}
+
+      Here is the teacher's instruction for enhancement:
+      - Teacher's Request: "${userPrompt}"
+
+      Based on the teacher's request, rewrite and improve the "Current Content".
+
+      **CRITICAL OUTPUT RULES:**
+      1. The format of your response MUST exactly match the format of the "Current Content".
+      2. ${outputFormatInstruction}
+      3. Do NOT include any surrounding text, explanations, or markdown like \`\`\`json. Your entire response must be ONLY the raw JSON content itself.
+    `;
+
+    // 4. --- Call Gemini and Process Response ---
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      let enhancedContent;
+      try {
+        const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        enhancedContent = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error("Failed to parse Gemini response for enhancement. Raw text:", text);
+        throw new Error("The AI enhancement response was not in a valid format.");
+      }
+
+      // Basic type validation
+      if (Array.isArray(currentContent) && !Array.isArray(enhancedContent)) {
+        throw new Error("AI response format mismatch: Expected an array.");
+      }
+      if (!Array.isArray(currentContent) && typeof enhancedContent !== 'string') {
+        throw new Error("AI response format mismatch: Expected a string.");
+      }
+
+      res.status(200).json({
+        success: true,
+        enhancedContent: enhancedContent,
+      });
+    } catch (geminiError) {
+      console.error("Gemini AI enhancement error:", geminiError.message);
+      // Re-use the detailed error handling from your createLesson function
+      if (geminiError.message.includes("API_KEY") || geminiError.message.includes("401")) {
+        return res.status(401).json({ success: false, message: "Invalid Gemini API key. Please check your API key in profile settings." });
+      }
+      if (geminiError.message.includes("quota") || geminiError.message.includes("429")) {
+        return res.status(429).json({ success: false, message: "Gemini API quota exceeded. Please try again later." });
+      }
+      throw geminiError;
+    }
+  } catch (error) {
+    console.error("Enhancement controller error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || "An error occurred during the enhancement process.",
+    });
   }
 };

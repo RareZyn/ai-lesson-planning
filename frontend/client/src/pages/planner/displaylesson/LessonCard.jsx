@@ -59,7 +59,7 @@ const LessonCard = ({ lesson, isRecent = false }) => {
   // Format the class display with grade and className
   const classDisplay =
     grade && className !== "Unknown Class"
-      ? `${grade} ${className}`
+      ? `${className}`
       : className;
 
   // Use the SOW topic as a fallback for the title if specificTopic is empty

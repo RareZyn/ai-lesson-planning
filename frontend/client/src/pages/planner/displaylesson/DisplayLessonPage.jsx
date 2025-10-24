@@ -459,8 +459,8 @@ const DisplayLessonPage = () => {
 
   return (
     <div
-      className="container-fluid py-4"
-      style={{ backgroundColor: "#f5f5f5", minHeight: "100vh" }}
+      className="container-fluid py-4" 
+      style={{ minHeight: "100vh" }}
     >
       <div className="container">
         {/* Back Button */}

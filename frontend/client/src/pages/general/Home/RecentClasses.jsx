@@ -81,8 +81,9 @@ const RecentClasses = () => {
               </div>
               <div className="card-body" style={{padding: '10px'}}>
                 <h3 className="class-name">
-                  {classItem.grade} {classItem.className}
+                  {classItem.className}
                 </h3>
+                <p className="class-year">Grade: {classItem.grade}</p>
                 <p className="class-year">Year: {classItem.year}</p>
               </div>
             </div>

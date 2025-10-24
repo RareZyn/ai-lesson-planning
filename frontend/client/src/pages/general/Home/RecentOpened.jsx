@@ -117,7 +117,7 @@ const RecentOpened = () => {
           // Format the class display with grade and className
           const classDisplay =
             grade && className !== "Unknown Class"
-              ? `${grade} ${className}`
+              ? `${className}`
               : className;
 
           // Get consistent gradient based on lesson ID

@@ -15,7 +15,7 @@ const {
   getUserAssessmentsFiltered,
   regenerateAssessment,
   generateExamContent, // NEW: Import SPM exam generation function
-} = require("../controller/aseessmentController");
+} = require("../controller/assessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
