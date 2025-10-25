@@ -10,6 +10,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import School from "@mui/icons-material/School";
+import BarChartIcon from "@mui/icons-material/BarChart";
 
 const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -38,6 +39,7 @@ const Sidebar = () => {
     { icon: <HomeIcon />, label: "Home", path: "/app", end: true },
     { icon: <FolderCopyIcon />, label: "My Lessons", path: "/app/lessons" },
     { icon: <School />, label: "My Classes", path: "/app/classes" },
+    { icon: <BarChartIcon />, label: "Analytics", path: "/app/analytics" },
     { icon: <PeopleAltIcon />, label: "Community", path: "/app/community" },
   ];
 

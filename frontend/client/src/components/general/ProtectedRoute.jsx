@@ -91,7 +91,7 @@ const ProtectedRoute = ({ children, roles }) => {
   // Redirect when not authenticated (after loading is complete)
   if (!hasValidAuth || !user) {
     if (redirectCountdown <= 0) {
-      return <Navigate to="/" state={{ from: location }} replace />;
+      return <Navigate to="/login" state={{ from: location }} replace />;
     }
     return (
       <div className="auth-redirect">

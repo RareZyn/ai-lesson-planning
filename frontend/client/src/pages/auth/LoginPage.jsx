@@ -1,5 +1,5 @@
 // src/pages/auth/LoginPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Checkbox, message, Modal } from "antd";
 import {
   UserOutlined,
@@ -15,6 +15,7 @@ import {
   googleProvider,
 } from "../../firebase";
 import { authAPI } from "../../services/api";
+import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "./LoginPage.css";
 
@@ -27,6 +28,14 @@ const LoginPage = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, loading: authLoading } = useUser();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/app", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleModalSubmit = async (values) => {
     if (!pendingGoogleUser) return;
@@ -156,9 +165,8 @@ const LoginPage = () => {
   const handleTabChange = (tab) => {
     if (tab === "signup") {
       navigate("/register");
-    } else if (tab === "login") {
-      navigate("/");
     }
+    // No need to navigate if already on login
   };
 
   const handleForgotPassword = () => {

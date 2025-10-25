@@ -203,13 +203,14 @@
   background: rgba(24, 144, 255, 0.06);
 }
 
-/* Modal Styles - Override Ant Design defaults */
+/* Modal Styles - Override Ant Design defaults - FIXED FOR SCROLLING */
 .lesson-detail-modal.ant-modal .ant-modal-content {
   padding: 0;
   border-radius: 12px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .lesson-detail-modal.ant-modal .ant-modal-header {
@@ -223,6 +224,7 @@
 .lesson-detail-modal.ant-modal .ant-modal-body {
   padding: 24px 32px !important;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   min-height: 0;
 }
@@ -248,10 +250,6 @@
   right: 24px !important;
 }
 
-.lesson-detail-modal .modal-content {
-  padding: 20px;
-}
-
 /* Ensure modal doesn't exceed viewport */
 .lesson-detail-modal.ant-modal {
   top: 50px;
@@ -259,7 +257,7 @@
 }
 
 .lesson-detail-modal.ant-modal .ant-modal-wrap {
-  overflow: hidden;
+  overflow: auto;
 }
 
 .lesson-info {
@@ -428,13 +426,12 @@
     max-height: 95vh;
   }
 
-  .lesson-detail-modal.ant-modal .ant-modal-header {
-    padding: 20px 24px 16px 24px !important;
-  }
-
   .lesson-detail-modal.ant-modal .ant-modal-body {
     padding: 20px 24px !important;
-    overflow: hidden;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-header {
+    padding: 20px 24px 16px 24px !important;
   }
 
   .lesson-detail-modal.ant-modal .ant-modal-footer {
@@ -516,12 +513,12 @@
     max-height: 98vh;
   }
 
-  .lesson-detail-modal.ant-modal .ant-modal-header {
-    padding: 16px 20px 12px 20px !important;
-  }
-
   .lesson-detail-modal.ant-modal .ant-modal-body {
     padding: 16px 20px !important;
+  }
+
+  .lesson-detail-modal.ant-modal .ant-modal-header {
+    padding: 16px 20px 12px 20px !important;
   }
 
   .lesson-detail-modal.ant-modal .ant-modal-footer {
@@ -571,8 +568,4 @@
     padding: 16px;
     gap: 16px;
   }
-}
-
-.ant-modal-body {
-  overflow: hidden;
 }

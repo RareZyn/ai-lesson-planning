@@ -44,10 +44,10 @@ const AITools = () => {
       path: "materials",
     },
     {
-      id: "graph",
-      title: "Graph",
+      id: "analytics",
+      title: "Analytics",
       icon: "/logo/graph.png",
-      path: "graph",
+      path: "analytics",
     },
   ];
 

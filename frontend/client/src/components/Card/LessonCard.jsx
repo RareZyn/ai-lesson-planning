@@ -357,7 +357,7 @@ const LessonCard = ({
         </div>
       </Card>
 
-      {/* Lesson Detail Modal */}
+      {/* Lesson Detail Modal - WITHOUT modal-content wrapper */}
       <Modal
         title={displayTitle}
         open={isModalVisible}
@@ -383,27 +383,140 @@ const LessonCard = ({
         width={800}
         className="lesson-detail-modal"
       >
-        <div className="modal-content">
-          {/* Author & Sharing Info */}
-          <div className="lesson-info">
-            <div className="info-row">
-              <span className="info-label">Shared by:</span>
-              <div>
-                <strong>{authorName}</strong>
-                {authorSchool && (
-                  <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
-                    {authorSchool}
-                  </div>
-                )}
-              </div>
+        {/* Learning Objective */}
+        <div className="lesson-objectives">
+          <h4>Learning Objective</h4>
+          <p>
+            {lesson.plan?.learningObjective ||
+              "No learning objective specified"}
+          </p>
+        </div>
+
+        {/* Success Criteria */}
+        {lesson.plan?.successCriteria &&
+          lesson.plan.successCriteria.length > 0 && (
+            <div className="lesson-objectives">
+              <h4>Success Criteria</h4>
+              <ul>
+                {lesson.plan.successCriteria.map((criteria, index) => (
+                  <li key={index}>{criteria}</li>
+                ))}
+              </ul>
             </div>
-            <div className="info-row">
-              <span className="info-label">Grade:</span>
+          )}
+
+        {/* Activities */}
+        {lesson.plan?.activities && (
+          <div className="lesson-objectives">
+            <h4>Lesson Activities</h4>
+
+            {lesson.plan.activities.preLesson &&
+              lesson.plan.activities.preLesson.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <h5 style={{ color: "#1890ff", marginBottom: "8px" }}>
+                    Pre-Lesson Activities:
+                  </h5>
+                  <ul>
+                    {lesson.plan.activities.preLesson.map((activity, index) => (
+                      <li key={index}>{activity}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            {lesson.plan.activities.duringLesson &&
+              lesson.plan.activities.duringLesson.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <h5 style={{ color: "#52c41a", marginBottom: "8px" }}>
+                    During Lesson Activities:
+                  </h5>
+                  <ul>
+                    {lesson.plan.activities.duringLesson.map(
+                      (activity, index) => (
+                        <li key={index}>{activity}</li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+
+            {lesson.plan.activities.postLesson &&
+              lesson.plan.activities.postLesson.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <h5 style={{ color: "#fa8c16", marginBottom: "8px" }}>
+                    Post-Lesson Activities:
+                  </h5>
+                  <ul>
+                    {lesson.plan.activities.postLesson.map(
+                      (activity, index) => (
+                        <li key={index}>{activity}</li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* Community Description */}
+        {lesson.communityData?.description && (
+          <div className="lesson-description">
+            <h4>Teacher's Experience & Tips</h4>
+            <p>{lesson.communityData.description}</p>
+          </div>
+        )}
+
+        {/* SOW Information */}
+        {lesson.parameters?.sow && (
+          <div className="lesson-description">
+            <h4>Scheme of Work Details</h4>
+            <div className="sow-details">
+              {lesson.parameters.sow.theme && (
+                <p>
+                  <strong>Theme:</strong> {lesson.parameters.sow.theme}
+                </p>
+              )}
+              {lesson.parameters.sow.topic && (
+                <p>
+                  <strong>Topic:</strong> {lesson.parameters.sow.topic}
+                </p>
+              )}
+              {lesson.parameters.sow.focus && (
+                <p>
+                  <strong>Focus:</strong> {lesson.parameters.sow.focus}
+                </p>
+              )}
+              {lesson.parameters.sow.lessonNo && (
+                <p>
+                  <strong>Lesson No:</strong> {lesson.parameters.sow.lessonNo}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Lesson Metadata in a compact format */}
+        <div className="lesson-description">
+          <h4>Lesson Details</h4>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
+            <div>
+              <strong>Shared by:</strong> {authorName}
+              {authorSchool && ` (${authorSchool})`}
+            </div>
+            <div>
+              <strong>Grade:</strong>{" "}
               <Tag color={getGradeColor(displayGrade)}>{displayGrade}</Tag>
             </div>
             {lesson.parameters?.proficiencyLevel && (
-              <div className="info-row">
-                <span className="info-label">Proficiency Level:</span>
+              <div>
+                <strong>Level:</strong>{" "}
                 <Tag
                   color={getProficiencyColor(
                     lesson.parameters.proficiencyLevel
@@ -414,177 +527,59 @@ const LessonCard = ({
               </div>
             )}
             {lesson.parameters?.hotsFocus && (
-              <div className="info-row">
-                <span className="info-label">HOTS Focus:</span>
+              <div>
+                <strong>HOTS:</strong>{" "}
                 <Tag color={getHOTSColor(lesson.parameters.hotsFocus)}>
                   {lesson.parameters.hotsFocus.toUpperCase()}
                 </Tag>
               </div>
             )}
-            <div className="info-row">
-              <span className="info-label">Subject:</span>
-              <span>{displaySubject}</span>
+            <div>
+              <strong>Subject:</strong> {displaySubject}
             </div>
-            <div className="info-row">
-              <span className="info-label">Shared Date:</span>
+            <div>
+              <strong>Shared:</strong>{" "}
+              {formatDate(lesson.communityData?.sharedAt || lesson.createdAt)}
+            </div>
+          </div>
+        </div>
+
+        {/* Tags */}
+        {lesson.communityData?.tags && lesson.communityData.tags.length > 0 && (
+          <div className="lesson-description">
+            <h4>Tags</h4>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {lesson.communityData.tags.map((tag, index) => (
+                <Tag key={index} color="blue">
+                  {tag}
+                </Tag>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lesson Statistics */}
+        <div className="lesson-stats">
+          <div className="stat-item">
+            <HeartFilled style={{ color: "#ff4d4f" }} />
+            <span>{likes} likes</span>
+          </div>
+          <div className="stat-item">
+            <DownloadOutlined />
+            <span>{downloads} downloads</span>
+          </div>
+          <div className="stat-item">
+            <EyeOutlined />
+            <span>{views} views</span>
+          </div>
+          {lesson.communityData?.averageRating > 0 && (
+            <div className="stat-item">
+              <StarFilled style={{ color: "#fadb14" }} />
               <span>
-                {formatDate(lesson.communityData?.sharedAt || lesson.createdAt)}
+                {lesson.communityData.averageRating.toFixed(1)} rating
               </span>
             </div>
-          </div>
-
-          {/* Learning Objective */}
-          <div className="lesson-objectives">
-            <h4>Learning Objective</h4>
-            <p>
-              {lesson.plan?.learningObjective ||
-                "No learning objective specified"}
-            </p>
-          </div>
-
-          {/* Success Criteria */}
-          {lesson.plan?.successCriteria &&
-            lesson.plan.successCriteria.length > 0 && (
-              <div className="lesson-objectives">
-                <h4>Success Criteria</h4>
-                <ul>
-                  {lesson.plan.successCriteria.map((criteria, index) => (
-                    <li key={index}>{criteria}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-          {/* Activities */}
-          {lesson.plan?.activities && (
-            <div className="lesson-objectives">
-              <h4>Lesson Activities</h4>
-
-              {lesson.plan.activities.preLesson &&
-                lesson.plan.activities.preLesson.length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <h5 style={{ color: "#1890ff", marginBottom: "8px" }}>
-                      Pre-Lesson Activities:
-                    </h5>
-                    <ul>
-                      {lesson.plan.activities.preLesson.map(
-                        (activity, index) => (
-                          <li key={index}>{activity}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-              {lesson.plan.activities.duringLesson &&
-                lesson.plan.activities.duringLesson.length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <h5 style={{ color: "#52c41a", marginBottom: "8px" }}>
-                      During Lesson Activities:
-                    </h5>
-                    <ul>
-                      {lesson.plan.activities.duringLesson.map(
-                        (activity, index) => (
-                          <li key={index}>{activity}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-              {lesson.plan.activities.postLesson &&
-                lesson.plan.activities.postLesson.length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <h5 style={{ color: "#fa8c16", marginBottom: "8px" }}>
-                      Post-Lesson Activities:
-                    </h5>
-                    <ul>
-                      {lesson.plan.activities.postLesson.map(
-                        (activity, index) => (
-                          <li key={index}>{activity}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-            </div>
           )}
-
-          {/* Community Description */}
-          {lesson.communityData?.description && (
-            <div className="lesson-description">
-              <h4>Teacher's Experience & Tips</h4>
-              <p>{lesson.communityData.description}</p>
-            </div>
-          )}
-
-          {/* SOW Information */}
-          {lesson.parameters?.sow && (
-            <div className="lesson-description">
-              <h4>Scheme of Work Details</h4>
-              <div className="sow-details">
-                {lesson.parameters.sow.theme && (
-                  <p>
-                    <strong>Theme:</strong> {lesson.parameters.sow.theme}
-                  </p>
-                )}
-                {lesson.parameters.sow.topic && (
-                  <p>
-                    <strong>Topic:</strong> {lesson.parameters.sow.topic}
-                  </p>
-                )}
-                {lesson.parameters.sow.focus && (
-                  <p>
-                    <strong>Focus:</strong> {lesson.parameters.sow.focus}
-                  </p>
-                )}
-                {lesson.parameters.sow.lessonNo && (
-                  <p>
-                    <strong>Lesson No:</strong> {lesson.parameters.sow.lessonNo}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tags */}
-          {lesson.communityData?.tags &&
-            lesson.communityData.tags.length > 0 && (
-              <div className="lesson-description">
-                <h4>Tags</h4>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {lesson.communityData.tags.map((tag, index) => (
-                    <Tag key={index} color="blue">
-                      {tag}
-                    </Tag>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          {/* Lesson Statistics */}
-          <div className="lesson-stats">
-            <div className="stat-item">
-              <HeartFilled style={{ color: "#ff4d4f" }} />
-              <span>{likes} likes</span>
-            </div>
-            <div className="stat-item">
-              <DownloadOutlined />
-              <span>{downloads} downloads</span>
-            </div>
-            <div className="stat-item">
-              <EyeOutlined />
-              <span>{views} views</span>
-            </div>
-            {lesson.communityData?.averageRating > 0 && (
-              <div className="stat-item">
-                <StarFilled style={{ color: "#fadb14" }} />
-                <span>
-                  {lesson.communityData.averageRating.toFixed(1)} rating
-                </span>
-              </div>
-            )}
-          </div>
         </div>
       </Modal>
     </>
