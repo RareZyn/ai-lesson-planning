@@ -32,12 +32,6 @@ const AITools = () => {
       path: "downloads",
     },
     {
-      id: "calendar",
-      title: "Calendar",
-      icon: "/logo/schedule.png",
-      path: "/calendar",
-    },
-    {
       id: "materials",
       title: "Materials",
       icon: "/logo/lessonIcon.png",

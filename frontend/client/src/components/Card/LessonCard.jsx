@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tag, Button, Avatar, Tooltip, Modal } from "antd";
+import { Card, Tag, Button, Avatar, Tooltip, Modal, message } from "antd";
 import {
   HeartOutlined,
   HeartFilled,
@@ -13,6 +13,7 @@ import {
   BookOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import { exportToPdf } from "../../services/exportService";
 import "./LessonCard.css";
 
 const { Meta } = Card;
@@ -83,8 +84,31 @@ const LessonCard = ({
 
   const handleDownload = (e) => {
     e.stopPropagation();
-    if (onDownload) {
-      onDownload(lesson._id);
+
+    try {
+      // Check if lesson has required data for PDF export
+      if (!lesson.plan || !lesson.parameters) {
+        message.error("Cannot download: Lesson plan data is incomplete");
+        return;
+      }
+
+      // Export the lesson plan to PDF using the exportService
+      exportToPdf(
+        lesson.plan,
+        lesson.parameters,
+        lesson.lessonDate || lesson.createdAt,
+        lesson.classId || { className: "N/A" }
+      );
+
+      // Track the download count on the backend
+      if (onDownload) {
+        onDownload(lesson._id);
+      }
+
+      message.success("Lesson plan downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading lesson plan:", error);
+      message.error("Failed to download lesson plan");
     }
   };
 
