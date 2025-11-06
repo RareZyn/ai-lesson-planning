@@ -289,7 +289,7 @@ const convertActivityToHTML = (activityContent, activityType) => {
     case "essay":
       if (activityContent.prompt) {
         html += `<div class="essay-prompt" style="margin-bottom: 20px; padding: 20px; background: #fff7e6; border: 2px solid #ffa940; border-radius: 8px;">
-          <h3 style="color: #fa8c16;">Essay Prompt:</h3>
+          <h3 style="color: #fa8c16;">Essay</h3>
           <p style="font-size: 16px; font-weight: 500;">${activityContent.prompt}</p>
         </div>`;
       }

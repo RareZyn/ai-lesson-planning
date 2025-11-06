@@ -261,7 +261,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
     return plansToShow.map((plan) => {
       const formatted = formatLessonPlanOption(plan);
       return (
-        <Option key={plan._id} value={plan._id}>
+        <Option key={plan._id} value={plan._id} label={formatted.label}>
           <div>
             <div style={{ fontWeight: 500 }}>{formatted.label}</div>
             <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
@@ -386,8 +386,9 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
                     style={{ width: "100%" }}
                     loading={lessonPlansLoading}
                     showSearch
+                    optionLabelProp="label"
                     filterOption={(input, option) =>
-                      option.children.props.children[0].props.children
+                      option.label
                         .toLowerCase()
                         .indexOf(input.toLowerCase()) >= 0
                     }

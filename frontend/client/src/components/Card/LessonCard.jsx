@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tag, Button, Avatar, Tooltip, Modal, message } from "antd";
+import { Card, Tag, Button, Avatar, Tooltip, Modal, message, Divider, Empty } from "antd";
 import {
   HeartOutlined,
   HeartFilled,
@@ -12,8 +12,12 @@ import {
   ClockCircleOutlined,
   BookOutlined,
   UserOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  RollbackOutlined,
 } from "@ant-design/icons";
 import { exportToPdf } from "../../services/exportService";
+import { pdfExportService } from "../../services/enhancedPdfExport";
 import "./LessonCard.css";
 
 const { Meta } = Card;
@@ -23,7 +27,9 @@ const LessonCard = ({
   onLike,
   onDownload,
   onBookmark,
+  onUnshare,
   currentUserId,
+  assessment = null, // Single assessment for this lesson
 }) => {
   const [isLiked, setIsLiked] = useState(
     lesson.communityData?.hasUserLiked || false
@@ -32,6 +38,7 @@ const LessonCard = ({
     lesson.isBookmarked || false
   );
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDownloadingAssessment, setIsDownloadingAssessment] = useState(false);
 
   // Update local state when lesson prop changes
   useEffect(() => {
@@ -112,8 +119,81 @@ const LessonCard = ({
     }
   };
 
+  const handleUnshare = (e) => {
+    e.stopPropagation();
+    if (onUnshare) {
+      Modal.confirm({
+        title: "Unshare Lesson Plan",
+        content: "Are you sure you want to remove this lesson plan from the community? This action will make it private again.",
+        okText: "Yes, Unshare",
+        okType: "danger",
+        cancelText: "Cancel",
+        onOk: () => {
+          onUnshare(lesson._id);
+        },
+      });
+    }
+  };
+
   const handleCardClick = () => {
     setIsModalVisible(true);
+  };
+
+  const handleDownloadAssessment = async () => {
+    if (!assessment) {
+      message.error('No assessment available for download');
+      return;
+    }
+
+    setIsDownloadingAssessment(true);
+    try {
+      // Create a temporary container with the assessment content
+      const tempContainer = document.createElement('div');
+      tempContainer.id = 'temp-assessment-export';
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '800px';
+      tempContainer.style.padding = '20px';
+      tempContainer.style.backgroundColor = '#ffffff';
+
+      // Determine which content to export based on activity type
+      let contentHtml = '';
+
+      if (assessment.activityType === 'spm-exam') {
+        contentHtml = assessment.generatedContent?.examHTML || assessment.generatedContent?.assessmentHTML || '';
+      } else if (assessment.activityType === 'assessment') {
+        contentHtml = assessment.generatedContent?.assessmentHTML || '';
+      } else {
+        contentHtml = assessment.generatedContent?.activityHTML || '';
+      }
+
+      if (!contentHtml) {
+        message.error('No assessment content available for download');
+        return;
+      }
+
+      tempContainer.innerHTML = contentHtml;
+      document.body.appendChild(tempContainer);
+
+      // Generate filename
+      const fileName = `${assessment.assessmentTitle || 'Assessment'}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Export to PDF using enhancedPdfExport service
+      await pdfExportService.exportHtmlElementToPdf(
+        'temp-assessment-export',
+        fileName
+      );
+
+      // Clean up
+      document.body.removeChild(tempContainer);
+
+      message.success('Assessment downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading assessment:', error);
+      message.error('Failed to download assessment. Please try again.');
+    } finally {
+      setIsDownloadingAssessment(false);
+    }
   };
 
   const getGradeColor = (grade) => {
@@ -200,6 +280,74 @@ const LessonCard = ({
   // Get gradient for this lesson
   const gradient = getGradientForLesson(lesson._id);
 
+  // Build actions array dynamically
+  const cardActions = [
+    <Tooltip title={isLiked ? "Unlike" : "Like"} key="like">
+      <Button
+        type="text"
+        icon={
+          isLiked ? (
+            <HeartFilled style={{ color: "#ff4d4f" }} />
+          ) : (
+            <HeartOutlined />
+          )
+        }
+        onClick={handleLike}
+        className="action-btn"
+        disabled={isOwnLesson}
+      >
+        {likes}
+      </Button>
+    </Tooltip>,
+    <Tooltip title="Download" key="download">
+      <Button
+        type="text"
+        icon={<DownloadOutlined />}
+        onClick={handleDownload}
+        className="action-btn"
+      >
+        {downloads}
+      </Button>
+    </Tooltip>,
+    <Tooltip
+      title={
+        isBookmarked ? "Remove from collection" : "Save to collection"
+      }
+      key="bookmark"
+    >
+      <Button
+        type="text"
+        icon={
+          isBookmarked ? (
+            <StarFilled style={{ color: "#1890ff" }} />
+          ) : (
+            <StarOutlined />
+          )
+        }
+        onClick={handleBookmark}
+        className="action-btn"
+        disabled={isOwnLesson}
+      />
+    </Tooltip>,
+  ];
+
+  // Add unshare button for owners
+  if (isOwnLesson && onUnshare) {
+    cardActions.push(
+      <Tooltip title="Unshare from Community" key="unshare">
+        <Button
+          type="text"
+          icon={<RollbackOutlined style={{ color: "#ff4d4f" }} />}
+          onClick={handleUnshare}
+          className="action-btn"
+          danger
+        >
+          Unshare
+        </Button>
+      </Tooltip>
+    );
+  }
+
   return (
     <>
       <Card
@@ -216,54 +364,7 @@ const LessonCard = ({
             </div>
           </div>
         }
-        actions={[
-          <Tooltip title={isLiked ? "Unlike" : "Like"}>
-            <Button
-              type="text"
-              icon={
-                isLiked ? (
-                  <HeartFilled style={{ color: "#ff4d4f" }} />
-                ) : (
-                  <HeartOutlined />
-                )
-              }
-              onClick={handleLike}
-              className="action-btn"
-              disabled={isOwnLesson}
-            >
-              {likes}
-            </Button>
-          </Tooltip>,
-          <Tooltip title="Download">
-            <Button
-              type="text"
-              icon={<DownloadOutlined />}
-              onClick={handleDownload}
-              className="action-btn"
-            >
-              {downloads}
-            </Button>
-          </Tooltip>,
-          <Tooltip
-            title={
-              isBookmarked ? "Remove from collection" : "Save to collection"
-            }
-          >
-            <Button
-              type="text"
-              icon={
-                isBookmarked ? (
-                  <StarFilled style={{ color: "#1890ff" }} />
-                ) : (
-                  <StarOutlined />
-                )
-              }
-              onClick={handleBookmark}
-              className="action-btn"
-              disabled={isOwnLesson}
-            />
-          </Tooltip>,
-        ]}
+        actions={cardActions}
       >
         <div className="card-content">
           <div className="tags-section">
@@ -579,6 +680,119 @@ const LessonCard = ({
                 </Tag>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Assessment Section */}
+        <Divider orientation="left" style={{ marginTop: "24px", marginBottom: "16px" }}>
+          <FileTextOutlined style={{ marginRight: "8px" }} />
+          Related Assessment
+        </Divider>
+
+        {assessment ? (
+          <div style={{ marginBottom: "20px" }}>
+            <div
+              style={{
+                padding: "16px",
+                backgroundColor: "#f8f9fa",
+                borderRadius: "8px",
+                border: "1px solid #e8e8e8",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                <div style={{ flex: 1 }}>
+                  <h5 style={{ marginBottom: "8px", color: "#1890ff" }}>
+                    <FileTextOutlined style={{ marginRight: "6px" }} />
+                    {assessment.assessmentTitle || assessment.title || "Assessment"}
+                  </h5>
+
+                  {assessment.assessmentDescription && (
+                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+                      {assessment.assessmentDescription}
+                    </p>
+                  )}
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
+                    <Tag color="purple">
+                      {assessment.activityType?.toUpperCase() || "ACTIVITY"}
+                    </Tag>
+
+                    {assessment.assessmentType && (
+                      <Tag color="cyan">{assessment.assessmentType}</Tag>
+                    )}
+
+                    {assessment.duration && (
+                      <Tag icon={<ClockCircleOutlined />}>{assessment.duration}</Tag>
+                    )}
+
+                    {assessment.questionCount && (
+                      <Tag color="green">{assessment.questionCount} Questions</Tag>
+                    )}
+                  </div>
+
+                  {assessment.skills && assessment.skills.length > 0 && (
+                    <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                      <strong>Skills:</strong> {assessment.skills.join(", ")}
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadAssessment}
+                  loading={isDownloadingAssessment}
+                  style={{ marginLeft: "12px" }}
+                >
+                  Download
+                </Button>
+              </div>
+
+              {/* Show content availability indicators */}
+              <div style={{ marginTop: "12px", display: "flex", gap: "16px", fontSize: "12px" }}>
+                {assessment.generatedContent?.activityHTML && (
+                  <span style={{ color: "#52c41a" }}>
+                    <CheckCircleOutlined /> Activity Sheet
+                  </span>
+                )}
+                {assessment.generatedContent?.assessmentHTML && (
+                  <span style={{ color: "#52c41a" }}>
+                    <CheckCircleOutlined /> Assessment Questions
+                  </span>
+                )}
+                {assessment.generatedContent?.rubricHTML && (
+                  <span style={{ color: "#52c41a" }}>
+                    <CheckCircleOutlined /> Rubric
+                  </span>
+                )}
+                {assessment.generatedContent?.answerKeyHTML && (
+                  <span style={{ color: "#52c41a" }}>
+                    <CheckCircleOutlined /> Answer Key
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginBottom: "20px" }}>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <span style={{ color: "#8c8c8c" }}>
+                  No assessment available for this lesson plan yet.
+                  <br />
+                  <span style={{ fontSize: "12px" }}>
+                    The teacher hasn't created an assessment for this lesson plan.
+                  </span>
+                </span>
+              }
+              style={{
+                padding: "24px 16px",
+                backgroundColor: "#fafafa",
+                borderRadius: "8px",
+                border: "1px solid #f0f0f0",
+              }}
+            />
           </div>
         )}
 

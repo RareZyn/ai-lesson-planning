@@ -129,7 +129,7 @@ if (mongoose.models.LessonPlan) {
           },
           activityType: {
             type: String,
-            enum: ["textbook", "essay", "activity", "assessment"],
+            enum: ["textbook", "essay", "activity", "assessment", "activityInClass", "spm-exam"],
             default: "activity",
           },
           generatedAt: {

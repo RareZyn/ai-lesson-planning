@@ -19,6 +19,7 @@ import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
 import ClassLessonsPage from "./pages/class/ClassLessonsPage";
 import SubmissionUploadPage from "./pages/answerChecker/SubmissionUploadPage";
 import SubmissionListPage from "./pages/answerChecker/SubmissionListPage";
+import AssessmentSubmissionsPage from "./pages/answerChecker/AssessmentSubmissionsPage";
 import SubmissionReviewPage from "./pages/answerChecker/SubmissionReviewPage";
 import AnalyticsDashboard from "./pages/analytics/AnalyticsDashboard";
 import StudentProgressView from "./pages/analytics/StudentProgressView";
@@ -49,7 +50,8 @@ const router = createBrowserRouter(
 
         { path: "submissions", element: <SubmissionListPage /> },
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
-        { path: "submissions/:id/review", element: <SubmissionReviewPage /> },
+        { path: "submissions/:assessmentId", element: <AssessmentSubmissionsPage /> },
+        { path: "submissions/:assessmentId/review/:submissionId", element: <SubmissionReviewPage /> },
 
         { path: "analytics", element: <AnalyticsDashboard /> },
         { path: "analytics/:id", element: <StudentProgressView /> },

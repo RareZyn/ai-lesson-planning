@@ -21,11 +21,11 @@ exports.submitAnswer = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!assessmentId || !lessonPlanId || !classId || !studentId) {
+    if (!assessmentId || !classId || !studentId) {
       return res.status(400).json({
         success: false,
         message:
-          "Missing required fields: assessmentId, lessonPlanId, classId, studentId",
+          "Missing required fields: assessmentId, classId, studentId",
       });
     }
 

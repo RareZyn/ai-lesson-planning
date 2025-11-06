@@ -11,6 +11,8 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   PercentageOutlined,
+  PlusOutlined,
+  
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { submissionService, submissionUtils } from "../../services/submissionService";
@@ -135,13 +137,35 @@ const AssessmentSubmissionsPage = () => {
                 View all student submissions for this assessment
               </p>
             </div>
-            <Button
-              variant="outline-secondary"
-              onClick={fetchAssessmentData}
-            >
-              <ReloadOutlined className="me-2" />
-              Refresh
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const classIdValue =
+                    typeof assessmentData?.classId === "string"
+                      ? assessmentData.classId
+                      : assessmentData?.classId?._id;
+
+                  navigate("/app/submissions/upload", {
+                    state: {
+                      assessmentId: assessmentId,
+                      classId: classIdValue,
+                      assessmentTitle: assessmentData?.title,
+                    },
+                  });
+                }}
+              >
+                <PlusOutlined className="me-2" />
+                Upload Submission
+              </Button>
+              <Button
+                variant="outline-secondary"
+                onClick={fetchAssessmentData}
+              >
+                <ReloadOutlined className="me-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </Card.Body>
       </Card>
@@ -299,7 +323,7 @@ const AssessmentSubmissionsPage = () => {
                             size="sm"
                             onClick={() =>
                               navigate(
-                                `/app/submissions/${assessmentId}/${submission._id}`
+                                `/app/submissions/${assessmentId}/review/${submission._id}`
                               )
                             }
                           >
