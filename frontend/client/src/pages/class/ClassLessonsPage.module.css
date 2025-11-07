@@ -37,18 +37,45 @@
     gap: 1rem;
     flex-wrap: wrap;
     margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #e9ecef;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .headerMain h1 {
     font-size: 2rem;
     font-weight: 700;
-    color: #343a40;
+    color: white;
     margin-bottom: 0.25rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .headerMain p {
     font-size: 1.1rem;
-    color: #6c757d;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* Gradient variations - matching ClassCard */
+.gradient1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient3 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.gradient4 {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.gradient5 {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.gradient6 {
+    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
 }
 
 .headerActions {
@@ -72,21 +99,22 @@
 }
 
 .editButton {
-    background-color: #f8f9fa;
-    color: #495057;
-    border-color: #dee2e6;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
 }
 .editButton:hover {
-    background-color: #e9ecef;
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .deleteButton {
-    background-color: #fff5f5;
-    color: #e5383b;
-    border-color: #ffb3b3;
+    background-color: rgba(229, 62, 62, 0.9);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
 }
 .deleteButton:hover {
-    background-color: #ffe3e3;
+    background-color: rgba(229, 62, 62, 1);
 }
 
 /* New Section Styles */

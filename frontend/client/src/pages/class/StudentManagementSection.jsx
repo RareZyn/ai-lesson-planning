@@ -22,6 +22,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   const [formData, setFormData] = useState({
     name: "",
     rollNumber: "",
+    gender: "",
     notes: "",
   });
 
@@ -74,6 +75,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
         name: formData.name.trim(),
         classId,
         rollNumber: formData.rollNumber || undefined,
+        gender: formData.gender || undefined,
         notes: formData.notes.trim(),
       });
 
@@ -102,6 +104,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
       const result = await studentAPI.updateStudent(editingStudent._id, {
         name: formData.name.trim(),
         rollNumber: formData.rollNumber || undefined,
+        gender: formData.gender || undefined,
         notes: formData.notes.trim(),
       });
 
@@ -151,6 +154,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     setFormData({
       name: student.name,
       rollNumber: student.rollNumber || "",
+      gender: student.gender || "",
       notes: student.notes || "",
     });
     setShowEditModal(true);
@@ -160,6 +164,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     setFormData({
       name: "",
       rollNumber: "",
+      gender: "",
       notes: "",
     });
   };
@@ -255,6 +260,11 @@ const StudentManagementSection = ({ classId, classInfo }) => {
                     Roll #{student.rollNumber}
                   </p>
                 )}
+                {student.gender && (
+                  <p className={styles.gender}>
+                    Gender: {student.gender}
+                  </p>
+                )}
                 {student.notes && (
                   <p className={styles.notes}>{student.notes}</p>
                 )}
@@ -314,21 +324,40 @@ const StudentManagementSection = ({ classId, classInfo }) => {
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Roll Number (Optional)</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="e.g., 1"
-                value={formData.rollNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, rollNumber: e.target.value })
-                }
-                min="1"
-              />
-              <Form.Text className="text-muted">
-                Class roll number for attendance
-              </Form.Text>
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Roll Number (Optional)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="e.g., 1"
+                    value={formData.rollNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rollNumber: e.target.value })
+                    }
+                    min="1"
+                  />
+                  <Form.Text className="text-muted">
+                    Class roll number for attendance
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Gender (Optional)</Form.Label>
+                  <Form.Select
+                    value={formData.gender}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gender: e.target.value })
+                    }
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Notes (Optional)</Form.Label>
@@ -398,18 +427,37 @@ const StudentManagementSection = ({ classId, classInfo }) => {
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Roll Number (Optional)</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="e.g., 1"
-                value={formData.rollNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, rollNumber: e.target.value })
-                }
-                min="1"
-              />
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Roll Number (Optional)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="e.g., 1"
+                    value={formData.rollNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rollNumber: e.target.value })
+                    }
+                    min="1"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Gender (Optional)</Form.Label>
+                  <Form.Select
+                    value={formData.gender}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gender: e.target.value })
+                    }
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Notes (Optional)</Form.Label>

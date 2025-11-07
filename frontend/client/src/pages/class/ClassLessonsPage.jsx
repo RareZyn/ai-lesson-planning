@@ -22,6 +22,21 @@ const ClassLessonsPage = () => {
   // State to control the edit modal visibility
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // Extract the number from grade (e.g., "Form 5" -> "5", "Standard 3" -> "3")
+  const getFormNumber = (grade) => {
+    if (!grade) return '';
+    const match = grade.match(/\d+/); // Extract the number
+    return match ? match[0] : '';
+  };
+
+  // Generate gradient based on form number
+  const getGradientClass = (grade) => {
+    const formNum = getFormNumber(grade);
+    if (!formNum) return styles.gradient1;
+    const index = (parseInt(formNum) - 1) % 6;
+    return `gradient${index + 1}`;
+  };
+
   // Fetch both class info and its associated lessons
   const fetchData = useCallback(async () => {
     if (!classId) return;
@@ -95,9 +110,13 @@ const ClassLessonsPage = () => {
         <ArrowBack /> Back to All Classes
       </Link>
 
-      <header className={styles.header}>
+      <header className={`${styles.header} ${styles[getGradientClass(classInfo?.grade)]}`}>
         <div className={styles.headerMain}>
-          <h1>{classInfo?.className}</h1>
+          <h1>
+            {classInfo && getFormNumber(classInfo.grade)
+              ? `${getFormNumber(classInfo.grade)} ${classInfo.className}`
+              : classInfo?.className}
+          </h1>
           <p>
             {classInfo?.subject} - Year {classInfo?.year}
           </p>

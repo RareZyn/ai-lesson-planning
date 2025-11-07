@@ -514,7 +514,7 @@ const AssessmentPage = () => {
           post:
             regeneratingLessonPlan.parameters?.sow?.learningOutline?.post || "",
         },
-        assessmentTitle: `${regeneratingLessonPlan.title} - Assessment (Regenerated)`,
+        assessmentTitle: `${regeneratingLessonPlan.title} (Regenerated)`,
         assessmentDescription:
           regeneratingLessonPlan.plan?.learningObjective || "",
       };
@@ -601,7 +601,7 @@ const AssessmentPage = () => {
           during: record.parameters?.sow?.learningOutline?.during || "",
           post: record.parameters?.sow?.learningOutline?.post || "",
         },
-        assessmentTitle: `${record.title} - Assessment`,
+        assessmentTitle: `${record.title}`,
         assessmentDescription: record.plan?.learningObjective || "",
       };
 

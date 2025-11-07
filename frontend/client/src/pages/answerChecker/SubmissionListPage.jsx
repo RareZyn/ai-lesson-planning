@@ -149,7 +149,7 @@ const SubmissionListPage = () => {
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2 className="mb-2">Answer Recognition - Assessments</h2>
+              <h2 className="mb-2">Answer Recognition</h2>
               <p className="text-muted mb-0">
                 Select an assessment to view student submissions
               </p>

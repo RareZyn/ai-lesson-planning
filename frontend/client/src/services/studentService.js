@@ -113,7 +113,7 @@ export const studentAPI = {
    */
   updateStudent: async (studentId, updateData) => {
     try {
-      const response = await apiClient.put(`/${studentId}`, updateData);
+      const response = await apiClient.put(`/detail/${studentId}`, updateData);
       return {
         success: true,
         data: response.data.data,
@@ -135,7 +135,7 @@ export const studentAPI = {
    */
   deleteStudent: async (studentId) => {
     try {
-      const response = await apiClient.delete(`/${studentId}`);
+      const response = await apiClient.delete(`/detail/${studentId}`);
       return {
         success: true,
         message: response.data.message,

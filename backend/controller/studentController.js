@@ -35,7 +35,7 @@ const generateStudentId = async () => {
  */
 exports.addStudent = async (req, res) => {
   try {
-    const { name, classId, rollNumber, dateOfBirth, parentContact, notes } =
+    const { name, classId, rollNumber, gender, dateOfBirth, parentContact, notes } =
       req.body;
 
     // Validate required fields (only name and classId now)
@@ -72,6 +72,7 @@ exports.addStudent = async (req, res) => {
       classId,
       grade: classDoc.grade, // Get grade from class
       rollNumber: rollNumber || undefined,
+      gender: gender || "",
       dateOfBirth: dateOfBirth || undefined,
       parentContact: parentContact || undefined,
       notes: notes || "",
@@ -234,6 +235,7 @@ exports.updateStudent = async (req, res) => {
     const allowedUpdates = [
       "name",
       "rollNumber",
+      "gender",
       "dateOfBirth",
       "parentContact",
       "avatar",
@@ -424,6 +426,7 @@ exports.bulkImportStudents = async (req, res) => {
           classId,
           grade: classDoc.grade,
           rollNumber: studentData.rollNumber || undefined,
+          gender: studentData.gender || "",
           dateOfBirth: studentData.dateOfBirth || undefined,
           parentContact: studentData.parentContact || undefined,
           notes: studentData.notes || "",

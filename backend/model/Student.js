@@ -55,6 +55,11 @@ const studentSchema = new mongoose.Schema(
       type: Number,
       min: [1, "Roll number must be positive"],
     },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", ""],
+      default: "",
+    },
 
     // Profile Information
     dateOfBirth: {

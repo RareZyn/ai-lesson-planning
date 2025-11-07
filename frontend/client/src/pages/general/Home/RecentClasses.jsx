@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./RecentClasses.css";
 import { getRecentClasses } from "../../../services/classService";
-import { School, Subject, CalendarToday, Padding } from "@mui/icons-material";
+import ClassCard from "../../class/ClassCard";
 
 const RecentClasses = () => {
   const navigate = useNavigate();
@@ -29,28 +29,6 @@ const RecentClasses = () => {
     navigate("/app/classes");
   };
 
-  const handleCardClick = (classId) => {
-    navigate(`/app/classes/${classId}`);
-  };
-
-  // Map subject to appropriate background images
-  const getSubjectImage = (subject) => {
-    const subjectImages = {
-      English: "/Class/english.jpg",
-      Mathematics: "/Class/mathematics.jpg",
-      Science: "/Class/science.jpg",
-      History: "/Class/history.jpg",
-      Geography: "/Class/geography.jpg",
-      Physics: "/Class/physics.jpg",
-      Chemistry: "/Class/chemistry.jpg",
-      Biology: "/Class/biology.jpg",
-      // Default fallback
-      default: "/Class/english.jpg",
-    };
-
-    return subjectImages[subject] || subjectImages["default"];
-  };
-
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -63,31 +41,9 @@ const RecentClasses = () => {
 
     return (
       <div className="recent-classes-grid">
-        {recentClasses.map((classItem) => {
-          const backgroundImage = getSubjectImage(classItem.subject);
-
-          return (
-            <div
-              key={classItem._id}
-              className="class-card"
-              onClick={() => handleCardClick(classItem._id)}
-            >
-              <div
-                className="card-image-header"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
-              >
-                <div className="image-overlay"></div>
-                <div className="subject-badge">{classItem.subject}</div>
-              </div>
-              <div className="card-body" style={{padding: '10px'}}>
-                <h3 className="class-name">
-                  {classItem.grade} {classItem.className}
-                </h3>
-                <p className="class-year">Year: {classItem.year}</p>
-              </div>
-            </div>
-          );
-        })}
+        {recentClasses.map((classItem) => (
+          <ClassCard key={classItem._id} classInfo={classItem} />
+        ))}
       </div>
     );
   };
