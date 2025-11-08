@@ -1,6 +1,8 @@
 // frontend/client/src/pages/class/StudentManagementSection.jsx
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
+import { Modal as AntModal } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import { studentAPI } from "../../services/studentService";
 import { PersonAdd, Edit, Delete, Search } from "@mui/icons-material";
 import styles from "./StudentManagementSection.module.css";
@@ -126,27 +128,31 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   };
 
   const handleDeleteStudent = async (student) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${student.name} (${student.studentId})? This action cannot be undone.`
-      )
-    ) {
-      setLoading(true);
-      try {
-        const result = await studentAPI.deleteStudent(student._id);
-        if (result.success) {
-          setSuccess("Student deleted successfully!");
-          await fetchStudents();
-          setTimeout(() => setSuccess(""), 3000);
-        } else {
-          setError(result.message);
+    AntModal.confirm({
+      title: 'Delete Student',
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to delete ${student.name} (${student.studentId})? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setLoading(true);
+        try {
+          const result = await studentAPI.deleteStudent(student._id);
+          if (result.success) {
+            setSuccess("Student deleted successfully!");
+            await fetchStudents();
+            setTimeout(() => setSuccess(""), 3000);
+          } else {
+            setError(result.message);
+          }
+        } catch (err) {
+          setError("Failed to delete student");
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError("Failed to delete student");
-      } finally {
-        setLoading(false);
-      }
-    }
+      },
+    });
   };
 
   const openEditModal = (student) => {

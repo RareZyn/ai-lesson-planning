@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { 
+import {
   Upload as UploadIcon,
   Link as LinkIcon,
   Description as DescriptionIcon,
@@ -9,6 +9,8 @@ import {
   Close as CloseIcon,
   OpenInNew as OpenInNewIcon
 } from "@mui/icons-material";
+import { Modal } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
 
 const MaterialManagement = () => {
@@ -89,14 +91,20 @@ const MaterialManagement = () => {
     if (file) {
       // Validate file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
-        alert("File too large. Max size: 50 MB");
+        Modal.warning({
+          title: 'File Too Large',
+          content: 'File too large. Max size: 50 MB',
+        });
         return;
       }
-      
+
       // Validate file type
       const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
       if (!allowedTypes.includes(file.type)) {
-        alert("Invalid file type. Please upload PDF or Word documents.");
+        Modal.warning({
+          title: 'Invalid File Type',
+          content: 'Please upload PDF or Word documents.',
+        });
         return;
       }
       
@@ -109,7 +117,10 @@ const MaterialManagement = () => {
     try {
       new URL(linkUrl);
     } catch (e) {
-      alert("Please enter a valid URL");
+      Modal.warning({
+        title: 'Invalid URL',
+        content: 'Please enter a valid URL',
+      });
       return;
     }
     
@@ -132,7 +143,10 @@ const MaterialManagement = () => {
 
   const handleFileSubmit = () => {
     if (!selectedFile) {
-      alert("Please select a file first");
+      Modal.warning({
+        title: 'No File Selected',
+        content: 'Please select a file first',
+      });
       return;
     }
     
@@ -154,9 +168,17 @@ const MaterialManagement = () => {
   };
 
   const handleDeleteMaterial = (id) => {
-    if (window.confirm("Confirm to delete, this act is irreversible")) {
-      setMaterials(materials.filter(material => material.id !== id));
-    }
+    Modal.confirm({
+      title: 'Delete Material',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to delete this material? This action is irreversible.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: () => {
+        setMaterials(materials.filter(material => material.id !== id));
+      },
+    });
   };
 
   const getFileIcon = (type) => {

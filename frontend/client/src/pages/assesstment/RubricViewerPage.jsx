@@ -11,7 +11,6 @@ import {
   Tag,
   Space,
   Divider,
-  Dropdown,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -19,9 +18,6 @@ import {
   DownloadOutlined,
   EditOutlined,
   EyeOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
-  CaretDownOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
 import { usePdfExport } from "../../hooks/usePdfExport";
@@ -588,28 +584,6 @@ const RubricViewerPage = () => {
     }
   };
 
-  // HTML download as fallback
-  const handleDownloadHtml = () => {
-    const teacherContent = getTeacherContent();
-    if (teacherContent) {
-      const blob = new Blob([teacherContent], {
-        type: "text/html",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${assessment.title}_${getTeacherContentName().replace(
-        " ",
-        "_"
-      )}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      message.success(`${getTeacherContentName()} downloaded successfully!`);
-    }
-  };
-
   const handleViewActivity = () => {
     if (hasStudentContent()) {
       navigate(`/app/assessment/${id}`);
@@ -623,24 +597,6 @@ const RubricViewerPage = () => {
   const handleGoBack = () => {
     navigate("/app/assessment");
   };
-
-  // Download menu items
-  const downloadMenuItems = [
-    {
-      key: "pdf",
-      icon: <FilePdfOutlined />,
-      label: "Download as PDF",
-      onClick: handleDownloadPdf,
-      disabled: !getTeacherContent() || isExporting,
-    },
-    {
-      key: "html",
-      icon: <FileWordOutlined />,
-      label: "Download as HTML",
-      onClick: handleDownloadHtml,
-      disabled: !getTeacherContent(),
-    },
-  ];
 
   if (loading) {
     return (
@@ -812,21 +768,15 @@ const RubricViewerPage = () => {
             >
               Print
             </Button>
-            <Dropdown
-              menu={{ items: downloadMenuItems }}
-              trigger={["click"]}
-              disabled={!teacherContent}
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPdf}
+              loading={isExporting}
+              disabled={!teacherContent || isExporting}
             >
-              <Button
-                type="primary"
-                loading={isExporting}
-                disabled={!teacherContent}
-              >
-                <DownloadOutlined />
-                Download
-                <CaretDownOutlined />
-              </Button>
-            </Dropdown>
+              Download as PDF
+            </Button>
           </Space>
         </div>
       </Card>

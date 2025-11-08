@@ -523,7 +523,21 @@ DO NOT STOP until you have written Question ${numberOfQuestions}!
  */
 const buildPaper1Prompt = (data) => {
   return `
-# CRITICAL: Generate SPM English Paper 1 (Reading & Use of English) Examination
+# CRITICAL REQUIREMENT: Generate EXACTLY 40 Questions - NO EXCEPTIONS
+
+YOU MUST GENERATE A COMPLETE SPM English Paper 1 examination with EXACTLY 40 QUESTIONS.
+
+**MANDATORY QUESTION COUNT BREAKDOWN:**
+✓ Part 1: Questions 1-8 (8 questions) ← MUST HAVE 8 QUESTIONS
+✓ Part 2: Questions 9-18 (10 questions) ← MUST HAVE 10 QUESTIONS
+✓ Part 3: Questions 19-26 (8 questions) ← MUST HAVE 8 QUESTIONS
+✓ Part 4: Questions 27-32 (6 questions) ← MUST HAVE 6 QUESTIONS
+✓ Part 5: Questions 33-40 (8 questions) ← MUST HAVE 8 QUESTIONS
+  - Questions 33-36: Matching (4 questions) ← MUST HAVE ALL 4
+  - Questions 37-40: Information Transfer (4 questions) ← MUST HAVE ALL 4
+**TOTAL: 8 + 10 + 8 + 6 + 8 = 40 QUESTIONS**
+
+DO NOT STOP AT 36, 37, 38, or 39 QUESTIONS. YOU MUST REACH QUESTION 40.
 
 Create a complete SPM English Paper 1 examination based on the Malaysian KSSM curriculum format with exactly 40 questions across 5 parts.
 
@@ -571,12 +585,22 @@ Create a complete SPM English Paper 1 examination based on the Malaysian KSSM cu
 - 8 sentence options (A-H) to choose from (2 extras)
 - Test understanding of text organization and coherence
 
-**Part 5: Matching & Information Transfer (8 questions, 8 marks)**
+**Part 5: Matching & Information Transfer (8 questions, 8 marks) ← CRITICAL: MUST HAVE ALL 8 QUESTIONS**
 
-CRITICAL PART 5 STRUCTURE:
+⚠️ CRITICAL PART 5 STRUCTURE - THIS PART MUST HAVE EXACTLY 8 QUESTIONS (33-40):
 - ONE informational passage (400-450 words) divided into EXACTLY 6 paragraphs labeled A, B, C, D, E, F
-- Questions 33-36: Match statements to paragraph letters (4 questions, 4 marks)
-- Questions 37-40: Complete sentences with ONE WORD from passage (4 questions, 4 marks)
+- Questions 33-36: Match statements to paragraph letters (MANDATORY 4 QUESTIONS, 4 marks) ✓✓✓✓
+- Questions 37-40: Complete sentences with ONE WORD from passage (MANDATORY 4 QUESTIONS, 4 marks) ✓✓✓✓
+
+**YOU MUST GENERATE:**
+✓ Question 33 (matching)
+✓ Question 34 (matching)
+✓ Question 35 (matching)
+✓ Question 36 (matching)
+✓ Question 37 (information transfer - ONE WORD)
+✓ Question 38 (information transfer - ONE WORD)
+✓ Question 39 (information transfer - ONE WORD)
+✓ Question 40 (information transfer - ONE WORD) ← THIS IS THE FINAL QUESTION - DO NOT STOP BEFORE THIS
 
 ### Part 5 Passage Requirements:
 1. Write ONE complete informational text about "${
@@ -718,10 +742,11 @@ Return a JSON object with this EXACT structure:
       },
       {
         "partNumber": 5,
-        "title": "Part 5", 
+        "title": "Part 5",
         "instructions": "Questions 33 to 40. Read the text and answer the questions that follow.",
         "totalQuestions": 8,
         "marks": 8,
+        "CRITICAL_REMINDER": "THIS PART MUST CONTAIN EXACTLY 8 QUESTIONS (33, 34, 35, 36, 37, 38, 39, 40) - DO NOT GENERATE LESS",
         "passage": "**CRITICAL: Write ONE complete passage (400-450 words) about '${
           data.lesson || "maintaining a healthy lifestyle"
         }' divided into EXACTLY 6 paragraphs.**
@@ -739,34 +764,35 @@ Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary w
           {
             "questionType": "matching",
             "questionNumbers": "33-36",
-            "instructions": "Questions 33 - 36: Which paragraph (A - F) describes the reasons for going viral. Mark your answers on the separate answer sheet.",
+            "instructions": "Questions 33 - 36: Which paragraph (A - F) discusses the following about ${data.lesson || 'the topic'}. Mark your answers on the separate answer sheet.",
+            "MANDATORY_NOTE": "YOU MUST GENERATE ALL 4 MATCHING QUESTIONS (33, 34, 35, 36)",
             "questions": [
               {
                 "questionNumber": 33,
-                "statement": "Parents are responsible for making their children feel special.",
-                "correctAnswer": "F",
-                "explanation": "Paragraph F specifically discusses how parents tell children they are special",
+                "statement": "[Create statement matching Paragraph A, B, C, D, E, or F main idea]",
+                "correctAnswer": "[A-F]",
+                "explanation": "This statement matches the main idea discussed in the specified paragraph",
                 "marks": 1
               },
               {
                 "questionNumber": 34,
-                "statement": "Their posts can increase the economy.",
-                "correctAnswer": "D",
-                "explanation": "Paragraph D mentions viral posts affecting stock/economy",
+                "statement": "[Create statement matching another paragraph's main idea]",
+                "correctAnswer": "[A-F]",
+                "explanation": "This statement matches the main idea discussed in the specified paragraph",
                 "marks": 1
               },
               {
                 "questionNumber": 35,
-                "statement": "Going extra lengths in pursuit of approval.",
-                "correctAnswer": "A",
-                "explanation": "Paragraph A discusses seeking approval on social media",
+                "statement": "[Create statement matching another paragraph's main idea]",
+                "correctAnswer": "[A-F]",
+                "explanation": "This statement matches the main idea discussed in the specified paragraph",
                 "marks": 1
               },
               {
                 "questionNumber": 36,
-                "statement": "The need to be seen and heard.",
-                "correctAnswer": "E",
-                "explanation": "Paragraph E talks about validation and attention",
+                "statement": "[Create statement matching another paragraph's main idea]",
+                "correctAnswer": "[A-F]",
+                "explanation": "This statement matches the main idea discussed in the specified paragraph",
                 "marks": 1
               }
             ]
@@ -774,40 +800,42 @@ Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary w
           {
             "questionType": "information_transfer",
             "questionNumbers": "37-40",
-            "instructions": "Questions 37 - 40: Complete the notes below using information from the text. Choose no more than one word from the passage for each answer. Write your answers on the separate answer sheet.",
-            "title": "What we learn about going viral",
+            "instructions": "Questions 37 - 40: Complete the notes below using information from the text. Choose NO MORE THAN ONE WORD from the passage for each answer. Write your answers on the separate answer sheet.",
+            "title": "What we learn about ${data.lesson || 'the topic'}",
+            "MANDATORY_NOTE": "⚠️ CRITICAL: YOU MUST GENERATE ALL 4 INFORMATION TRANSFER QUESTIONS (37, 38, 39, 40) ⚠️",
+            "REMINDER": "DO NOT STOP AT QUESTION 37, 38, or 39 - YOU MUST REACH QUESTION 40",
             "questions": [
               {
                 "questionNumber": 37,
-                "sentence": "People go for a/an (37) _______ to secure a job to show their worth.",
-                "correctAnswer": "interview",
-                "locationInText": "This exact word must appear in the passage - ensure 'interview' is mentioned in context of securing jobs",
+                "sentence": "[Create sentence requiring ONE WORD from passage related to ${data.lesson}] (37) _______.",
+                "correctAnswer": "[word that MUST appear verbatim in passage]",
+                "locationInText": "Ensure this exact word appears in the passage text - verify word is extractable",
                 "marks": 1,
-                "verification": "MUST verify 'interview' appears verbatim in passage text"
+                "verification": "MUST verify word appears verbatim in passage text"
               },
               {
                 "questionNumber": 38,
-                "sentence": "When we become a public figure we lose our (38) _______ in the long run.",
-                "correctAnswer": "privacy",
-                "locationInText": "Word 'privacy' must be extractable from passage discussing consequences of fame",
+                "sentence": "[Create sentence requiring ONE WORD from passage related to ${data.lesson}] (38) _______.",
+                "correctAnswer": "[word that MUST appear verbatim in passage]",
+                "locationInText": "Ensure this exact word appears in the passage text - verify word is extractable",
                 "marks": 1,
-                "verification": "MUST verify 'privacy' appears verbatim in passage text"
+                "verification": "MUST verify word appears verbatim in passage text"
               },
               {
                 "questionNumber": 39,
-                "sentence": "The need to be (39) _______ is why people become Instafamous.",
-                "correctAnswer": "validated",
-                "locationInText": "Word 'validated' or 'validation' must appear when discussing reasons for social media fame",
+                "sentence": "[Create sentence requiring ONE WORD from passage related to ${data.lesson}] (39) _______.",
+                "correctAnswer": "[word that MUST appear verbatim in passage]",
+                "locationInText": "Ensure this exact word appears in the passage text - verify word is extractable",
                 "marks": 1,
-                "verification": "MUST verify 'validated' appears verbatim in passage text"
+                "verification": "MUST verify word appears verbatim in passage text"
               },
               {
                 "questionNumber": 40,
-                "sentence": "Many young people attend (40) ______ to seek fame and glory.",
-                "correctAnswer": "auditions",
-                "locationInText": "Word 'auditions' must be mentioned in context of seeking fame",
+                "sentence": "[Create sentence requiring ONE WORD from passage related to ${data.lesson}] (40) _______. ← THIS IS QUESTION 40 - THE FINAL QUESTION - YOU MUST GENERATE THIS",
+                "correctAnswer": "[word that MUST appear verbatim in passage]",
+                "locationInText": "Ensure this exact word appears in the passage text - verify word is extractable",
                 "marks": 1,
-                "verification": "MUST verify 'auditions' appears verbatim in passage text"
+                "verification": "⚠️ CRITICAL: MUST verify word appears verbatim in passage text - THIS IS THE LAST QUESTION (40)"
               }
             ]
           }
@@ -819,24 +847,89 @@ Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary w
     "title": "ANSWER KEY - SPM English Paper 1 (1119/1)",
     "totalQuestions": 40,
     "totalMarks": 40,
+    "CRITICAL_REQUIREMENT": "YOU MUST PROVIDE ANSWERS FOR ALL 40 QUESTIONS (1-40)",
     "answers": [
       {
+        "questionNumber": 1,
+        "correctAnswer": "[Answer for Q1]",
+        "explanation": "[Brief explanation]",
+        "marks": 1
+      },
+      {
+        "questionNumber": 2,
+        "correctAnswer": "[Answer for Q2]",
+        "explanation": "[Brief explanation]",
+        "marks": 1
+      }
+      // ... Continue for ALL questions 3-32 ...
+      {
         "questionNumber": 33,
-        "correctAnswer": "F",
-        "explanation": "Paragraph F discusses how parents make their children feel special by telling them they are unique and talented, which directly matches the statement.",
+        "correctAnswer": "[A-F]",
+        "explanation": "This paragraph discusses the main idea that matches the statement in Question 33",
         "marks": 1,
-        "markingGuidance": "Accept only letter F. Student must identify that paragraph F contains information about parental influence on children's self-perception.",
-        "textReference": "Paragraph F: 'Some people need to be the centre of attention to feel they are worthy of existing. Most parents tell their children that they are special and raise them to feel superior...'"
+        "markingGuidance": "Accept only the specified paragraph letter",
+        "textReference": "Reference to specific paragraph content"
+      },
+      {
+        "questionNumber": 34,
+        "correctAnswer": "[A-F]",
+        "explanation": "This paragraph discusses the main idea that matches the statement in Question 34",
+        "marks": 1,
+        "markingGuidance": "Accept only the specified paragraph letter",
+        "textReference": "Reference to specific paragraph content"
+      },
+      {
+        "questionNumber": 35,
+        "correctAnswer": "[A-F]",
+        "explanation": "This paragraph discusses the main idea that matches the statement in Question 35",
+        "marks": 1,
+        "markingGuidance": "Accept only the specified paragraph letter",
+        "textReference": "Reference to specific paragraph content"
+      },
+      {
+        "questionNumber": 36,
+        "correctAnswer": "[A-F]",
+        "explanation": "This paragraph discusses the main idea that matches the statement in Question 36",
+        "marks": 1,
+        "markingGuidance": "Accept only the specified paragraph letter",
+        "textReference": "Reference to specific paragraph content"
       },
       {
         "questionNumber": 37,
-        "correctAnswer": "interview",
-        "explanation": "The word 'interview' appears in the passage when discussing people wanting to prove their worth by showing their experience to secure a vacancy.",
+        "correctAnswer": "[ONE WORD from passage]",
+        "explanation": "The word appears in the passage in the context described",
         "marks": 1,
-        "acceptableAlternatives": "NONE - must be exact word 'interview' from passage",
-        "commonErrors": "Students may write 'job', 'work', or 'application' - these are INCORRECT even if logical",
-        "markingGuidance": "Award 1 mark ONLY for 'interview' spelled correctly. Do NOT accept synonyms. The word must be extracted exactly from the passage.",
-        "textReference": "Paragraph B: '...who want to appear in an interview to fill a vacancy and they want to prove their worth by showing their experience and quality...'"
+        "acceptableAlternatives": "NONE - must be exact word from passage",
+        "commonErrors": "Students may write synonyms - these are INCORRECT even if logical",
+        "markingGuidance": "Award 1 mark ONLY for the exact word spelled correctly. Do NOT accept synonyms. The word must be extracted exactly from the passage.",
+        "textReference": "Exact location in passage where this word appears verbatim"
+      },
+      {
+        "questionNumber": 38,
+        "correctAnswer": "[ONE WORD from passage]",
+        "explanation": "The word appears in the passage in the context described",
+        "marks": 1,
+        "acceptableAlternatives": "NONE - must be exact word from passage",
+        "markingGuidance": "Award 1 mark ONLY for the exact word spelled correctly. Do NOT accept synonyms.",
+        "textReference": "Exact location in passage where this word appears verbatim"
+      },
+      {
+        "questionNumber": 39,
+        "correctAnswer": "[ONE WORD from passage]",
+        "explanation": "The word appears in the passage in the context described",
+        "marks": 1,
+        "acceptableAlternatives": "NONE - must be exact word from passage",
+        "markingGuidance": "Award 1 mark ONLY for the exact word spelled correctly. Do NOT accept synonyms.",
+        "textReference": "Exact location in passage where this word appears verbatim"
+      },
+      {
+        "questionNumber": 40,
+        "correctAnswer": "[ONE WORD from passage]",
+        "explanation": "The word appears in the passage in the context described",
+        "marks": 1,
+        "acceptableAlternatives": "NONE - must be exact word from passage",
+        "markingGuidance": "⚠️ THIS IS THE FINAL QUESTION (40) - Award 1 mark ONLY for the exact word spelled correctly. Do NOT accept synonyms.",
+        "textReference": "Exact location in passage where this word appears verbatim"
       }
     ],
     "partSpecificGuidance": {
@@ -857,17 +950,46 @@ Each paragraph MUST be labeled with its letter at the start. Ensure vocabulary w
   }
 }
 
-**VERIFICATION CHECKLIST BEFORE GENERATING:**
+**MANDATORY VERIFICATION CHECKLIST - VERIFY BEFORE SUBMITTING:**
+
+PART-BY-PART VERIFICATION:
+✓ Part 1: Generated questions 1, 2, 3, 4, 5, 6, 7, 8 (Total: 8 questions)
+✓ Part 2: Generated questions 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 (Total: 10 questions)
+✓ Part 3: Generated questions 19, 20, 21, 22, 23, 24, 25, 26 (Total: 8 questions)
+✓ Part 4: Generated questions 27, 28, 29, 30, 31, 32 (Total: 6 questions)
+✓ Part 5: Generated questions 33, 34, 35, 36, 37, 38, 39, 40 (Total: 8 questions)
+  ✓ Questions 33-36: ALL 4 matching questions present
+  ✓ Questions 37-40: ALL 4 information transfer questions present
+
+PART 5 SPECIFIC VERIFICATION:
 ✓ Part 5 passage has EXACTLY 6 paragraphs labeled A, B, C, D, E, F
 ✓ Each paragraph is 60-80 words with ONE distinct main idea
-✓ Questions 33-36: 4 matching statements, each matching ONE specific paragraph
-✓ Questions 37-40: 4 incomplete sentences requiring ONE WORD answers
+✓ Question 33 exists with matching statement
+✓ Question 34 exists with matching statement
+✓ Question 35 exists with matching statement
+✓ Question 36 exists with matching statement
+✓ Question 37 exists with ONE WORD answer from passage
+✓ Question 38 exists with ONE WORD answer from passage
+✓ Question 39 exists with ONE WORD answer from passage
+✓ Question 40 exists with ONE WORD answer from passage ← VERIFY THIS FINAL QUESTION EXISTS
 ✓ ALL answer words for Q37-40 appear VERBATIM in the passage text
 ✓ Each answer word is contextually appropriate and grammatically correct
 ✓ Answer key includes exact text references showing where words appear
-✓ Total questions = 40 (8+10+8+6+8)
+
+FINAL COUNT VERIFICATION:
+✓ Total questions = 40 (8 + 10 + 8 + 6 + 8 = 40)
+✓ Highest question number in exam = 40
+✓ All question numbers from 1 to 40 are present with no gaps
+
+⚠️ CRITICAL FINAL CHECK ⚠️
+Before you finish generating, COUNT THE QUESTIONS:
+- Did you generate Question 40? (YES/NO)
+- Total question count = ? (MUST BE 40)
+- If total is less than 40, GO BACK and complete the missing questions
 
 Generate the complete examination following authentic SPM Paper 1 format exactly.
+
+REMEMBER: The examination is NOT complete until you have generated ALL 40 QUESTIONS including Question 40 as the final question.
 `;
 };
 

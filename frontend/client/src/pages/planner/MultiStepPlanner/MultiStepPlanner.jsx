@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./MultiStepPlanner.module.css";
+import { Modal } from "antd";
 
 import ProgressBar from "./ProgressBar";
 import Step1_ChooseClass from "./Step1_ChooseClass";
@@ -66,7 +67,10 @@ const MultiStepPlanner = () => {
       setGeneratedPlan(planObject);
       handleNext();
     } catch (error) {
-      alert(`Generation Failed: ${error.message}`);
+      Modal.error({
+        title: 'Generation Failed',
+        content: error.message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -97,12 +101,18 @@ const MultiStepPlanner = () => {
 
       if (response.success) {
         const newPlanId = response.data._id;
-        alert("Lesson Plan Saved Successfully with Activity Configuration!");
-        navigate(`/app/lessons/${newPlanId}`);
+        Modal.success({
+          title: 'Success',
+          content: 'Lesson Plan Saved Successfully with Activity Configuration!',
+          onOk: () => navigate(`/app/lessons/${newPlanId}`),
+        });
       }
     } catch (error) {
       console.error("Failed to save lesson plan:", error);
-      alert(`Error: ${error.message}`);
+      Modal.error({
+        title: 'Error',
+        content: error.message,
+      });
     } finally {
       setIsLoading(false);
     }

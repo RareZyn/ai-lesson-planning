@@ -6,6 +6,8 @@ import LessonCard from "../planner/displaylesson/LessonCard";
 import CreateClassModal from "./CreateClassModal";
 import StudentManagementSection from "./StudentManagementSection";
 import styles from "./ClassLessonsPage.module.css";
+import { Modal } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 
 // Icons for the UI
 import { ArrowBack, Edit, Delete, Add } from "@mui/icons-material";
@@ -68,21 +70,29 @@ const ClassLessonsPage = () => {
 
   // Handler for deleting the class
   const handleDelete = async () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete the class "${classInfo.className}" and all its lesson plans? This action cannot be undone.`
-      )
-    ) {
-      try {
-        await deleteClass(classId);
-        alert(
-          "Class and all associated lessons have been deleted successfully."
-        );
-        navigate("/app/classes"); // Navigate back to the main class list
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
-    }
+    Modal.confirm({
+      title: 'Delete Class',
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to delete the class "${classInfo.className}" and all its lesson plans? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteClass(classId);
+          Modal.success({
+            title: 'Success',
+            content: 'Class and all associated lessons have been deleted successfully.',
+            onOk: () => navigate("/app/classes"),
+          });
+        } catch (err) {
+          Modal.error({
+            title: 'Error',
+            content: `Error: ${err.message}`,
+          });
+        }
+      },
+    });
   };
 
   // Callback for when the modal saves an edit successfully

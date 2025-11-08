@@ -134,46 +134,150 @@ class EnhancedPdfExport {
 
   /**
    * Add SPM Paper 1 Answer Sheet (MCQ Bubble Sheet)
+   * Questions 1-32: Multiple choice bubbles (A-H)
+   * Questions 33-40: Short answer lines
    */
   addSpmAnswerSheet(doc) {
     doc.addPage();
 
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 12;
 
-    // Header
+    // Title
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("SPM ENGLISH PAPER 1", pageWidth / 2, margin + 5, { align: "center" });
+
     doc.setFontSize(10);
-    doc.text("NAMA:", margin, margin + 5);
-    doc.text("ANGKA GILIRAN:", margin, margin + 10);
-    doc.text("TINGKATAN:", pageWidth - 50, margin + 10);
+    doc.text("READING AND USE OF ENGLISH - ANSWER SHEET", pageWidth / 2, margin + 12, { align: "center" });
 
-    // Answer grid
-    doc.setFontSize(8);
-    doc.text("ANSWER BOX FOR LETTERS (MULTIPLE CHOICE)", margin, margin + 20);
+    // Student info box
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, margin + 16, pageWidth - 2 * margin, 20);
 
-    const startY = margin + 25;
-    const rowHeight = 5;
-    const colWidth = 12;
+    doc.setFontSize(9);
+    doc.text("NAME:", margin + 3, margin + 22);
+    doc.line(margin + 18, margin + 22, margin + 105, margin + 22);
 
-    for (let q = 1; q <= 40; q++) {
-      const y = startY + (q - 1) * rowHeight;
+    doc.text("CLASS:", margin + 110, margin + 22);
+    doc.line(margin + 125, margin + 22, pageWidth - margin - 3, margin + 22);
 
-      // Question number
+    doc.text("INDEX NO:", margin + 3, margin + 30);
+    doc.line(margin + 22, margin + 30, margin + 75, margin + 30);
+
+    doc.text("DATE:", margin + 110, margin + 30);
+    doc.line(margin + 125, margin + 30, pageWidth - margin - 3, margin + 30);
+
+    // Instructions
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    const instrY = margin + 40;
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, instrY, pageWidth - 2 * margin, 8, 'F');
+    doc.text("INSTRUCTIONS: Use a dark pencil (2B) to fill in circles. Mark only ONE answer per question.", margin + 2, instrY + 5);
+
+    // Two-column layout for answers
+    const colWidth = (pageWidth - 3 * margin) / 2;
+    const col1X = margin;
+    const col2X = margin + colWidth + margin;
+    let currentY = instrY + 15;
+
+    // Column 1 Header: Questions 1-20
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.rect(col1X, currentY, colWidth, 8, 'FD');
+    doc.text("QUESTIONS 1 - 20", col1X + colWidth / 2, currentY + 5, { align: "center" });
+
+    // Column 2 Header: Questions 21-40
+    doc.rect(col2X, currentY, colWidth, 8, 'FD');
+    doc.text("QUESTIONS 21 - 40", col2X + colWidth / 2, currentY + 5, { align: "center" });
+
+    currentY += 12;
+    const rowHeight = 6;
+    const bubbleRadius = 1.5;
+    const bubbleSpacing = 8;
+
+    // Column 1: Questions 1-20 (MCQ)
+    for (let q = 1; q <= 20; q++) {
+      const y = currentY + (q - 1) * rowHeight;
+
       doc.setFont("helvetica", "bold");
-      doc.text(q.toString(), margin, y);
+      doc.setFontSize(8);
+      doc.text(`${q}.`, col1X + 3, y + 3);
 
       // Answer bubbles A-H
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
       const options = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       options.forEach((opt, i) => {
-        const x = margin + 10 + i * colWidth;
-        doc.circle(x, y - 1.5, 2, 'S'); // Draw empty circle
-        doc.text(opt, x - 1, y);
+        const x = col1X + 12 + i * bubbleSpacing;
+        doc.circle(x, y + 1, bubbleRadius, 'S');
+        doc.text(opt, x - 0.8, y - 0.5);
       });
     }
 
-    console.log("✅ Answer sheet added");
+    // Column 2: Questions 21-32 (MCQ) + Questions 33-40 (Subjective)
+    // MCQ section (21-32)
+    for (let q = 21; q <= 32; q++) {
+      const y = currentY + (q - 21) * rowHeight;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(`${q}.`, col2X + 3, y + 3);
+
+      // Answer bubbles A-H
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      const options = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      options.forEach((opt, i) => {
+        const x = col2X + 12 + i * bubbleSpacing;
+        doc.circle(x, y + 1, bubbleRadius, 'S');
+        doc.text(opt, x - 0.8, y - 0.5);
+      });
+    }
+
+    // Subjective section header
+    const subjectiveY = currentY + 12 * rowHeight + 5;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setFillColor(230, 230, 230);
+    doc.rect(col2X, subjectiveY, colWidth, 6, 'F');
+    doc.text("Part 5: Write your answers (Questions 33-40)", col2X + colWidth / 2, subjectiveY + 4, { align: "center" });
+
+    // Subjective questions (33-40) with answer lines
+    let subjY = subjectiveY + 10;
+    for (let q = 33; q <= 40; q++) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(`${q}.`, col2X + 3, subjY);
+
+      // Answer line
+      doc.setDrawColor(100);
+      doc.setLineWidth(0.3);
+      doc.line(col2X + 12, subjY, col2X + colWidth - 3, subjY);
+
+      subjY += rowHeight;
+    }
+
+    // Footer
+    const footerY = pageHeight - 20;
+    doc.setDrawColor(180);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(100);
+    doc.text("DO NOT WRITE BELOW THIS LINE - FOR EXAMINER USE ONLY", pageWidth / 2, footerY + 4, { align: "center" });
+
+    doc.setFontSize(8);
+    doc.setTextColor(0);
+    const scoreY = footerY + 10;
+    doc.text("Score: _____ / 40", margin + 10, scoreY);
+    doc.text("Grade: _____", pageWidth / 2 - 10, scoreY);
+    doc.text("Examiner: _____________", pageWidth - margin - 50, scoreY);
+
+    console.log("✅ Answer sheet added with MCQ bubbles (1-32) and answer lines (33-40)");
   }
 
   /**
@@ -407,108 +511,73 @@ class EnhancedPdfExport {
     );
 
     if (passageContainer && passageContainer.textContent.length > 500) {
-      console.log("✅ Found complete passage container");
-
-      // Extract individual paragraphs A-F from within the passage
-      const paragraphLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
-      const passageText = passageContainer.textContent;
-
-      // Try to find each paragraph by looking for its label
-      paragraphLabels.forEach(label => {
-        // Look for paragraph markers: **A**, **Paragraph A**, etc.
-        const regex = new RegExp(`\\*\\*${label}\\*\\*|\\*\\*Paragraph ${label}\\*\\*`, 'i');
-
-        if (regex.test(passageText)) {
-          // Find the element containing this paragraph
-          const paragraphElements = Array.from(
-            passageContainer.querySelectorAll('div, p')
-          );
-
-          for (let el of paragraphElements) {
-            if (regex.test(el.textContent) && el.textContent.length > 40) {
-              // Find the container with the full paragraph content
-              let container = el;
-
-              // Walk up to find a container with substantial content (60+ words)
-              while (
-                container.parentElement &&
-                container.parentElement !== passageContainer &&
-                container.textContent.split(/\s+/).length < 50
-              ) {
-                container = container.parentElement;
-              }
-
-              // Verify this container has enough content
-              if (container.textContent.length > 50) {
-                elements.push({
-                  type: "Paragraph",
-                  element: container,
-                  number: label,
-                });
-                console.log(`✅ Found Paragraph ${label}: ${container.textContent.substring(0, 60)}...`);
-                break;
-              }
-            }
-          }
-        }
-      });
-
-      // If we didn't find individual paragraphs, add the whole passage
-      if (elements.filter(e => e.type === "Paragraph").length === 0) {
-        console.log("⚠️ Could not extract individual paragraphs, using full passage");
-        elements.push({
-          type: "Full Passage",
-          element: passageContainer,
-          number: "A-F"
-        });
-      }
-    }
-
-    // Find Questions 33-36 section (orange box)
-    const questionsSection1 = partElement.querySelector(
-      '[style*="background: rgb(255, 243, 224)"]'
-    );
-
-    if (questionsSection1 && questionsSection1.textContent.includes("33")) {
+      console.log("✅ Found complete passage container - adding as single element to preserve formatting");
+      // Add the ENTIRE passage as one element to keep all paragraphs together
       elements.push({
-        type: "Questions Section",
-        element: questionsSection1,
-        number: "33-36",
+        type: "Full Passage",
+        element: passageContainer,
+        number: "A-F"
       });
-      console.log("✅ Found Questions 33-36 section");
     }
 
-    // Find individual questions 33-36
-    console.log("🔍 Searching for questions 33-36...");
-    const questions3336 = this.collectQuestionsRange(partElement, 33, 36);
-    if (questions3336.length > 0) {
-      elements.push(...questions3336);
-      console.log(`✅ Found ${questions3336.length} questions (33-36)`);
-    }
-
-    // Find Questions 37-40 section (orange box)
-    const allOrangeBoxes = partElement.querySelectorAll(
-      '[style*="background: rgb(255, 243, 224)"]'
+    // Find Questions 33-36 section (use a more flexible selector)
+    console.log("🔍 Searching for Questions 33-36 section...");
+    const allSections = partElement.querySelectorAll(
+      '[style*="background"], [class*="question-group"], div'
     );
 
-    for (let box of allOrangeBoxes) {
-      if (box.textContent.includes("37") && box.textContent.includes("40")) {
+    let found3336Section = false;
+    for (let section of allSections) {
+      const text = section.textContent;
+      if ((text.includes("33") || text.includes("Questions 33")) &&
+          (text.includes("36") || text.includes("paragraph") || text.includes("matching"))) {
         elements.push({
           type: "Questions Section",
-          element: box,
-          number: "37-40",
+          element: section,
+          number: "33-36",
         });
-        console.log("✅ Found Questions 37-40 section");
+        console.log("✅ Found Questions 33-36 section");
+        found3336Section = true;
         break;
       }
     }
 
-    // Find individual questions 37-40
-    console.log("🔍 Searching for questions 37-40...");
-    const questions3740 = this.collectQuestionsRange(partElement, 37, 40);
-    if (questions3740.length > 0) {
-      elements.push(...questions3740);
-      console.log(`✅ Found ${questions3740.length} questions (37-40)`);
+    // If we didn't find the section, try to find individual questions
+    if (!found3336Section) {
+      console.log("⚠️ Questions 33-36 section not found, searching for individual questions...");
+      const questions3336 = this.collectQuestionsRange(partElement, 33, 36);
+      if (questions3336.length > 0) {
+        elements.push(...questions3336);
+        console.log(`✅ Found ${questions3336.length} individual questions (33-36)`);
+      }
+    }
+
+    // Find Questions 37-40 section (use a more flexible selector)
+    console.log("🔍 Searching for Questions 37-40 section...");
+    let found3740Section = false;
+    for (let section of allSections) {
+      const text = section.textContent;
+      if ((text.includes("37") || text.includes("Questions 37")) &&
+          (text.includes("40") || text.includes("transfer") || text.includes("Complete"))) {
+        elements.push({
+          type: "Questions Section",
+          element: section,
+          number: "37-40",
+        });
+        console.log("✅ Found Questions 37-40 section");
+        found3740Section = true;
+        break;
+      }
+    }
+
+    // If we didn't find the section, try to find individual questions
+    if (!found3740Section) {
+      console.log("⚠️ Questions 37-40 section not found, searching for individual questions...");
+      const questions3740 = this.collectQuestionsRange(partElement, 37, 40);
+      if (questions3740.length > 0) {
+        elements.push(...questions3740);
+        console.log(`✅ Found ${questions3740.length} individual questions (37-40)`);
+      }
     }
 
     console.log(`✅ Part 5 complete: ${elements.length} total elements`);

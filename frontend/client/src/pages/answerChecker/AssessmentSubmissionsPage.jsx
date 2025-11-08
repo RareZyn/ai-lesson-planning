@@ -1,7 +1,7 @@
 // frontend/client/src/pages/answerChecker/AssessmentSubmissionsPage.jsx
 import React, { useState, useEffect } from "react";
 import { Card, Button, Badge, Table, Alert, Row, Col } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin, Statistic } from "antd";
+import { Tag, Tooltip, Empty, Spin, Statistic, Modal } from "antd";
 import {
   EyeOutlined,
   DeleteOutlined,
@@ -12,7 +12,7 @@ import {
   CheckCircleOutlined,
   PercentageOutlined,
   PlusOutlined,
-  
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { submissionService, submissionUtils } from "../../services/submissionService";
@@ -64,19 +64,32 @@ const AssessmentSubmissionsPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this submission?"))
-      return;
-
-    try {
-      const result = await submissionService.deleteSubmission(id);
-      if (result.success) {
-        fetchAssessmentData();
-      } else {
-        alert(result.message);
-      }
-    } catch (err) {
-      alert("Failed to delete submission");
-    }
+    Modal.confirm({
+      title: 'Delete Submission',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to delete this submission?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const result = await submissionService.deleteSubmission(id);
+          if (result.success) {
+            fetchAssessmentData();
+          } else {
+            Modal.error({
+              title: 'Error',
+              content: result.message,
+            });
+          }
+        } catch (err) {
+          Modal.error({
+            title: 'Error',
+            content: 'Failed to delete submission',
+          });
+        }
+      },
+    });
   };
 
   const getStatusBadge = (status) => {

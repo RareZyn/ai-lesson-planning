@@ -21,6 +21,7 @@ import {
   Col,
   Typography,
   Divider,
+  Modal,
 } from "antd";
 
 // Import Ant Design icons
@@ -40,6 +41,7 @@ import {
   FileTextOutlined,
   CalendarOutlined,
   SchoolOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 
 import styles from "./DisplayLessonPage.module.css";
@@ -322,19 +324,29 @@ const DisplayLessonPage = () => {
 
   // Action Handlers
   const handleDelete = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to permanently delete this lesson plan?"
-      )
-    ) {
-      try {
-        await deleteLessonPlan(id);
-        alert("Lesson plan deleted successfully.");
-        navigate("/app/lessons");
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
-    }
+    Modal.confirm({
+      title: 'Delete Lesson Plan',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to permanently delete this lesson plan?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteLessonPlan(id);
+          Modal.success({
+            title: 'Success',
+            content: 'Lesson plan deleted successfully.',
+            onOk: () => navigate("/app/lessons"),
+          });
+        } catch (err) {
+          Modal.error({
+            title: 'Error',
+            content: `Error: ${err.message}`,
+          });
+        }
+      },
+    });
   };
 
   const handleEdit = () => {
@@ -354,9 +366,15 @@ const DisplayLessonPage = () => {
       setLessonPlan(updatedData);
       setIsEditing(false);
       setEditedPlan(null);
-      alert("Lesson plan updated successfully!");
+      Modal.success({
+        title: 'Success',
+        content: 'Lesson plan updated successfully!',
+      });
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      Modal.error({
+        title: 'Error',
+        content: `Error: ${err.message}`,
+      });
     } finally {
       setIsSaving(false);
     }

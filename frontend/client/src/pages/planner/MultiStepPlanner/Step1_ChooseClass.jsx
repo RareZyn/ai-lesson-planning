@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./MultiStepPlanner.module.css";
 import { getAllClasses } from "../../../services/classService";
 import CreateClassModal from "../../class/CreateClassModal";
+import { Modal } from "antd";
 
 const Step1_ChooseClass = ({ data, updateData, onNext }) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -38,7 +39,10 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
     if (data.classId && data.grade) {
       onNext();
     } else {
-      alert("Please select a class to continue.");
+      Modal.warning({
+        title: 'Class Required',
+        content: 'Please select a class to continue.',
+      });
     }
   };
 

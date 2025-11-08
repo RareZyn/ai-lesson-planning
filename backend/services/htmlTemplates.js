@@ -149,13 +149,20 @@ const getEnhancedPdfStyles = () => `
       body {
         padding: 10mm;
       }
-      
+
       .question, .question-wrapper, .answer-item, .exam-part {
         page-break-inside: avoid !important;
       }
-      
+
       h1, h2, h3, h4 {
         page-break-after: avoid !important;
+      }
+
+      /* CRITICAL: Prevent answer sheet from splitting across pages */
+      .spm-answer-sheet {
+        page-break-before: always !important;
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
       }
     }
   </style>
@@ -164,75 +171,150 @@ const getEnhancedPdfStyles = () => `
 /**
  * Generate SPM Paper 1 Answer Sheet HTML
  * This will always be appended to Paper 1 exports
+ * OPTIMIZED FOR OCR DETECTION with proper spacing, bubble size, and alignment marks
+ * Questions 1-32: Multiple choice bubbles (A-H)
+ * Questions 33-40: Short subjective answer lines
  */
 const generateSpmAnswerSheetHTML = () => {
-  return `
-    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; min-height: 297mm; padding: 10mm; background: white; font-family: Arial, sans-serif; font-size: 9pt; box-sizing: border-box;">
-      <!-- Header -->
-      <div style="margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 10pt;">NAMA</span>
-            <span>:</span>
-            <span style="border-bottom: 1px solid #000; width: 250px; display: inline-block;"></span>
+  // Helper function to generate a single question row with bubbles (for MCQ)
+  const generateQuestionRow = (qNum) => {
+    const bubbles = ["A", "B", "C", "D", "E", "F", "G", "H"]
+      .map(
+        (letter) => `
+          <div style="display: inline-flex; flex-direction: column; align-items: center; margin: 0 3mm;">
+            <span style="font-size: 8pt; font-weight: normal; margin-bottom: 1mm;">${letter}</span>
+            <div style="width: 5mm; height: 5mm; border: 0.3mm solid #000; border-radius: 50%; background-color: #fff;"></div>
           </div>
-          <div style="font-size: 14pt; font-weight: bold;">SPM</div>
+        `
+      )
+      .join("");
+
+    return `
+      <div style="display: flex; align-items: center; margin-bottom: 4mm; page-break-inside: avoid;">
+        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm;">
+          ${qNum}.
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 10pt;">ANGKA GILIRAN :</span>
-            <span style="border-bottom: 1px solid #000; width: 150px; display: inline-block;"></span>
+        <div style="display: flex; flex-wrap: nowrap; align-items: center;">
+          ${bubbles}
+        </div>
+      </div>
+    `;
+  };
+
+  // Helper function to generate subjective answer line (for short answers)
+  const generateSubjectiveRow = (qNum) => {
+    return `
+      <div style="display: flex; align-items: center; margin-bottom: 4mm; page-break-inside: avoid;">
+        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm;">
+          ${qNum}.
+        </div>
+        <div style="flex: 1; border-bottom: 1.5px solid #000; min-height: 6mm;"></div>
+      </div>
+    `;
+  };
+
+  // Column 1: Questions 1-20 (all MCQ)
+  const column1Questions = Array.from({ length: 20 }, (_, i) =>
+    generateQuestionRow(i + 1)
+  ).join("");
+
+  // Column 2: Questions 21-32 (MCQ) + Questions 33-40 (Subjective)
+  const column2McqQuestions = Array.from({ length: 12 }, (_, i) =>
+    generateQuestionRow(i + 21)
+  ).join("");
+
+  const column2SubjectiveQuestions = Array.from({ length: 8 }, (_, i) =>
+    generateSubjectiveRow(i + 33)
+  ).join("");
+
+  return `
+    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; height: 297mm; padding: 12mm; background: white; font-family: Arial, sans-serif; box-sizing: border-box; position: relative;">
+
+      <!-- Registration/Alignment Marks for OCR -->
+      <div style="position: absolute; top: 5mm; left: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; top: 5mm; right: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 5mm; left: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 5mm; right: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
+
+      <!-- Header Section -->
+      <div style="border: 2px solid #000; padding: 5mm; margin-bottom: 5mm;">
+        <div style="text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 3mm; letter-spacing: 2px;">
+          SPM ENGLISH PAPER 1
+        </div>
+        <div style="text-align: center; font-size: 11pt; margin-bottom: 4mm;">
+          READING AND USE OF ENGLISH - ANSWER SHEET
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2mm;">
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">NAME:</span>
+            <span style="border-bottom: 1.5px solid #000; width: 70mm; display: inline-block;"></span>
           </div>
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 10pt;">TINGKATAN :</span>
-            <span style="border-bottom: 1px solid #000; width: 100px; display: inline-block;"></span>
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">CLASS:</span>
+            <span style="border-bottom: 1.5px solid #000; width: 30mm; display: inline-block;"></span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">INDEX NO:</span>
+            <span style="border-bottom: 1.5px solid #000; width: 50mm; display: inline-block;"></span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">DATE:</span>
+            <span style="border-bottom: 1.5px solid #000; width: 40mm; display: inline-block;"></span>
           </div>
         </div>
       </div>
 
-      <!-- MCQ Answer Grid -->
-      <div style="margin-bottom: 12px;">
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
-          <thead>
-            <tr>
-              <th colspan="2" style="border: 1px solid #000; padding: 4px 8px; text-align: center; font-weight: bold; font-size: 9pt;">
-                ANSWER BOX FOR LETTERS<br/>(MULTIPLE CHOICE)
-              </th>
-              <th style="border: 1px solid #000; padding: 4px 8px; text-align: center; font-weight: bold; font-size: 9pt;">
-                SPACE FOR ANSWER THAT ARE<br/>A WORD, PHRASE OR NUMBER
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            ${Array.from({ length: 40 }, (_, i) => i + 1)
-      .map(
-        (qNum) => `
-              <tr>
-                <td style="border: 1px solid #000; padding: 3px 8px; width: 25px; text-align: center; font-weight: bold;">
-                  ${qNum}
-                </td>
-                <td style="border: 1px solid #000; padding: 3px 8px; text-align: center;">
-                  <div style="display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    ${["A", "B", "C", "D", "E", "F", "G", "H"]
-            .map(
-              (letter) => `
-                      <div style="display: inline-flex; align-items: center; gap: 2px;">
-                        <span style="font-size: 8pt; font-weight: bold;">${letter}</span>
-                        <div style="width: 12px; height: 12px; border: 1.5px solid #000; border-radius: 50%; background-color: #fff;"></div>
-                      </div>
-                    `
-            )
-            .join("")}
-                  </div>
-                </td>
-                <td style="border: 1px solid #000; padding: 3px 8px;"></td>
-              </tr>
-            `
-      )
-      .join("")}
-          </tbody>
-        </table>
+      <!-- Instructions -->
+      <div style="background: #f0f0f0; border: 1px solid #666; padding: 3mm; margin-bottom: 4mm; font-size: 9pt;">
+        <strong>INSTRUCTIONS:</strong> Use a dark pencil (2B) to completely fill in the circle for your answer.
+        Mark only ONE answer per question. Erase completely to change your answer.
       </div>
+
+      <!-- Two-Column Answer Grid -->
+      <div style="display: flex; gap: 8mm; justify-content: space-between;">
+
+        <!-- Column 1: Questions 1-20 -->
+        <div style="flex: 1; border: 1.5px solid #000; padding: 4mm; background: #fafafa;">
+          <div style="text-align: center; font-weight: bold; font-size: 10pt; margin-bottom: 3mm; padding-bottom: 2mm; border-bottom: 1px solid #666;">
+            QUESTIONS 1 - 20
+          </div>
+          ${column1Questions}
+        </div>
+
+        <!-- Column 2: Questions 21-40 -->
+        <div style="flex: 1; border: 1.5px solid #000; padding: 4mm; background: #fafafa;">
+          <div style="text-align: center; font-weight: bold; font-size: 10pt; margin-bottom: 3mm; padding-bottom: 2mm; border-bottom: 1px solid #666;">
+            QUESTIONS 21 - 40
+          </div>
+
+          <!-- MCQ Questions 21-32 -->
+          ${column2McqQuestions}
+
+          <!-- Subjective Section Header -->
+          <div style="margin-top: 5mm; margin-bottom: 3mm; padding: 2mm; background: #e8e8e8; border-radius: 2mm; text-align: center;">
+            <strong style="font-size: 9pt;">Part 5: Write your answers (Questions 33-40)</strong>
+          </div>
+
+          <!-- Subjective Questions 33-40 -->
+          ${column2SubjectiveQuestions}
+        </div>
+
+      </div>
+
+      <!-- Footer with timing marks -->
+      <div style="margin-top: 4mm; text-align: center; font-size: 8pt; color: #666; border-top: 1px solid #ccc; padding-top: 2mm;">
+        DO NOT WRITE BELOW THIS LINE - FOR EXAMINER USE ONLY
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 2mm; padding: 2mm; border: 1px solid #ccc;">
+        <div>Score: _____ / 40</div>
+        <div>Grade: _____</div>
+        <div>Examiner: _____________</div>
+      </div>
+
     </div>
   `;
 };

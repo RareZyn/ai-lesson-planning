@@ -1,6 +1,7 @@
 // src/components/ClassModal.jsx
 import React, { useState, useEffect } from 'react';
 import { createClass, updateClass } from '../../services/classService';
+import { Modal } from 'antd';
 import './CreateClassModal.css'; // Assuming you have a CSS module for styles
 
 const CreateClassModal = ({ isOpen, onClose, onSave, currentClass }) => {
@@ -45,15 +46,24 @@ const CreateClassModal = ({ isOpen, onClose, onSave, currentClass }) => {
     try {
       if (currentClass) {
         await updateClass(currentClass._id, formData);
-        alert('Class updated successfully');
+        Modal.success({
+          title: 'Success',
+          content: 'Class updated successfully',
+        });
       } else {
         await createClass(formData);
-        alert('Class created successfully');
+        Modal.success({
+          title: 'Success',
+          content: 'Class created successfully',
+        });
       }
       onSave(); // Notify parent component that save was successful
     } catch (error) {
       console.error('Error saving class:', error);
-      alert(error.response?.data?.error || 'Failed to save class');
+      Modal.error({
+        title: 'Error',
+        content: error.response?.data?.error || 'Failed to save class',
+      });
     } finally {
       setIsLoading(false);
     }

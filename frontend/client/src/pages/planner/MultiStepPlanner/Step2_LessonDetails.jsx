@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./MultiStepPlanner.module.css";
 import { getSow } from "../../../services/sowService";
+import { Modal } from "antd";
 
 // Import all the modal components
 import ActivityInClassModal from "../../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
@@ -123,13 +124,19 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       !data.proficiencyLevel ||
       !data.hotsFocus
     ) {
-      alert("Please fill in all required fields.");
+      Modal.warning({
+        title: 'Required Fields',
+        content: 'Please fill in all required fields.',
+      });
       return;
     }
 
     // Check if activity has been configured
     if (!hasConfiguredActivity) {
-      alert("Please configure your selected activity type before proceeding.");
+      Modal.warning({
+        title: 'Activity Configuration Required',
+        content: 'Please configure your selected activity type before proceeding.',
+      });
       return;
     }
 
