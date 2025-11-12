@@ -61,6 +61,12 @@ class EnhancedPdfExport {
    */
   async exportSpmExamQuestionByQuestion(element, fileName, options) {
     console.log("🎯 STARTING SPM EXAM EXPORT - FULL DEBUG MODE");
+    console.log("📄 Element ID:", element.id);
+    console.log("📏 Element dimensions:", element.offsetWidth, "x", element.offsetHeight);
+    console.log("📝 Element text length:", element.textContent.length);
+
+    // CRITICAL: Wait for all images and content to load
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const doc = new jsPDF({
       ...this.defaultOptions,
@@ -80,6 +86,11 @@ class EnhancedPdfExport {
     const renderableElements = this.findAllRenderableElements(element);
     console.log(`📊 Found ${renderableElements.length} renderable elements`);
 
+    if (renderableElements.length === 0) {
+      console.error("❌ NO ELEMENTS FOUND! This will result in an incomplete PDF!");
+      throw new Error("No renderable elements found in the exam content");
+    }
+
     // Step 3: Add first content page
     doc.addPage();
     let currentY = margin;
@@ -89,45 +100,96 @@ class EnhancedPdfExport {
       const item = renderableElements[i];
       console.log(`📝 Processing ${item.type} ${item.number || i + 1}...`);
 
-      try {
-        const canvas = await html2canvas(item.element, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: "#ffffff",
-          logging: false,
-        });
+      // --- Replace the existing canvas handling with this robust splitter ---
+      const canvas = await html2canvas(item.element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
 
+      const fullCanvasWidthPx = canvas.width;
+      const fullCanvasHeightPx = canvas.height;
+
+      // Convert to image mm dimensions for PDF placement
+      const imgWidthMm = contentWidth; // mm (content width in mm)
+      const imgHeightMm = (fullCanvasHeightPx * imgWidthMm) / fullCanvasWidthPx;
+
+      console.log(`📏 ${item.type} ${item.number || i + 1}: rendered canvas ${fullCanvasWidthPx}x${fullCanvasHeightPx}px -> ${imgWidthMm}x${imgHeightMm}mm`);
+
+      // If the element fits in the remaining page space, add directly
+      const remainingPageHeightMm = pageHeight - margin - currentY;
+
+      if (imgHeightMm <= remainingPageHeightMm) {
         const imgData = canvas.toDataURL("image/png");
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        doc.addImage(imgData, "PNG", margin, currentY, imgWidthMm, imgHeightMm);
+        currentY += imgHeightMm + 3;
+        console.log(`✅ Added ${item.type} ${item.number || i + 1} in one slice`);
+      } else {
+        // The element is taller than available space (or taller than one page) -> slice vertically.
+        console.log(`✂️ Splitting ${item.type} ${item.number || i + 1} into multiple page slices (imgHeight ${imgHeightMm}mm, remaining ${remainingPageHeightMm}mm)`);
 
-        console.log(`📏 ${item.type} ${item.number || i + 1}: ${imgWidth}x${imgHeight}mm`);
+        // px-per-mm (for cropping calculations)
+        const pxPerMm = fullCanvasWidthPx / imgWidthMm;
 
-        // Check if element fits on current page
-        if (currentY + imgHeight > pageHeight - margin) {
-          console.log(`📄 ${item.type} ${item.number || i + 1} needs new page`);
-          doc.addPage();
-          currentY = margin;
+        // height available for a full page slice (mm)
+        const usableSliceHeightMm = pageHeight - margin * 2; // full page usable height (top & bottom margins)
+        const usableSliceHeightPx = Math.floor(usableSliceHeightMm * pxPerMm);
+
+        let srcYPx = 0;
+        let sliceIndex = 0;
+
+        while (srcYPx < fullCanvasHeightPx) {
+          // Determine slice pixel height
+          const sliceHeightPx = Math.min(usableSliceHeightPx, fullCanvasHeightPx - srcYPx);
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = fullCanvasWidthPx;
+          tempCanvas.height = sliceHeightPx;
+
+          const ctx = tempCanvas.getContext("2d");
+          // Draw the slice from the original canvas
+          ctx.drawImage(canvas, 0, srcYPx, fullCanvasWidthPx, sliceHeightPx, 0, 0, fullCanvasWidthPx, sliceHeightPx);
+
+          const sliceData = tempCanvas.toDataURL("image/png");
+          // convert slice px height to mm for PDF
+          const sliceHeightMm = (sliceHeightPx * imgWidthMm) / fullCanvasWidthPx;
+
+          // If there's no room on current page, add a new page and reset currentY
+          if (currentY + sliceHeightMm > pageHeight - margin) {
+            doc.addPage();
+            currentY = margin;
+          }
+
+          doc.addImage(sliceData, "PNG", margin, currentY, imgWidthMm, sliceHeightMm);
+          currentY += sliceHeightMm + 3;
+
+          console.log(`✅ Added slice ${++sliceIndex} (${sliceHeightMm.toFixed(2)}mm) for ${item.type} ${item.number || i + 1} at Y=${currentY.toFixed(2)}mm`);
+
+          // move to next slice
+          srcYPx += sliceHeightPx;
+
+          // If we still have more to draw and current page is nearly full, add new page for next slice
+          if (srcYPx < fullCanvasHeightPx) {
+            doc.addPage();
+            currentY = margin;
+          }
         }
-
-        doc.addImage(imgData, "PNG", margin, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 3;
-
-        console.log(`✅ Added ${item.type} ${item.number || i + 1} at Y=${currentY}mm`);
-      } catch (error) {
-        console.error(`❌ Failed to process ${item.type} ${item.number || i + 1}:`, error);
       }
+
     }
 
-    // **FIX: Append answer sheet for Paper 1**
-    if (headerInfo.title.includes("Paper 1") || headerInfo.title.includes("1119/1")) {
+    // **CRITICAL FIX: Append answer sheet for Paper 1**
+    if (headerInfo.title.includes("Paper 1") || headerInfo.title.includes("1119/1") || headerInfo.title.toLowerCase().includes("paper 1")) {
       console.log("📋 Appending SPM Paper 1 answer sheet...");
       this.addSpmAnswerSheet(doc);
+      console.log("✅ Answer sheet added successfully");
+    } else {
+      console.log("⚠️ Not Paper 1, skipping answer sheet");
     }
 
     doc.save(fileName);
-    console.log(`✅ SPM exam PDF saved as ${fileName}`);
+    console.log(`✅ SPM exam PDF saved as ${fileName} with ${doc.internal.pages.length - 1} pages`);
 
     return { success: true, fileName };
   }
@@ -287,39 +349,66 @@ class EnhancedPdfExport {
   findAllRenderableElements(element) {
     const elements = [];
 
-    // Find all parts
-    const parts = element.querySelectorAll(
-      '[class*="exam-part"], section, .part'
+    console.log("🔍 STARTING findAllRenderableElements - COMPREHENSIVE SCAN");
+
+    // Find all parts using multiple selectors
+    let parts = element.querySelectorAll(
+      '[class*="exam-part"], section, .part, div[class*="part"]'
     );
 
+    // If no parts found with class selectors, look for divs with "Part" text
     if (parts.length === 0) {
-      console.log("⚠️ No explicit parts found, analyzing by structure");
-      return this.findRenderableElementsByStructure(element);
+      console.log("⚠️ No parts found with class selectors, searching by text content...");
+      const allDivs = element.querySelectorAll('div');
+      const partDivs = Array.from(allDivs).filter(div => {
+        const text = div.textContent.substring(0, 150);
+        return text.match(/Part\s+[1-5]/i);
+      });
+
+      if (partDivs.length > 0) {
+        console.log(`✅ Found ${partDivs.length} parts by text content`);
+        parts = partDivs;
+      } else {
+        console.log("⚠️ No explicit parts found, analyzing by structure");
+        return this.findRenderableElementsByStructure(element);
+      }
     }
 
+    console.log(`📊 Found ${parts.length} part elements to process`);
+
     parts.forEach((part, partIndex) => {
-      const partText = part.textContent.substring(0, 100).trim();
+      const partText = part.textContent.substring(0, 150).trim();
       const partNumber = partIndex + 1;
 
-      console.log(`🔍 Analyzing Part ${partNumber}...`);
+      console.log(`🔍 Analyzing Part ${partNumber}: "${partText.substring(0, 50)}..."`);
 
       // Check which part this is
-      if (partText.match(/Part 1/i)) {
+      if (partText.match(/Part\s*1/i)) {
+        console.log("  → Extracting Part 1 elements");
         elements.push(...this.extractPart1Elements(part));
-      } else if (partText.match(/Part 2/i)) {
+      } else if (partText.match(/Part\s*2/i)) {
+        console.log("  → Extracting Part 2 elements");
         elements.push(...this.extractPart2Elements(part));
-      } else if (partText.match(/Part 3/i)) {
+      } else if (partText.match(/Part\s*3/i)) {
+        console.log("  → Extracting Part 3 elements");
         elements.push(...this.extractPart3Elements(part));
-      } else if (partText.match(/Part 4/i)) {
+      } else if (partText.match(/Part\s*4/i)) {
+        console.log("  → Extracting Part 4 elements");
         elements.push(...this.extractPart4Elements(part));
-      } else if (partText.match(/Part 5/i)) {
-        elements.push(...this.extractPart5Elements(part));
+      } else if (partText.match(/Part\s*5/i)) {
+        console.log("  → Extracting Part 5 elements");
+        const part5Elements = this.extractPart5Elements(part);
+        elements.push(...part5Elements);
+        console.log(`  ✅ Part 5 extracted: ${part5Elements.length} elements`);
       } else {
         // Generic part - extract all children
-        console.log(`⚠️ Unknown part structure, using generic extraction`);
+        console.log(`  ⚠️ Unknown part structure, using generic extraction`);
         elements.push(...this.extractGenericPartElements(part, partNumber));
       }
     });
+
+    console.log(`📊 TOTAL ELEMENTS COLLECTED: ${elements.length}`);
+    console.log(`📋 Elements breakdown: ${elements.map(e => `${e.type}:${e.number || 'N/A'}`).join(', ')}`);
 
     return elements;
   }
@@ -520,63 +609,70 @@ class EnhancedPdfExport {
       });
     }
 
-    // Find Questions 33-36 section (use a more flexible selector)
-    console.log("🔍 Searching for Questions 33-36 section...");
+    // CRITICAL FIX: Always attempt to find ALL questions 33-40, not just sections
+    console.log("🔍 Searching for ALL questions 33-40...");
+    console.log("📝 Part 5 full content length:", partElement.textContent.length);
+
+    // Strategy 1: Try to find question sections first (more reliable for grouped questions)
     const allSections = partElement.querySelectorAll(
-      '[style*="background"], [class*="question-group"], div'
+      '[style*="background"], [class*="question-group"], [class*="question"], div, section'
     );
 
-    let found3336Section = false;
+    let found3336 = false;
+    let found3740 = false;
+
+    // Look for Questions 33-36 section
     for (let section of allSections) {
       const text = section.textContent;
-      if ((text.includes("33") || text.includes("Questions 33")) &&
-          (text.includes("36") || text.includes("paragraph") || text.includes("matching"))) {
-        elements.push({
-          type: "Questions Section",
-          element: section,
-          number: "33-36",
-        });
-        console.log("✅ Found Questions 33-36 section");
-        found3336Section = true;
-        break;
+      if ((text.includes("33") && text.includes("36")) ||
+        (text.includes("Questions 33") && text.includes("36"))) {
+        // Verify this section actually contains the questions
+        const hasQ33 = text.match(/33[\.\)]/);
+        const hasQ36 = text.match(/36[\.\)]/);
+
+        if (hasQ33 || text.length > 200) {
+          elements.push({
+            type: "Questions Section",
+            element: section,
+            number: "33-36",
+          });
+          console.log("✅ Added Questions 33-36 section");
+          found3336 = true;
+          break;
+        }
       }
     }
 
-    // If we didn't find the section, try to find individual questions
-    if (!found3336Section) {
-      console.log("⚠️ Questions 33-36 section not found, searching for individual questions...");
-      const questions3336 = this.collectQuestionsRange(partElement, 33, 36);
-      if (questions3336.length > 0) {
-        elements.push(...questions3336);
-        console.log(`✅ Found ${questions3336.length} individual questions (33-36)`);
-      }
-    }
-
-    // Find Questions 37-40 section (use a more flexible selector)
-    console.log("🔍 Searching for Questions 37-40 section...");
-    let found3740Section = false;
+    // Look for Questions 37-40 section
     for (let section of allSections) {
       const text = section.textContent;
-      if ((text.includes("37") || text.includes("Questions 37")) &&
-          (text.includes("40") || text.includes("transfer") || text.includes("Complete"))) {
-        elements.push({
-          type: "Questions Section",
-          element: section,
-          number: "37-40",
-        });
-        console.log("✅ Found Questions 37-40 section");
-        found3740Section = true;
-        break;
+      if ((text.includes("37") && text.includes("40")) ||
+        (text.includes("Questions 37") && text.includes("40"))) {
+        // Verify this section actually contains the questions
+        const hasQ37 = text.match(/37[\.\)]/);
+        const hasQ40 = text.match(/40[\.\)]/);
+
+        if (hasQ37 || hasQ40 || text.length > 200) {
+          elements.push({
+            type: "Questions Section",
+            element: section,
+            number: "37-40",
+          });
+          console.log("✅ Added Questions 37-40 section");
+          found3740 = true;
+          break;
+        }
       }
     }
 
-    // If we didn't find the section, try to find individual questions
-    if (!found3740Section) {
-      console.log("⚠️ Questions 37-40 section not found, searching for individual questions...");
-      const questions3740 = this.collectQuestionsRange(partElement, 37, 40);
-      if (questions3740.length > 0) {
-        elements.push(...questions3740);
-        console.log(`✅ Found ${questions3740.length} individual questions (37-40)`);
+    // Strategy 2: Try to collect individual questions if sections not found
+    if (!found3336 || !found3740) {
+      console.log("⚠️ Some question sections not found, trying individual question collection...");
+      const allQuestions = this.collectQuestionsRange(partElement, 33, 40);
+
+      if (allQuestions.length > 0) {
+        console.log(`✅ Found ${allQuestions.length} individual questions`);
+        elements.push(...allQuestions);
       }
     }
 
@@ -594,6 +690,7 @@ class EnhancedPdfExport {
       new RegExp(`^${qNum}\\)`),            // "18)"
       new RegExp(`^\\(${qNum}\\)`),         // "(18)"
       new RegExp(`^Question\\s+${qNum}\\b`, 'i'), // "Question 18"
+      new RegExp(`^${qNum}\\s+\\w+`),       // "18 Some text" (no period)
       new RegExp(`\\b${qNum}\\.\\s+\\w+`)   // "18. Some text" (fallback)
     ];
     return patterns.some(p => p.test(t));
@@ -651,11 +748,15 @@ class EnhancedPdfExport {
     const found = [];
     if (!container) return found;
 
-    // gather candidates once to improve speed
-    const candidates = Array.from(container.querySelectorAll('div, p, section, li, span'));
+    console.log(`🔍 collectQuestionsRange: Searching for questions ${startQ}-${endQ}`);
+
+    // gather candidates once to improve speed - use broader selectors
+    const candidates = Array.from(container.querySelectorAll('div, p, section, li, span, strong, b, h4, h5'));
 
     for (let q = startQ; q <= endQ; q++) {
       let matchedEl = null;
+      let bestMatch = null;
+      let bestMatchScore = 0;
 
       // Prefer the first candidate whose trimmed text begins with the question number
       for (let el of candidates) {
@@ -663,19 +764,50 @@ class EnhancedPdfExport {
         if (txt.length === 0) continue;
 
         if (this.isQuestionStartText(txt, q)) {
-          matchedEl = el;
-          break;
+          // Score the match based on how clean it is
+          let score = 1;
+
+          // Prefer elements that start with the number (not just contain it)
+          if (txt.startsWith(`${q}.`) || txt.startsWith(`${q} `)) {
+            score += 2;
+          }
+
+          // Prefer shorter elements (more likely to be the actual question start)
+          if (txt.length < 200) {
+            score += 1;
+          }
+
+          // Prefer elements with certain classes or tags
+          if (el.className && (el.className.includes('question') || el.className.includes('statement'))) {
+            score += 2;
+          }
+
+          if (score > bestMatchScore) {
+            bestMatchScore = score;
+            bestMatch = el;
+          }
+
+          // If we found a very good match, use it immediately
+          if (score >= 4) {
+            matchedEl = el;
+            break;
+          }
         }
       }
 
+      // Use the best match we found
+      if (!matchedEl && bestMatch) {
+        matchedEl = bestMatch;
+      }
+
       if (!matchedEl) {
-        console.warn(`collectQuestionsRange: Question ${q} not found in container`);
+        console.warn(`⚠️ collectQuestionsRange: Question ${q} not found in container`);
         continue;
       }
 
       // Expand to include siblings until next question start
       const nextQ = q + 1;
-      const fullContainer = this.expandToFullQuestionContainer(matchedEl, nextQ);
+      const fullContainer = this.expandToFullQuestionContainer(matchedEl, nextQ <= endQ ? nextQ : null);
 
       found.push({
         type: 'Question',
@@ -683,10 +815,10 @@ class EnhancedPdfExport {
         number: q.toString(),
       });
 
-      console.log(`collectQuestionsRange: found Question ${q} (${(matchedEl.textContent || '').substring(0, 60)})`);
+      console.log(`✅ collectQuestionsRange: found Question ${q} (${(matchedEl.textContent || '').substring(0, 60)}...)`);
     }
 
-    console.log(`collectQuestionsRange: collected ${found.length}/${endQ - startQ + 1} questions`);
+    console.log(`📊 collectQuestionsRange: collected ${found.length}/${endQ - startQ + 1} questions`);
     return found;
   }
 

@@ -807,9 +807,6 @@ const AssessmentPage = () => {
             >
               {getActivityTypeDisplay(record.activityType)}
             </Tag>
-            {record.parameters?.activityConfiguration && (
-              <Tag color="cyan">Configured</Tag>
-            )}
           </div>
         </div>
       ),
@@ -836,41 +833,6 @@ const AssessmentPage = () => {
           )}
         </div>
       ),
-    },
-    {
-      title: "Content Available",
-      key: "content",
-      width: 150,
-      render: (_, record) => {
-        const hasStudentContentFlag = hasStudentContent(record);
-        const hasTeacherContentFlag = hasTeacherContent(record);
-
-        return (
-          <Space>
-            {hasStudentContentFlag && (
-              <Tag
-                color="blue"
-                style={{ cursor: "pointer" }}
-                onClick={() => handleViewActivity(record)}
-              >
-                {record.activityType === "spm-exam" ? "Exam" : "Activity"}
-              </Tag>
-            )}
-            {hasTeacherContentFlag && (
-              <Tag
-                color="green"
-                style={{ cursor: "pointer" }}
-                onClick={() => handleViewRubric(record)}
-              >
-                {record.activityType === "spm-exam" ? "Answer Key" : "Rubric"}
-              </Tag>
-            )}
-            {record.assessmentStatus === "not_generated" && (
-              <Tag color="default">No Content</Tag>
-            )}
-          </Space>
-        );
-      },
     },
     {
       title: "Created",
