@@ -14,13 +14,11 @@ import {
 } from "antd";
 import {
   ArrowLeftOutlined,
-  PrinterOutlined,
-  DownloadOutlined,
   EditOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
-import { usePdfExport } from "../../hooks/usePdfExport";
+
 
 const { Title, Text } = Typography;
 
@@ -300,8 +298,6 @@ const ActivityViewerPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // PDF Export hook
-  const { exportElementToPdf, isExporting } = usePdfExport();
 
   useEffect(() => {
     fetchAssessment();
@@ -470,96 +466,6 @@ const ActivityViewerPage = () => {
     return hasContent;
   };
 
-  const handlePrint = () => {
-    const studentContent = getStudentContent();
-    if (!studentContent) {
-      message.error("No content available to print");
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow && studentContent) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Assessment - ${assessment.title}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                line-height: 1.6;
-              }
-              @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
-              }
-            </style>
-          </head>
-          <body>
-            ${studentContent}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  // Enhanced handleDownload with PDF export using usePdfExport
-  const handleDownloadPdf = async () => {
-    const studentContent = getStudentContent();
-    if (!studentContent) {
-      message.error("No content available to download");
-      return;
-    }
-
-    try {
-      // Create a temporary element to render the content for PDF export
-      const tempDiv = document.createElement("div");
-      tempDiv.id = "temp-activity-content";
-      tempDiv.innerHTML = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1 style="color: #1890ff; margin-bottom: 10px;">${
-            assessment.title
-          }</h1>
-          <div style="margin-bottom: 15px; color: #666; font-size: 14px;">
-            <strong>Subject:</strong> ${assessment.classId?.subject || "N/A"} | 
-            <strong>Grade:</strong> ${assessment.classId?.grade || "N/A"} | 
-            <strong>Duration:</strong> ${assessment.duration || "N/A"}
-          </div>
-          <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-            <strong>Instructions:</strong> ${
-              assessment.description || "Complete the following assessment."
-            }
-          </div>
-          <div>${studentContent}</div>
-        </div>
-      `;
-
-      // Temporarily add to DOM
-      tempDiv.style.position = "absolute";
-      tempDiv.style.left = "-9999px";
-      tempDiv.style.width = "800px";
-      document.body.appendChild(tempDiv);
-
-      // Use the HTML element export method
-      const fileName = `${assessment.title.replace(
-        /[^a-z0-9]/gi,
-        "_"
-      )}_${getContentTypeName().replace(" ", "_")}.pdf`;
-      await exportElementToPdf("temp-activity-content", fileName, {
-        format: "a4",
-        orientation: "portrait",
-      });
-
-      // Clean up
-      document.body.removeChild(tempDiv);
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      message.error("Failed to export to PDF");
-    }
-  };
 
   const handleViewRubric = () => {
     if (hasTeacherContent()) {
@@ -772,23 +678,6 @@ const ActivityViewerPage = () => {
                 View {getTeacherContentName()}
               </Button>
             )}
-            <Button
-              icon={<PrinterOutlined />}
-              onClick={handlePrint}
-              type="default"
-              disabled={!studentContent}
-            >
-              Print
-            </Button>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadPdf}
-              loading={isExporting}
-              disabled={!studentContent || isExporting}
-            >
-              Download as PDF
-            </Button>
           </Space>
         </div>
       </Card>

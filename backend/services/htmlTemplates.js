@@ -146,8 +146,15 @@ const getEnhancedPdfStyles = () => `
     
     /* Print optimization */
     @media print {
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
       body {
-        padding: 10mm;
+        padding: 0;
+        margin: 0;
+        width: 210mm;
       }
 
       .question, .question-wrapper, .answer-item, .exam-part {
@@ -163,6 +170,10 @@ const getEnhancedPdfStyles = () => `
         page-break-before: always !important;
         page-break-inside: avoid !important;
         page-break-after: auto !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        margin: 0 auto !important;
+        display: block !important;
       }
     }
   </style>
@@ -181,20 +192,20 @@ const generateSpmAnswerSheetHTML = () => {
     const bubbles = ["A", "B", "C", "D", "E", "F", "G", "H"]
       .map(
         (letter) => `
-          <div style="display: inline-flex; flex-direction: column; align-items: center; margin: 0 3mm;">
-            <span style="font-size: 8pt; font-weight: normal; margin-bottom: 1mm;">${letter}</span>
-            <div style="width: 5mm; height: 5mm; border: 0.3mm solid #000; border-radius: 50%; background-color: #fff;"></div>
+          <div style="display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end; margin: 0 3mm; min-height: 10mm;">
+            <span style="font-size: 8pt; font-weight: normal; margin-bottom: 1mm; display: block;">${letter}</span>
+            <div style="width: 5mm; height: 5mm; border: 0.3mm solid #000; border-radius: 50%; background-color: #fff; flex-shrink: 0;"></div>
           </div>
         `
       )
       .join("");
 
     return `
-      <div style="display: flex; align-items: center; margin-bottom: 4mm; page-break-inside: avoid;">
-        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm;">
+      <div style="display: flex; align-items: flex-end; margin-bottom: 4mm; page-break-inside: avoid;">
+        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm; padding-bottom: 1.5mm;">
           ${qNum}.
         </div>
-        <div style="display: flex; flex-wrap: nowrap; align-items: center;">
+        <div style="display: flex; flex-wrap: nowrap; align-items: flex-end;">
           ${bubbles}
         </div>
       </div>
@@ -228,13 +239,13 @@ const generateSpmAnswerSheetHTML = () => {
   ).join("");
 
   return `
-    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; height: 297mm; padding: 12mm; background: white; font-family: Arial, sans-serif; box-sizing: border-box; position: relative;">
+    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 15mm; background: white; font-family: Arial, sans-serif; box-sizing: border-box; position: relative;">
 
       <!-- Registration/Alignment Marks for OCR -->
-      <div style="position: absolute; top: 5mm; left: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; top: 5mm; right: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; bottom: 5mm; left: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; bottom: 5mm; right: 5mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; top: 8mm; left: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; top: 8mm; right: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 8mm; left: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 8mm; right: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
 
       <!-- Header Section -->
       <div style="border: 2px solid #000; padding: 5mm; margin-bottom: 5mm;">

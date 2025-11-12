@@ -17,7 +17,6 @@ import {
   RollbackOutlined,
 } from "@ant-design/icons";
 import { exportToPdf } from "../../services/exportService";
-import { pdfExportService } from "../../services/enhancedPdfExport";
 import "./LessonCard.css";
 
 const { Meta } = Card;
@@ -178,11 +177,7 @@ const LessonCard = ({
       // Generate filename
       const fileName = `${assessment.assessmentTitle || 'Assessment'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Export to PDF using enhancedPdfExport service
-      await pdfExportService.exportHtmlElementToPdf(
-        'temp-assessment-export',
-        fileName
-      );
+ 
 
       // Clean up
       document.body.removeChild(tempContainer);
