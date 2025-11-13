@@ -192,17 +192,17 @@ const generateSpmAnswerSheetHTML = () => {
     const bubbles = ["A", "B", "C", "D", "E", "F", "G", "H"]
       .map(
         (letter) => `
-          <div style="display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end; margin: 0 3mm; min-height: 10mm;">
-            <span style="font-size: 8pt; font-weight: normal; margin-bottom: 1mm; display: block;">${letter}</span>
-            <div style="width: 5mm; height: 5mm; border: 0.3mm solid #000; border-radius: 50%; background-color: #fff; flex-shrink: 0;"></div>
+          <div style="display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end; margin: 0 1.5mm; min-height: 7mm;">
+            <span style="font-size: 6.5pt; font-weight: normal; margin-bottom: 0.5mm; display: block;">${letter}</span>
+            <div style="width: 3.5mm; height: 3.5mm; border: 0.3mm solid #000; border-radius: 50%; background-color: #fff; flex-shrink: 0;"></div>
           </div>
         `
       )
       .join("");
 
     return `
-      <div style="display: flex; align-items: flex-end; margin-bottom: 4mm; page-break-inside: avoid;">
-        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm; padding-bottom: 1.5mm;">
+      <div style="display: flex; align-items: flex-end; margin-bottom: 2mm; page-break-inside: avoid;">
+        <div style="width: 6mm; text-align: right; font-weight: bold; font-size: 8.5pt; margin-right: 1.5mm; padding-bottom: 0.8mm;">
           ${qNum}.
         </div>
         <div style="display: flex; flex-wrap: nowrap; align-items: flex-end;">
@@ -215,11 +215,11 @@ const generateSpmAnswerSheetHTML = () => {
   // Helper function to generate subjective answer line (for short answers)
   const generateSubjectiveRow = (qNum) => {
     return `
-      <div style="display: flex; align-items: center; margin-bottom: 4mm; page-break-inside: avoid;">
-        <div style="width: 8mm; text-align: right; font-weight: bold; font-size: 10pt; margin-right: 3mm;">
+      <div style="display: flex; align-items: center; margin-bottom: 2.5mm; page-break-inside: avoid;">
+        <div style="width: 6mm; text-align: right; font-weight: bold; font-size: 8.5pt; margin-right: 1.5mm;">
           ${qNum}.
         </div>
-        <div style="flex: 1; border-bottom: 1.5px solid #000; min-height: 6mm;"></div>
+        <div style="flex: 1; border-bottom: 1.5px solid #000; min-height: 4.5mm;"></div>
       </div>
     `;
   };
@@ -239,66 +239,65 @@ const generateSpmAnswerSheetHTML = () => {
   ).join("");
 
   return `
-    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 15mm; background: white; font-family: Arial, sans-serif; box-sizing: border-box; position: relative;">
+    <div class="spm-answer-sheet" style="page-break-before: always; width: 210mm; height: 297mm; margin: 0 auto; padding: 8mm; background: white; font-family: Arial, sans-serif; box-sizing: border-box; position: relative; overflow: hidden;">
 
       <!-- Registration/Alignment Marks for OCR -->
-      <div style="position: absolute; top: 8mm; left: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; top: 8mm; right: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; bottom: 8mm; left: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
-      <div style="position: absolute; bottom: 8mm; right: 8mm; width: 3mm; height: 3mm; background: #000;"></div>
+      <div style="position: absolute; top: 4mm; left: 4mm; width: 2.5mm; height: 2.5mm; background: #000;"></div>
+      <div style="position: absolute; top: 4mm; right: 4mm; width: 2.5mm; height: 2.5mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 4mm; left: 4mm; width: 2.5mm; height: 2.5mm; background: #000;"></div>
+      <div style="position: absolute; bottom: 4mm; right: 4mm; width: 2.5mm; height: 2.5mm; background: #000;"></div>
 
       <!-- Header Section -->
-      <div style="border: 2px solid #000; padding: 5mm; margin-bottom: 5mm;">
-        <div style="text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 3mm; letter-spacing: 2px;">
+      <div style="border: 1.5px solid #000; padding: 2.5mm; margin-bottom: 2.5mm;">
+        <div style="text-align: center; font-size: 13pt; font-weight: bold; margin-bottom: 1.5mm; letter-spacing: 0.5px;">
           SPM ENGLISH PAPER 1
         </div>
-        <div style="text-align: center; font-size: 11pt; margin-bottom: 4mm;">
+        <div style="text-align: center; font-size: 9pt; margin-bottom: 2.5mm;">
           READING AND USE OF ENGLISH - ANSWER SHEET
         </div>
 
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2mm;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;">
           <div style="display: flex; align-items: center;">
-            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">NAME:</span>
-            <span style="border-bottom: 1.5px solid #000; width: 70mm; display: inline-block;"></span>
+            <span style="font-size: 9pt; font-weight: bold; margin-right: 1.5mm;">NAME:</span>
+            <span style="border-bottom: 1px solid #000; width: 65mm; display: inline-block;"></span>
           </div>
           <div style="display: flex; align-items: center;">
-            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">CLASS:</span>
-            <span style="border-bottom: 1.5px solid #000; width: 30mm; display: inline-block;"></span>
+            <span style="font-size: 9pt; font-weight: bold; margin-right: 1.5mm;">CLASS:</span>
+            <span style="border-bottom: 1px solid #000; width: 28mm; display: inline-block;"></span>
           </div>
         </div>
 
         <div style="display: flex; justify-content: space-between;">
           <div style="display: flex; align-items: center;">
-            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">INDEX NO:</span>
-            <span style="border-bottom: 1.5px solid #000; width: 50mm; display: inline-block;"></span>
+            <span style="font-size: 9pt; font-weight: bold; margin-right: 1.5mm;">INDEX NO:</span>
+            <span style="border-bottom: 1px solid #000; width: 45mm; display: inline-block;"></span>
           </div>
           <div style="display: flex; align-items: center;">
-            <span style="font-size: 10pt; font-weight: bold; margin-right: 2mm;">DATE:</span>
-            <span style="border-bottom: 1.5px solid #000; width: 40mm; display: inline-block;"></span>
+            <span style="font-size: 9pt; font-weight: bold; margin-right: 1.5mm;">DATE:</span>
+            <span style="border-bottom: 1px solid #000; width: 38mm; display: inline-block;"></span>
           </div>
         </div>
       </div>
 
       <!-- Instructions -->
-      <div style="background: #f0f0f0; border: 1px solid #666; padding: 3mm; margin-bottom: 4mm; font-size: 9pt;">
-        <strong>INSTRUCTIONS:</strong> Use a dark pencil (2B) to completely fill in the circle for your answer.
-        Mark only ONE answer per question. Erase completely to change your answer.
+      <div style="background: #f0f0f0; border: 1px solid #666; padding: 1.5mm; margin-bottom: 2.5mm; font-size: 7.5pt; line-height: 1.3;">
+        <strong>INSTRUCTIONS:</strong> Use a dark pencil (2B) to fill in the circle. Mark ONE answer per question. Erase to change.
       </div>
 
       <!-- Two-Column Answer Grid -->
-      <div style="display: flex; gap: 8mm; justify-content: space-between;">
+      <div style="display: flex; gap: 4mm; justify-content: space-between;">
 
         <!-- Column 1: Questions 1-20 -->
-        <div style="flex: 1; border: 1.5px solid #000; padding: 4mm; background: #fafafa;">
-          <div style="text-align: center; font-weight: bold; font-size: 10pt; margin-bottom: 3mm; padding-bottom: 2mm; border-bottom: 1px solid #666;">
+        <div style="flex: 1; border: 1.5px solid #000; padding: 2.5mm; background: #fafafa;">
+          <div style="text-align: center; font-weight: bold; font-size: 8.5pt; margin-bottom: 1.5mm; padding-bottom: 1mm; border-bottom: 1px solid #666;">
             QUESTIONS 1 - 20
           </div>
           ${column1Questions}
         </div>
 
         <!-- Column 2: Questions 21-40 -->
-        <div style="flex: 1; border: 1.5px solid #000; padding: 4mm; background: #fafafa;">
-          <div style="text-align: center; font-weight: bold; font-size: 10pt; margin-bottom: 3mm; padding-bottom: 2mm; border-bottom: 1px solid #666;">
+        <div style="flex: 1; border: 1.5px solid #000; padding: 2.5mm; background: #fafafa;">
+          <div style="text-align: center; font-weight: bold; font-size: 8.5pt; margin-bottom: 1.5mm; padding-bottom: 1mm; border-bottom: 1px solid #666;">
             QUESTIONS 21 - 40
           </div>
 
@@ -306,8 +305,8 @@ const generateSpmAnswerSheetHTML = () => {
           ${column2McqQuestions}
 
           <!-- Subjective Section Header -->
-          <div style="margin-top: 5mm; margin-bottom: 3mm; padding: 2mm; background: #e8e8e8; border-radius: 2mm; text-align: center;">
-            <strong style="font-size: 9pt;">Part 5: Write your answers (Questions 33-40)</strong>
+          <div style="margin-top: 2mm; margin-bottom: 1.5mm; padding: 1.5mm; background: #e8e8e8; border-radius: 1mm; text-align: center;">
+            <strong style="font-size: 7.5pt;">Part 5: Write your answers (Questions 33-40)</strong>
           </div>
 
           <!-- Subjective Questions 33-40 -->
@@ -317,13 +316,13 @@ const generateSpmAnswerSheetHTML = () => {
       </div>
 
       <!-- Footer with timing marks -->
-      <div style="margin-top: 4mm; text-align: center; font-size: 8pt; color: #666; border-top: 1px solid #ccc; padding-top: 2mm;">
+      <div style="margin-top: 2mm; text-align: center; font-size: 6.5pt; color: #666; border-top: 1px solid #ccc; padding-top: 1mm;">
         DO NOT WRITE BELOW THIS LINE - FOR EXAMINER USE ONLY
       </div>
-      <div style="display: flex; justify-content: space-between; margin-top: 2mm; padding: 2mm; border: 1px solid #ccc;">
-        <div>Score: _____ / 40</div>
-        <div>Grade: _____</div>
-        <div>Examiner: _____________</div>
+      <div style="display: flex; justify-content: space-between; margin-top: 1mm; padding: 1.5mm; border: 1px solid #ccc; font-size: 7.5pt;">
+        <div>Score: ____ / 40</div>
+        <div>Grade: ____</div>
+        <div>Examiner: __________</div>
       </div>
 
     </div>

@@ -15,8 +15,15 @@ import {
 import {
   ArrowLeftOutlined,
   EyeOutlined,
+  DownloadOutlined,
+  PrinterOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
+import {
+  exportRubricToPdf,
+  exportAnswerKeyToPdf,
+} from "../../utils/assessmentPdfExport";
+import { printRubric, printAnswerKey } from "../../utils/assessmentPrint";
 
 const { Title, Text } = Typography;
 
@@ -308,6 +315,8 @@ const RubricViewerPage = () => {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
 
   useEffect(() => {
@@ -476,6 +485,86 @@ const RubricViewerPage = () => {
     navigate("/app/assessment");
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const teacherContent = getTeacherContent();
+
+      if (!teacherContent) {
+        message.error("No content available to download");
+        return;
+      }
+
+      // Determine if this is an answer key (for SPM/assessment) or rubric
+      const isAnswerKey =
+        assessment.activityType === "spm-exam" ||
+        assessment.activityType === "assessment";
+
+      // Create a safe filename
+      const safeTitle = assessment.title
+        .replace(/[^a-z0-9]/gi, "_")
+        .substring(0, 50);
+      const contentTypeName = getTeacherContentName().replace(/[^a-z0-9]/gi, "_");
+      const fileName = `${safeTitle}_${contentTypeName}.pdf`;
+
+      // Use appropriate export function based on content type
+      if (isAnswerKey) {
+        await exportAnswerKeyToPdf(teacherContent, {
+          fileName,
+          title: `${assessment.title} - Answer Key`,
+          isSpmPaper1: false, // Answer key doesn't need answer sheet
+        });
+      } else {
+        await exportRubricToPdf(teacherContent, {
+          fileName,
+          title: `${assessment.title} - Rubric`,
+        });
+      }
+
+      message.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      message.error("Failed to download PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      setPrinting(true);
+      const teacherContent = getTeacherContent();
+
+      if (!teacherContent) {
+        message.error("No content available to print");
+        return;
+      }
+
+      // Determine if this is an answer key (for SPM/assessment) or rubric
+      const isAnswerKey =
+        assessment.activityType === "spm-exam" ||
+        assessment.activityType === "assessment";
+
+      // Use appropriate print function based on content type
+      if (isAnswerKey) {
+        await printAnswerKey(teacherContent, {
+          title: `${assessment.title} - ${getTeacherContentName()}`,
+        });
+      } else {
+        await printRubric(teacherContent, {
+          title: `${assessment.title} - ${getTeacherContentName()}`,
+        });
+      }
+
+      message.success("Print dialog opened!");
+    } catch (error) {
+      console.error("Error printing:", error);
+      message.error("Failed to open print dialog. Please try again.");
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -629,6 +718,24 @@ const RubricViewerPage = () => {
 
           {/* Action Buttons */}
           <Space wrap>
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+              type="default"
+              loading={printing}
+              disabled={!teacherContent}
+            >
+              Print
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPdf}
+              type="primary"
+              loading={downloading}
+              disabled={!teacherContent}
+            >
+              Download PDF
+            </Button>
             {hasStudentContent() && (
               <Button
                 icon={<EyeOutlined />}

@@ -17,6 +17,7 @@ import {
   RollbackOutlined,
 } from "@ant-design/icons";
 import { exportToPdf } from "../../services/exportService";
+import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
 import "./LessonCard.css";
 
 const { Meta } = Card;
@@ -146,15 +147,6 @@ const LessonCard = ({
 
     setIsDownloadingAssessment(true);
     try {
-      // Create a temporary container with the assessment content
-      const tempContainer = document.createElement('div');
-      tempContainer.id = 'temp-assessment-export';
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.width = '800px';
-      tempContainer.style.padding = '20px';
-      tempContainer.style.backgroundColor = '#ffffff';
-
       // Determine which content to export based on activity type
       let contentHtml = '';
 
@@ -171,16 +163,24 @@ const LessonCard = ({
         return;
       }
 
-      tempContainer.innerHTML = contentHtml;
-      document.body.appendChild(tempContainer);
+      // Determine if this is SPM Paper 1
+      const isSpmPaper1 =
+        assessment.activityType === 'spm-exam' &&
+        assessment.examConfiguration?.paperType === 'paper1';
 
-      // Generate filename
-      const fileName = `${assessment.assessmentTitle || 'Assessment'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Create a safe filename
+      const safeTitle = (assessment.title || assessment.assessmentTitle || 'Assessment')
+        .replace(/[^a-z0-9]/gi, '_')
+        .substring(0, 50);
+      const fileName = `${safeTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
 
- 
-
-      // Clean up
-      document.body.removeChild(tempContainer);
+      // Export using the proper PDF utility
+      await exportAssessmentToPdf(contentHtml, {
+        fileName,
+        title: assessment.title || assessment.assessmentTitle || 'Assessment',
+        isSpmPaper1,
+        paperType: assessment.examConfiguration?.paperType,
+      });
 
       message.success('Assessment downloaded successfully!');
     } catch (error) {

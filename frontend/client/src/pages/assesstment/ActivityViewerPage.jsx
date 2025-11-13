@@ -16,8 +16,12 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   EyeOutlined,
+  DownloadOutlined,
+  PrinterOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
+import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
+import { printAssessmentContent } from "../../utils/assessmentPrint";
 
 
 const { Title, Text } = Typography;
@@ -297,6 +301,8 @@ const ActivityViewerPage = () => {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
 
   useEffect(() => {
@@ -479,6 +485,73 @@ const ActivityViewerPage = () => {
 
   const handleGoBack = () => {
     navigate("/app/assessment");
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const studentContent = getStudentContent();
+
+      if (!studentContent) {
+        message.error("No content available to download");
+        return;
+      }
+
+      // Determine if this is SPM Paper 1
+      const isSpmPaper1 =
+        assessment.activityType === "spm-exam" &&
+        assessment.examConfiguration?.paperType === "paper1";
+
+      // Create a safe filename
+      const safeTitle = assessment.title
+        .replace(/[^a-z0-9]/gi, "_")
+        .substring(0, 50);
+      const fileName = `${safeTitle}_${getContentTypeName()
+        .replace(/[^a-z0-9]/gi, "_")}.pdf`;
+
+      await exportAssessmentToPdf(studentContent, {
+        fileName,
+        title: assessment.title,
+        isSpmPaper1,
+        paperType: assessment.examConfiguration?.paperType,
+      });
+
+      message.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      message.error("Failed to download PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      setPrinting(true);
+      const studentContent = getStudentContent();
+
+      if (!studentContent) {
+        message.error("No content available to print");
+        return;
+      }
+
+      // Determine if this is SPM Paper 1
+      const isSpmPaper1 =
+        assessment.activityType === "spm-exam" &&
+        assessment.examConfiguration?.paperType === "paper1";
+
+      await printAssessmentContent(studentContent, {
+        title: `${assessment.title} - ${getContentTypeName()}`,
+        isSpmPaper1,
+      });
+
+      message.success("Print dialog opened!");
+    } catch (error) {
+      console.error("Error printing:", error);
+      message.error("Failed to open print dialog. Please try again.");
+    } finally {
+      setPrinting(false);
+    }
   };
 
   // FIXED: Get appropriate content type name with SPM exam support
@@ -669,6 +742,24 @@ const ActivityViewerPage = () => {
 
           {/* Action Buttons */}
           <Space wrap>
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+              type="default"
+              loading={printing}
+              disabled={!studentContent}
+            >
+              Print
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPdf}
+              type="primary"
+              loading={downloading}
+              disabled={!studentContent}
+            >
+              Download PDF
+            </Button>
             {hasTeacherContent() && (
               <Button
                 icon={<EyeOutlined />}
