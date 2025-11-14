@@ -43,6 +43,39 @@
   opacity: 0.8;
 }
 
+.dateBadge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+  text-align: center;
+  min-width: 65px;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .dateBadge {
+  transform: translateY(-2px);
+}
+
+.dayOfWeek {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #1890ff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.dateValue {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #333;
+}
+
 .subjectBadge {
   background: rgba(255, 255, 255, 0.95);
   color: #333;
@@ -60,6 +93,32 @@
 
 .card:hover .subjectBadge {
   transform: scale(1.05);
+}
+
+.assessmentBadge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(82, 196, 26, 0.95);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .assessmentBadge {
+  transform: translateY(-2px);
+}
+
+.assessmentBadge span {
+  font-size: 0.75rem;
 }
 
 .cardContent {
@@ -103,9 +162,35 @@
     height: 80px;
   }
 
+  .dateBadge {
+    top: 8px;
+    left: 8px;
+    padding: 5px 8px;
+    min-width: 60px;
+  }
+
+  .dayOfWeek {
+    font-size: 0.6rem;
+  }
+
+  .dateValue {
+    font-size: 0.7rem;
+  }
+
   .subjectBadge {
     font-size: 0.65rem;
     padding: 0.25rem 0.6rem;
+  }
+
+  .assessmentBadge {
+    bottom: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
+  }
+
+  .assessmentBadge span {
+    font-size: 0.7rem;
   }
 
   .cardContent {
@@ -134,10 +219,37 @@
     height: 70px;
   }
 
+  .dateBadge {
+    top: 6px;
+    left: 6px;
+    padding: 4px 7px;
+    min-width: 55px;
+  }
+
+  .dayOfWeek {
+    font-size: 0.55rem;
+  }
+
+  .dateValue {
+    font-size: 0.65rem;
+  }
+
   .subjectBadge {
     font-size: 0.6rem;
     padding: 0.2rem 0.5rem;
     border-radius: 8px;
+  }
+
+  .assessmentBadge {
+    bottom: 6px;
+    right: 6px;
+    padding: 3px 7px;
+    font-size: 0.6rem;
+    gap: 3px;
+  }
+
+  .assessmentBadge span {
+    font-size: 0.65rem;
   }
 
   .cardContent {

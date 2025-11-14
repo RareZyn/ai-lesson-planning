@@ -833,6 +833,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       page = 1,
       limit = 10,
       classId,
+      lessonPlanId,
       activityType: rawActivityType,
       status,
       search,
@@ -843,6 +844,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       page,
       limit,
       classId,
+      lessonPlanId,
       rawActivityType,
       status,
       search,
@@ -852,8 +854,20 @@ const getUserAssessmentsFiltered = async (req, res) => {
     // Build filter object
     const filter = { createdBy: req.user.id };
 
-    // Filter by lesson plan presence
-    if (hasLessonPlan !== undefined) {
+    // Filter by specific lesson plan ID (highest priority)
+    if (lessonPlanId) {
+      filter.lessonPlanId = lessonPlanId;
+      // Explicitly exclude standalone assessments when filtering by lesson plan
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { isStandalone: { $exists: false } },
+          { isStandalone: false },
+          { isStandalone: null }
+        ]
+      });
+    } else if (hasLessonPlan !== undefined) {
+      // Filter by lesson plan presence (only if lessonPlanId not specified)
       if (hasLessonPlan === "true") {
         filter.lessonPlanId = { $exists: true, $ne: null };
       } else if (hasLessonPlan === "false") {

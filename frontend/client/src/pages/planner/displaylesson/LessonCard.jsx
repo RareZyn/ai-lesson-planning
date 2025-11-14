@@ -1,9 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getGradientForId } from "../../../utils/gradientColors";
+import { CheckCircleOutlined } from '@ant-design/icons';
 import styles from "./LessonCard.module.css";
 
-const LessonCard = ({ lesson, isRecent = false }) => {
+const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
@@ -47,6 +48,25 @@ const LessonCard = ({ lesson, isRecent = false }) => {
     return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
   };
 
+  // Get day of the week from date
+  const getDayOfWeek = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      weekday: "short",
+    });
+  };
+
+  // Get short date format
+  const getShortDate = (dateString) => {
+    if (!dateString) return "No date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+  };
+
   // Extract lesson information with fallbacks
   const subject = lesson.classId?.subject || "General";
   const className = lesson.classId?.className || "Unknown Class";
@@ -87,7 +107,25 @@ const LessonCard = ({ lesson, isRecent = false }) => {
     >
       <div className={styles.cardHeader} style={{ background: gradient }}>
         <div className={styles.gradientOverlay}></div>
+
+        {/* Date Badge */}
+        {lesson.lessonDate && (
+          <div className={styles.dateBadge}>
+            <div className={styles.dayOfWeek}>{getDayOfWeek(lesson.lessonDate)}</div>
+            <div className={styles.dateValue}>{getShortDate(lesson.lessonDate)}</div>
+          </div>
+        )}
+
+        {/* Subject Badge */}
         <div className={styles.subjectBadge}>{subject}</div>
+
+        {/* Assessment Indicator */}
+        {assessments && assessments.length > 0 && (
+          <div className={styles.assessmentBadge}>
+            <CheckCircleOutlined />
+            <span>{assessments.length}</span>
+          </div>
+        )}
       </div>
       <div className={styles.cardContent}>
         <h3 className={styles.cardTitle} title={title}>

@@ -50,6 +50,125 @@
   margin-top: 1rem;
 }
 
+/* --- Search and Filter Bar --- */
+.searchFilterBar {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+}
+
+.searchSection {
+  margin-bottom: 1rem;
+}
+
+.searchInput {
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.searchInput:hover,
+.searchInput:focus {
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.1);
+}
+
+.filterSection {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filterSelect {
+  min-width: 150px;
+  flex: 1;
+}
+
+.clearButton {
+  border-radius: 8px;
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+  transition: all 0.3s ease;
+}
+
+.clearButton:hover {
+  background-color: #ff4d4f;
+  color: white;
+  border-color: #ff4d4f;
+}
+
+.resultsInfo {
+  padding: 0.75rem 1rem;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: #595959;
+  font-weight: 500;
+}
+
+.lessonsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.classGroup {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.classHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.classHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.classDetails {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.classGrade,
+.classSubject,
+.lessonCount {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.classGrade {
+  background-color: #e7f3ff;
+  color: #1976d2;
+}
+
+.classSubject {
+  background-color: #f3e7ff;
+  color: #7c3aed;
+}
+
+.lessonCount {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
 .lessonsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -89,4 +208,64 @@
 }
 .createButton:hover {
   background-color: #36459b;
+}
+
+/* --- Responsive Styles --- */
+@media (max-width: 768px) {
+  .searchFilterBar {
+    padding: 1rem;
+  }
+
+  .filterSection {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterSelect {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .clearButton {
+    width: 100%;
+  }
+
+  .classHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .classDetails {
+    flex-wrap: wrap;
+  }
+
+  .resultsInfo {
+    font-size: 0.8rem;
+    padding: 0.6rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .searchFilterBar {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .searchInput {
+    font-size: 0.875rem;
+  }
+
+  .classGroup {
+    padding: 1rem;
+  }
+
+  .classHeader h2 {
+    font-size: 1.25rem;
+  }
+
+  .lessonsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }

@@ -25,7 +25,7 @@ const Community = () => {
   const [activeTab, setActiveTab] = useState("discover");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [assessmentsByLesson, setAssessmentsByLesson] = useState({}); // Map of lessonId -> single assessment
+  const [assessmentsByLesson, setAssessmentsByLesson] = useState({}); // Map of lessonId -> array of assessments
   const [filters, setFilters] = useState({
     grade: "",
     subject: "",
@@ -46,22 +46,22 @@ const Community = () => {
     applyFilters();
   }, [lessons, userLessons, bookmarkedLessons, filters, activeTab]);
 
-  // Fetch single assessment for a set of lessons (one assessment per lesson)
+  // Fetch ALL assessments for a set of lessons
   const fetchAssessmentsForLessons = async (lessonList) => {
     if (!lessonList || lessonList.length === 0) return;
 
     try {
       const assessmentsMap = {};
 
-      // Fetch assessment for each lesson (only the first one)
+      // Fetch ALL assessments for each lesson
       await Promise.all(
         lessonList.map(async (lesson) => {
           if (lesson._id) {
             try {
               const response = await assessmentAPI.getAssessmentsByLessonPlan(lesson._id);
-              // Only store the first assessment since one lesson has only one assessment
+              // Store ALL assessments for this lesson, not just the first one
               if (response.success && response.data && response.data.length > 0) {
-                assessmentsMap[lesson._id] = response.data[0]; // Get only the first assessment
+                assessmentsMap[lesson._id] = response.data; // Store all assessments as array
               }
             } catch (error) {
               console.error(`Error fetching assessment for lesson ${lesson._id}:`, error);
@@ -449,7 +449,7 @@ const Community = () => {
               onBookmark={handleBookmark}
               onUnshare={handleUnshare}
               currentUserId={userId}
-              assessment={assessmentsByLesson[lesson._id] || null}
+              assessments={assessmentsByLesson[lesson._id] || []}
             />
           </Col>
         ))}
