@@ -11,6 +11,7 @@ const {
   searchStudents,
   bulkImportStudents,
   updatePerformanceStats,
+  bulkAddStudents
 } = require("../controller/studentController");
 
 // Apply authentication to all routes
@@ -40,5 +41,8 @@ router.post("/", addStudent); // POST /api/students
 
 // Class-specific routes - LAST because /:classId matches everything
 router.get("/:classId", getStudentsByClass); // GET /api/students/:classId
+
+// NEW: Bulk add students to a class
+router.post('/:classId/students/bulk', bulkAddStudents);
 
 module.exports = router;

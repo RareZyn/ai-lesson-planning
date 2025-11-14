@@ -1,8 +1,10 @@
+/* --- Main Page Container --- */
 .recent-classes-container {
   width: 100%;
   margin-top: 1rem;
 }
 
+/* --- Header --- */
 .recent-header {
   display: flex;
   align-items: center;
@@ -48,95 +50,6 @@
   justify-content: start;
 }
 
-/* Card Styles with Background Image */
-.class-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  height: 180px;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #f0f0f0;
-}
-
-.class-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #e0e0e0;
-}
-
-/* Image header section */
-.card-image-header {
-  height: 100px;
-  position: relative;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.2),
-    rgba(0, 0, 0, 0.4)
-  );
-}
-
-.subject-badge {
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Card body section */
-.card-body {
-  padding: 1.25rem;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: white;
-}
-
-.class-name {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.class-year {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 500;
-}
-
 /* Skeleton Loader */
 .class-card-skeleton {
   height: 180px;
@@ -160,22 +73,5 @@
   .recent-classes-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
-  }
-
-  .class-card {
-    height: 160px;
-  }
-
-  .card-image-header {
-    height: 80px;
-  }
-
-  .subject-badge {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.8rem;
-  }
-
-  .class-name {
-    font-size: 0.9rem;
   }
 }

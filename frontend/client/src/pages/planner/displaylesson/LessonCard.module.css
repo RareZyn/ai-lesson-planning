@@ -14,6 +14,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* --- Image Header Section --- */
 .cardHeader {
   height: 100px;
   position: relative;
@@ -21,27 +22,34 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* Gradient will be applied inline via style prop */
+
+  /* Background Image styles */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-.gradientOverlay {
+.imageOverlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.1),
-    rgba(0, 0, 0, 0.2)
-  );
+  /* Darker overlay for text readability */
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.4),
+      rgba(0, 0, 0, 0.6));
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
 
-.card:hover .gradientOverlay {
-  opacity: 0.8;
+/* Ensure the overlay is active */
+.card:hover .imageOverlay {
+  opacity: 1;
 }
+
+/* --- End Image Header Section --- */
+
 
 .subjectBadge {
   background: rgba(255, 255, 255, 0.95);
@@ -71,33 +79,45 @@
 }
 
 .cardTitle {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  /* Slightly larger for main title */
+  font-weight: 700;
+  /* Bolder */
   color: #2c3e50;
   line-height: 1.3;
-  /* Truncate long titles to 2 lines */
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  margin: 0 !important;
 }
 
-.cardGrade {
-  margin: 0 0 0.5rem 0;
+.cardClass {
+  font-size: 0.95rem;
+  color: #34495e;
+  /* Slightly darker than meta */
+  font-weight: 500;
+  margin: 0 !important;
+}
+
+.cardSubject {
   font-size: 0.85rem;
   color: #7f8c8d;
+  margin: 0 0 0.5rem 0 !important;
 }
 
 .cardMeta {
-  margin: 0;
   font-size: 0.75rem;
   color: #95a5a6;
-  margin-top: auto;
+  padding-top: 0.5rem;
+  /* Separator space */
+  border-top: 1px solid #f0f0f0;
+  margin: 0 !important;
 }
 
-/* Responsive design */
+
+/* Responsive design (Keeping the original media queries) */
 @media (max-width: 768px) {
   .cardHeader {
     height: 80px;

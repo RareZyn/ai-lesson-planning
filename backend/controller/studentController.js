@@ -489,3 +489,86 @@ exports.updatePerformanceStats = async (req, res) => {
     });
   }
 };
+
+exports.bulkAddStudents = async (req, res) => {
+  const { classId } = req.params;
+  const { students } = req.body; // 'students' should be an array of student objects
+
+  if (!students || !Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ success: false, message: 'No student data provided.' });
+  }
+
+  try {
+    // Optional: Validate classId exists and user has permission
+    // const schoolClass = await Class.findById(classId);
+    // if (!schoolClass) {
+    //     return res.status(404).json({ success: false, message: 'Class not found.' });
+    // }
+    // if (schoolClass.teacher.toString() !== req.user.id) { // Assuming req.user.id is set by auth middleware
+    //     return res.status(403).json({ success: false, message: 'Unauthorized to add students to this class.' });
+    // }
+
+    const createdStudents = [];
+    const failedStudents = [];
+
+    // Use a transaction for atomicity if your MongoDB version supports it (replica set/sharded cluster)
+    // If not, process sequentially or in batches and handle partial failures.
+    // For simplicity, this example processes sequentially with error tracking.
+
+    for (let i = 0; i < students.length; i++) {
+      const studentData = students[i];
+      try {
+        // Basic server-side validation
+        if (!studentData.name || studentData.name.trim() === "") {
+          throw new Error('Student Name is required.');
+        }
+        if (studentData.rollNumber !== undefined && (isNaN(studentData.rollNumber) || studentData.rollNumber < 1)) {
+          throw new Error('Roll Number must be a positive number if provided.');
+        }
+        if (studentData.notes && studentData.notes.length > 500) {
+          throw new Error('Notes cannot exceed 500 characters.');
+        }
+
+        const newStudentId = await generateStudentId(); // Generate unique ID
+
+        const newStudent = new Student({
+          name: studentData.name.trim(),
+          classId: classId,
+          studentId: newStudentId, // Assign generated ID
+          rollNumber: studentData.rollNumber,
+          notes: studentData.notes ? studentData.notes.trim() : '',
+          // You might need to add createdBy: req.user.id or similar
+        });
+
+        const savedStudent = await newStudent.save();
+        createdStudents.push(savedStudent);
+      } catch (studentError) {
+        console.warn(`Failed to add student from row ${i + 1}: ${studentError.message}`);
+        failedStudents.push({
+          originalRow: i, // 0-based index
+          studentName: studentData.name || 'Unknown',
+          error: studentError.message,
+          data: studentData // Optionally include the problematic data
+        });
+      }
+    }
+
+    if (failedStudents.length > 0) {
+      return res.status(207).json({ // 207 Multi-Status for partial success/failure
+        success: true, // Still considered successful if some were added
+        message: `${createdStudents.length} students added, ${failedStudents.length} failed.`,
+        data: {
+          createdStudents: createdStudents.map(s => s._id), // Only send IDs for success
+          failedStudents: failedStudents
+        }
+      });
+    }
+
+    res.status(201).json({ success: true, message: 'All students added successfully!', data: createdStudents.map(s => s._id) });
+
+  } catch (err) {
+    console.error("Bulk add students error:", err);
+    res.status(500).json({ success: false, message: 'Server error during bulk student upload.' });
+  }
+};
+

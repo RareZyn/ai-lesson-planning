@@ -1,0 +1,315 @@
+/* --- HEADER ROW --- */
+.listHeader {
+    display: grid;
+    grid-template-columns: 1.3fr 1.5fr 1fr 0.9fr 0.9fr 0.6fr;
+    background: #f0f4f8;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+/* --- LIST ITEM --- */
+.listItem {
+    display: grid;
+    grid-template-columns: 1.3fr 1.5fr 1fr 0.9fr 0.9fr 0.6fr;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: #fff;
+    border: 1px solid #e0e6ed;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.listItem:hover {
+    border-color: #a7b7ed;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+    background-color: #fcfdfe;
+}
+
+/* --- ICONS --- */
+.listIcon {
+    margin-right: 8px;
+    color: #3f51b5;
+}
+
+/* --- ACTION BUTTON --- */
+.listActions {
+    display: flex;
+    justify-content: center;
+}
+
+.actionButton {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.actionButton.delete {
+    color: #dc3545;
+}
+
+.actionButton.delete:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* --- EMPTY STATE --- */
+.teacherManagement p {
+    text-align: center;
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+
+    .listHeader,
+    .listItem {
+        grid-template-columns: 1.2fr 1.3fr 1fr 0.9fr;
+    }
+
+    .listHeader div:nth-child(3),
+    .listHeader div:nth-child(4),
+    .listItem div:nth-child(3),
+    .listItem div:nth-child(4) {
+        display: none;
+    }
+
+    .teacherHeader h2 {
+        font-size: 1.4rem;
+    }
+}
+
+.headerRow {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.addButton {
+    background-color: #5669d8;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.addButton:hover {
+    background-color: #1532d8;
+}
+
+/* --- MODAL OVERLAY --- */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+/* --- MODAL BOX --- */
+.modalBox {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.25s ease;
+}
+
+/* --- MODAL HEADER --- */
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #2a2f45;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.closeButton:hover {
+    color: #000;
+}
+
+/* --- MODAL BODY --- */
+.modalBody {
+    display: flex;
+    flex-direction: column;
+}
+
+.modalBody label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444;
+}
+
+/* EMAIL INPUT + SEND BUTTON SIDE BY SIDE */
+.emailRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.emailRow input {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid #d6dae3;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease;
+}
+
+.emailRow input:focus {
+    outline: none;
+    border-color: #5669d8;
+}
+
+/* SEND BUTTON */
+.sendButton {
+    background-color: #5669d8;
+    color: white;
+    border: none;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.3s ease;
+}
+
+.sendButton:hover {
+    background-color: #3b4fd6;
+}
+
+/* --- OR SEPARATOR --- */
+.modalSeparator {
+    text-align: center;
+    font-weight: 500;
+    color: #999;
+    margin: 20px 0;
+    position: relative;
+    font-size: 0.9rem;
+}
+
+.modalSeparator::before,
+.modalSeparator::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.modalSeparator::before {
+    left: 0;
+}
+
+.modalSeparator::after {
+    right: 0;
+}
+
+/* --- INVITE CODE SECTION --- */
+.inviteCodeSection {
+    background-color: #f8faff;
+    border: 1px dashed #c8d0f4;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #444;
+    word-break: break-word;
+}
+
+.inviteCodeSection strong {
+    display: inline-block;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* COPY BUTTON */
+.copyButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.copyButton:hover {
+    background-color: #0056b3;
+}
+
+/* --- ANIMATION --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* --- RESPONSIVE (MOBILE VIEW) --- */
+@media (max-width: 500px) {
+    .emailRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sendButton {
+        width: 100%;
+    }
+
+    .inviteCodeSection strong {
+        max-width: 100px;
+    }
+}

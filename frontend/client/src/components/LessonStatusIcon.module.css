@@ -1,0 +1,36 @@
+.statusWrapper {
+  display: flex;
+  justify-content: left;
+  align-items: left;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.statusWrapper:hover {
+  transform: scale(1.1);
+}
+
+.icon {
+  transition: color 0.2s ease;
+}
+
+.draft {
+  color: #6b7280; /* gray */
+}
+
+.draft:hover {
+  color: #f59e0b; /* amber on hover */
+}
+
+.pending {
+  color: #f59e0b; /* yellow */
+}
+
+.approved {
+  color: #10b981; /* green */
+}
+
+.rejected {
+  color: #ef4444; /* red */
+}

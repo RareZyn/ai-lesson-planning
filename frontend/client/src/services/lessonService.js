@@ -104,14 +104,23 @@ export const getAllLessonPlans = async () => {
   }
 };
 
+
 /**
- * Fetches the 5 most recently updated lesson plans for the user.
- * @returns {Promise<Array>} A promise that resolves to an array of up to 5 lesson plans.
+ * Fetches the 5 most recently updated lesson plans for the currently logged-in user.
+ * This function uses a cache buster to prevent unnecessary re-fetching of data.
+ * The cache buster is a query parameter that is updated every time the function is called.
+ * If the data has not been modified since the last call, a 304 response is sent.
+ * @returns {Promise<Array>} A promise that resolves to an array of the 5 most recently updated lesson plans.
  */
 export const getRecentLessonPlans = async () => {
   try {
-    // This calls GET /api/lessons/recent
-    const response = await axios.get("/api/lessons/recent", getAuthConfig());
+    // --- IMPLEMENTING CACHE BUSTER ---
+    const cacheBuster = Date.now();
+    const url = `/api/lessons/recent?v=${cacheBuster}`;
+    // This calls GET /api/lessons/recent?v=<timestamp>
+    const response = await axios.get(url, getAuthConfig());
+    // --- END CACHE BUSTER ---
+
     return response.data.data; // The plans are nested in the 'data' property
   } catch (error) {
     console.error("Error fetching recent lesson plans:", error.response?.data);

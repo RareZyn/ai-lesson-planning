@@ -1,9 +1,20 @@
 // frontend/client/src/pages/class/StudentManagementSection.jsx
-import React, { useState, useEffect } from "react";
-import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
+import React, { useState, useEffect, useRef } from "react"; // Import useRef
+import { Modal, Button, Form, Alert, ProgressBar } from "react-bootstrap"; // Add ProgressBar
 import { studentAPI } from "../../services/studentService";
-import { PersonAdd, Edit, Delete, Search } from "@mui/icons-material";
+import {
+  PersonAdd,
+  Edit,
+  Delete,
+  Search,
+  CloudUpload, // New icon for upload
+  Download, // New icon for download
+} from "@mui/icons-material";
 import styles from "./StudentManagementSection.module.css";
+// You'll need to install 'xlsx' and 'file-saver'
+// npm install xlsx file-saver
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const StudentManagementSection = ({ classId, classInfo }) => {
   const [students, setStudents] = useState([]);
@@ -18,7 +29,15 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
 
-  // Form state
+  // NEW: Bulk Add Modal states
+  const [showBulkAddModal, setShowBulkAddModal] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [bulkUploadStatus, setBulkUploadStatus] = useState("");
+  const [bulkUploadProgress, setBulkUploadProgress] = useState(0);
+  const [bulkUploadErrors, setBulkUploadErrors] = useState([]); // To store specific row errors
+  const fileInputRef = useRef(null); // Ref for file input
+
+  // Form state (for single add/edit)
   const [formData, setFormData] = useState({
     name: "",
     rollNumber: "",
@@ -36,7 +55,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     const filtered = students.filter(
       (student) =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) // Assuming studentId is available
     );
     setFilteredStudents(filtered);
   }, [searchTerm, students]);
@@ -177,6 +196,197 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     setError("");
   };
 
+  // --- NEW BULK ADD FUNCTIONS ---
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        file.type === "application/vnd.ms-excel"
+      ) {
+        setExcelFile(file);
+        setError("");
+        setBulkUploadStatus("");
+        setBulkUploadErrors([]);
+      } else {
+        setExcelFile(null);
+        setError("Please upload a valid Excel file (.xlsx or .xls).");
+        setBulkUploadStatus("");
+        setBulkUploadErrors([]);
+      }
+    } else {
+      setExcelFile(null);
+      setError("");
+      setBulkUploadStatus("");
+      setBulkUploadErrors([]);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const headers = ["Student Name", "Roll Number", "Notes"];
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    // Auto-fit columns
+    const max_width = headers.reduce((w, r) => Math.max(w, r.length), 10);
+    worksheet["!cols"] = [{ wch: max_width }];
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const data = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+    });
+    saveAs(data, "student_upload_template.xlsx");
+  };
+
+  const handleBulkUpload = async () => {
+    if (!excelFile) {
+      setError("Please select an Excel file to upload.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    setBulkUploadStatus("Processing file...");
+    setBulkUploadProgress(0);
+    setBulkUploadErrors([]);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonStudents = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read as array of arrays
+
+        if (jsonStudents.length < 2) {
+          setError("The Excel file is empty or only contains headers.");
+          setLoading(false);
+          return;
+        }
+
+        const headers = jsonStudents[0].map(h => String(h).trim());
+        const expectedHeaders = ["Student Name", "Roll Number", "Notes"];
+
+        // Basic header validation
+        const missingHeaders = expectedHeaders.filter(
+          (header) => !headers.includes(header)
+        );
+        if (missingHeaders.length > 0) {
+            setError(`Missing required headers: ${missingHeaders.join(', ')}. Please use the provided template.`);
+            setLoading(false);
+            return;
+        }
+
+        const studentsToUpload = [];
+        for (let i = 1; i < jsonStudents.length; i++) { // Start from second row
+          const row = jsonStudents[i];
+          const studentData = {
+            name: row[headers.indexOf("Student Name")] ? String(row[headers.indexOf("Student Name")]).trim() : '',
+            rollNumber: row[headers.indexOf("Roll Number")] ? parseInt(row[headers.indexOf("Roll Number")], 10) : undefined,
+            notes: row[headers.indexOf("Notes")] ? String(row[headers.indexOf("Notes")]).trim() : '',
+            classId: classId,
+          };
+
+          // Basic client-side validation for name
+          if (!studentData.name) {
+            setBulkUploadErrors(prev => [...prev, { row: i + 1, message: "Student Name is required" }]);
+            continue; // Skip this student
+          }
+          if (isNaN(studentData.rollNumber) && row[headers.indexOf("Roll Number")]) {
+             setBulkUploadErrors(prev => [...prev, { row: i + 1, message: "Roll Number must be a number" }]);
+             studentData.rollNumber = undefined; // Clear invalid roll number
+          }
+
+          studentsToUpload.push(studentData);
+        }
+
+        if (studentsToUpload.length === 0 && bulkUploadErrors.length > 0) {
+            setError("No valid students found to upload. Please check the errors above.");
+            setLoading(false);
+            return;
+        } else if (studentsToUpload.length === 0) {
+            setError("No students found to upload after parsing the file.");
+            setLoading(false);
+            return;
+        }
+
+        setBulkUploadStatus(`Uploading ${studentsToUpload.length} students...`);
+
+        // Call the new bulk add API endpoint
+        const uploadResult = await studentAPI.bulkAddStudents(
+          classId,
+          studentsToUpload,
+          (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setBulkUploadProgress(percentCompleted);
+          }
+        );
+
+        if (uploadResult.success) {
+          setSuccess("Bulk student upload completed!");
+          if (uploadResult.data?.failedStudents && uploadResult.data.failedStudents.length > 0) {
+            setBulkUploadErrors(prev => [...prev, ...uploadResult.data.failedStudents.map(fs => ({
+                row: fs.originalRow + 1, // +1 for 1-based indexing in excel
+                message: `${fs.studentName || 'Unknown student'}: ${fs.error}`,
+                isServer: true
+            }))]);
+            setError(`Some students failed to upload. See details below.`);
+          }
+          setShowBulkAddModal(false);
+          setExcelFile(null);
+          await fetchStudents();
+          setTimeout(() => setSuccess(""), 5000);
+        } else {
+          setError(uploadResult.message || "Failed to bulk add students.");
+          setBulkUploadErrors(uploadResult.data?.failedStudents?.map(fs => ({
+              row: fs.originalRow + 1, // +1 for 1-based indexing in excel
+              message: `${fs.studentName || 'Unknown student'}: ${fs.error}`,
+              isServer: true
+          })) || []);
+        }
+      } catch (fileReadError) {
+        setError("Error reading Excel file: " + fileReadError.message);
+      } finally {
+        setLoading(false);
+        setExcelFile(null); // Clear file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    };
+
+    reader.onerror = () => {
+      setError("Failed to read file.");
+      setLoading(false);
+    };
+
+    reader.readAsArrayBuffer(excelFile);
+  };
+
+  const closeBulkAddModal = () => {
+    setShowBulkAddModal(false);
+    setExcelFile(null);
+    setBulkUploadStatus("");
+    setBulkUploadProgress(0);
+    setBulkUploadErrors([]);
+    setError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // --- END NEW BULK ADD FUNCTIONS ---
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -186,14 +396,24 @@ const StudentManagementSection = ({ classId, classInfo }) => {
             Manage students in {classInfo?.className || "this class"}
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => setShowAddModal(true)}
-          className={styles.addButton}
-        >
-          <PersonAdd className="me-2" />
-          Add Student
-        </Button>
+        <div className={styles.actionButtons}> {/* New div for multiple buttons */}
+          <Button
+            variant="outline-primary" // Changed to outline for secondary action
+            onClick={() => setShowBulkAddModal(true)}
+            className="me-2" // Margin for separation
+          >
+            <CloudUpload className="me-2" />
+            Bulk Add
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => setShowAddModal(true)}
+            className={styles.addButton}
+          >
+            <PersonAdd className="me-2" />
+            Add Student
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -221,7 +441,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
       </div>
 
       {/* Students List */}
-      {loading ? (
+      {loading && !showBulkAddModal ? ( // Only show global loading if not in bulk modal
         <div className={styles.loading}>
           <div className={styles.spinner}></div>
           <p>Loading students...</p>
@@ -280,8 +500,9 @@ const StudentManagementSection = ({ classId, classInfo }) => {
         </div>
       )}
 
-      {/* Add Student Modal */}
+      {/* Add Student Modal (Existing) */}
       <Modal show={showAddModal} onHide={closeAddModal} size="lg">
+        {/* ... (Existing Add Student Modal content) ... */}
         <Modal.Header closeButton>
           <Modal.Title>Add New Student</Modal.Title>
         </Modal.Header>
@@ -363,8 +584,9 @@ const StudentManagementSection = ({ classId, classInfo }) => {
         </Form>
       </Modal>
 
-      {/* Edit Student Modal */}
+      {/* Edit Student Modal (Existing) */}
       <Modal show={showEditModal} onHide={closeEditModal} size="lg">
+        {/* ... (Existing Edit Student Modal content) ... */}
         <Modal.Header closeButton>
           <Modal.Title>Edit Student</Modal.Title>
         </Modal.Header>
@@ -442,6 +664,89 @@ const StudentManagementSection = ({ classId, classInfo }) => {
             </Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+
+      {/* NEW: Bulk Add Student Modal */}
+      <Modal show={showBulkAddModal} onHide={closeBulkAddModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Bulk Add Students</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {error && (
+            <Alert variant="danger" dismissible onClose={() => setError("")}>
+              {error}
+            </Alert>
+          )}
+          {bulkUploadStatus && !error && (
+            <Alert variant="info">{bulkUploadStatus}</Alert>
+          )}
+
+          <p className="mb-3">
+            To bulk add students, download the template below, fill in the student
+            details, and then upload the completed Excel file.
+          </p>
+
+          <Button
+            variant="outline-secondary"
+            onClick={downloadTemplate}
+            className="mb-4"
+            block
+          >
+            <Download className="me-2" /> Download Excel Template
+          </Button>
+
+          <Form.Group controlId="excelFile" className="mb-3">
+            <Form.Label>Upload Excel File</Form.Label>
+            <Form.Control
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+            />
+            <Form.Text className="text-muted">
+              Accepted formats: .xlsx, .xls
+            </Form.Text>
+          </Form.Group>
+
+          {loading && bulkUploadProgress > 0 && (
+            <ProgressBar
+              animated
+              now={bulkUploadProgress}
+              label={`${bulkUploadProgress}%`}
+              className="mb-3"
+            />
+          )}
+
+          {bulkUploadErrors.length > 0 && (
+            <div className="mt-4">
+              <h4>Errors during upload:</h4>
+              <ul className="list-unstyled">
+                {bulkUploadErrors.map((err, index) => (
+                  <li key={index} className={err.isServer ? "text-danger" : "text-warning"}>
+                    <strong>Row {err.row}:</strong> {err.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={closeBulkAddModal}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleBulkUpload}
+            disabled={!excelFile || loading || bulkUploadErrors.some(err => !err.isServer)} // Disable if client-side errors exist
+          >
+            {loading ? "Uploading..." : "Upload Students"}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

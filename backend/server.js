@@ -47,6 +47,7 @@ const answerRoutes = require("./route/answerRoutes");
 const gradingRoutes = require("./route/gradingRoutes");
 const manualEditRoutes = require("./route/manualEditRoutes");
 const reviewRoutes = require("./route/reviewRoutes");
+const adminRoutes = require("./route/adminRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -64,6 +65,7 @@ app.use("/api/answers", answerRoutes);
 app.use("/api/grading", gradingRoutes); 
 app.use("/api/manual-edit", manualEditRoutes); 
 app.use("/api/review", reviewRoutes);  
+app.use("/api/admin", adminRoutes);
 
 
 

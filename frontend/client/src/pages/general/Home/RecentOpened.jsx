@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./RecentOpened.css";
+import "./RecentOpened.css"; // Keep container/header styles
 import { getRecentLessonPlans } from "../../../services/lessonService";
-import { getGradientForId } from "../../../utils/gradientColors";
-
+import LessonCard from "../../planner/displaylesson/LessonCard";
 const RecentOpened = () => {
   const navigate = useNavigate();
 
@@ -16,6 +15,7 @@ const RecentOpened = () => {
       setIsLoading(true);
       setError(null);
       try {
+        // NOTE: Keeping the cache-buster in lessonService for this route for reliability
         const data = await getRecentLessonPlans();
         setRecentItems(data);
       } catch (error) {
@@ -26,58 +26,21 @@ const RecentOpened = () => {
       }
     };
     fetchRecent();
-  }, []);
+  }, []); // Run only on mount
 
   const handleViewAll = () => {
     navigate("/app/lessons");
   };
 
-  const handleCardClick = (lessonId) => {
-    navigate(`/app/lessons/${lessonId}`);
-  };
-
   const handleCreateLessonClick = () => {
+    // This button might be redundant if the main dashboard has the "Create New Lesson" button,
+    // but kept here for historical context if needed.
     navigate("/app/lessons/create");
-  };
-
-  const formatRelativeDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
-    }
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-    }
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-    }
-
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) {
-      return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
-    }
-
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) {
-      return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
-    }
-
-    const diffInYears = Math.floor(diffInDays / 365);
-    return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
   };
 
   const renderContent = () => {
     if (isLoading) {
+      // Revert to simple skeleton divs, assuming styles for these exist in RecentOpened.css
       return (
         <div className="recent-opened-grid">
           <div className="recent-card-skeleton"></div>
@@ -102,57 +65,17 @@ const RecentOpened = () => {
       );
     }
 
+    if (recentItems.length === 0) {
+        return <p className="text-secondary text-center">You haven't opened any lesson plans recently.</p>;
+    }
+
     return (
       <div className="recent-opened-grid">
-        {recentItems.map((item) => {
-          // Extract lesson information
-          const className = item.classId?.className || "Unknown Class";
-          const grade = item.classId?.grade || "";
-          const title =
-            item.parameters?.specificTopic ||
-            item.parameters?.sow?.topic ||
-            item.title ||
-            "Untitled Lesson";
-
-          // Format the class display with grade and className
-          const classDisplay =
-            grade && className !== "Unknown Class"
-              ? `${className}`
-              : className;
-
-          // Get consistent gradient based on lesson ID
-          const gradient = getGradientForId(item._id);
-
-          return (
-            <div
-              key={item._id}
-              className="recent-card"
-              onClick={() => handleCardClick(item._id)}
-              role="button"
-              tabIndex={0}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleCardClick(item._id);
-                }
-              }}
-              aria-label={`Open lesson: ${title}`}
-            >
-              <div
-                className="card-gradient-header"
-                style={{ background: gradient }}
-              >
-                <div className="gradient-overlay"></div>
-                <h3 className="card-title-overlay">{title}</h3>
-              </div>
-              <div className="card-content">
-                <p className="card-grade">{classDisplay}</p>
-                <p className="card-meta">
-                  Opened {formatRelativeDate(item.updatedAt)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+        {recentItems.map((item) => (
+          // Use the unified LessonCard component
+          // Pass isRecent=true to trigger the "Last opened" meta display
+          <LessonCard key={item._id} lesson={item} isRecent={true} />
+        ))}
       </div>
     );
   };
@@ -160,7 +83,7 @@ const RecentOpened = () => {
   return (
     <div className="recent-opened-container">
       <div className="recent-header">
-        <h2 className="recent-opened-title">My Lessons</h2>
+        <h2 className="recent-opened-title">Recent Lessons</h2>
         {recentItems.length > 0 && (
           <button
             className="btn btn-link p-0 view-all-btn"

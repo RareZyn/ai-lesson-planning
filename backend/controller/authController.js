@@ -1,7 +1,11 @@
-// controllers/authController.js 
+// controllers/authController.js
 const User = require("../model/User");
+const RegistrationToken = require("../model/RegistrationToken"); // Import RegistrationToken model
+const School = require("../model/School"); // Import School model
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
+const mongoose = require("mongoose"); // Import mongoose for ObjectId
+
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -23,20 +27,28 @@ const sendTokenResponse = (user, statusCode, res, message = "Success") => {
     sameSite: "strict",
   };
 
+  // Prepare user object to send, ensuring sensitive data is not included
+  const userResponse = user.toJSON();
+  // If user.getGeminiApiKey is a method, call it to check status without exposing key
+  userResponse.hasGeminiApiKey = user.geminiApiKey ? true : false;
+  // Ensure role and schoolId are always included for frontend logic
+  userResponse.role = user.role;
+  userResponse.schoolId = user.schoolId;
+
+
   res.status(statusCode).cookie("token", token, cookieOptions).json({
     success: true,
     message,
     token,
-    user,
+    user: userResponse, // Send the cleaned user object
   });
 };
 
-// @desc    Register user
-// @route   POST /api/auth/register
+// @desc    Register a new teacher using a registration token
+// @route   POST /api/auth/register-teacher
 // @access  Public
-exports.register = async (req, res) => {
+exports.registerTeacherWithToken = async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -46,45 +58,79 @@ exports.register = async (req, res) => {
       });
     }
 
-    const { name, email, password, schoolName, firebaseUid, geminiApiKey } =
-      req.body;
+    const { name, email, password, registrationToken, firebaseUid, geminiApiKey } = req.body;
 
-    // Check if user already exists
+    // 1. Validate the registration token
+    if (!registrationToken) {
+      return res.status(400).json({ success: false, message: "Registration token is required." });
+    }
+
+    const foundToken = await RegistrationToken.findOne({ token: registrationToken, isActive: true });
+
+    if (!foundToken) {
+      return res.status(400).json({ success: false, message: "Invalid or expired registration token." });
+    }
+
+    if (foundToken.expiresAt < new Date()) {
+      foundToken.isActive = false; // Mark token as inactive if expired
+      await foundToken.save();
+      return res.status(400).json({ success: false, message: "Registration token has expired." });
+    }
+
+    if (!foundToken.isMultiUse && foundToken.usageCount >= 1) {
+      return res.status(400).json({ success: false, message: "This is a single-use token and has already been used." });
+    }
+
+    if (foundToken.isMultiUse && foundToken.maxUsage && foundToken.usageCount >= foundToken.maxUsage) {
+      foundToken.isActive = false; // Mark token as inactive if max usage reached
+      await foundToken.save();
+      return res.status(400).json({ success: false, message: "This multi-use token has reached its maximum usage." });
+    }
+
+    // 2. Check if user already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists with this email",
+        message: "User already exists with this email.",
       });
     }
 
-    // Create user
+    // 3. Create user with 'teacher' role and schoolId from token
     const user = await User.create({
       name,
       email,
       password,
-      schoolName,
-      firebaseUid, // Link to Firebase user
-      geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
+      schoolId: foundToken.schoolId, // Assign schoolId from the token
+      role: "teacher", // Default role for token-based registration
+      firebaseUid,
+      geminiApiKey: geminiApiKey || "",
     });
 
-    sendTokenResponse(user, 201, res, "Registration successful");
+    // 4. Update token usage
+    foundToken.usageCount += 1;
+    if (!foundToken.isMultiUse || (foundToken.maxUsage && foundToken.usageCount >= foundToken.maxUsage)) {
+      foundToken.isActive = false;
+    }
+    await foundToken.save();
+
+    sendTokenResponse(user, 201, res, "Teacher registration successful.");
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Teacher registration error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error during registration",
+      message: "Server error during teacher registration.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
-// @desc    Login user
+
+// @desc    Login user (unchanged, as it uses email/password for all roles)
 // @route   POST /api/auth/login
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -96,40 +142,24 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findByEmail(email).select("+password");
+    const user = await User.findByEmail(email).select("+password").populate('schoolId'); // Populate school for response
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: "Account has been deactivated",
-      });
+      return res.status(401).json({ success: false, message: "Account has been deactivated" });
     }
 
-    // Check password (only if user has a password - some users might be Google-only)
     if (!user.password) {
-      return res.status(401).json({
-        success: false,
-        message: "Please use Google sign-in for this account",
-      });
+      return res.status(401).json({ success: false, message: "Please use Google sign-in for this account" });
     }
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
@@ -144,89 +174,140 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Google OAuth login/register
-// @route   POST /api/auth/google
+
+// @desc    Google OAuth login/register for new teachers with token
+// @route   POST /api/auth/google-register-teacher
 // @access  Public
-exports.googleAuth = async (req, res) => {
+exports.googleAuthWithToken = async (req, res) => {
   try {
-    const { googleId, email, name, avatar, schoolName, geminiApiKey } =
-      req.body;
+    const { googleId, email, name, avatar, registrationToken, geminiApiKey } = req.body;
 
     if (!googleId || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Google ID and email are required",
-      });
+      return res.status(400).json({ success: false, message: "Google ID and email are required." });
+    }
+    if (!registrationToken) {
+      return res.status(400).json({ success: false, message: "Registration token is required." });
+    }
+
+    // 1. Validate the registration token
+    const foundToken = await RegistrationToken.findOne({ token: registrationToken, isActive: true });
+
+    if (!foundToken) {
+      return res.status(400).json({ success: false, message: "Invalid or expired registration token." });
+    }
+    if (foundToken.expiresAt < new Date()) {
+      foundToken.isActive = false;
+      await foundToken.save();
+      return res.status(400).json({ success: false, message: "Registration token has expired." });
+    }
+    if (!foundToken.isMultiUse && foundToken.usageCount >= 1) {
+      return res.status(400).json({ success: false, message: "This is a single-use token and has already been used." });
+    }
+    if (foundToken.isMultiUse && foundToken.maxUsage && foundToken.usageCount >= foundToken.maxUsage) {
+      foundToken.isActive = false;
+      await foundToken.save();
+      return res.status(400).json({ success: false, message: "This multi-use token has reached its maximum usage." });
     }
 
     let user = await User.findByGoogleId(googleId);
 
-    if (!user) {
-      // Check if user exists with this email but no Google ID
-      user = await User.findByEmail(email);
+    if (user) {
+      // User already exists via Google, but might not have schoolId or token processed
+      if (!user.schoolId) {
+        // If an existing Google user somehow doesn't have a schoolId, update it
+        user.schoolId = foundToken.schoolId;
+        user.role = "teacher"; // Ensure role is teacher for token-based Google registration
+        user.lastLogin = new Date();
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+        await user.save();
+        // Update token usage
+        foundToken.usageCount += 1;
+        if (!foundToken.isMultiUse || (foundToken.maxUsage && foundToken.usageCount >= foundToken.maxUsage)) {
+          foundToken.isActive = false;
+        }
+        await foundToken.save();
+        return sendTokenResponse(user, 200, res, "Google user profile completed.");
+      } else {
+        // Existing Google user with schoolId, just update last login/API key
+        user.lastLogin = new Date();
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+        await user.save();
+        return sendTokenResponse(user, 200, res, "Google authentication successful.");
+      }
+    } else {
+      // New Google user, create new entry
+      user = await User.findByEmail(email); // Check if email exists without Google ID
 
       if (user) {
-        // Link Google account to existing user
+        // Existing user with email, link Google account and add schoolId
+        if (user.schoolId) {
+          // If user already has a schoolId, maybe it's an existing admin trying to use Google?
+          // For now, disallow. Or handle based on specific rules.
+          // For token-based teacher registration, this shouldn't happen often.
+          return res.status(400).json({ success: false, message: "An account with this email already exists and is associated with a school. Please contact your admin if you believe this is an error." });
+        }
         user.googleId = googleId;
+        user.schoolId = foundToken.schoolId;
+        user.role = "teacher";
         if (avatar) user.avatar = avatar;
-        if (geminiApiKey) user.geminiApiKey = geminiApiKey; // Update API key if provided
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey;
         user.lastLogin = new Date();
         await user.save();
       } else {
-        // Create new user
-        if (!name || !schoolName) {
-          return res.status(400).json({
-            success: false,
-            message: "Name and school name are required for new users",
-          });
-        }
-
+        // Truly a new user
         user = await User.create({
-          name,
+          name: name || email.split("@")[0],
           email,
-          schoolName,
+          schoolId: foundToken.schoolId,
+          role: "teacher", // Set role as teacher
           googleId,
           avatar: avatar || "",
-          geminiApiKey: geminiApiKey || "", // Store Gemini API key if provided
-          isEmailVerified: true, // Assume Google emails are verified
-          // No password for Google users
+          geminiApiKey: geminiApiKey || "",
+          isEmailVerified: true,
         });
       }
-    } else {
-      // Update last login and API key for existing Google user
-      user.lastLogin = new Date();
-      if (geminiApiKey) user.geminiApiKey = geminiApiKey;
-      await user.save();
     }
 
-    sendTokenResponse(user, 200, res, "Google authentication successful");
+    // 4. Update token usage
+    foundToken.usageCount += 1;
+    if (!foundToken.isMultiUse || (foundToken.maxUsage && foundToken.usageCount >= foundToken.maxUsage)) {
+      foundToken.isActive = false;
+    }
+    await foundToken.save();
+
+    sendTokenResponse(user, 200, res, "Google teacher registration successful.");
   } catch (error) {
-    console.error("Google auth error:", error);
+    console.error("Google auth with token error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error during Google authentication",
+      message: "Server error during Google authentication.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
+
 
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    // Populate schoolId to include school details in the response
+    const user = await User.findById(req.user.id)
+      .select("+geminiApiKey")
+      .populate("schoolId"); // Populate the schoolId field
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     // Include decrypted API key status (not the actual key)
-    const userResponse = user.toJSON();
-    userResponse.hasGeminiApiKey = !!user.geminiApiKey;
+    const userResponse = user.toJSON(); // Already handles removing password/encrypted API key
+    userResponse.hasGeminiApiKey = !!user.geminiApiKey; // Check if key exists (encrypted or not)
+
+    // Ensure role and schoolId are part of the direct response
+    userResponse.role = user.role;
+    userResponse.schoolId = user.schoolId; // This will now be the populated school object or null
 
     res.status(200).json({
       success: true,
@@ -242,33 +323,30 @@ exports.getMe = async (req, res) => {
   }
 };
 
+
 // @desc    Update user profile
 // @route   PUT /api/auth/profile
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, schoolName, geminiApiKey } = req.body;
+    // Note: schoolId cannot be updated via this route for security reasons.
+    // Role also cannot be updated here.
+    const { name, geminiApiKey } = req.body; // Removed schoolName from here
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Update fields if provided
     if (name) user.name = name;
-    if (schoolName) user.schoolName = schoolName;
-    if (geminiApiKey !== undefined) user.geminiApiKey = geminiApiKey; // Allow empty string to remove key
+    if (geminiApiKey !== undefined) user.geminiApiKey = geminiApiKey;
 
     await user.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      user,
-    });
+    // Re-fetch user with populated schoolId for a consistent response
+    const updatedUser = await User.findById(req.user.id).populate('schoolId');
+
+    sendTokenResponse(updatedUser, 200, res, "Profile updated successfully");
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({
@@ -279,13 +357,16 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Logout user / clear cookie
+
+// @desc    Logout user / clear cookie (unchanged)
 // @route   POST /api/auth/logout
 // @access  Private
 exports.logout = (req, res) => {
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
   });
 
   res.status(200).json({
@@ -294,7 +375,8 @@ exports.logout = (req, res) => {
   });
 };
 
-// @desc    Change password (only for non-Google users)
+
+// @desc    Change password (only for non-Google users) (unchanged)
 // @route   PUT /api/auth/password
 // @access  Private
 exports.changePassword = async (req, res) => {
@@ -302,32 +384,20 @@ exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
+      return res.status(400).json({ success: false, message: "Current password and new password are required" });
     }
 
     const user = await User.findById(req.user.id).select("+password");
 
-    // Check if user has a password (Google users don't have passwords)
     if (!user.password) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot change password for Google-authenticated accounts",
-      });
+      return res.status(400).json({ success: false, message: "Cannot change password for Google-authenticated accounts" });
     }
 
-    // Check current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
+      return res.status(400).json({ success: false, message: "Current password is incorrect" });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
@@ -345,7 +415,8 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// @desc    Get Gemini API key
+
+// @desc    Get Gemini API key (unchanged, but User.getGeminiApiKey needs to be accurate)
 // @route   GET /api/auth/gemini-key
 // @access  Private
 exports.getGeminiApiKey = async (req, res) => {
@@ -353,17 +424,19 @@ exports.getGeminiApiKey = async (req, res) => {
     const user = await User.findById(req.user.id).select("+geminiApiKey");
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const apiKey = user.getGeminiApiKey();
+    // Access the raw encrypted key directly from the document for the check
+    const hasApiKey = !!user.geminiApiKey;
+
+    // Call the instance method to decrypt if it exists
+    const apiKey = hasApiKey ? user.getGeminiApiKey() : "";
+
 
     res.status(200).json({
       success: true,
-      hasApiKey: !!apiKey,
+      hasApiKey: hasApiKey,
       apiKey: apiKey || "",
     });
   } catch (error) {
@@ -376,7 +449,8 @@ exports.getGeminiApiKey = async (req, res) => {
   }
 };
 
-// @desc    Update Gemini API key
+
+// @desc    Update Gemini API key (unchanged)
 // @route   PUT /api/auth/gemini-key
 // @access  Private
 exports.updateGeminiApiKey = async (req, res) => {
@@ -385,10 +459,7 @@ exports.updateGeminiApiKey = async (req, res) => {
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     user.geminiApiKey = apiKey || "";
@@ -409,8 +480,12 @@ exports.updateGeminiApiKey = async (req, res) => {
   }
 };
 
+
 /**
  * @desc    Find or create MongoDB user from Firebase user data
+ *          This function's primary role is to sync Firebase users with MongoDB
+ *          and return enough information for the frontend to decide if
+ *          further registration (with a token) is needed.
  * @route   POST /api/auth/firebase-user
  * @access  Public
  */
@@ -418,124 +493,92 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
   try {
     console.log("Firebase user sync request received:", req.body);
 
-    const { firebaseUid, email, name, displayName, photoURL, geminiApiKey } =
-      req.body;
+    const { firebaseUid, email, name, displayName, photoURL, geminiApiKey } = req.body;
 
-    // Enhanced validation with better error messages
-    if (!firebaseUid) {
-      console.error("Missing firebaseUid in request");
+    if (!firebaseUid || !email) {
       return res.status(400).json({
         success: false,
-        message: "Firebase UID is required",
-        missingField: "firebaseUid",
+        message: "Firebase UID and email are required.",
       });
     }
 
-    if (!email) {
-      console.error("Missing email in request");
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-        missingField: "email",
-      });
-    }
-
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.error("Invalid email format:", email);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format",
-        invalidField: "email",
-      });
+      return res.status(400).json({ success: false, message: "Invalid email format." });
     }
 
-    console.log("Looking for existing user with Firebase UID:", firebaseUid);
-
-    // Try to find existing user by Firebase UID
-    let user = await User.findOne({ firebaseUid });
+    let user = await User.findOne({ firebaseUid }).populate('schoolId'); // Populate schoolId for the existing user check
 
     if (!user) {
-      console.log("No user found with Firebase UID, checking by email:", email);
-      // Try to find by email (in case user exists but doesn't have firebaseUid set)
-      user = await User.findOne({ email: email.toLowerCase() });
+      user = await User.findOne({ email: email.toLowerCase() }).populate('schoolId');
 
       if (user) {
-        console.log("Found existing user by email, updating with Firebase UID");
-        // Update existing user with Firebase UID
+        // Existing user by email, link Firebase UID
         user.firebaseUid = firebaseUid;
         user.lastLogin = new Date();
         if (photoURL) user.avatar = photoURL;
         if (displayName && !user.name) user.name = displayName;
         if (geminiApiKey) user.geminiApiKey = geminiApiKey;
         await user.save();
-        console.log("Successfully updated existing user");
+        console.log("Updated existing user with Firebase UID and last login.");
       } else {
-        console.log("No existing user found, creating new user");
-        // Create new user with better defaults
+        // Truly a new user from Firebase.
+        // Create user but *without* schoolId and with a default 'teacher' role.
+        // The frontend will then prompt for the token.
         const userName = name || displayName || email.split("@")[0] || "User";
 
         user = await User.create({
           firebaseUid,
           email: email.toLowerCase(),
           name: userName,
-          roles: ["teacher"],
+          role: "teacher", // Default to teacher, but without schoolId initially
           isEmailVerified: true,
           lastLogin: new Date(),
           avatar: photoURL || "",
-          schoolName: "",
+          // schoolId will be null initially, prompting frontend for token
           geminiApiKey: geminiApiKey || "",
           isActive: true,
         });
-        console.log("Successfully created new user:", user._id);
+        console.log("Created new Firebase-linked user without schoolId.");
+        // Re-fetch to populate schoolId (which will be null) for sendTokenResponse
+        user = await User.findById(user._id).populate('schoolId');
       }
     } else {
-      console.log("Found existing user with Firebase UID, updating last login");
-      // Update last login and photo if provided
+      // Existing Firebase user, just update last login
       user.lastLogin = new Date();
-      if (photoURL && photoURL !== user.avatar) {
-        user.avatar = photoURL;
-      }
+      if (photoURL && photoURL !== user.avatar) user.avatar = photoURL;
       if (geminiApiKey) user.geminiApiKey = geminiApiKey;
       await user.save();
-      console.log("Successfully updated existing Firebase user");
+      console.log("Updated existing Firebase user last login.");
     }
 
-    // Use sendTokenResponse to generate and send JWT token
-    sendTokenResponse(user, 200, res, "Firebase user synced successfully");
-    
+    // sendTokenResponse now correctly includes user's role and schoolId (or null)
+    // The frontend will use `user.schoolId` to determine if the token modal is needed.
+    sendTokenResponse(user, 200, res, "Firebase user synced successfully.");
+
   } catch (error) {
     console.error("Error in findOrCreateFirebaseUser:", error);
-
-    // Handle specific MongoDB errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
       return res.status(400).json({
         success: false,
-        message: `User with this ${field} already exists`,
+        message: `User with this ${field} already exists.`,
         errorType: "duplicate_key",
       });
     }
-
-    // Handle validation errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((val) => val.message);
       return res.status(400).json({
         success: false,
-        message: "Validation failed",
+        message: "Validation failed.",
         errors,
         errorType: "validation",
       });
     }
-
     res.status(500).json({
       success: false,
-      message: "Server error while processing Firebase user",
-      error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : "Internal server error",
+      message: "Server error while processing Firebase user.",
+      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error.",
       errorType: "server_error",
     });
   }

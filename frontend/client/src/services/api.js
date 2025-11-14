@@ -41,16 +41,16 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authAPI = {
-  // Register new user
-  register: async (userData) => {
-    const response = await api.post("/auth/register", userData);
+  // Modified: Register new teacher with token (replace old register for teachers)
+  registerTeacherWithToken: async (teacherData) => {
+    const response = await api.post("/auth/register-teacher", teacherData); // Make sure this matches your backend route
     if (response.data.token) {
       localStorage.setItem("authToken", response.data.token);
     }
     return response.data;
   },
 
-  // Login user
+  // Login user (this should work for both teachers and admins after they're registered)
   login: async (credentials) => {
     const response = await api.post("/auth/login", credentials);
     if (response.data.token) {
@@ -59,28 +59,36 @@ export const authAPI = {
     return response.data;
   },
 
+  // Firebase user (used during Google sign-in)
   findOrCreateFirebaseUser: async (firebaseUserData) => {
     const response = await api.post("/auth/firebase-user", firebaseUserData);
-
-
-    // Store the JWT token if provided
-    if (response.data.token) {
-      localStorage.setItem("authToken", response.data.token);
-    }
-
-    return response.data;
-  },
-
-  // Google OAuth
-  googleAuth: async (googleData) => {
-    const response = await api.post("/auth/google", googleData);
     if (response.data.token) {
       localStorage.setItem("authToken", response.data.token);
     }
     return response.data;
   },
 
-  // Get current user
+  // Google OAuth for new teachers (now accepts token)
+  googleAuthWithToken: async (googleDataWithToken) => {
+    const response = await api.post("/auth/google-register-teacher", googleDataWithToken); // Make sure this matches your backend route
+    if (response.data.token) {
+      localStorage.setItem("authToken", response.data.token);
+    }
+    return response.data;
+  },
+
+  // --- Admin Specific API Calls (New) ---
+  // A super admin might register initial school admins
+  // registerSchoolAdmin: async (adminData) => { /* ... */ },
+  // A school admin generates teacher registration tokens
+  generateTeacherToken: async (tokenConfig) => {
+    const response = await api.post("/admin/generate-teacher-token", tokenConfig);
+    console.log("generateTeacherToken response:", response);
+    return response.data;
+  },
+
+
+  // Get current user (this should return role and schoolId now)
   getMe: async () => {
     const response = await api.get("/auth/me");
     return response.data;
