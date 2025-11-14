@@ -339,19 +339,6 @@ const RubricViewerPage = () => {
           response.data.generatedContent?.answerKeyContent
         );
 
-        console.log(
-          "🔍 Teacher content detection for",
-          response.data.activityType,
-          {
-            rubricHTML: !!response.data.generatedContent?.rubricHTML,
-            answerKeyHTML: !!response.data.generatedContent?.answerKeyHTML,
-            rubricContent: !!response.data.generatedContent?.rubricContent,
-            answerKeyContent:
-              !!response.data.generatedContent?.answerKeyContent,
-            hasTeacherContent,
-          }
-        );
-
         if (!hasTeacherContent) {
           setError("No teacher content found for this assessment.");
         }
@@ -374,20 +361,12 @@ const RubricViewerPage = () => {
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    console.log("🎯 Getting teacher content for", assessment.activityType, {
-      rubricHTML: !!rubricHTML,
-      answerKeyHTML: !!answerKeyHTML,
-      rubricContent: !!rubricContent,
-      answerKeyContent: !!answerKeyContent,
-    });
-
     // CRITICAL: Handle SPM exam and assessment types - they should use answer key content
     if (
       assessment.activityType === "spm-exam" ||
       assessment.activityType === "assessment"
     ) {
       if (answerKeyHTML) {
-        console.log("✅ Using answerKeyHTML for", assessment.activityType);
         return answerKeyHTML;
       } else if (answerKeyContent) {
         console.log(

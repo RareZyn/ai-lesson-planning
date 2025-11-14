@@ -1095,11 +1095,6 @@ const AssessmentPage = () => {
 
   // Render standalone activity modal with SPM exam support
   const renderStandaloneActivityModal = () => {
-    console.log("🎭 Rendering standalone activity modal:", {
-      isOpen: standaloneActivityModalOpen,
-      activityType: standaloneActivityType,
-      hasAssessmentData: !!standaloneAssessmentData,
-    });
 
     if (!standaloneActivityModalOpen || !standaloneActivityType) {
       return null;
