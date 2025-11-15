@@ -89,7 +89,7 @@ const RegisterPage = () => {
 
   const handleTabChange = (tab) => {
     if (tab === "login") {
-      navigate("/login");
+      navigate("/");
     }
     // No need to navigate if already on register
   };
@@ -227,7 +227,7 @@ const RegisterPage = () => {
               <button
                 type="button"
                 className="btn btn-link p-0"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/")}
                 style={{ textDecoration: "none", color: "#1890ff" }}
               >
                 Sign In
