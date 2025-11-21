@@ -1049,10 +1049,10 @@ const saveAssessment = async (req, res) => {
     });
   }
 };
-/**
 
-Get User Assessments
-*/
+/**
+ * Get User Assessments
+ */
 const getUserAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1133,9 +1133,8 @@ const getUserAssessments = async (req, res) => {
 };
 
 /**
-
-Get Assessment By ID
-*/
+ * Get Assessment By ID
+ */
 const getAssessmentById = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1186,9 +1185,8 @@ const getAssessmentById = async (req, res) => {
 };
 
 /**
-
-Delete Assessment
-*/
+ * Delete Assessment
+ */
 const deleteAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1260,9 +1258,8 @@ const deleteAssessment = async (req, res) => {
 };
 
 /**
-
-Update Assessment
-*/
+ * Update Assessment
+ */
 const updateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1335,9 +1332,8 @@ const updateAssessment = async (req, res) => {
 };
 
 /**
-
-Regenerate Assessment
-*/
+ * Regenerate Assessment
+ */
 const regenerateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
