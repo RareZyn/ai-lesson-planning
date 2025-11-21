@@ -1,4 +1,4 @@
-// backend/route/assessment.js - Enhanced with SPM exam routes
+// backend/route/assessment.js - FIXED import path
 const express = require("express");
 const {
   generateFromLessonPlan,
@@ -13,21 +13,18 @@ const {
   updateAssessment,
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
-  regenerateAssessment,
-  generateExamContent, // NEW: Import SPM exam generation function
-} = require("../controller/assessmentController");
+} = require("../controller/aseessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// ==============================================
-// LESSON-BASED ASSESSMENT ROUTES
-// ==============================================
-// Generate assessment from lesson plan (can handle both lesson-based and standalone)
 router.post("/generateFromLessonPlan", protect, generateFromLessonPlan);
-// Save assessment manually
 router.post("/save", protect, saveAssessment);
-// Get lesson plans without assessments
+
+// Get user's assessments with filtering and pagination
+router.get("/my-assessments", protect, getUserAssessmentsFiltered);
+
+// NEW: Get lesson plans without assessments
 router.get("/available-lessons", protect, getLessonPlansWithoutAssessments);
 
 // ==============================================
