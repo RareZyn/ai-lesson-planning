@@ -12,8 +12,8 @@ import jsPDF from 'jspdf';
 export const exportAssessmentToPdf = async (htmlContent, options = {}) => {
   const {
     fileName = 'assessment.pdf',
+    isSpmPaper1 = false,
     // title and paperType removed as they're unused
-    // isSpmPaper1 = false,
     // paperType = null,
   } = options;
 
