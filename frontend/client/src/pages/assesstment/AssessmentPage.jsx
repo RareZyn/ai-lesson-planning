@@ -358,7 +358,7 @@ const AssessmentPage = () => {
     }
   };
 
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     if (!userId) return;
 
     setLoading(true);
@@ -376,7 +376,7 @@ const AssessmentPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const loadStandaloneAssessments = useCallback(async () => {
     try {
@@ -400,7 +400,7 @@ const AssessmentPage = () => {
   // Load data on component mount
   useEffect(() => {
     loadInitialData();
-  }, [userId]);
+  }, [userId, loadInitialData]);
 
   // Load assessments when tab changes or filters change
   useEffect(() => {

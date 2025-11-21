@@ -128,7 +128,7 @@ export const UserProvider = ({ children }) => {
       setLoading(false);
       setIsReady(true);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, syncFirebaseUserWithMongoDB, checkExistingAuth]);
 
   // Effect to handle auth state changes
   useEffect(() => {

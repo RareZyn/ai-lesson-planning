@@ -160,11 +160,7 @@ const Community = () => {
     }
   }, [isAuthenticated, userId, loadCommunityData, loadCommunityLessonsOnly]);
 
-  useEffect(() => {
-    applyFilters();
-  }, [lessons, userLessons, bookmarkedLessons, filters, activeTab]);
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let dataToFilter = [];
 
     // Choose data source based on active tab
@@ -222,7 +218,11 @@ const Community = () => {
     }
 
     setFilteredLessons(filtered);
-  };
+  }, [lessons, userLessons, bookmarkedLessons, filters, activeTab, userId]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleFilterChange = (type, value) => {
     setFilters((prev) => ({
