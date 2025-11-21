@@ -6,10 +6,10 @@ import styles from "./MultiStepPlanner.module.css";
 import { Modal } from "antd";
 
 import ProgressBar from "./ProgressBar";
-import Step1_ChooseClass from "./Step1_ChooseClass";
-import Step2_LessonDetails from "./Step2_LessonDetails";
-import Step3_AdditionalInfo from "./Step3_AdditionalInfo";
-import Step4_ConfirmPlan from "./Step4_ConfirmPlan";
+import Step1ChooseClass from "./Step1_ChooseClass";
+import Step2LessonDetails from "./Step2_LessonDetails";
+import Step3AdditionalInfo from "./Step3_AdditionalInfo";
+import Step4ConfirmPlan from "./Step4_ConfirmPlan";
 import {
   generateLesson,
   saveLessonPlan,
@@ -40,7 +40,7 @@ const MultiStepPlanner = () => {
     return dateFromState ? new Date(dateFromState) : new Date();
   };
 
-  const [plannerDate, setPlannerDate] = useState(getInitialDate());
+  const [plannerDate] = useState(getInitialDate()); // setPlannerDate removed - not currently used
 
   useEffect(() => {
     console.log("Form data updated:", formData);
@@ -136,14 +136,14 @@ const MultiStepPlanner = () => {
 
       <main className={styles.stepContainer}>
         {currentStep === 1 && (
-          <Step1_ChooseClass
+          <Step1ChooseClass
             data={formData}
             updateData={handleDataChange}
             onNext={handleNext}
           />
         )}
         {currentStep === 2 && (
-          <Step2_LessonDetails
+          <Step2LessonDetails
             data={formData}
             updateData={handleDataChange}
             onNext={handleNext}
@@ -151,7 +151,7 @@ const MultiStepPlanner = () => {
           />
         )}
         {currentStep === 3 && (
-          <Step3_AdditionalInfo
+          <Step3AdditionalInfo
             data={formData}
             updateData={handleDataChange}
             onGenerate={handleGenerate}
@@ -160,7 +160,7 @@ const MultiStepPlanner = () => {
           />
         )}
         {currentStep === 4 && (
-          <Step4_ConfirmPlan
+          <Step4ConfirmPlan
             plan={generatedPlan}
             updatePlan={handlePlanChange}
             onSave={handleSave}

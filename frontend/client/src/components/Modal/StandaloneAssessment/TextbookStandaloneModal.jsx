@@ -1,5 +1,5 @@
 // TextbookStandaloneModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, Input, Row, Col, message, Select, Alert, Tag } from "antd";
 import {
   BookOutlined,
@@ -16,8 +16,6 @@ import { Typography } from "antd";
 const { TextArea } = Input;
 const { Option } = Select;
 const { Text } = Typography;
-
-
 
 const TextbookStandaloneModal = ({
   isOpen,
@@ -169,14 +167,7 @@ const TextbookStandaloneModal = ({
     }
   }, [assessmentData]);
 
-  // Fetch topics when form is selected
-  useEffect(() => {
-    if (formData.selectedForm) {
-      fetchTopics(formData.selectedForm);
-    }
-  }, [formData.selectedForm]);
-
-  const fetchTopics = async (form) => {
+  const fetchTopics = useCallback(async (form) => {
     setTopicsLoading(true);
     try {
       // Try to fetch from textbook service, with fallback to default topics
@@ -206,7 +197,14 @@ const TextbookStandaloneModal = ({
     } finally {
       setTopicsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch topics when form is selected
+  useEffect(() => {
+    if (formData.selectedForm) {
+      fetchTopics(formData.selectedForm);
+    }
+  }, [formData.selectedForm, fetchTopics]);
 
   // Default topics based on form level
   const getDefaultTopics = (form) => {

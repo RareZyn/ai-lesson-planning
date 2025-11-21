@@ -1,5 +1,5 @@
 // frontend/client/src/pages/class/StudentManagementSection.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Row, Col, Alert } from "react-bootstrap";
 import { Modal as AntModal } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
@@ -28,23 +28,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     notes: "",
   });
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    // Filter students based on search
-    const filtered = students.filter(
-      (student) =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredStudents(filtered);
-  }, [searchTerm, students]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -65,7 +49,23 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
+
+  useEffect(() => {
+    // Filter students based on search
+    const filtered = students.filter(
+      (student) =>
+        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredStudents(filtered);
+  }, [searchTerm, students]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -129,12 +129,12 @@ const StudentManagementSection = ({ classId, classInfo }) => {
 
   const handleDeleteStudent = async (student) => {
     AntModal.confirm({
-      title: 'Delete Student',
+      title: "Delete Student",
       icon: <ExclamationCircleOutlined />,
       content: `Are you sure you want to delete ${student.name} (${student.studentId})? This action cannot be undone.`,
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
       onOk: async () => {
         setLoading(true);
         try {
@@ -267,9 +267,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
                   </p>
                 )}
                 {student.gender && (
-                  <p className={styles.gender}>
-                    Gender: {student.gender}
-                  </p>
+                  <p className={styles.gender}>Gender: {student.gender}</p>
                 )}
                 {student.notes && (
                   <p className={styles.notes}>{student.notes}</p>

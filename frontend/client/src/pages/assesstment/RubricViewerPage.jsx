@@ -1,5 +1,5 @@
 //src/pages/assessment/RubricViewerPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -318,12 +318,7 @@ const RubricViewerPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [printing, setPrinting] = useState(false);
 
-
-  useEffect(() => {
-    fetchAssessment();
-  }, [id]);
-
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
       const response = await assessmentAPI.getAssessmentById(id);
@@ -352,7 +347,11 @@ const RubricViewerPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
   // FIXED: Enhanced getTeacherContent function with proper SPM exam support
   const getTeacherContent = () => {
@@ -437,7 +436,7 @@ const RubricViewerPage = () => {
     switch (assessment.activityType) {
       case "assessment":
         return "Assessment Paper";
-      case "spm-exam": 
+      case "spm-exam":
         return "SPM Examination Paper";
       case "essay":
         return "Essay Activity";
@@ -483,7 +482,10 @@ const RubricViewerPage = () => {
       const safeTitle = assessment.title
         .replace(/[^a-z0-9]/gi, "_")
         .substring(0, 50);
-      const contentTypeName = getTeacherContentName().replace(/[^a-z0-9]/gi, "_");
+      const contentTypeName = getTeacherContentName().replace(
+        /[^a-z0-9]/gi,
+        "_"
+      );
       const fileName = `${safeTitle}_${contentTypeName}.pdf`;
 
       // Use appropriate export function based on content type

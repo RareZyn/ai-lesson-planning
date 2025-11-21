@@ -1,15 +1,7 @@
 // frontend/client/src/pages/answerChecker/SubmissionReviewPage.jsx
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  Button,
-  Badge,
-  Alert,
-  Form,
-  Modal,
-  ProgressBar,
-} from "react-bootstrap";
-import { Image, Tag, Spin, InputNumber, Input, Tooltip, Modal as AntModal } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import { Card, Button, Badge, Alert, Form, Modal } from "react-bootstrap";
+import { Image, Tag, Spin, InputNumber, Input, Modal as AntModal } from "antd";
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -55,16 +47,14 @@ const SubmissionReviewPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewComments, setReviewComments] = useState("");
 
-  useEffect(() => {
-    fetchSubmission();
-  }, [actualSubmissionId]);
-
-  const fetchSubmission = async () => {
+  const fetchSubmission = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const result = await submissionService.getSubmissionById(actualSubmissionId);
+      const result = await submissionService.getSubmissionById(
+        actualSubmissionId
+      );
 
       if (result.success) {
         setSubmission(result.data);
@@ -76,7 +66,11 @@ const SubmissionReviewPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [actualSubmissionId]);
+
+  useEffect(() => {
+    fetchSubmission();
+  }, [fetchSubmission]);
 
   const handleStartGrading = async () => {
     setGrading(true);
@@ -88,8 +82,8 @@ const SubmissionReviewPage = () => {
       if (result.success) {
         await fetchSubmission();
         AntModal.success({
-          title: 'Success',
-          content: 'Grading completed successfully!',
+          title: "Success",
+          content: "Grading completed successfully!",
         });
       } else {
         setError(result.message);
@@ -115,28 +109,32 @@ const SubmissionReviewPage = () => {
 
     setSavingEdit(true);
     try {
-      const result = await manualEditService.editText(actualSubmissionId, editingQuestion, {
-        editedText,
-        autoRegrade: true,
-      });
+      const result = await manualEditService.editText(
+        actualSubmissionId,
+        editingQuestion,
+        {
+          editedText,
+          autoRegrade: true,
+        }
+      );
 
       if (result.success) {
         await fetchSubmission();
         setEditingQuestion(null);
         AntModal.success({
-          title: 'Success',
-          content: 'Text updated and answer re-graded!',
+          title: "Success",
+          content: "Text updated and answer re-graded!",
         });
       } else {
         AntModal.error({
-          title: 'Error',
+          title: "Error",
           content: result.message,
         });
       }
     } catch (err) {
       AntModal.error({
-        title: 'Error',
-        content: 'Failed to save edit',
+        title: "Error",
+        content: "Failed to save edit",
       });
     } finally {
       setSavingEdit(false);
@@ -161,29 +159,33 @@ const SubmissionReviewPage = () => {
     if (!editingQuestion || editedScore === null) return;
 
     try {
-      const result = await manualEditService.adjustScore(actualSubmissionId, editingQuestion, {
-        newScore: editedScore,
-        adjustmentReason: adjustmentReason || "Manual adjustment",
-      });
+      const result = await manualEditService.adjustScore(
+        actualSubmissionId,
+        editingQuestion,
+        {
+          newScore: editedScore,
+          adjustmentReason: adjustmentReason || "Manual adjustment",
+        }
+      );
 
       if (result.success) {
         await fetchSubmission();
         setShowScoreModal(false);
         setEditingQuestion(null);
         AntModal.success({
-          title: 'Success',
-          content: 'Score adjusted successfully!',
+          title: "Success",
+          content: "Score adjusted successfully!",
         });
       } else {
         AntModal.error({
-          title: 'Error',
+          title: "Error",
           content: result.message,
         });
       }
     } catch (err) {
       AntModal.error({
-        title: 'Error',
-        content: 'Failed to adjust score',
+        title: "Error",
+        content: "Failed to adjust score",
       });
     }
   };
@@ -199,53 +201,56 @@ const SubmissionReviewPage = () => {
         await fetchSubmission();
         setShowReviewModal(false);
         AntModal.success({
-          title: 'Success',
-          content: 'Submission marked as reviewed!',
+          title: "Success",
+          content: "Submission marked as reviewed!",
         });
       } else {
         AntModal.error({
-          title: 'Error',
+          title: "Error",
           content: result.message,
         });
       }
     } catch (err) {
       AntModal.error({
-        title: 'Error',
-        content: 'Failed to mark as reviewed',
+        title: "Error",
+        content: "Failed to mark as reviewed",
       });
     }
   };
 
   const handleFlagForRegrade = async () => {
     AntModal.confirm({
-      title: 'Flag for Regrade',
+      title: "Flag for Regrade",
       icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to flag this submission for regrade?',
-      okText: 'Flag',
-      okType: 'primary',
-      cancelText: 'Cancel',
+      content: "Are you sure you want to flag this submission for regrade?",
+      okText: "Flag",
+      okType: "primary",
+      cancelText: "Cancel",
       onOk: async () => {
         try {
-          const result = await reviewService.flagForRegrade(actualSubmissionId, {
-            reason: "Flagged for regrade",
-          });
+          const result = await reviewService.flagForRegrade(
+            actualSubmissionId,
+            {
+              reason: "Flagged for regrade",
+            }
+          );
 
           if (result.success) {
             await fetchSubmission();
             AntModal.success({
-              title: 'Success',
-              content: 'Submission flagged for regrade!',
+              title: "Success",
+              content: "Submission flagged for regrade!",
             });
           } else {
             AntModal.error({
-              title: 'Error',
+              title: "Error",
               content: result.message,
             });
           }
         } catch (err) {
           AntModal.error({
-            title: 'Error',
-            content: 'Failed to flag submission',
+            title: "Error",
+            content: "Failed to flag submission",
           });
         }
       },

@@ -1,5 +1,5 @@
-//src/pages/assessment/AssessmentPage.jsx 
-import React, { useState, useEffect } from "react";
+//src/pages/assessment/AssessmentPage.jsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Table,
@@ -10,8 +10,6 @@ import {
   Input,
   Select,
   Modal,
-  Row,
-  Col,
   message,
   Spin,
 } from "antd";
@@ -27,7 +25,6 @@ import {
   FileExclamationOutlined,
   ThunderboltOutlined,
   RedoOutlined,
-  CalculatorOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -57,46 +54,47 @@ import "./AssessmentPage.css";
 const { Search } = Input;
 const { Option } = Select;
 
-// FIXED: Activity types with proper SPM exam configuration
-const activityTypes = [
-  {
-    key: "activityInClass",
-    title: "Activity in Class",
-    description: "Interactive classroom activities and group work",
-    icon: (
-      <ThunderboltOutlined style={{ fontSize: "32px", color: "#1890ff" }} />
-    ),
-    color: "#1890ff",
-  },
-  {
-    key: "assessment",
-    title: "Assessment (Exam)",
-    description: "Formal assessments, tests, and examinations",
-    icon: <FileTextOutlined style={{ fontSize: "32px", color: "#52c41a" }} />,
-    color: "#52c41a",
-  },
-  {
-    key: "essay",
-    title: "Essay Writing",
-    description: "Essay prompts and writing assignments",
-    icon: <EditOutlined style={{ fontSize: "32px", color: "#fa8c16" }} />,
-    color: "#fa8c16",
-  },
-  {
-    key: "textbook",
-    title: "Textbook Exercise",
-    description: "Textbook-based activities and exercises",
-    icon: <BookOutlined style={{ fontSize: "32px", color: "#722ed1" }} />,
-    color: "#722ed1",
-  },
-  {
-    key: "spm-exam",
-    title: "SPM Examination",
-    description: "Malaysian SPM English Paper 1 & 2 examinations",
-    icon: <CalculatorOutlined style={{ fontSize: "32px", color: "#eb2f96" }} />,
-    color: "#eb2f96",
-  },
-];
+// Activity types with proper SPM exam configuration
+// Removed unused variable - defined but not used in component
+// const activityTypes = [
+//   {
+//     key: "activityInClass",
+//     title: "Activity in Class",
+//     description: "Interactive classroom activities and group work",
+//     icon: (
+//       <ThunderboltOutlined style={{ fontSize: "32px", color: "#1890ff" }} />
+//     ),
+//     color: "#1890ff",
+//   },
+//   {
+//     key: "assessment",
+//     title: "Assessment (Exam)",
+//     description: "Formal assessments, tests, and examinations",
+//     icon: <FileTextOutlined style={{ fontSize: "32px", color: "#52c41a" }} />,
+//     color: "#52c41a",
+//   },
+//   {
+//     key: "essay",
+//     title: "Essay Writing",
+//     description: "Essay prompts and writing assignments",
+//     icon: <EditOutlined style={{ fontSize: "32px", color: "#fa8c16" }} />,
+//     color: "#fa8c16",
+//   },
+//   {
+//     key: "textbook",
+//     title: "Textbook Exercise",
+//     description: "Textbook-based activities and exercises",
+//     icon: <BookOutlined style={{ fontSize: "32px", color: "#722ed1" }} />,
+//     color: "#722ed1",
+//   },
+//   {
+//     key: "spm-exam",
+//     title: "SPM Examination",
+//     description: "Malaysian SPM English Paper 1 & 2 examinations",
+//     icon: <CalculatorOutlined style={{ fontSize: "32px", color: "#eb2f96" }} />,
+//     color: "#eb2f96",
+//   },
+// ];
 
 const AssessmentPage = () => {
   const navigate = useNavigate();
@@ -121,7 +119,7 @@ const AssessmentPage = () => {
     useState(null);
 
   // Data states
-  const [lessonPlans, setLessonPlans] = useState([]);
+  const [, setLessonPlans] = useState([]); // lessonPlans not displayed but setter is used
   const [classes, setClasses] = useState([]);
   const [assessments, setAssessments] = useState([]);
 
@@ -133,19 +131,106 @@ const AssessmentPage = () => {
     status: null,
   });
 
-  // Load data on component mount
-  useEffect(() => {
-    loadInitialData();
-  }, [userId]);
+  const loadLessonBasedData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-  // Load assessments when tab changes or filters change
-  useEffect(() => {
-    if (activeTab === "lesson-based") {
-      loadLessonBasedData();
-    } else {
-      loadStandaloneAssessments();
+      // Get all lesson plans for the user
+      const allLessonPlans = await getAllLessonPlans();
+
+      // Get all assessments that have lesson plans
+      const assessmentResponse = await assessmentAPI.getUserAssessments({
+        ...filters,
+        hasLessonPlan: "true",
+      });
+
+      const assessmentsWithLessonPlans = assessmentResponse.success
+        ? assessmentResponse.data || []
+        : [];
+
+      // Create a map of lesson plan IDs to their assessments
+      const lessonPlanAssessmentMap = {};
+      assessmentsWithLessonPlans.forEach((assessment) => {
+        if (assessment.lessonPlanId) {
+          const lessonPlanId =
+            typeof assessment.lessonPlanId === "object"
+              ? assessment.lessonPlanId._id
+              : assessment.lessonPlanId;
+
+          if (!lessonPlanAssessmentMap[lessonPlanId]) {
+            lessonPlanAssessmentMap[lessonPlanId] = [];
+          }
+          lessonPlanAssessmentMap[lessonPlanId].push(assessment);
+        }
+      });
+
+      // Transform lesson plans with correct assessment status logic
+      let lessonPlanRows = allLessonPlans.map((lessonPlan) => {
+        const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
+        const hasAssessments = assessments.length > 0;
+
+        // Determine assessment status correctly
+        const assessmentStatus = hasAssessments ? "generated" : "not_generated";
+
+        const row = {
+          ...lessonPlan,
+          assessmentStatus: assessmentStatus,
+          assessments: assessments,
+          hasActivity: hasStudentContent({ assessments }),
+          hasRubric: hasTeacherContent({ assessments }),
+          title: lessonPlan.parameters?.specificTopic || "Untitled Lesson",
+          description: lessonPlan.plan?.learningObjective || "",
+          activityType: lessonPlan.parameters?.activityType || "lesson",
+          createdAt: lessonPlan.createdAt,
+          updatedAt: lessonPlan.updatedAt,
+          status: hasAssessments ? "Generated" : "Not Generated",
+        };
+
+        return row;
+      });
+
+      // Apply filters correctly
+      let filteredRows = [...lessonPlanRows];
+
+      // Search filter
+      if (filters.search) {
+        filteredRows = filteredRows.filter(
+          (row) =>
+            row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+            row.description.toLowerCase().includes(filters.search.toLowerCase())
+        );
+      }
+
+      // Class filter
+      if (filters.classId) {
+        filteredRows = filteredRows.filter(
+          (row) =>
+            row.classId?._id === filters.classId ||
+            row.classId === filters.classId
+        );
+      }
+
+      // Status filter
+      if (filters.status) {
+        if (filters.status === "Generated") {
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "generated"
+          );
+        } else if (filters.status === "Not Generated") {
+          filteredRows = filteredRows.filter(
+            (row) => row.assessmentStatus === "not_generated"
+          );
+        }
+      }
+
+      setAssessments(filteredRows);
+    } catch (error) {
+      console.error("❌ Error in loadLessonBasedData:", error);
+      message.error("Failed to load lesson plans and assessments");
+    } finally {
+      setLoading(false);
     }
-  }, [activeTab, filters]);
+  }, [filters]);
 
   // FIXED: Helper functions for activity type handling with SPM exam support
   const getActivityTypeDisplay = (activityType) => {
@@ -167,7 +252,6 @@ const AssessmentPage = () => {
       assessment: "green",
       essay: "orange",
       textbook: "purple",
-      "spm-exam": "magenta", // Handle legacy typo
       "spm-exam": "magenta",
     };
     return colorMap[activityType] || "default";
@@ -294,108 +378,7 @@ const AssessmentPage = () => {
     }
   };
 
-  const loadLessonBasedData = async () => {
-    try {
-      setLoading(true);
-
-      // Get all lesson plans for the user
-      const allLessonPlans = await getAllLessonPlans();
-
-      // Get all assessments that have lesson plans
-      const assessmentResponse = await assessmentAPI.getUserAssessments({
-        ...filters,
-        hasLessonPlan: "true",
-      });
-
-      const assessmentsWithLessonPlans = assessmentResponse.success
-        ? assessmentResponse.data || []
-        : [];
-
-      // Create a map of lesson plan IDs to their assessments
-      const lessonPlanAssessmentMap = {};
-      assessmentsWithLessonPlans.forEach((assessment) => {
-        if (assessment.lessonPlanId) {
-          const lessonPlanId =
-            typeof assessment.lessonPlanId === "object"
-              ? assessment.lessonPlanId._id
-              : assessment.lessonPlanId;
-
-          if (!lessonPlanAssessmentMap[lessonPlanId]) {
-            lessonPlanAssessmentMap[lessonPlanId] = [];
-          }
-          lessonPlanAssessmentMap[lessonPlanId].push(assessment);
-        }
-      });
-
-      // Transform lesson plans with correct assessment status logic
-      let lessonPlanRows = allLessonPlans.map((lessonPlan) => {
-        const assessments = lessonPlanAssessmentMap[lessonPlan._id] || [];
-        const hasAssessments = assessments.length > 0;
-
-        // Determine assessment status correctly
-        const assessmentStatus = hasAssessments ? "generated" : "not_generated";
-
-        const row = {
-          ...lessonPlan,
-          assessmentStatus: assessmentStatus,
-          assessments: assessments,
-          hasActivity: hasStudentContent({ assessments }),
-          hasRubric: hasTeacherContent({ assessments }),
-          title: lessonPlan.parameters?.specificTopic || "Untitled Lesson",
-          description: lessonPlan.plan?.learningObjective || "",
-          activityType: lessonPlan.parameters?.activityType || "lesson",
-          createdAt: lessonPlan.createdAt,
-          updatedAt: lessonPlan.updatedAt,
-          status: hasAssessments ? "Generated" : "Not Generated",
-        };
-
-        return row;
-      });
-
-      // Apply filters correctly
-      let filteredRows = [...lessonPlanRows];
-
-      // Search filter
-      if (filters.search) {
-        filteredRows = filteredRows.filter(
-          (row) =>
-            row.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-            row.description.toLowerCase().includes(filters.search.toLowerCase())
-        );
-      }
-
-      // Class filter
-      if (filters.classId) {
-        filteredRows = filteredRows.filter(
-          (row) =>
-            row.classId?._id === filters.classId ||
-            row.classId === filters.classId
-        );
-      }
-
-      // Status filter
-      if (filters.status) {
-        if (filters.status === "Generated") {
-          filteredRows = filteredRows.filter(
-            (row) => row.assessmentStatus === "generated"
-          );
-        } else if (filters.status === "Not Generated") {
-          filteredRows = filteredRows.filter(
-            (row) => row.assessmentStatus === "not_generated"
-          );
-        }
-      }
-
-      setAssessments(filteredRows);
-    } catch (error) {
-      console.error("❌ Error in loadLessonBasedData:", error);
-      message.error("Failed to load lesson plans and assessments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStandaloneAssessments = async () => {
+  const loadStandaloneAssessments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await assessmentAPI.getUserAssessments({
@@ -412,8 +395,23 @@ const AssessmentPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
+  // Load data on component mount
+  useEffect(() => {
+    loadInitialData();
+  }, [userId]);
+
+  // Load assessments when tab changes or filters change
+  useEffect(() => {
+    if (activeTab === "lesson-based") {
+      loadLessonBasedData();
+    } else {
+      loadStandaloneAssessments();
+    }
+  }, [activeTab, filters, loadLessonBasedData, loadStandaloneAssessments]);
+
+  // FIXED: Helper functions for activity type handling with SPM exam support
   const handleGenerateAssessment = async (record) => {
     try {
       setGeneratingAssessment(record._id);
@@ -1095,7 +1093,6 @@ const AssessmentPage = () => {
 
   // Render standalone activity modal with SPM exam support
   const renderStandaloneActivityModal = () => {
-
     if (!standaloneActivityModalOpen || !standaloneActivityType) {
       return null;
     }

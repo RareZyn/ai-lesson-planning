@@ -63,7 +63,8 @@ const CalendarView = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // daysInMonth calculated but not used - using 42 for consistent 6-week grid display
+    // const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysArray = [];
     let dayCounter = 1 - firstDay;
 

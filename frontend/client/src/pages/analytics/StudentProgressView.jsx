@@ -1,5 +1,5 @@
 // frontend/client/src/pages/analytics/StudentProgressView.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Row, Col, Card, Button, Spinner, Form, Badge } from "react-bootstrap";
 import { Select, DatePicker, message, Statistic } from "antd";
 import {
@@ -14,11 +14,6 @@ import {
   Line,
   BarChart,
   Bar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -51,19 +46,7 @@ const StudentProgressView = ({ classId }) => {
     assessmentType: null,
   });
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    if (selectedStudent) {
-      fetchStudentProgress();
-    }
-  }, [selectedStudent, filters]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getClassStudentsList(classId);
@@ -79,9 +62,9 @@ const StudentProgressView = ({ classId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
 
-  const fetchStudentProgress = async () => {
+  const fetchStudentProgress = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getStudentProgress(selectedStudent, filters);
@@ -93,7 +76,19 @@ const StudentProgressView = ({ classId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStudent, filters]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
+
+  useEffect(() => {
+    if (selectedStudent) {
+      fetchStudentProgress();
+    }
+  }, [selectedStudent, filters, fetchStudentProgress]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
@@ -128,7 +123,10 @@ const StudentProgressView = ({ classId }) => {
 
   const handleDownloadReport = async () => {
     try {
-      message.loading({ content: "Generating student report...", key: "report" });
+      message.loading({
+        content: "Generating student report...",
+        key: "report",
+      });
 
       const reportResponse = await generateReport({
         type: "student",
@@ -152,7 +150,9 @@ const StudentProgressView = ({ classId }) => {
       doc.text(`Class: ${reportData.student?.class}`, 14, 44);
       doc.text(`Grade: ${reportData.student?.grade}`, 14, 51);
       doc.text(
-        `Generated: ${dayjs(reportData.generatedAt).format("DD/MM/YYYY HH:mm")}`,
+        `Generated: ${dayjs(reportData.generatedAt).format(
+          "DD/MM/YYYY HH:mm"
+        )}`,
         14,
         58
       );
@@ -161,19 +161,14 @@ const StudentProgressView = ({ classId }) => {
       doc.setFontSize(14);
       doc.text("Summary", 14, 69);
       doc.setFontSize(11);
-      doc.text(
-        `Total Assessments: ${reportData.totalAssessments}`,
-        14,
-        77
-      );
-      doc.text(
-        `Average Score: ${reportData.averageScore.toFixed(1)}%`,
-        14,
-        84
-      );
+      doc.text(`Total Assessments: ${reportData.totalAssessments}`, 14, 77);
+      doc.text(`Average Score: ${reportData.averageScore.toFixed(1)}%`, 14, 84);
 
       // Assessment Details Table
-      if (reportData.assessmentDetails && reportData.assessmentDetails.length > 0) {
+      if (
+        reportData.assessmentDetails &&
+        reportData.assessmentDetails.length > 0
+      ) {
         doc.autoTable({
           startY: 95,
           head: [["Assessment", "Date", "Score", "Type"]],
@@ -191,10 +186,15 @@ const StudentProgressView = ({ classId }) => {
 
       // Save PDF
       doc.save(
-        `student-report-${reportData.student?.studentId}-${dayjs().format("YYYY-MM-DD")}.pdf`
+        `student-report-${reportData.student?.studentId}-${dayjs().format(
+          "YYYY-MM-DD"
+        )}.pdf`
       );
 
-      message.success({ content: "Report downloaded successfully", key: "report" });
+      message.success({
+        content: "Report downloaded successfully",
+        key: "report",
+      });
     } catch (error) {
       console.error("Error generating report:", error);
       message.error({ content: "Failed to generate report", key: "report" });
@@ -273,7 +273,9 @@ const StudentProgressView = ({ classId }) => {
                 placeholder="All types"
                 allowClear
                 value={filters.assessmentType}
-                onChange={(value) => handleFilterChange("assessmentType", value)}
+                onChange={(value) =>
+                  handleFilterChange("assessmentType", value)
+                }
               >
                 <Option value="assessment">Assessment</Option>
                 <Option value="activity">Activity</Option>
@@ -315,7 +317,8 @@ const StudentProgressView = ({ classId }) => {
                     value={progressData.averageScore}
                     suffix="%"
                     valueStyle={{
-                      color: progressData.averageScore >= 70 ? "#3f8600" : "#cf1322",
+                      color:
+                        progressData.averageScore >= 70 ? "#3f8600" : "#cf1322",
                     }}
                   />
                 </Card.Body>
@@ -346,17 +349,32 @@ const StudentProgressView = ({ classId }) => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="assessmentNumber"
-                          label={{ value: "Assessment Number", position: "insideBottom", offset: -5 }}
+                          label={{
+                            value: "Assessment Number",
+                            position: "insideBottom",
+                            offset: -5,
+                          }}
                         />
-                        <YAxis domain={[0, 100]} label={{ value: "Score (%)", angle: -90, position: "insideLeft" }} />
+                        <YAxis
+                          domain={[0, 100]}
+                          label={{
+                            value: "Score (%)",
+                            angle: -90,
+                            position: "insideLeft",
+                          }}
+                        />
                         <Tooltip
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
                               return (
                                 <div className="bg-white p-2 border rounded shadow-sm">
-                                  <p className="mb-1"><strong>{data.assessmentTitle}</strong></p>
-                                  <p className="mb-1">Score: {data.score.toFixed(1)}%</p>
+                                  <p className="mb-1">
+                                    <strong>{data.assessmentTitle}</strong>
+                                  </p>
+                                  <p className="mb-1">
+                                    Score: {data.score.toFixed(1)}%
+                                  </p>
                                   <p className="mb-0 text-muted">
                                     {dayjs(data.date).format("DD MMM YYYY")}
                                   </p>
@@ -379,7 +397,9 @@ const StudentProgressView = ({ classId }) => {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-muted text-center py-5">No progress data available</p>
+                    <p className="text-muted text-center py-5">
+                      No progress data available
+                    </p>
                   )}
                 </Card.Body>
               </Card>
@@ -410,11 +430,17 @@ const StudentProgressView = ({ classId }) => {
                         <YAxis domain={[0, 100]} />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="averageScore" fill="#8884d8" name="Average Score (%)" />
+                        <Bar
+                          dataKey="averageScore"
+                          fill="#8884d8"
+                          name="Average Score (%)"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-muted text-center py-5">No topic data available</p>
+                    <p className="text-muted text-center py-5">
+                      No topic data available
+                    </p>
                   )}
                 </Card.Body>
               </Card>
@@ -427,22 +453,26 @@ const StudentProgressView = ({ classId }) => {
 
                   <h6 className="text-success mb-2">Strengths</h6>
                   <ul className="list-unstyled mb-3">
-                    {progressData.strengthsAndWeaknesses?.strengths?.map((item, idx) => (
-                      <li key={idx} className="mb-2">
-                        <Badge bg="success">{item.score}%</Badge>{" "}
-                        <span className="small">{item.topic}</span>
-                      </li>
-                    ))}
+                    {progressData.strengthsAndWeaknesses?.strengths?.map(
+                      (item, idx) => (
+                        <li key={idx} className="mb-2">
+                          <Badge bg="success">{item.score}%</Badge>{" "}
+                          <span className="small">{item.topic}</span>
+                        </li>
+                      )
+                    )}
                   </ul>
 
                   <h6 className="text-danger mb-2">Needs Improvement</h6>
                   <ul className="list-unstyled">
-                    {progressData.strengthsAndWeaknesses?.weaknesses?.map((item, idx) => (
-                      <li key={idx} className="mb-2">
-                        <Badge bg="danger">{item.score}%</Badge>{" "}
-                        <span className="small">{item.topic}</span>
-                      </li>
-                    ))}
+                    {progressData.strengthsAndWeaknesses?.weaknesses?.map(
+                      (item, idx) => (
+                        <li key={idx} className="mb-2">
+                          <Badge bg="danger">{item.score}%</Badge>{" "}
+                          <span className="small">{item.topic}</span>
+                        </li>
+                      )
+                    )}
                   </ul>
                 </Card.Body>
               </Card>
@@ -450,54 +480,57 @@ const StudentProgressView = ({ classId }) => {
           </Row>
 
           {/* Topic Trends */}
-          {progressData.topicPerformance && progressData.topicPerformance.length > 0 && (
-            <Row>
-              <Col>
-                <Card className="shadow-sm">
-                  <Card.Body>
-                    <h5 className="mb-3">Topic Trends</h5>
-                    <div className="table-responsive">
-                      <table className="table table-hover">
-                        <thead>
-                          <tr>
-                            <th>Topic</th>
-                            <th>Average Score</th>
-                            <th>Assessments</th>
-                            <th>Trend</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {progressData.topicPerformance.map((topic, idx) => (
-                            <tr key={idx}>
-                              <td>{topic.topic}</td>
-                              <td>
-                                <Badge
-                                  bg={
-                                    topic.averageScore >= 75
-                                      ? "success"
-                                      : topic.averageScore >= 50
-                                      ? "warning"
-                                      : "danger"
-                                  }
-                                >
-                                  {topic.averageScore.toFixed(1)}%
-                                </Badge>
-                              </td>
-                              <td>{topic.assessmentCount}</td>
-                              <td>
-                                {getTrendIcon(topic.trend)}{" "}
-                                <span className="text-capitalize">{topic.trend}</span>
-                              </td>
+          {progressData.topicPerformance &&
+            progressData.topicPerformance.length > 0 && (
+              <Row>
+                <Col>
+                  <Card className="shadow-sm">
+                    <Card.Body>
+                      <h5 className="mb-3">Topic Trends</h5>
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Topic</th>
+                              <th>Average Score</th>
+                              <th>Assessments</th>
+                              <th>Trend</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          )}
+                          </thead>
+                          <tbody>
+                            {progressData.topicPerformance.map((topic, idx) => (
+                              <tr key={idx}>
+                                <td>{topic.topic}</td>
+                                <td>
+                                  <Badge
+                                    bg={
+                                      topic.averageScore >= 75
+                                        ? "success"
+                                        : topic.averageScore >= 50
+                                        ? "warning"
+                                        : "danger"
+                                    }
+                                  >
+                                    {topic.averageScore.toFixed(1)}%
+                                  </Badge>
+                                </td>
+                                <td>{topic.assessmentCount}</td>
+                                <td>
+                                  {getTrendIcon(topic.trend)}{" "}
+                                  <span className="text-capitalize">
+                                    {topic.trend}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            )}
         </>
       )}
     </div>

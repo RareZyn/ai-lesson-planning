@@ -1,7 +1,16 @@
 // frontend/client/src/pages/answerChecker/SubmissionListPage.jsx
-import React, { useState, useEffect } from "react";
-import { Card, Button, Badge, Table, Alert, Form, Row, Col } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin, Progress } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  Button,
+  Badge,
+  Table,
+  Alert,
+  Form,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { Tooltip, Empty, Spin, Progress } from "antd";
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -28,16 +37,7 @@ const SubmissionListPage = () => {
   // Filters
   const [filterClass, setFilterClass] = useState("");
 
-  useEffect(() => {
-    fetchClasses();
-    fetchAssessments();
-  }, []);
-
-  useEffect(() => {
-    fetchAssessments();
-  }, [filterClass]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(`${API_BASE_URL}/classes`, {
@@ -48,9 +48,9 @@ const SubmissionListPage = () => {
     } catch (err) {
       console.error("Failed to fetch classes:", err);
     }
-  };
+  }, []);
 
-  const fetchAssessments = async () => {
+  const fetchAssessments = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -84,7 +84,16 @@ const SubmissionListPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterClass]);
+
+  useEffect(() => {
+    fetchClasses();
+    fetchAssessments();
+  }, [fetchClasses, fetchAssessments]);
+
+  useEffect(() => {
+    fetchAssessments();
+  }, [filterClass, fetchAssessments]);
 
   const fetchSubmissionStats = async (assessmentList) => {
     const token = localStorage.getItem("authToken");

@@ -133,16 +133,18 @@ const PlannerPage = () => {
     }
   };
 
-  const handleSendForApproval = async (lessonId) => {
-    if (!window.confirm("Send this lesson plan for approval?")) return;
-    try {
-      await sendLessonForApproval(lessonId);
-      alert("Lesson plan sent for approval successfully!");
-      fetchLessons();
-    } catch (error) {
-      alert(error.message);
-    }
-  };
+  // handleSendForApproval is now handled directly in renderListView
+  // to avoid duplicate approval submission handling
+  // const handleSendForApproval = async (lessonId) => {
+  //   if (!window.confirm("Send this lesson plan for approval?")) return;
+  //   try {
+  //     await sendLessonForApproval(lessonId);
+  //     alert("Lesson plan sent for approval successfully!");
+  //     fetchLessons();
+  //   } catch (error) {
+  //     alert(error.message);
+  //   }
+  // };
 
   const renderListView = () => {
     if (filteredLessons.length === 0 && (searchTerm || filterSubject)) {

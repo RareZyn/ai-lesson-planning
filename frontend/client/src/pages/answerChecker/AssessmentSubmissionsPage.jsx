@@ -1,7 +1,7 @@
 // frontend/client/src/pages/answerChecker/AssessmentSubmissionsPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, Button, Badge, Table, Alert, Row, Col } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin, Statistic, Modal } from "antd";
+import { Tooltip, Empty, Spin, Statistic, Modal } from "antd";
 import {
   EyeOutlined,
   DeleteOutlined,
@@ -15,7 +15,10 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
-import { submissionService, submissionUtils } from "../../services/submissionService";
+import {
+  submissionService,
+  submissionUtils,
+} from "../../services/submissionService";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -31,11 +34,7 @@ const AssessmentSubmissionsPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState({});
 
-  useEffect(() => {
-    fetchAssessmentData();
-  }, [assessmentId]);
-
-  const fetchAssessmentData = async () => {
+  const fetchAssessmentData = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -61,16 +60,20 @@ const AssessmentSubmissionsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [assessmentId]);
+
+  useEffect(() => {
+    fetchAssessmentData();
+  }, [fetchAssessmentData]);
 
   const handleDelete = async (id) => {
     Modal.confirm({
-      title: 'Delete Submission',
+      title: "Delete Submission",
       icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete this submission?',
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
+      content: "Are you sure you want to delete this submission?",
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
       onOk: async () => {
         try {
           const result = await submissionService.deleteSubmission(id);
@@ -78,14 +81,14 @@ const AssessmentSubmissionsPage = () => {
             fetchAssessmentData();
           } else {
             Modal.error({
-              title: 'Error',
+              title: "Error",
               content: result.message,
             });
           }
         } catch (err) {
           Modal.error({
-            title: 'Error',
-            content: 'Failed to delete submission',
+            title: "Error",
+            content: "Failed to delete submission",
           });
         }
       },
@@ -171,10 +174,7 @@ const AssessmentSubmissionsPage = () => {
                 <PlusOutlined className="me-2" />
                 Upload Submission
               </Button>
-              <Button
-                variant="outline-secondary"
-                onClick={fetchAssessmentData}
-              >
+              <Button variant="outline-secondary" onClick={fetchAssessmentData}>
                 <ReloadOutlined className="me-2" />
                 Refresh
               </Button>

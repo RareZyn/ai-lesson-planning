@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import {
   Card,
   Radio,
-  Button,
   Input,
   Row,
   Col,
@@ -106,14 +105,15 @@ const SPMExamStandaloneModal = ({
     }));
   };
 
-  const handleArrayToggle = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
-    }));
-  };
+  // Removed handleArrayToggle - not currently used but kept for future enhancements
+  // const handleArrayToggle = (field, value) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [field]: prev[field].includes(value)
+  //       ? prev[field].filter((item) => item !== value)
+  //       : [...prev[field], value],
+  //   }));
+  // };
 
   const handleSubmit = async () => {
     // Enhanced validation for standalone SPM exams (specificTopic is now optional)

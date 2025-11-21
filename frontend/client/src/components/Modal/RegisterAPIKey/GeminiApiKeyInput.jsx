@@ -1,10 +1,9 @@
 // src/components/GeminiApiKeyInput.jsx
 import React, { useState } from "react";
-import { Form, Input, Button, Alert, Collapse, Typography } from "antd";
+import { Form, Input, Alert, Collapse, Typography } from "antd";
 import {
   KeyOutlined,
   InfoCircleOutlined,
-  CopyOutlined,
 } from "@ant-design/icons";
 import "./GeminiApiKeyInput.css";
 

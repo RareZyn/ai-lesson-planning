@@ -1,5 +1,5 @@
 // frontend/client/src/pages/analytics/ClassAnalyticsView.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Row, Col, Card, Button, Spinner, Form } from "react-bootstrap";
 import { Select, DatePicker, message, Statistic } from "antd";
 import {
@@ -54,13 +54,7 @@ const ClassAnalyticsView = ({ classId }) => {
     assessmentType: null,
   });
 
-  useEffect(() => {
-    if (classId) {
-      fetchData();
-    }
-  }, [classId, filters]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -81,7 +75,13 @@ const ClassAnalyticsView = ({ classId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId, filters]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchData();
+    }
+  }, [classId, fetchData]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
@@ -140,7 +140,9 @@ const ClassAnalyticsView = ({ classId }) => {
       doc.text(`Grade: ${reportData.class?.grade}`, 14, 37);
       doc.text(`Subject: ${reportData.class?.subject}`, 14, 44);
       doc.text(
-        `Generated: ${dayjs(reportData.generatedAt).format("DD/MM/YYYY HH:mm")}`,
+        `Generated: ${dayjs(reportData.generatedAt).format(
+          "DD/MM/YYYY HH:mm"
+        )}`,
         14,
         51
       );
@@ -149,29 +151,18 @@ const ClassAnalyticsView = ({ classId }) => {
       doc.setFontSize(14);
       doc.text("Summary", 14, 62);
       doc.setFontSize(11);
-      doc.text(
-        `Total Students: ${reportData.totalStudents}`,
-        14,
-        70
-      );
-      doc.text(
-        `Total Assessments: ${reportData.totalAssessments}`,
-        14,
-        77
-      );
-      doc.text(
-        `Class Average: ${reportData.classAverage.toFixed(1)}%`,
-        14,
-        84
-      );
+      doc.text(`Total Students: ${reportData.totalStudents}`, 14, 70);
+      doc.text(`Total Assessments: ${reportData.totalAssessments}`, 14, 77);
+      doc.text(`Class Average: ${reportData.classAverage.toFixed(1)}%`, 14, 84);
 
       // Student Performance Table
-      if (reportData.studentPerformance && reportData.studentPerformance.length > 0) {
+      if (
+        reportData.studentPerformance &&
+        reportData.studentPerformance.length > 0
+      ) {
         doc.autoTable({
           startY: 95,
-          head: [
-            ["Student Name", "Student ID", "Avg Score", "Assessments"],
-          ],
+          head: [["Student Name", "Student ID", "Avg Score", "Assessments"]],
           body: reportData.studentPerformance.map((student) => [
             student.name,
             student.studentId,
@@ -186,10 +177,15 @@ const ClassAnalyticsView = ({ classId }) => {
 
       // Save PDF
       doc.save(
-        `class-report-${reportData.class?.className}-${dayjs().format("YYYY-MM-DD")}.pdf`
+        `class-report-${reportData.class?.className}-${dayjs().format(
+          "YYYY-MM-DD"
+        )}.pdf`
       );
 
-      message.success({ content: "Report downloaded successfully", key: "report" });
+      message.success({
+        content: "Report downloaded successfully",
+        key: "report",
+      });
     } catch (error) {
       console.error("Error generating report:", error);
       message.error({ content: "Failed to generate report", key: "report" });
@@ -255,7 +251,9 @@ const ClassAnalyticsView = ({ classId }) => {
                 placeholder="All types"
                 allowClear
                 value={filters.assessmentType}
-                onChange={(value) => handleFilterChange("assessmentType", value)}
+                onChange={(value) =>
+                  handleFilterChange("assessmentType", value)
+                }
               >
                 <Option value="assessment">Assessment</Option>
                 <Option value="activity">Activity</Option>
@@ -294,7 +292,10 @@ const ClassAnalyticsView = ({ classId }) => {
                 title="Class Average"
                 value={analyticsData.classAverage}
                 suffix="%"
-                valueStyle={{ color: analyticsData.classAverage >= 70 ? "#3f8600" : "#cf1322" }}
+                valueStyle={{
+                  color:
+                    analyticsData.classAverage >= 70 ? "#3f8600" : "#cf1322",
+                }}
                 prefix={<TrophyOutlined />}
               />
             </Card.Body>
@@ -349,7 +350,9 @@ const ClassAnalyticsView = ({ classId }) => {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-muted text-center py-5">No trend data available</p>
+                <p className="text-muted text-center py-5">
+                  No trend data available
+                </p>
               )}
             </Card.Body>
           </Card>
@@ -374,7 +377,10 @@ const ClassAnalyticsView = ({ classId }) => {
                       label={(entry) => `${entry.difficulty}: ${entry.count}`}
                     >
                       {analyticsData.difficultyBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -394,7 +400,8 @@ const ClassAnalyticsView = ({ classId }) => {
           <Card className="shadow-sm">
             <Card.Body>
               <h5 className="mb-3">Topic Mastery Levels</h5>
-              {analyticsData.topicMastery && analyticsData.topicMastery.length > 0 ? (
+              {analyticsData.topicMastery &&
+              analyticsData.topicMastery.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart
                     data={analyticsData.topicMastery}
@@ -413,13 +420,18 @@ const ClassAnalyticsView = ({ classId }) => {
                     <Legend />
                     <Bar dataKey="averageScore" name="Average Score (%)">
                       {analyticsData.topicMastery.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={MASTERY_COLORS[entry.masteryLevel]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={MASTERY_COLORS[entry.masteryLevel]}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-muted text-center py-5">No topic data available</p>
+                <p className="text-muted text-center py-5">
+                  No topic data available
+                </p>
               )}
             </Card.Body>
           </Card>

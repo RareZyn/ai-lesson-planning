@@ -1,5 +1,5 @@
 // frontend/client/src/components/AnswerChecker/StudentSelector.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Form, Button, Modal, Alert, Row, Col, Card } from "react-bootstrap";
 import { Spin, Empty } from "antd";
 import { PlusOutlined, UserOutlined } from "@ant-design/icons";
@@ -22,13 +22,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
 
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -49,7 +43,13 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -273,7 +273,9 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
                   <Form.Label>Gender (Optional)</Form.Label>
                   <Form.Select
                     value={newStudent.gender}
-                    onChange={(e) => handleInputChange("gender", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("gender", e.target.value)
+                    }
                   >
                     <option value="">Select gender...</option>
                     <option value="Male">Male</option>
@@ -311,7 +313,12 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               onClick={() => {
                 setShowAddModal(false);
                 setError("");
-                setNewStudent({ name: "", rollNumber: "", gender: "", notes: "" });
+                setNewStudent({
+                  name: "",
+                  rollNumber: "",
+                  gender: "",
+                  notes: "",
+                });
                 setFormErrors({});
               }}
               disabled={loading}

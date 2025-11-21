@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Input, Row, Col, message, Spin, Select, Alert } from "antd";
 import {
-  BookOutlined,
   LoadingOutlined,
   RedoOutlined,
   EditOutlined,

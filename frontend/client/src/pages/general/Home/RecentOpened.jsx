@@ -36,10 +36,6 @@ const RecentOpened = () => {
     navigate(`/app/lessons/${lessonId}`);
   };
 
-  const handleCreateLessonClick = () => {
-    navigate("/app/lessons/create");
-  };
-
   const formatRelativeDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();

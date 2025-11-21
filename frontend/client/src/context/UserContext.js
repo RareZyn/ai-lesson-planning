@@ -1,5 +1,5 @@
 // src/context/UserContext.js
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import { authAPI } from "../services/api";
 import { auth, signOut } from "../firebase";
@@ -105,7 +105,7 @@ export const UserProvider = ({ children }) => {
   };
 
   // Main auth initialization function
-  const initializeAuth = async () => {
+  const initializeAuth = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -128,7 +128,7 @@ export const UserProvider = ({ children }) => {
       setLoading(false);
       setIsReady(true);
     }
-  };
+  }, [firebaseUser]);
 
   // Effect to handle auth state changes
   useEffect(() => {
@@ -138,7 +138,7 @@ export const UserProvider = ({ children }) => {
     }
 
     initializeAuth();
-  }, [firebaseUser, authLoading]);
+  }, [authLoading, initializeAuth]);
 
   // Logout function
   const logout = async () => {

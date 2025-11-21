@@ -5,7 +5,6 @@ import "./Sidebar.css";
 // Import your SVG icons
 import HomeIcon from "@mui/icons-material/Home";
 import FolderCopyIcon from "@mui/icons-material/FolderCopy";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";

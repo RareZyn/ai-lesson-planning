@@ -1,5 +1,5 @@
 // Updated src/pages/assessment/ActivityViewerPage.jsx - Fixed SPM exam content detection
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -10,11 +10,9 @@ import {
   Typography,
   Tag,
   Space,
-  Divider,
 } from "antd";
 import {
   ArrowLeftOutlined,
-  EditOutlined,
   EyeOutlined,
   DownloadOutlined,
   PrinterOutlined,
@@ -22,7 +20,6 @@ import {
 import { assessmentAPI } from "../../services/assessmentService";
 import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
 import { printAssessmentContent } from "../../utils/assessmentPrint";
-
 
 const { Title, Text } = Typography;
 
@@ -304,12 +301,7 @@ const ActivityViewerPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [printing, setPrinting] = useState(false);
 
-
-  useEffect(() => {
-    fetchAssessment();
-  }, [id]);
-
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -345,7 +337,11 @@ const ActivityViewerPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
   // FIXED: Enhanced helper function to check content availability from raw data
   const getStudentContentFromData = (assessmentData) => {
@@ -472,7 +468,6 @@ const ActivityViewerPage = () => {
     return hasContent;
   };
 
-
   const handleViewRubric = () => {
     if (hasTeacherContent()) {
       navigate(`/app/assessment/${id}/${id}`);
@@ -506,8 +501,10 @@ const ActivityViewerPage = () => {
       const safeTitle = assessment.title
         .replace(/[^a-z0-9]/gi, "_")
         .substring(0, 50);
-      const fileName = `${safeTitle}_${getContentTypeName()
-        .replace(/[^a-z0-9]/gi, "_")}.pdf`;
+      const fileName = `${safeTitle}_${getContentTypeName().replace(
+        /[^a-z0-9]/gi,
+        "_"
+      )}.pdf`;
 
       await exportAssessmentToPdf(studentContent, {
         fileName,
