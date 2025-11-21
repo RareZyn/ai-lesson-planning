@@ -8,7 +8,7 @@
 export const printAssessmentContent = (htmlContent, options = {}) => {
   const {
     title = 'Document',
-    isSpmPaper1 = false,
+    // isSpmPaper1 removed as it's unused
   } = options;
 
   try {

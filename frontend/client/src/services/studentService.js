@@ -304,7 +304,7 @@ export const studentUtils = {
 
 // Helper function for email validation
 const isValidEmail = (email) => {
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const emailRegex = /^\w+([-.]?\w+)*@\w+([-.]?\w+)*(\.\w{2,3})+$/;
   return emailRegex.test(email);
 };
 

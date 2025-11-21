@@ -12,9 +12,9 @@ import jsPDF from 'jspdf';
 export const exportAssessmentToPdf = async (htmlContent, options = {}) => {
   const {
     fileName = 'assessment.pdf',
-    title = 'Assessment',
-    isSpmPaper1 = false,
-    paperType = null,
+    // title and paperType removed as they're unused
+    // isSpmPaper1 = false,
+    // paperType = null,
   } = options;
 
   let container = null;
@@ -329,7 +329,7 @@ const addCanvasToPdf = async (pdf, canvas, isFirstPage = false, isSinglePage = f
   } else {
     // Multiple pages needed
     let heightLeft = height;
-    let position = 0;
+    // position variable removed as it's unused
     let page = 0;
 
     while (heightLeft > 0) {
