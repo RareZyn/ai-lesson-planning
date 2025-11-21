@@ -7,7 +7,7 @@
     "server": "cd backend && nodemon server.js",
     "client": "cd frontend/client && npm start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "concurrently \"cd backend && npm install\" \"cd frontend/client && npm install\"",
+    "build": "cd frontend/client && npm install && npm run build",
     "install-all": "npm install && cd backend && npm install && cd ../frontend/client && npm install"
   },
   "dependencies": {
