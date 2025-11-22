@@ -24,22 +24,22 @@ export const UserProvider = ({ children }) => {
   const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
   // Helper function to set authenticated state
-  const setAuthenticatedState = (user) => {
+  const setAuthenticatedState = useCallback((user) => {
     setCurrentUser(user);
     setUserId(user._id || user.id);
     setIsAuthenticated(true);
-  };
+  }, []);
 
   // Helper function to clear authenticated state
-  const clearAuthenticatedState = () => {
+  const clearAuthenticatedState = useCallback(() => {
     setCurrentUser(null);
     setUserId(null);
     setIsAuthenticated(false);
     localStorage.removeItem("authToken");
-  };
+  }, []);
 
   // Sync Firebase user with MongoDB backend
-  const syncFirebaseUserWithMongoDB = async (firebaseUser) => {
+  const syncFirebaseUserWithMongoDB = useCallback(async (firebaseUser) => {
     try {
       if (!firebaseUser) {
         return null;
@@ -77,10 +77,10 @@ export const UserProvider = ({ children }) => {
       clearAuthenticatedState();
       return null;
     }
-  };
+  }, [setAuthenticatedState, clearAuthenticatedState]);
 
   // Check for existing JWT token
-  const checkExistingAuth = async () => {
+  const checkExistingAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
@@ -102,7 +102,7 @@ export const UserProvider = ({ children }) => {
       clearAuthenticatedState();
       return false;
     }
-  };
+  }, [setAuthenticatedState, clearAuthenticatedState]);
 
   // Main auth initialization function
   const initializeAuth = useCallback(async () => {
@@ -128,7 +128,7 @@ export const UserProvider = ({ children }) => {
       setLoading(false);
       setIsReady(true);
     }
-  }, [firebaseUser, syncFirebaseUserWithMongoDB, checkExistingAuth]);
+  }, [firebaseUser, syncFirebaseUserWithMongoDB, checkExistingAuth, clearAuthenticatedState]);
 
   // Effect to handle auth state changes
   useEffect(() => {

@@ -19,7 +19,6 @@ const { Option } = Select;
 const Community = () => {
   const { userId, isAuthenticated } = useUser();
   const [lessons, setLessons] = useState([]);
-  const [userLessons, setUserLessons] = useState([]);
   const [bookmarkedLessons, setBookmarkedLessons] = useState([]);
   const [filteredLessons, setFilteredLessons] = useState([]);
   const [activeTab, setActiveTab] = useState("discover");
@@ -105,7 +104,6 @@ const Community = () => {
 
       if (userResponse.success) {
         const userLessonsData = userResponse.data || [];
-        setUserLessons(userLessonsData);
         // Fetch assessments for user lessons
         fetchAssessmentsForLessons(userLessonsData);
       }
@@ -218,7 +216,7 @@ const Community = () => {
     }
 
     setFilteredLessons(filtered);
-  }, [lessons, userLessons, bookmarkedLessons, filters, activeTab, userId]);
+  }, [lessons, bookmarkedLessons, filters, activeTab, userId]);
 
   useEffect(() => {
     applyFilters();
@@ -376,9 +374,6 @@ const Community = () => {
       if (response.success) {
         // Remove the lesson from the local state
         setLessons((prev) => prev.filter((lesson) => lesson._id !== lessonId));
-        setUserLessons((prev) =>
-          prev.filter((lesson) => lesson._id !== lessonId)
-        );
         setBookmarkedLessons((prev) =>
           prev.filter((lesson) => lesson._id !== lessonId)
         );
