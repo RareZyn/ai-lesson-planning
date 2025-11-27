@@ -47,6 +47,7 @@ const answerRoutes = require("./route/answerRoutes");
 const gradingRoutes = require("./route/gradingRoutes");
 const manualEditRoutes = require("./route/manualEditRoutes");
 const reviewRoutes = require("./route/reviewRoutes");
+const analyticsRoutes = require("./route/analyticsRoutes");
 const adminRoutes = require("./route/adminRoutes");
 
 // Use routes
@@ -62,9 +63,10 @@ app.use("/api/community", communityRoutes);
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/answers", answerRoutes);
-app.use("/api/grading", gradingRoutes); 
-app.use("/api/manual-edit", manualEditRoutes); 
-app.use("/api/review", reviewRoutes);  
+app.use("/api/grading", gradingRoutes);
+app.use("/api/manual-edit", manualEditRoutes);
+app.use("/api/review", reviewRoutes);
+app.use("/api/analytics", analyticsRoutes);  
 app.use("/api/admin", adminRoutes);
 
 
@@ -131,10 +133,7 @@ app.use((err, req, res, next) => {
 // Connect to MongoDB
 console.log("🔄 Connecting to MongoDB...");
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected successfully");
     console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);

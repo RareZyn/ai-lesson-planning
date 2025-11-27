@@ -254,7 +254,7 @@ const gradeSubmission = async (submission, assessment, geminiApiKey) => {
       });
 
       // Add error to submission
-      submission.errors.push({
+      submission.processingErrors.push({
         stage: "grading",
         questionNumber: answer.questionNumber,
         message: error.message,

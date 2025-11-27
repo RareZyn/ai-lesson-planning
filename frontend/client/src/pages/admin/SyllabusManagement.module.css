@@ -1,0 +1,220 @@
+/* SyllabusManagement.css */
+
+.syllabusManagement {
+    padding: 1rem 0;
+}
+
+.syllabusHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.syllabusHeader h2 {
+    font-size: 1.5rem;
+    color: #343a40;
+    margin: 0;
+}
+
+.createButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #6d88f7;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    gap: 8px;
+}
+
+.createButton:hover {
+    background-color: #5c7de6;
+    box-shadow: 0 2px 8px rgba(109, 136, 247, 0.3);
+}
+
+/* Filter Controls */
+.filterControls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.filterControls label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-weight: 500;
+    color: #3f51b5;
+    font-size: 0.95rem;
+    min-width: 200px;
+}
+
+.filterControls select {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    color: #424242;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233f51b5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.filterControls select:hover:not(:disabled) {
+    border-color: #6d88f7;
+}
+
+.filterControls select:focus {
+    border-color: #6d88f7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(109, 136, 247, 0.1);
+}
+
+.filterControls select:disabled {
+    background-color: #f5f5f5;
+    color: #9e9e9e;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.filterControls select option {
+    padding: 8px;
+}
+
+/* List container for proper spacing */
+.listContainer {
+    margin-top: 20px;
+}
+
+/* --- List View (4-Column Grid) --- */
+.syllabusList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 4-COLUMN DEFINITION */
+.listItem {
+    display: grid;
+    /* Grade | Subject | Created By | Date Created */
+    grid-template-columns: 1fr 1fr 2fr 2fr;
+    align-items: center;
+    padding: 18px 25px;
+    background-color: #ffffff;
+    border: 1px solid #e0e6ed;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+/* Clickable Row Styling */
+.listItem.clickable {
+    cursor: pointer;
+}
+
+.listItem.clickable:hover {
+    border-color: #a7b7ed;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    background-color: #fcfdfe;
+}
+
+/* List Header Specific Styling */
+.listHeader {
+    /* Ensure header also uses 4 columns */
+    grid-template-columns: 1fr 1fr 2fr 2fr;
+    background: #f0f4f8 !important;
+    border: 1px solid #d4dae0 !important;
+    box-shadow: none !important;
+    cursor: default !important;
+    margin-bottom: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.05em;
+}
+
+.listDetail {
+    color: #4a5568;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Loading and Error States */
+.loadingContainer,
+.errorContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.loadingContainer p,
+.errorContainer p {
+    color: #424242;
+    font-size: 1rem;
+    margin-bottom: 16px;
+}
+
+.errorContainer button {
+    padding: 10px 20px;
+    background: #6d88f7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.errorContainer button:hover {
+    background: #5c7de6;
+}
+
+/* Responsive adjustment (Mobile View: 2 Columns) */
+@media (max-width: 768px) {
+
+    .listItem,
+    .listHeader {
+        /* Show only Grade and Subject */
+        grid-template-columns: 1fr 1.5fr !important;
+        padding: 15px 20px;
+    }
+
+    /* Hide Created By (3rd) and Date Created (4th) on small screens */
+    .listItem .listDetail:nth-child(3),
+    .listItem .listDetail:nth-child(4),
+    .listHeader .listDetail:nth-child(3),
+    .listHeader .listDetail:nth-child(4) {
+        display: none !important;
+    }
+
+    .filterControls {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filterControls label {
+        min-width: 100%;
+    }
+}

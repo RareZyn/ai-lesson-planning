@@ -8,6 +8,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import School from "@mui/icons-material/School";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
 
 import { authAPI } from "../services/api";
@@ -58,6 +59,7 @@ const Sidebar = () => {
     { icon: <HomeIcon />, label: "Home", path: "/app", end: true },
     { icon: <FolderCopyIcon />, label: "My Lessons", path: "/app/lessons" },
     { icon: <School />, label: "My Classes", path: "/app/classes" },
+    { icon: <BarChartIcon />, label: "Analytics", path: "/app/analytics" },
     { icon: <PeopleAltIcon />, label: "Community", path: "/app/community" },
     ...(isAdminView
       ? [{ icon: <AdminPanelSettings />, label: "Admin", path: "/app/admin" }]

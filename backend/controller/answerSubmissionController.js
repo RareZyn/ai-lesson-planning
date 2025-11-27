@@ -21,11 +21,11 @@ exports.submitAnswer = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!assessmentId || !lessonPlanId || !classId || !studentId) {
+    if (!assessmentId || !classId || !studentId) {
       return res.status(400).json({
         success: false,
         message:
-          "Missing required fields: assessmentId, lessonPlanId, classId, studentId",
+          "Missing required fields: assessmentId, classId, studentId",
       });
     }
 
@@ -378,6 +378,94 @@ exports.getSubmissionsByClass = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching submissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Get assessment statistics with class information
+ * @route   GET /api/answers/assessment/:assessmentId/stats
+ * @access  Private
+ */
+exports.getAssessmentStats = async (req, res) => {
+  try {
+    const { assessmentId } = req.params;
+
+    // Get assessment with class info
+    const assessment = await Assessment.findById(assessmentId).populate(
+      "classId",
+      "className grade subject students classStats"
+    );
+
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assessment not found",
+      });
+    }
+
+    // Get all submissions for this assessment
+    const submissions = await StudentAnswer.find({ assessmentId })
+      .populate("studentId", "name studentId")
+      .populate("classId", "className grade");
+
+    // Calculate statistics
+    const totalStudentsInClass =
+      assessment.classId?.classStats?.totalStudents ||
+      assessment.classId?.students?.length ||
+      0;
+
+    const totalSubmissions = submissions.length;
+
+    // Calculate average score (only from completed submissions)
+    const completedSubmissions = submissions.filter(
+      (s) => s.processingStatus === "completed"
+    );
+
+    let overallAverage = 0;
+    if (completedSubmissions.length > 0) {
+      const totalPercentage = completedSubmissions.reduce(
+        (sum, sub) => sum + (sub.overallStats?.percentage || 0),
+        0
+      );
+      overallAverage = totalPercentage / completedSubmissions.length;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        assessment: {
+          _id: assessment._id,
+          title: assessment.title,
+          activityType: assessment.activityType,
+        },
+        class: {
+          _id: assessment.classId?._id,
+          className: assessment.classId?.className,
+          grade: assessment.classId?.grade,
+          subject: assessment.classId?.subject,
+          totalStudents: totalStudentsInClass,
+        },
+        statistics: {
+          totalStudentsInClass,
+          totalSubmissions,
+          submissionRate:
+            totalStudentsInClass > 0
+              ? ((totalSubmissions / totalStudentsInClass) * 100).toFixed(1)
+              : 0,
+          overallAverage: overallAverage.toFixed(1),
+          completedSubmissions: completedSubmissions.length,
+          pendingSubmissions: submissions.length - completedSubmissions.length,
+        },
+        submissions,
+      },
+    });
+  } catch (error) {
+    console.error("Get assessment stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assessment statistics",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

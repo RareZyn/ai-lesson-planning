@@ -1,14 +1,14 @@
 // frontend/client/src/pages/answerChecker/SubmissionUploadPage.jsx
 import React, { useState, useEffect } from "react";
 import { Card, Button, Form, Alert, ProgressBar, Badge } from "react-bootstrap";
-import { Steps, message } from "antd";
+import { Steps, message, Spin } from "antd";
 import {
   UploadOutlined,
   CheckCircleOutlined,
   LoadingOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import StudentSelector from "../../components/AnswerChecker/StudentSelector";
 import AssessmentSelector from "../../components/AnswerChecker/AssessmentSelector";
 import ImageUploader from "../../components/AnswerChecker/ImageUploader";
@@ -21,14 +21,22 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const SubmissionUploadPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Step management
-  const [currentStep, setCurrentStep] = useState(0);
+  // Get pre-selected assessment from navigation state
+  const preSelectedAssessmentId = location.state?.assessmentId;
+  const preSelectedClassId = location.state?.classId;
+  const preSelectedAssessmentTitle = location.state?.assessmentTitle;
 
-  // Form data
+  // Step management - start at step 1 if assessment is pre-selected
+  const [currentStep, setCurrentStep] = useState(
+    preSelectedAssessmentId ? 1 : 0
+  );
+
+  // Form data - Initialize with pre-selected values
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(preSelectedClassId || null);
+  const [selectedAssessment, setSelectedAssessment] = useState(preSelectedAssessmentId || null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [assessmentDetails, setAssessmentDetails] = useState(null);
   const [images, setImages] = useState({});
@@ -38,6 +46,9 @@ const SubmissionUploadPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [initializingPreSelected, setInitializingPreSelected] = useState(
+    !!preSelectedAssessmentId
+  );
 
   // Fetch classes on mount
   useEffect(() => {
@@ -79,6 +90,14 @@ const SubmissionUploadPage = () => {
       const assessment = response.data.data;
       setAssessmentDetails(assessment);
 
+      // If class wasn't pre-selected but assessment has classId, use it
+      if (!selectedClass && assessment.classId) {
+        const classId = typeof assessment.classId === 'string'
+          ? assessment.classId
+          : assessment.classId._id;
+        setSelectedClass(classId);
+      }
+
       // Initialize image slots based on question count
       // For SPM exams, prioritize examContent.totalQuestions (40 questions for Paper 1)
       let questionCount;
@@ -103,6 +122,7 @@ const SubmissionUploadPage = () => {
       message.error("Failed to load assessment details");
     } finally {
       setLoading(false);
+      setInitializingPreSelected(false);
     }
   };
 
@@ -158,6 +178,11 @@ const SubmissionUploadPage = () => {
   };
 
   const handlePrevious = () => {
+    // If assessment is pre-selected and we're on step 1, go back to assessment page
+    if (preSelectedAssessmentId && currentStep === 1) {
+      navigate(`/app/submissions/${preSelectedAssessmentId}`);
+      return;
+    }
     setCurrentStep(currentStep - 1);
     setError("");
     window.scrollTo(0, 0);
@@ -211,14 +236,18 @@ const SubmissionUploadPage = () => {
 
           // Navigate to review page
           setTimeout(() => {
-            navigate(`/app/submissions/${result.submissionId}/review`);
+            navigate(
+              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+            );
           }, 1000);
         } else {
           message.warning(
             "Submission created but OCR processing encountered issues. You can review it manually."
           );
           setTimeout(() => {
-            navigate(`/app/submissions/${result.submissionId}/review`);
+            navigate(
+              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+            );
           }, 2000);
         }
       } else {
@@ -267,6 +296,23 @@ const SubmissionUploadPage = () => {
           <p className="text-muted mb-0">
             Upload handwritten student answers for AI-powered grading and review
           </p>
+          {preSelectedAssessmentId && (
+            <Alert variant="info" className="mt-3 mb-0">
+              <strong>Assessment:</strong>{" "}
+              {assessmentDetails?.title || preSelectedAssessmentTitle || "Loading..."}
+              {assessmentDetails?.activityType && (
+                <>
+                  <br />
+                  <strong>Type:</strong>{" "}
+                  <Badge bg="primary" className="ms-2">
+                    {assessmentDetails.activityType
+                      ?.toUpperCase()
+                      .replace(/-/g, " ")}
+                  </Badge>
+                </>
+              )}
+            </Alert>
+          )}
         </Card.Body>
       </Card>
 
@@ -326,11 +372,18 @@ const SubmissionUploadPage = () => {
             <div>
               <h4 className="mb-4">Step 2: Select Student</h4>
 
-              <StudentSelector
-                classId={selectedClass}
-                selectedStudent={selectedStudent}
-                onStudentSelect={setSelectedStudent}
-              />
+              {initializingPreSelected || loading ? (
+                <div className="text-center py-5">
+                  <Spin size="large" />
+                  <p className="mt-3 text-muted">Loading assessment details...</p>
+                </div>
+              ) : (
+                <StudentSelector
+                  classId={selectedClass}
+                  selectedStudent={selectedStudent}
+                  onStudentSelect={setSelectedStudent}
+                />
+              )}
             </div>
           )}
 
@@ -361,7 +414,9 @@ const SubmissionUploadPage = () => {
                       message.success("Answer sheet processed successfully!");
                       // Navigate to review page after a short delay
                       setTimeout(() => {
-                        navigate(`/app/answer-checker/review/${results.submissionId}`);
+                        navigate(
+                          `/app/submissions/${selectedAssessment}/review/${results.submissionId}`
+                        );
                       }, 1500);
                     }}
                     disabled={submitting}
@@ -427,9 +482,17 @@ const SubmissionUploadPage = () => {
               <Button
                 variant="secondary"
                 onClick={handlePrevious}
-                disabled={currentStep === 0 || submitting}
+                disabled={
+                  (currentStep === 0 ||
+                    (preSelectedAssessmentId && currentStep === 1)) &&
+                  !submitting
+                    ? false
+                    : submitting
+                }
               >
-                Previous
+                {preSelectedAssessmentId && currentStep === 1
+                  ? "Back to Assessment"
+                  : "Previous"}
               </Button>
 
               <div>
@@ -472,7 +535,7 @@ const SubmissionUploadPage = () => {
                 onClick={handlePrevious}
                 disabled={submitting}
               >
-                Previous
+                Back to Student Selection
               </Button>
             </div>
           )}

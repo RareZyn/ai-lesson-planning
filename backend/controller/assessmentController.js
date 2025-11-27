@@ -1052,6 +1052,7 @@ const getUserAssessments = async (req, res) => {
       page = 1,
       limit = 10,
       classId,
+      lessonPlanId,
       activityType: rawActivityType,
       status,
       search,
@@ -1059,6 +1060,19 @@ const getUserAssessments = async (req, res) => {
     // Build filter object
     const filter = { createdBy: req.user.id };
     if (classId) filter.classId = classId;
+    if (lessonPlanId) {
+      // When filtering by lesson plan, only get assessments created from that lesson plan
+      // Explicitly exclude standalone assessments
+      filter.lessonPlanId = lessonPlanId;
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { isStandalone: { $exists: false } },
+          { isStandalone: false },
+          { isStandalone: null }
+        ]
+      });
+    }
     // Validate activity type filter
     if (rawActivityType) {
       const mappedActivityType = validateAndMapActivityType(rawActivityType);

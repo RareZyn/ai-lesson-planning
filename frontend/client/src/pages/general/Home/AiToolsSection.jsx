@@ -22,30 +22,24 @@ const AiToolsSection = () => {
     },
     {
       id: 2,
-      title: 'Calendar',
-      icon: <CalendarToday fontSize="large" />,
-      path: '/calendar'
-    },
-    {
-      id: 3,
       title: 'Materials',
       icon: <LibraryBooks fontSize="large" />,
       path: '/material-generator'
     },
     {
-      id: 4,
+      id: 3,
       title: 'Activities',
       icon: <Brush fontSize="large" />,
       path: '/activity-generator'
     },
     {
-      id: 5,
+      id: 4,
       title: 'Downloads',
       icon: <CloudDownload fontSize="large" />,
       path: '/file-download'
     },
     {
-      id: 6,
+      id: 5,
       title: 'Checker',
       icon: <CheckCircle fontSize="large" />,
       path: '/answer-checker'

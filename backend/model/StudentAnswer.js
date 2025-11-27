@@ -164,8 +164,8 @@ const studentAnswerSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    // Error Tracking
-    errors: [
+    // Error Tracking (renamed from 'errors' to avoid Mongoose reserved keyword)
+    processingErrors: [
       {
         stage: String, // 'ocr', 'grading', etc.
         questionNumber: Number,
@@ -264,7 +264,7 @@ studentAnswerSchema.methods.addError = function (
   questionNumber,
   message
 ) {
-  this.errors.push({
+  this.processingErrors.push({
     stage,
     questionNumber,
     message,

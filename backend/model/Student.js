@@ -122,7 +122,7 @@ const studentSchema = new mongoose.Schema(
 
 // Indexes for performance
 studentSchema.index({ classId: 1, status: 1 });
-studentSchema.index({ studentId: 1 });
+// Note: 'studentId' field already has unique index, no need to create duplicate
 studentSchema.index({ addedBy: 1 });
 studentSchema.index({ name: "text", studentId: "text" });
 

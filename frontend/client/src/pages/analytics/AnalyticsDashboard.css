@@ -1,0 +1,280 @@
+/* frontend/client/src/pages/analytics/AnalyticsDashboard.css */
+
+.analytics-dashboard {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.analytics-dashboard h2 {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.analytics-dashboard .card {
+  border: none;
+  border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.analytics-dashboard .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.analytics-dashboard .ant-statistic-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.analytics-dashboard .ant-statistic-content {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+/* Filter Section */
+.analytics-dashboard .ant-picker,
+.analytics-dashboard .ant-select {
+  border-radius: 6px;
+}
+
+/* Charts */
+.recharts-wrapper {
+  margin: 0 auto;
+}
+
+.recharts-surface {
+  overflow: visible;
+}
+
+/* Table Styles */
+.analytics-dashboard .table {
+  margin-bottom: 0;
+}
+
+.analytics-dashboard .table thead th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.analytics-dashboard .table tbody tr:hover {
+  background-color: #f5f7fa;
+}
+
+/* Badge Styles */
+.analytics-dashboard .badge {
+  padding: 6px 12px;
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+/* Tabs */
+.analytics-dashboard .nav-tabs {
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.analytics-dashboard .nav-tabs .nav-link {
+  color: #666;
+  font-weight: 500;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 20px;
+}
+
+.analytics-dashboard .nav-tabs .nav-link.active {
+  color: #1890ff;
+  background-color: transparent;
+  border-bottom: 2px solid #1890ff;
+}
+
+.analytics-dashboard .nav-tabs .nav-link:hover {
+  border-color: transparent;
+  color: #1890ff;
+}
+
+/* Buttons */
+.analytics-dashboard .btn {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.3s;
+}
+
+.analytics-dashboard .btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.analytics-dashboard .btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.analytics-dashboard .btn-outline-secondary:hover {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+  .analytics-dashboard {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .analytics-dashboard h2 {
+    font-size: 1.5rem;
+  }
+
+  .analytics-dashboard .card {
+    margin-bottom: 1rem;
+  }
+
+  /* Stack buttons on mobile */
+  .analytics-dashboard .d-flex.gap-2 {
+    flex-direction: column !important;
+  }
+
+  .analytics-dashboard .d-flex.gap-2 .btn {
+    width: 100% !important;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Make charts responsive */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Reduce chart height on mobile */
+  .recharts-responsive-container {
+    min-height: 250px !important;
+  }
+
+  /* Table scroll on mobile */
+  .analytics-dashboard .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Smaller font sizes for mobile */
+  .analytics-dashboard .ant-statistic-content {
+    font-size: 24px;
+  }
+
+  /* Date picker on mobile */
+  .analytics-dashboard .ant-picker {
+    width: 100% !important;
+  }
+
+  /* Select dropdowns on mobile */
+  .analytics-dashboard .ant-select {
+    width: 100% !important;
+  }
+
+  /* X-axis labels on mobile - make smaller */
+  .recharts-cartesian-axis-tick text {
+    font-size: 10px;
+  }
+
+  /* Pie chart labels on mobile */
+  .recharts-pie-label-text {
+    font-size: 10px;
+  }
+
+  /* Reduce padding on cards for mobile */
+  .analytics-dashboard .card-body {
+    padding: 1rem;
+  }
+
+  /* Make filter section more compact */
+  .analytics-dashboard .g-3 {
+    gap: 0.75rem !important;
+  }
+}
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 576px) {
+  .analytics-dashboard h5 {
+    font-size: 1.1rem;
+  }
+
+  .analytics-dashboard .table {
+    font-size: 0.85rem;
+  }
+
+  .analytics-dashboard .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  /* Hide some chart labels on very small screens */
+  .recharts-cartesian-axis-tick:nth-child(even) {
+    display: none;
+  }
+}
+
+/* Tablet devices (576px to 992px) */
+@media (min-width: 576px) and (max-width: 992px) {
+  .analytics-dashboard .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .recharts-responsive-container {
+    min-height: 300px !important;
+  }
+}
+
+/* Loading State */
+.analytics-dashboard .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: #1890ff;
+}
+
+/* Empty State */
+.analytics-dashboard .text-muted {
+  color: #8c8c8c !important;
+}
+
+/* Tooltip Styles */
+.analytics-dashboard .recharts-tooltip-wrapper {
+  z-index: 1000;
+}
+
+.analytics-dashboard .recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 6px !important;
+  padding: 10px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Legend */
+.recharts-legend-wrapper {
+  padding-top: 10px;
+}
+
+/* Print Styles */
+@media print {
+  .analytics-dashboard .btn,
+  .analytics-dashboard .ant-picker,
+  .analytics-dashboard .ant-select {
+    display: none;
+  }
+
+  .analytics-dashboard .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .recharts-responsive-container {
+    height: 300px !important;
+  }
+}

@@ -9,6 +9,7 @@ import {
 import LessonCard from "../../components/Card/LessonCard";
 import UploadLessonModal from "../../components/Modal/UploadLessonModal";
 import { communityAPI } from "../../services/communityService";
+import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
 import "./Community.css";
 
@@ -24,6 +25,7 @@ const Community = () => {
   const [activeTab, setActiveTab] = useState("discover");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [assessmentsByLesson, setAssessmentsByLesson] = useState({}); // Map of lessonId -> single assessment
   const [filters, setFilters] = useState({
     grade: "",
     subject: "",
@@ -43,6 +45,38 @@ const Community = () => {
   useEffect(() => {
     applyFilters();
   }, [lessons, userLessons, bookmarkedLessons, filters, activeTab]);
+
+  // Fetch single assessment for a set of lessons (one assessment per lesson)
+  const fetchAssessmentsForLessons = async (lessonList) => {
+    if (!lessonList || lessonList.length === 0) return;
+
+    try {
+      const assessmentsMap = {};
+
+      // Fetch assessment for each lesson (only the first one)
+      await Promise.all(
+        lessonList.map(async (lesson) => {
+          if (lesson._id) {
+            try {
+              const response = await assessmentAPI.getAssessmentsByLessonPlan(lesson._id);
+              // Only store the first assessment since one lesson has only one assessment
+              if (response.success && response.data && response.data.length > 0) {
+                assessmentsMap[lesson._id] = response.data[0]; // Get only the first assessment
+              }
+            } catch (error) {
+              console.error(`Error fetching assessment for lesson ${lesson._id}:`, error);
+              // Don't show error to user, just skip this lesson's assessment
+            }
+          }
+        })
+      );
+
+      setAssessmentsByLesson(prev => ({ ...prev, ...assessmentsMap }));
+    } catch (error) {
+      console.error('Error fetching assessments:', error);
+      // Silently fail - assessments are optional
+    }
+  };
 
   const loadCommunityData = async () => {
     setLoading(true);
@@ -67,15 +101,24 @@ const Community = () => {
         ]);
 
       if (communityResponse.success) {
-        setLessons(communityResponse.data || []);
+        const lessonsData = communityResponse.data || [];
+        setLessons(lessonsData);
+        // Fetch assessments for community lessons
+        fetchAssessmentsForLessons(lessonsData);
       }
 
       if (userResponse.success) {
-        setUserLessons(userResponse.data || []);
+        const userLessonsData = userResponse.data || [];
+        setUserLessons(userLessonsData);
+        // Fetch assessments for user lessons
+        fetchAssessmentsForLessons(userLessonsData);
       }
 
       if (bookmarksResponse.success) {
-        setBookmarkedLessons(bookmarksResponse.data || []);
+        const bookmarkedData = bookmarksResponse.data || [];
+        setBookmarkedLessons(bookmarkedData);
+        // Fetch assessments for bookmarked lessons
+        fetchAssessmentsForLessons(bookmarkedData);
       }
     } catch (error) {
       console.error("Error loading community data:", error);
@@ -99,7 +142,10 @@ const Community = () => {
       });
 
       if (communityResponse.success) {
-        setLessons(communityResponse.data || []);
+        const lessonsData = communityResponse.data || [];
+        setLessons(lessonsData);
+        // Fetch assessments for community lessons
+        fetchAssessmentsForLessons(lessonsData);
       }
     } catch (error) {
       console.error("Error loading community lessons:", error);
@@ -309,6 +355,35 @@ const Community = () => {
     }
   };
 
+  const handleUnshare = async (lessonId) => {
+    if (!isAuthenticated) {
+      message.error("Please log in to unshare lesson plans");
+      return;
+    }
+
+    try {
+      const response = await communityAPI.unshareLessonPlan(lessonId, userId);
+
+      if (response.success) {
+        // Remove the lesson from the local state
+        setLessons((prev) => prev.filter((lesson) => lesson._id !== lessonId));
+        setUserLessons((prev) =>
+          prev.filter((lesson) => lesson._id !== lessonId)
+        );
+        setBookmarkedLessons((prev) =>
+          prev.filter((lesson) => lesson._id !== lessonId)
+        );
+
+        message.success("Lesson plan removed from community successfully!");
+      }
+    } catch (error) {
+      console.error("Error unsharing lesson plan:", error);
+      message.error(
+        error.response?.data?.message || "Failed to unshare lesson plan"
+      );
+    }
+  };
+
   const renderLessons = () => {
     if (loading) {
       return (
@@ -372,7 +447,9 @@ const Community = () => {
               onLike={handleLike}
               onDownload={handleDownload}
               onBookmark={handleBookmark}
+              onUnshare={handleUnshare}
               currentUserId={userId}
+              assessment={assessmentsByLesson[lesson._id] || null}
             />
           </Col>
         ))}

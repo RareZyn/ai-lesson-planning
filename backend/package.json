@@ -31,10 +31,11 @@
     "mongoose": "^8.15.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "openai": "^4.103.0"
+    "openai": "^4.103.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "http-proxy-middleware": "^2.0.6"
+    "http-proxy-middleware": "^2.0.6",
+    "nodemon": "^3.1.10"
   }
 }

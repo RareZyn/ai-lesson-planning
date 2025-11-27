@@ -7,6 +7,11 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import HomePage from "./pages/general/HomePage";
 import MyLessons from "./pages/planner/mylesson/PlannerPage";
 import MainLayout from "./layout/MainLayout";
+import AssessmentSubmissionsPage from "./pages/answerChecker/AssessmentSubmissionsPage";
+import AnalyticsDashboard from "./pages/analytics/AnalyticsDashboard";
+import StudentProgressView from "./pages/analytics/StudentProgressView";
+import ClassAnalyticsView from "./pages/analytics/ClassAnalyticsView";
+import DisplaySyllabus from "./pages/admin/DisplaySyllabus";
 
 // not so important
 const AssessmentPage = React.lazy(() => import("./pages/assesstment/AssessmentPage"));
@@ -24,6 +29,7 @@ const Community = React.lazy(() => import("./pages/community/Community"));
 const DisplayLessonPage = React.lazy(() => import("./pages/planner/displaylesson/DisplayLessonPage"));
 const ClassLessonsPage = React.lazy(() => import("./pages/class/ClassLessonsPage"));
 const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
+// const DisplaySyllabus = React.lazy(() => import("./pages/admin/DisplaySyllabus"));
 
 // NEW IMPORTS - Answer Checker Module
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
@@ -41,37 +47,40 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: "", element: <HomePage /> },
+        { path: "lessons", element: <MyLessons /> },
+        { path: "materials", element: <MaterialManagement /> },
+        { path: "lessons/:id", element: <DisplayLessonPage /> },
+        { path: "planner", element: <MultiStepPlanner /> },
 
-        // Assessment routes
+        { path: "classes", element: <ClassManagement /> },
+        { path: "classes/:classId", element: <ClassLessonsPage /> },
+
         { path: "assessment", element: <AssessmentPage /> },
         { path: "assessment/:id", element: <ActivityViewerPage /> },
         { path: "assessment/:id/:id", element: <RubricViewerPage /> },
 
-        // NEW - Answer Checker / Submission routes
         { path: "submissions", element: <SubmissionListPage /> },
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
-        { path: "submissions/:id/review", element: <SubmissionReviewPage /> },
+        { path: "submissions/:assessmentId", element: <AssessmentSubmissionsPage /> },
+        { path: "submissions/:assessmentId/review/:submissionId", element: <SubmissionReviewPage /> },
 
-        // Answer Checker alias routes (alternative paths)
-        { path: "answer-checker", element: <SubmissionListPage /> },
-        { path: "answer-checker/upload", element: <SubmissionUploadPage /> },
-        { path: "answer-checker/review/:id", element: <SubmissionReviewPage /> },
+        { path: "analytics", element: <AnalyticsDashboard /> },
+        { path: "analytics/:id", element: <StudentProgressView /> },
+        { path: "analytics/:id/:id", element: <ClassAnalyticsView /> },
 
-        // Existing routes
         { path: "downloads", element: <FileDownloadPage /> },
-        { path: "lessons", element: <MyLessons /> },
-        { path: "materials", element: <MaterialManagement /> },
-        { path: "classes", element: <ClassManagement /> },
-        { path: "planner", element: <MultiStepPlanner /> },
+
         { path: "community", element: <Community /> },
         { path: "lessons/:id", element: <DisplayLessonPage /> },
         { path: "classes/:classId", element: <ClassLessonsPage /> },
 
         //admin
         { path: "admin", element: <AdminLayout /> },
+        { path: "admin/syllabuses/:id", element: <DisplaySyllabus /> },
       ],
     },
     { path: "/", element: <LoginPage /> },
+    { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
     { path: "/unauthorized", element: <UnauthorizedPage /> },
   ],

@@ -30,8 +30,11 @@ import { reviewService } from "../../services/reviewServiceClient";
 const { TextArea } = Input;
 
 const SubmissionReviewPage = () => {
-  const { id } = useParams();
+  const { assessmentId, submissionId, id } = useParams();
   const navigate = useNavigate();
+
+  // Use submissionId from new route structure, fallback to id for backward compatibility
+  const actualSubmissionId = submissionId || id;
 
   // State
   const [submission, setSubmission] = useState(null);
@@ -53,14 +56,14 @@ const SubmissionReviewPage = () => {
 
   useEffect(() => {
     fetchSubmission();
-  }, [id]);
+  }, [actualSubmissionId]);
 
   const fetchSubmission = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const result = await submissionService.getSubmissionById(id);
+      const result = await submissionService.getSubmissionById(actualSubmissionId);
 
       if (result.success) {
         setSubmission(result.data);
@@ -79,7 +82,7 @@ const SubmissionReviewPage = () => {
     setError("");
 
     try {
-      const result = await gradingService.scoreSubmission(id);
+      const result = await gradingService.scoreSubmission(actualSubmissionId);
 
       if (result.success) {
         await fetchSubmission();
@@ -108,7 +111,7 @@ const SubmissionReviewPage = () => {
 
     setSavingEdit(true);
     try {
-      const result = await manualEditService.editText(id, editingQuestion, {
+      const result = await manualEditService.editText(actualSubmissionId, editingQuestion, {
         editedText,
         autoRegrade: true,
       });
@@ -145,7 +148,7 @@ const SubmissionReviewPage = () => {
     if (!editingQuestion || editedScore === null) return;
 
     try {
-      const result = await manualEditService.adjustScore(id, editingQuestion, {
+      const result = await manualEditService.adjustScore(actualSubmissionId, editingQuestion, {
         newScore: editedScore,
         adjustmentReason: adjustmentReason || "Manual adjustment",
       });
@@ -165,7 +168,7 @@ const SubmissionReviewPage = () => {
 
   const handleMarkAsReviewed = async () => {
     try {
-      const result = await reviewService.markAsReviewed(id, {
+      const result = await reviewService.markAsReviewed(actualSubmissionId, {
         comments: reviewComments,
         approved: true,
       });
@@ -191,7 +194,7 @@ const SubmissionReviewPage = () => {
       return;
 
     try {
-      const result = await reviewService.flagForRegrade(id, {
+      const result = await reviewService.flagForRegrade(actualSubmissionId, {
         reason: "Flagged for regrade",
       });
 
@@ -262,7 +265,13 @@ const SubmissionReviewPage = () => {
               <Button
                 variant="link"
                 className="p-0 mb-2"
-                onClick={() => navigate("/app/submissions")}
+                onClick={() =>
+                  navigate(
+                    assessmentId
+                      ? `/app/submissions/${assessmentId}`
+                      : "/app/submissions"
+                  )
+                }
               >
                 <ArrowLeftOutlined className="me-2" />
                 Back to Submissions

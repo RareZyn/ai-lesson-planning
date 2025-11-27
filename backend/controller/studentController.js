@@ -500,7 +500,7 @@ exports.bulkAddStudents = async (req, res) => {
 
   try {
     // Optional: Validate classId exists and user has permission
-    // const schoolClass = await Class.findById(classId);
+    const classData = await Class.findById(classId);
     // if (!schoolClass) {
     //     return res.status(404).json({ success: false, message: 'Class not found.' });
     // }
@@ -537,7 +537,8 @@ exports.bulkAddStudents = async (req, res) => {
           studentId: newStudentId, // Assign generated ID
           rollNumber: studentData.rollNumber,
           notes: studentData.notes ? studentData.notes.trim() : '',
-          // You might need to add createdBy: req.user.id or similar
+          addedBy: req.user.id, // Assuming req.user.id is set by auth middleware
+          grade: classData.grade
         });
 
         const savedStudent = await newStudent.save();

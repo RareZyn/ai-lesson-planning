@@ -1,80 +1,161 @@
-// SyllabusManagement.jsx
-import React, { useState } from 'react';
-import './SyllabusManagement.css';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styles from './SyllabusManagement.module.css'; // <-- Changed import
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faBook, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlus } from '@fortawesome/free-solid-svg-icons'; 
+import CreateSyllabusModal from './CreateSyllabusModal';
+import { getSyllabuses, deleteSyllabus } from '../../services/adminService';
 
 const SyllabusManagement = ({ searchTerm }) => {
-    // Dummy data for syllabuses
-    const [syllabuses, setSyllabuses] = useState([
-        { id: 's1', title: 'Mathematics Grade 10', subject: 'Mathematics', createdBy: 'Admin', date: '2023-01-15' },
-        { id: 's2', title: 'Science Form 4 Chemistry', subject: 'Science', createdBy: 'Admin', date: '2023-02-20' },
-        { id: 's3', title: 'History SPM Modern Era', subject: 'History', createdBy: 'Admin', date: '2023-03-10' },
-        { id: 's4', title: 'English Year 5 Grammar', subject: 'English', createdBy: 'Admin', date: '2023-04-05' },
-    ]);
+    const navigate = useNavigate();
+    const [syllabuses, setSyllabuses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    const filteredSyllabuses = syllabuses.filter(syllabus =>
-        syllabus.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        syllabus.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const [selectedGrade, setSelectedGrade] = useState('');
+    const [selectedSubject, setSelectedSubject] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
-    const handleCreateSyllabus = () => {
-        alert('Open modal to create new syllabus');
-        // Implement modal or form for creating a new syllabus
-    };
+    useEffect(() => {
+        fetchSyllabuses();
+    }, []);
 
-    const handleEditSyllabus = (id) => {
-        alert(`Edit syllabus with ID: ${id}`);
-        // Implement modal or form for editing a syllabus
-    };
-
-    const handleDeleteSyllabus = (id) => {
-        if (window.confirm(`Are you sure you want to delete syllabus ${id}?`)) {
-            setSyllabuses(syllabuses.filter(syllabus => syllabus.id !== id));
+    const fetchSyllabuses = async () => {
+        try {
+            setLoading(true);
+            const response = await getSyllabuses(); 
+            setSyllabuses(response.data || response); 
+            setError('');
+        } catch (err) {
+            console.error('Error fetching syllabuses:', err);
+            setError('Failed to load syllabuses');
+        } finally {
+            setLoading(false);
         }
     };
 
+    const allGrades = [...new Set(syllabuses.map(s => s.grade))].sort();
+    const subjectsForSelectedGrade = selectedGrade
+        ? [...new Set(syllabuses.filter(s => s.grade === selectedGrade).map(s => s.subject))].sort()
+        : [];
+
+    const syllabusMatchesSearch = (syllabus, searchTerm) => {
+        if (!searchTerm) return true;
+        
+        const lowerSearch = searchTerm.toLowerCase();
+        
+        if (syllabus.grade?.toLowerCase().includes(lowerSearch)) return true;
+        if (syllabus.subject?.toLowerCase().includes(lowerSearch)) return true;
+        
+        return false;
+    };
+
+    const filteredSyllabuses = syllabuses.filter(syllabus =>
+        (selectedGrade === '' || syllabus.grade === selectedGrade) &&
+        (selectedSubject === '' || syllabus.subject === selectedSubject) &&
+        syllabusMatchesSearch(syllabus, searchTerm)
+    );
+
+    const handleViewSyllabus = (syllabus) => {
+        navigate(`syllabuses/${syllabus.id}`);
+    };
+
+    const handleCreateSyllabus = () => {
+        setShowCreateModal(true);
+    };
+
+    const handleSaveNewSyllabus = async () => {
+        await fetchSyllabuses();
+        setShowCreateModal(false);
+    };
+
+    if (loading) {
+        return (
+            <div className={styles.syllabusManagement}>
+                <div className={styles.loadingContainer}>
+                    <p>Loading syllabuses...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={styles.syllabusManagement}>
+                <div className={styles.errorContainer}>
+                    <p>{error}</p>
+                    <button onClick={fetchSyllabuses}>Retry</button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="syllabusManagement">
-            <div className="syllabusHeader">
+        <div className={styles.syllabusManagement}>
+            <div className={styles.syllabusHeader}>
                 <h2>Syllabus List</h2>
-                <button className="createButton" onClick={handleCreateSyllabus}>
+                <button className={styles.createButton} onClick={handleCreateSyllabus}>
                     <FontAwesomeIcon icon={faPlus} /> Create Syllabus
                 </button>
             </div>
 
+            <div className={styles.filterControls}>
+                <label>
+                    Grade:
+                    <select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSubject(''); }}>
+                        <option value="">All Grades</option>
+                        {allGrades.map(grade => (
+                            <option key={grade} value={grade}>{grade}</option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Subject:
+                    <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} disabled={!selectedGrade}>
+                        <option value="">All Subjects</option>
+                        {subjectsForSelectedGrade.map(subject => (
+                            <option key={subject} value={subject}>{subject}</option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+
             {filteredSyllabuses.length === 0 ? (
-                <p>No syllabuses found matching your search.</p>
+                <p>No syllabuses found matching your search and filters. Click "Create Syllabus" to add one!</p>
             ) : (
-                <div className="listContainer">
-                    <div className="listHeader listItem">
-                        <div className="listTitle">Title</div>
-                        <div className="listDetail">Subject</div>
-                        <div className="listDetail">Created By</div>
-                        <div className="listDetail">Date Created</div>
-                        <div className="listActions">Actions</div>
+                <div className={styles.listContainer}>
+                    
+                    {/* 4-COLUMN HEADER */}
+                    <div className={`${styles.listHeader} ${styles.listItem}`}>
+                        <div className={styles.listDetail}>Grade</div>
+                        <div className={styles.listDetail}>Subject</div>
+                        <div className={styles.listDetail}>Created By</div>
+                        <div className={styles.listDetail}>Date Created</div>
                     </div>
-                    <div className="syllabusList">
+                    
+                    <div className={styles.syllabusList}>
                         {filteredSyllabuses.map(syllabus => (
-                            <div key={syllabus.id} className="listItem">
-                                <div className="listTitle">
-                                    <FontAwesomeIcon icon={faBook} className="listIcon" /> {syllabus.title}
-                                </div>
-                                <div className="listDetail">{syllabus.subject}</div>
-                                <div className="listDetail">{syllabus.createdBy}</div>
-                                <div className="listDetail">{syllabus.date}</div>
-                                <div className="listActions">
-                                    <button onClick={() => handleEditSyllabus(syllabus.id)} className="actionButton edit">
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-                                    <button onClick={() => handleDeleteSyllabus(syllabus.id)} className="actionButton delete">
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </button>
-                                </div>
+                            <div 
+                                key={syllabus.id} 
+                                className={`${styles.listItem} ${styles.clickable}`}
+                                onClick={() => handleViewSyllabus(syllabus)}
+                            >
+                                <div className={styles.listDetail}>{syllabus.grade}</div>
+                                <div className={styles.listDetail}>{syllabus.subject}</div>
+                                <div className={styles.listDetail}>{syllabus.createdBy || 'Admin'}</div>
+                                <div className={styles.listDetail}>{syllabus.date || syllabus.createdAt || 'N/A'}</div>
                             </div>
                         ))}
                     </div>
                 </div>
+            )}
+
+            {showCreateModal && (
+                <CreateSyllabusModal
+                    onClose={() => setShowCreateModal(false)}
+                    onSave={handleSaveNewSyllabus}
+                    allGrades={allGrades}
+                />
             )}
         </div>
     );
