@@ -18,6 +18,7 @@ import {
   FilterOutlined,
   FileTextOutlined,
   TeamOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -36,6 +37,7 @@ const SubmissionListPage = () => {
 
   // Filters
   const [filterClass, setFilterClass] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -178,7 +180,7 @@ const SubmissionListPage = () => {
       <Card className="mb-4">
         <Card.Body>
           <Row className="g-3">
-            <Col md={6}>
+            <Col md={4}>
               <Form.Label>
                 <FilterOutlined className="me-2" />
                 Filter by Class
@@ -196,13 +198,26 @@ const SubmissionListPage = () => {
               </Form.Select>
             </Col>
 
-            <Col md={6} className="d-flex align-items-end">
+            <Col md={4}>
+              <Form.Label>
+                <SearchOutlined className="me-2" />
+                Search Assessment
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Search by title..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Col>
+
+            <Col md={4} className="d-flex align-items-end">
               <Button
                 variant="outline-secondary"
                 onClick={fetchAssessments}
-                className="w-40"
+                className="w-100"
               >
-                <ReloadOutlined className="me-2 " />
+                <ReloadOutlined className="me-2" />
                 Refresh
               </Button>
             </Col>
@@ -238,6 +253,20 @@ const SubmissionListPage = () => {
                 Create Assessment
               </Button>
             </Empty>
+          ) : assessments.filter((assessment) =>
+              assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length === 0 ? (
+            <Empty
+              description={`No assessments match "${searchTerm}"`}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button
+                variant="outline-secondary"
+                onClick={() => setSearchTerm("")}
+              >
+                Clear Search
+              </Button>
+            </Empty>
           ) : (
             <Table responsive hover>
               <thead>
@@ -254,7 +283,13 @@ const SubmissionListPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {assessments.map((assessment) => {
+                {assessments
+                  .filter((assessment) =>
+                    assessment.title
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase())
+                  )
+                  .map((assessment) => {
                   const stats = assessmentStats[assessment._id] || {
                     totalSubmissions: 0,
                     totalStudentsInClass: 0,

@@ -332,14 +332,15 @@ const regradeAnswer = async (answer, keyAnswer, geminiApiKey) => {
 };
 
 /**
- * Grade SPM Answer Sheet (Hybrid: 32 MCQ + 8 written answers)
- * NEW FORMAT:
- * - Questions 1-32: Multiple choice bubbles (A-H)
- * - Questions 33-40: Short written answers (Part 5: Information Transfer)
+ * Grade SPM Paper 1 Answer Sheet
+ *
+ * ANSWER SHEET FORMAT (Total: 40 questions):
+ * - Questions 1-32: Multiple choice bubbles (A-H) - 32 MCQ questions
+ * - Questions 33-40: Short written answers on blank lines - 8 written questions (Part 5: Information Transfer)
  *
  * @param {Array} detectedAnswers - Array of detected answers from OCR [{questionNumber, selectedAnswer, confidence, answerType}]
  * @param {Array} answerKey - Answer key from assessment
- * @returns {Object} Grading results with score breakdown
+ * @returns {Object} Grading results with score breakdown including MCQ and written answer statistics
  */
 const gradeSpmAnswerSheet = (detectedAnswers, answerKey) => {
   if (!detectedAnswers || !Array.isArray(detectedAnswers)) {

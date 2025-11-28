@@ -454,12 +454,16 @@ exports.getGradingStatus = async (req, res) => {
  * @desc    Process and Grade SPM Paper 1 Answer Sheet (Combined)
  * @route   POST /api/grading/process-and-grade-spm
  * @access  Private
+ *
+ * Answer Sheet Format:
+ * - Questions 1-32: Multiple choice bubbles (A-H)
+ * - Questions 33-40: Written answers on blank lines
  */
 exports.processAndGradeSpmAnswerSheet = async (req, res) => {
   const startTime = Date.now();
 
   try {
-    console.log("📝 Processing and Grading SPM Paper 1 Answer Sheet...");
+    console.log("📝 Processing and Grading SPM Paper 1 Answer Sheet (32 MCQ + 8 Written)...");
 
     const { image, assessmentId, classId, studentId } = req.body;
 
@@ -534,59 +538,105 @@ exports.processAndGradeSpmAnswerSheet = async (req, res) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-    // Hybrid detection prompt (bubbles for Q1-36, text for Q37-40)
-    const prompt = `You are analyzing an SPM Paper 1 answer sheet with 40 questions.
+    // Enhanced detection prompt based on the new SPM answer sheet template
+    const prompt = `You are analyzing an SPM English Paper 1 answer sheet with 40 questions total.
 
-ANSWER SHEET STRUCTURE:
-The answer sheet has a table with 3 columns:
-1. Question numbers (1-40) in the left column
-2. Answer bubbles (A-H circles) in the middle column - for MCQ answers
-3. "SPACE FOR ANSWER THAT ARE A WORD, PHRASE OR NUMBER" in the right column - for written answers
+CRITICAL - ANSWER SHEET LAYOUT:
+The answer sheet is divided into TWO COLUMNS side by side:
 
-DETECTION RULES:
-- **Questions 1-36**: MCQ only - detect which bubble (A-H) is filled/darkened
-- **Questions 37-40**: Written answers only - extract the word/phrase/number from the RIGHT COLUMN (third column)
+**LEFT COLUMN (Questions 1-20):**
+- Question numbers 1-20 on the left side
+- Each question has 8 bubble circles labeled A, B, C, D, E, F, G, H
+- Students fill ONE bubble per question
 
-Your task:
-1. For Q1-36: Detect filled bubbles (A-H). Return letter only.
-   - If no bubble filled, return "BLANK"
-   - If multiple bubbles filled, return "MULTIPLE"
+**RIGHT COLUMN (Questions 21-40):**
+- **Questions 21-32 (MCQ Section):**
+  - Question numbers 21-32 at the top of right column
+  - Each has 8 bubble circles labeled A, B, C, D, E, F, G, H
+  - Students fill ONE bubble per question
 
-2. For Q37-40: Extract text from the RIGHT COLUMN (written answer space).
-   - Return the exact word/phrase/number written
-   - If nothing written, return "BLANK"
-   - Ignore bubbles for Q37-40
+- **Questions 33-40 (Subjective Section):**
+  - Located BELOW question 32 in the right column
+  - Has a header: "Part 5: Write your answers (Questions 33-40)"
+  - Each question (33-40) has a BLANK LINE next to the question number
+  - Students write their answer as a WORD, PHRASE, or NUMBER on the line
+  - NO BUBBLES for these questions
 
-Return a JSON object with this EXACT structure:
+DETECTION INSTRUCTIONS:
+
+**For Questions 1-32 (Multiple Choice):**
+1. Look at the 8 bubble circles (A-H) next to each question number
+2. Identify which bubble is filled/darkened (should be filled with pencil/pen)
+3. Return ONLY the letter (A-H) of the filled bubble
+4. If NO bubble is filled → return "BLANK"
+5. If MULTIPLE bubbles are filled → return "MULTIPLE"
+6. Set answerType to "mcq"
+
+**For Questions 33-40 (Written Answers):**
+1. These are BELOW the MCQ section in the right column
+2. Look for the horizontal line next to question numbers 33, 34, 35, 36, 37, 38, 39, 40
+3. Extract the handwritten or printed text on that line
+4. Return the exact word/phrase/number written (clean and trimmed)
+5. If nothing is written → return "BLANK"
+6. Set answerType to "written"
+7. IGNORE any bubbles near these questions - they should not exist in the template
+
+VISUAL DETECTION TIPS:
+- Questions 1-20: Look in LEFT side of the page
+- Questions 21-32: Look in RIGHT side TOP section (still has bubbles)
+- Questions 33-40: Look in RIGHT side BOTTOM section (has blank lines, NO bubbles)
+- Filled bubbles appear darkened/shaded compared to empty circles
+- Written answers appear as handwritten or printed text on horizontal lines
+
+CONFIDENCE SCORING:
+- 0.95-1.0: Very clear bubble fill or text
+- 0.80-0.94: Clearly visible but slight ambiguity
+- 0.60-0.79: Somewhat visible but needs attention
+- 0.40-0.59: Difficult to read, low confidence
+- 0.0-0.39: Very unclear or ambiguous
+
+Return a JSON object with this EXACT structure (no extra text, just valid JSON):
 {
   "answers": [
     {"questionNumber": 1, "selectedAnswer": "A", "confidence": 0.95, "answerType": "mcq"},
     {"questionNumber": 2, "selectedAnswer": "B", "confidence": 0.90, "answerType": "mcq"},
-    ...questions 1-36 are "mcq" type...
-    {"questionNumber": 37, "selectedAnswer": "photosynthesis", "confidence": 0.85, "answerType": "written"},
-    {"questionNumber": 38, "selectedAnswer": "enzyme", "confidence": 0.90, "answerType": "written"},
-    {"questionNumber": 39, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
-    {"questionNumber": 40, "selectedAnswer": "mitochondria", "confidence": 0.88, "answerType": "written"}
+    ...
+    {"questionNumber": 20, "selectedAnswer": "D", "confidence": 0.88, "answerType": "mcq"},
+    {"questionNumber": 21, "selectedAnswer": "C", "confidence": 0.92, "answerType": "mcq"},
+    ...
+    {"questionNumber": 32, "selectedAnswer": "F", "confidence": 0.89, "answerType": "mcq"},
+    {"questionNumber": 33, "selectedAnswer": "photosynthesis", "confidence": 0.85, "answerType": "written"},
+    {"questionNumber": 34, "selectedAnswer": "enzyme", "confidence": 0.90, "answerType": "written"},
+    {"questionNumber": 35, "selectedAnswer": "mitochondria", "confidence": 0.87, "answerType": "written"},
+    {"questionNumber": 36, "selectedAnswer": "glucose", "confidence": 0.92, "answerType": "written"},
+    {"questionNumber": 37, "selectedAnswer": "cell membrane", "confidence": 0.88, "answerType": "written"},
+    {"questionNumber": 38, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
+    {"questionNumber": 39, "selectedAnswer": "nucleus", "confidence": 0.91, "answerType": "written"},
+    {"questionNumber": 40, "selectedAnswer": "chloroplast", "confidence": 0.89, "answerType": "written"}
   ],
-  "overallConfidence": 0.92,
+  "overallConfidence": 0.89,
   "metadata": {
     "totalQuestions": 40,
-    "mcqQuestions": 36,
-    "writtenQuestions": 4,
+    "mcqQuestions": 32,
+    "writtenQuestions": 8,
     "answeredQuestions": 38,
     "blankQuestions": 2,
     "ambiguousQuestions": 0,
-    "notes": "Any relevant observations"
+    "detectionNotes": "Any relevant observations about the answer sheet quality, alignment, or issues"
   }
 }
 
-CRITICAL RULES:
-- Return ALL 40 questions even if blank
-- Confidence should be 0.0-1.0
-- Q1-36: Look for filled/darkened circles next to letters A-H in MIDDLE column
-- Q37-40: Extract handwritten/printed text from RIGHT column (word/phrase/number space)
-- Be conservative: if uncertain, mark as "BLANK" with low confidence
-- For Q37-40, ignore the bubbles completely - only read the written answer space`;
+CRITICAL REQUIREMENTS:
+✓ Return ALL 40 questions in order (1-40)
+✓ Questions 1-32: answerType MUST be "mcq"
+✓ Questions 33-40: answerType MUST be "written"
+✓ Confidence must be between 0.0 and 1.0
+✓ For written answers, return the actual text (not "A", "B", etc.)
+✓ For MCQ, return only single letter A-H
+✓ Use "BLANK" for unanswered questions
+✓ Use "MULTIPLE" only for Q1-32 if multiple bubbles filled
+✓ Clean and trim all text responses
+✓ No markdown formatting in the JSON output`;
 
     // Call Gemini Vision API
     const result = await model.generateContent([

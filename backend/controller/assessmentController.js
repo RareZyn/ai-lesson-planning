@@ -153,7 +153,10 @@ const createStandaloneAssessment = async (req, res) => {
       questionCount: activityData.numberOfQuestions,
       duration:
         activityData.timeAllocation || activityData.duration || "60 minutes",
-      difficulty: activityData.difficultyLevel || "Intermediate",
+      difficulty: activityData.difficultyLevel
+        ? activityData.difficultyLevel.charAt(0).toUpperCase() +
+          activityData.difficultyLevel.slice(1).toLowerCase()
+        : "Intermediate",
       skills: activityData.skills || [],
 
       // Add SPM exam configuration if applicable
