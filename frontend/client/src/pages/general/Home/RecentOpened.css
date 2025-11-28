@@ -193,20 +193,158 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .recent-opened-container {
+    margin-top: 0.75rem;
+  }
+
+  .recent-header {
+    margin-bottom: 1rem;
+  }
+
+  .recent-opened-title {
+    font-size: 1.3rem;
+  }
+
+  .view-all-btn {
+    font-size: 0.85rem;
+  }
+
+  /* Horizontal scroll on mobile */
   .recent-opened-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
-  
+
+  /* Hide scrollbar for cleaner look */
+  .recent-opened-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .recent-opened-grid::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 2px;
+  }
+
+  .recent-opened-grid::-webkit-scrollbar-thumb {
+    background: #d0d0d0;
+    border-radius: 2px;
+  }
+
+  .recent-opened-grid::-webkit-scrollbar-thumb:hover {
+    background: #b0b0b0;
+  }
+
   .recent-card {
-    height: 160px;
+    flex: 0 0 160px; /* Fixed width for horizontal scroll */
+    min-width: 160px;
+    max-width: 160px;
+    height: 140px;
+    scroll-snap-align: start;
   }
-  
+
   .card-gradient-header {
-    height: 80px;
+    height: 70px;
   }
-  
+
   .card-title-overlay {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    padding: 0 0.75rem;
+  }
+
+  .card-content {
+    padding: 0.75rem;
+  }
+
+  .card-grade {
+    font-size: 0.75rem;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .card-meta {
+    font-size: 0.7rem;
+  }
+
+  .add-lesson-card {
+    flex: 0 0 160px;
+    min-width: 160px;
+    max-width: 160px;
+    height: 140px;
+  }
+
+  .add-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .add-icon-wrapper svg {
+    font-size: 1.5rem;
+  }
+
+  .recent-card-skeleton {
+    flex: 0 0 160px;
+    min-width: 160px;
+    max-width: 160px;
+    height: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .recent-opened-title {
+    font-size: 1.2rem;
+  }
+
+  .recent-card {
+    flex: 0 0 145px;
+    min-width: 145px;
+    max-width: 145px;
+    height: 130px;
+  }
+
+  .card-gradient-header {
+    height: 65px;
+  }
+
+  .card-title-overlay {
+    font-size: 0.8rem;
+    padding: 0 0.5rem;
+  }
+
+  .card-content {
+    padding: 0.6rem;
+  }
+
+  .card-grade {
+    font-size: 0.7rem;
+  }
+
+  .card-meta {
+    font-size: 0.65rem;
+  }
+
+  .add-lesson-card {
+    flex: 0 0 145px;
+    min-width: 145px;
+    max-width: 145px;
+    height: 130px;
+    gap: 0.5rem;
+  }
+
+  .add-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .recent-card-skeleton {
+    flex: 0 0 145px;
+    min-width: 145px;
+    max-width: 145px;
+    height: 130px;
   }
 }

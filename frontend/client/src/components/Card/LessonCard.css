@@ -379,37 +379,85 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .lesson-card {
+    border-radius: 10px;
+  }
+
+  .lesson-card .ant-card-body {
+    padding: 12px;
+  }
+
   .lesson-preview {
-    padding: 16px;
+    padding: 12px;
   }
 
   .lesson-preview h3 {
-    font-size: 16px;
+    font-size: 15px;
+    -webkit-line-clamp: 2;
+    margin-bottom: 6px;
   }
 
   .lesson-preview p {
-    font-size: 13px;
+    font-size: 12px;
+    -webkit-line-clamp: 2;
   }
 
   .card-cover {
-    height: 140px;
+    height: 120px;
   }
 
-  .lesson-stats {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .engagement-stats {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-    align-self: flex-start;
+  .subject-banner {
+    top: 8px;
+    right: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
   }
 
   .tags-section {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    gap: 3px;
+  }
+
+  .level-tag,
+  .topic-tag,
+  .more-tags {
+    font-size: 10px;
+    padding: 0 6px;
+    line-height: 18px;
+  }
+
+  .detail-item {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .detail-item .anticon {
+    font-size: 11px;
+  }
+
+  .engagement-stats {
+    gap: 10px;
+  }
+
+  .engagement-stats span {
+    font-size: 11px;
+    gap: 3px;
+  }
+
+  .action-btn {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .lesson-stats {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px;
+  }
+
+  .stat-item {
+    font-size: 13px;
+    gap: 6px;
   }
 
   .info-label {
@@ -459,36 +507,85 @@
 }
 
 @media (max-width: 480px) {
+  .lesson-card {
+    border-radius: 8px;
+  }
+
   .lesson-card .ant-card-body {
-    padding: 12px;
+    padding: 10px;
   }
 
   .card-cover {
-    height: 120px;
+    height: 100px;
   }
 
   .lesson-preview {
-    padding: 12px;
+    padding: 10px;
   }
 
   .lesson-preview h3 {
-    font-size: 14px;
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+    margin-bottom: 4px;
   }
 
   .lesson-preview p {
-    font-size: 12px;
+    font-size: 11px;
+    -webkit-line-clamp: 2;
   }
 
   .subject-banner {
-    top: 8px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
     padding: 2px 8px;
     font-size: 10px;
   }
 
+  .tags-section {
+    margin-bottom: 8px;
+    gap: 2px;
+  }
+
+  .level-tag,
+  .topic-tag,
+  .more-tags {
+    font-size: 9px;
+    padding: 0 5px;
+    line-height: 16px;
+  }
+
+  .detail-item {
+    font-size: 10px;
+    gap: 3px;
+  }
+
+  .detail-item .anticon {
+    font-size: 10px;
+  }
+
+  .engagement-stats {
+    gap: 8px;
+  }
+
+  .engagement-stats span {
+    font-size: 10px;
+    gap: 2px;
+  }
+
   .action-btn {
-    font-size: 11px;
-    padding: 2px 6px;
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .lesson-stats {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .stat-item {
+    font-size: 12px;
+    gap: 5px;
   }
 
   .info-row {
@@ -562,10 +659,5 @@
   .sow-details p {
     font-size: 14px;
     margin-bottom: 10px;
-  }
-
-  .lesson-stats {
-    padding: 16px;
-    gap: 16px;
   }
 }

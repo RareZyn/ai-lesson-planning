@@ -1182,6 +1182,132 @@ const AssessmentPage = () => {
           </div>
 
           <Spin spinning={loading}>
+            {/* Mobile Card View */}
+            <div className="mobile-assessment-cards">
+              {assessments.map((record) => {
+                const hasStudentContentFlag = hasStudentContent(record);
+                const hasTeacherContentFlag = hasTeacherContent(record);
+                const isGenerating = generatingAssessment === record._id;
+                const hasActivityConfig = record.parameters?.activityConfiguration;
+                const hasAssessments = record.assessmentStatus === "generated";
+
+                return (
+                  <div key={record._id} className="mobile-assessment-card">
+                    <div className="mobile-card-header">
+                      <div className="mobile-card-title">{record.title}</div>
+                      <div className="mobile-card-meta">
+                        {record.classId && (
+                          <>
+                            <Tag color="blue">
+                              {typeof record.classId === "object"
+                                ? record.classId.className
+                                : "Unknown Class"}
+                            </Tag>
+                            <Tag color="green">
+                              {typeof record.classId === "object"
+                                ? record.classId.grade
+                                : record.parameters?.grade || "Unknown Grade"}
+                            </Tag>
+                          </>
+                        )}
+                        <Tag
+                          color={getActivityTypeColor(record.activityType)}
+                          data-activity={record.activityType}
+                        >
+                          {getActivityTypeDisplay(record.activityType)}
+                        </Tag>
+                      </div>
+                      <div className="mobile-card-status">
+                        <Tag
+                          color={
+                            record.assessmentStatus === "generated"
+                              ? "success"
+                              : "warning"
+                          }
+                        >
+                          {record.assessmentStatus === "generated"
+                            ? "Generated"
+                            : "Not Generated"}
+                        </Tag>
+                        {record.assessments?.length > 0 && (
+                          <span style={{ fontSize: "12px", color: "#999" }}>
+                            {record.assessments.length} assessment(s)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mobile-card-actions">
+                      {!hasAssessments ? (
+                        <Button
+                          type="primary"
+                          icon={<ThunderboltOutlined />}
+                          loading={isGenerating}
+                          onClick={() => handleGenerateAssessment(record)}
+                          disabled={!hasActivityConfig || isGenerating}
+                          block
+                        >
+                          {isGenerating ? "Generating..." : "Generate"}
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            type="default"
+                            icon={<RedoOutlined />}
+                            loading={isGenerating}
+                            onClick={() => handleRegenerateAssessment(record)}
+                            disabled={!hasActivityConfig || isGenerating}
+                            style={{
+                              borderColor: "#fa8c16",
+                              color: "#fa8c16",
+                              flex: "1 1 100%",
+                            }}
+                          >
+                            {isGenerating ? "Regenerating..." : "Regenerate"}
+                          </Button>
+                          {hasStudentContentFlag && (
+                            <Button
+                              type="text"
+                              icon={<EyeOutlined />}
+                              onClick={() => handleViewActivity(record)}
+                            >
+                              View{" "}
+                              {record.activityType === "spm-exam"
+                                ? "Exam"
+                                : "Activity"}
+                            </Button>
+                          )}
+                          {hasTeacherContentFlag && (
+                            <Button
+                              type="text"
+                              icon={<FileExclamationOutlined />}
+                              onClick={() => handleViewRubric(record)}
+                            >
+                              View{" "}
+                              {record.activityType === "spm-exam"
+                                ? "Answer Key"
+                                : "Rubric"}
+                            </Button>
+                          )}
+                          {record.assessments?.length > 0 && (
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleDeleteAssessment(record)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
             <Table
               columns={lessonBasedColumns}
               dataSource={assessments}
@@ -1257,6 +1383,118 @@ const AssessmentPage = () => {
           </div>
 
           <Spin spinning={loading}>
+            {/* Mobile Card View for Standalone */}
+            <div className="mobile-assessment-cards">
+              {assessments.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <BulbOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                  <h3 style={{ color: "#666", marginTop: 16 }}>
+                    No Standalone Assessments
+                  </h3>
+                  <p style={{ color: "#999" }}>
+                    Create your first standalone assessment to get started
+                  </p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateStandaloneAssessment}
+                    style={{ marginTop: 16 }}
+                  >
+                    Create Assessment
+                  </Button>
+                </div>
+              ) : (
+                assessments.map((record) => (
+                  <div key={record._id} className="mobile-assessment-card">
+                    <div className="mobile-card-header">
+                      <div className="mobile-card-title">{record.title}</div>
+                      {record.description && (
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#666",
+                            marginBottom: "8px",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {record.description}
+                        </div>
+                      )}
+                      <div className="mobile-card-meta">
+                        <Tag
+                          color={getActivityTypeColor(record.activityType)}
+                          data-activity={record.activityType}
+                        >
+                          {getActivityTypeDisplay(record.activityType)}
+                        </Tag>
+                        <Tag color="green">{record.grade}</Tag>
+                        <Tag color="purple">{record.subject}</Tag>
+                        <Tag color="orange">Standalone</Tag>
+                      </div>
+                      <div className="mobile-card-status">
+                        {record.hasActivity && (
+                          <Tag color="blue">
+                            {record.activityType === "spm-exam"
+                              ? "Exam"
+                              : "Activity"}
+                          </Tag>
+                        )}
+                        {record.hasRubric && (
+                          <Tag color="green">
+                            {record.activityType === "spm-exam"
+                              ? "Answer Key"
+                              : "Rubric"}
+                          </Tag>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mobile-card-actions">
+                      <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => navigate(`/app/assessment/${record._id}`)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() =>
+                          message.info("Edit functionality coming soon")
+                        }
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          Modal.confirm({
+                            title: "Delete Assessment",
+                            content: `Are you sure you want to delete "${record.title}"?`,
+                            onOk: async () => {
+                              try {
+                                await assessmentAPI.deleteAssessment(record._id);
+                                message.success("Assessment deleted successfully");
+                                loadStandaloneAssessments();
+                              } catch (error) {
+                                message.error("Failed to delete assessment");
+                              }
+                            },
+                          });
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
             <Table
               columns={standaloneColumns}
               dataSource={assessments}

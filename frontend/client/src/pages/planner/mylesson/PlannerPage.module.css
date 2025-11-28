@@ -14,6 +14,27 @@
   margin-bottom: 1.5rem;
 }
 
+/* Mobile header fixes */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tabsContainer {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .createLessonButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* --- Modern Tab Design --- */
 .tabsContainer {
   display: flex;
@@ -290,6 +311,34 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 2rem;
+}
+
+/* Mobile horizontal scroll for lesson cards */
+@media (max-width: 768px) {
+  .lessonsGrid {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lessonsGrid > * {
+    flex: 0 0 240px;
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .lessonsGrid {
+    gap: 0.75rem;
+  }
+
+  .lessonsGrid > * {
+    flex: 0 0 200px;
+  }
 }
 
 

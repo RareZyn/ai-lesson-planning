@@ -128,7 +128,14 @@
 
 .assessment-table .ant-table {
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.assessment-table .ant-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .assessment-table .ant-table-thead > tr > th {
@@ -337,6 +344,97 @@
   font-weight: 500;
 }
 
+/* Mobile Card View */
+.mobile-assessment-cards {
+  display: none;
+}
+
+.mobile-assessment-card {
+  background: white;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.mobile-assessment-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-card-header {
+  margin-bottom: 12px;
+}
+
+.mobile-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.mobile-card-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.mobile-card-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+  margin-top: 6px;
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.mobile-card-actions .ant-btn {
+  flex: 1;
+  min-width: fit-content;
+  height: 36px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.mobile-card-actions .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+}
+
+.mobile-card-actions .ant-btn-text {
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+}
+
+.mobile-card-actions .ant-btn-text:hover {
+  background: #e8e8e8;
+  color: #1890ff;
+}
+
+.mobile-card-actions .ant-btn-dangerous {
+  background: #fff1f0;
+  color: #ff4d4f;
+  border: none;
+}
+
+.mobile-card-actions .ant-btn-dangerous:hover {
+  background: #ffccc7;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
@@ -378,6 +476,7 @@
 @media (max-width: 768px) {
   .assessment-page {
     padding: 0;
+    overflow-x: hidden;
   }
 
   .header-content {
@@ -387,7 +486,15 @@
   }
 
   .header-info {
-    text-align: center;
+    text-align: left;
+  }
+
+  .header-info h2 {
+    font-size: 1.5rem;
+  }
+
+  .header-info p {
+    font-size: 0.9rem;
   }
 
   .create-btn {
@@ -395,34 +502,47 @@
   }
 
   .tab-content {
-    padding: 16px;
+    padding: 12px;
   }
 
   .filters-section {
-    padding: 16px;
+    padding: 12px;
+    margin-bottom: 16px;
   }
 
   .assessment-tabs .ant-tabs-nav {
-    padding: 0 16px;
+    padding: 0 12px;
   }
 
-  .assessment-table .ant-table-tbody > tr > td {
-    padding: 12px 8px;
+  .assessment-tabs .ant-tabs-tab {
+    padding: 12px 14px;
+    font-size: 14px;
   }
 
-  /* Stack table content on mobile */
-  .lesson-title,
-  .assessment-title {
-    font-size: 13px;
+  /* Hide table completely on mobile */
+  .assessment-table .ant-table-wrapper {
+    display: none;
   }
 
-  .assessment-description {
-    font-size: 11px;
+  /* Show mobile card view */
+  .mobile-assessment-cards {
+    display: block !important;
   }
 
-  .lesson-meta,
-  .assessment-meta {
-    flex-wrap: wrap;
+  /* Keep pagination visible */
+  .assessment-table .ant-pagination {
+    display: flex !important;
+    justify-content: center;
+    margin: 16px 0;
+  }
+
+  .assessment-table .ant-pagination-item,
+  .assessment-table .ant-pagination-prev,
+  .assessment-table .ant-pagination-next {
+    min-width: 28px;
+    height: 28px;
+    line-height: 26px;
+    font-size: 12px;
   }
 
   /* Creative options modal mobile */
@@ -445,13 +565,21 @@
 }
 
 @media (max-width: 480px) {
+  .page-header {
+    padding: 16px 0;
+  }
+
   .header-info h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+  }
+
+  .header-info p {
+    font-size: 0.85rem;
   }
 
   .assessment-tabs .ant-tabs-tab {
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 10px 12px;
+    font-size: 13px;
   }
 
   .assessment-tabs .ant-tabs-tab .anticon {
@@ -459,28 +587,53 @@
   }
 
   .tab-content {
-    padding: 12px;
+    padding: 10px;
   }
 
   .filters-section {
-    padding: 12px;
+    padding: 10px;
+    margin-bottom: 12px;
   }
 
-  .assessment-table .ant-table-tbody > tr > td {
-    padding: 8px 4px;
+  .filters-row {
+    gap: 10px;
+  }
+
+  /* Mobile cards smaller on tiny screens */
+  .mobile-assessment-card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .mobile-card-title {
+    font-size: 14px;
+  }
+
+  .mobile-card-meta .ant-tag {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+
+  .mobile-card-actions .ant-btn {
+    height: 32px;
+    font-size: 12px;
   }
 
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .stats-card .ant-card-body {
-    padding: 16px 12px;
+    padding: 14px 10px;
   }
 
   .stats-number {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+  }
+
+  .stats-label {
+    font-size: 12px;
   }
 
   /* Creative options mobile layout */

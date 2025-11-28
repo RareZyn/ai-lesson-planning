@@ -157,25 +157,100 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .recent-classes-container {
+    margin-top: 0.75rem;
+  }
+
+  .recent-header {
+    margin-bottom: 1rem;
+  }
+
+  .recent-title {
+    font-size: 1.3rem;
+  }
+
+  .view-all-btn {
+    font-size: 0.85rem;
+  }
+
+  /* Horizontal scroll on mobile */
   .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Scrollbar styling */
+  .recent-classes-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 2px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-thumb {
+    background: #d0d0d0;
+    border-radius: 2px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-thumb:hover {
+    background: #b0b0b0;
+  }
+
+  .class-card-skeleton {
+    flex: 0 0 100px;
+    min-width: 100px;
+    max-width: 100px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .recent-title {
+    font-size: 1.2rem;
   }
 
   .class-card {
-    height: 160px;
+    flex: 0 0 145px;
+    min-width: 145px;
+    max-width: 145px;
+    height: 130px;
   }
 
   .card-image-header {
-    height: 80px;
+    height: 65px;
   }
 
   .subject-badge {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.8rem;
+    font-size: 0.6rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .card-body {
+    padding: 0.6rem;
   }
 
   .class-name {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    margin: 0 0 0.4rem 0;
+  }
+
+  .class-year {
+    font-size: 0.7rem;
+  }
+
+  .class-card-skeleton {
+    flex: 0 0 145px;
+    min-width: 145px;
+    max-width: 145px;
+    height: 130px;
   }
 }

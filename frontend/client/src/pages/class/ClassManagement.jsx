@@ -57,6 +57,9 @@ const ClassManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <button className="create-class-button" onClick={() => setIsModalOpen(true)}>
+          <AddIcon /> Create New Class
+        </button>
       </div>
 
       <div className="classes-list">
@@ -67,15 +70,6 @@ const ClassManagement = () => {
           </div>
         ) : (
           <div className="class-cards-container">
-            {/* --- The "Add Class" Card --- */}
-            {/* This card is always displayed as the first item */}
-            <div className="add-class-card" onClick={() => setIsModalOpen(true)}>
-              <div className="add-icon-wrapper">
-                <AddIcon />
-              </div>
-              <span>Create New Class</span>
-            </div>
-            
             {/* --- Render the fetched class cards --- */}
             {filteredClasses.map((cls) => (
               <ClassCard key={cls._id} classInfo={cls} />

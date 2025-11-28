@@ -196,17 +196,6 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
-      {/* Notifications Dropdown */}
-      <IconButton
-        aria-label="notifications"
-        onClick={handleNotifOpen}
-        className="notification-icon"
-        disabled={isLoggingOut}
-      >
-        <Badge badgeContent={unreadCount} color="error">
-          <NotificationsIcon />
-        </Badge>
-      </IconButton>
 
       <Menu
         anchorEl={notifAnchorEl}

@@ -23,6 +23,7 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const navigate = useNavigate();
     const searchRef = useRef(null);
     const inputRef = useRef(null);
@@ -51,12 +52,16 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowSuggestions(false);
+                // Only collapse on mobile if search is empty
+                if (window.innerWidth <= 768 && !searchTerm) {
+                    setIsSearchExpanded(false);
+                }
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [searchTerm]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -109,9 +114,34 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
         inputRef.current?.focus();
     };
 
+    const toggleSearchExpand = () => {
+        setIsSearchExpanded(!isSearchExpanded);
+        // Focus input when expanding
+        if (!isSearchExpanded) {
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 100);
+        } else {
+            // Clear search when collapsing
+            setSearchTerm("");
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+    };
+
     return (
         <div className="search-container" ref={searchRef}>
-            <form className="modern-search-bar" onSubmit={handleSearch}>
+            {/* Toggle Button (visible only on mobile) */}
+            <button
+                type="button"
+                className="search-toggle-btn"
+                onClick={toggleSearchExpand}
+                aria-label={isSearchExpanded ? "Close search" : "Open search"}
+            >
+                {isSearchExpanded ? <CloseIcon /> : <SearchIcon />}
+            </button>
+
+            <form className={`modern-search-bar ${isSearchExpanded ? 'expanded' : ''}`} onSubmit={handleSearch}>
                 <div className="search-icon">
                     <SearchIcon />
                 </div>
