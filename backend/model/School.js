@@ -11,6 +11,12 @@ const SchoolSchema = new mongoose.Schema(
     address: String,
     contactEmail: String,
     phone: String,
+    schoolType: {
+      type: String,
+      enum: ["KSSR", "KSSM"],
+      required: true,
+      default: "KSSM"
+    },
     // Other school-specific details can go here
   },
   {

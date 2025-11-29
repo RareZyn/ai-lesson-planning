@@ -30,7 +30,7 @@ const ClassCard = ({ classInfo }) => {
     };
 
     const backgroundImage = getSubjectImage(classInfo.subject);
-    
+
     // Ensure grade is displayed, using year as a fallback detail
     const gradeDisplay = classInfo.grade ? `Grade: ${classInfo.grade}` : `Year: ${classInfo.year}`;
 
@@ -38,17 +38,25 @@ const ClassCard = ({ classInfo }) => {
     return (
         <div className={styles.card} onClick={handleCardClick}>
             <div
-                className={styles.cardImageHeader}
+                className={styles.cardHeader}
                 style={{ backgroundImage: `url(${backgroundImage})` }}
             >
                 <div className={styles.imageOverlay}></div>
                 <div className={styles.subjectBadge}>{classInfo.subject}</div>
             </div>
-            <div className={styles.cardBody}>
-                <h3 className={styles.className}>
+            <div className={styles.cardContent}>
+                {/* 1. TITLE */}
+                <h3 className={styles.cardTitle}>
                     {classInfo.className}
                 </h3>
-                <p className={styles.classMeta}>{gradeDisplay}</p>
+
+                {/* 2. CLASS/GRADE */}
+                <p className={styles.cardClass}>
+                    {gradeDisplay}
+                </p>
+
+                {/* 3. SUBJECT (Optional, since it's in the badge, but keeping for consistency if needed, or we can omit) */}
+                {/* <p className={styles.cardSubject}>{classInfo.subject}</p> */}
             </div>
         </div>
     );

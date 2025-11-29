@@ -60,9 +60,9 @@ const GeminiApiKeyInput = ({
     ),
     rules: required
       ? [
-          { required: true, message: "Please input your Gemini API key!" },
-          { min: 20, message: "API key seems too short" },
-        ]
+        { required: true, message: "Please input your Gemini API key!" },
+        { min: 20, message: "API key seems too short" },
+      ]
       : [{ min: 20, message: "API key seems too short" }],
     ...formItemProps,
   };
