@@ -247,6 +247,23 @@ if (mongoose.models.LessonPlan) {
         },
       },
 
+      approvalStatus: {
+        type: String,
+        enum: ["draft", "pending", "approved", "rejected"],
+        default: "draft"
+      },
+
+      approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null
+      },
+      approvedAt: {
+        type: Date
+      },
+      remarks: {
+        type: String // for rejection reason or notes
+      },
       // --- Generated Lesson Plan Content ---
       plan: {
         learningObjective: {

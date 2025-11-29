@@ -11,39 +11,23 @@ const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
     navigate(`/app/lessons/${lesson._id}`);
   };
 
-  // Formats a date into a human-readable relative time string
+  // Helper to format date relative to now (used for 'isRecent' view)
   const formatRelativeDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
 
     if (diffInSeconds < 60) return "Just now";
-
     const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
-    }
-
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-    }
-
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-    }
-
+    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
     const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) {
-      return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
-    }
-
+    if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
     const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) {
-      return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
-    }
-
+    if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
     const diffInYears = Math.floor(diffInDays / 365);
     return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
   };
@@ -75,22 +59,17 @@ const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
     lesson.parameters?.formLevel ||
     lesson.parameters?.grade ||
     "";
+  const lessonDate = lesson.lessonDate; 
 
-  // Format the class display with grade and className
-  const classDisplay =
-    grade && className !== "Unknown Class"
-      ? `${grade} ${className}`
-      : className;
+  const classDisplay = grade && className !== "Unknown Class" ? className : className;
 
-  // Use the SOW topic as a fallback for the title if specificTopic is empty
   const title =
     lesson.parameters?.specificTopic ||
     lesson.parameters?.sow?.topic ||
     lesson.title ||
     "Untitled Lesson";
 
-  // Get consistent gradient for this lesson using the utility function
-  const gradient = getGradientForId(lesson._id);
+  const imageUrl = getSubjectImage(subject);
 
   return (
     <div
@@ -127,14 +106,32 @@ const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
           </div>
         )}
       </div>
+      
       <div className={styles.cardContent}>
+        
+        {/* 1. TITLE */}
         <h3 className={styles.cardTitle} title={title}>
           {title}
         </h3>
-        <p className={styles.cardGrade}>{classDisplay}</p>
-        {isRecent && lesson.updatedAt && (
+        
+        {/* 2. CLASS */}
+        <p className={styles.cardClass}>
+          {classDisplay} {grade ? `(Grade ${grade})` : ''}
+        </p>
+
+        {/* 3. SUBJECT */}
+        <p className={styles.cardSubject}>
+          {subject}
+        </p>
+        
+        {/* 4. DATE / META */}
+        {isRecent && lesson.updatedAt ? (
           <p className={styles.cardMeta}>
-            Opened {formatRelativeDate(lesson.updatedAt)}
+            Last Updated: {formatRelativeDate(lesson.updatedAt)}
+          </p>
+        ) : (
+          <p className={styles.cardMeta}>
+            Scheduled: {formatDate(lessonDate)}
           </p>
         )}
       </div>

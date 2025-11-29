@@ -1,13 +1,31 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ClassCard.module.css';
-import { School, Subject, CalendarToday } from '@mui/icons-material';
+// Icons are no longer used in the image-based card style
+
+// Map subject to appropriate background images (Keep this utility here)
+const getSubjectImage = (subject) => {
+    const subjectImages = {
+        English: "/Class/english.jpg",
+        Mathematics: "/Class/mathematics.jpg",
+        Science: "/Class/science.jpg",
+        History: "/Class/history.jpg",
+        Geography: "/Class/geography.jpg",
+        Physics: "/Class/physics.jpg",
+        Chemistry: "/Class/chemistry.jpg",
+        Biology: "/Class/biology.jpg",
+        // Default fallback
+        default: "/Class/english.jpg",
+    };
+
+    return subjectImages[subject] || subjectImages["default"];
+};
+
 
 const ClassCard = ({ classInfo }) => {
     const navigate = useNavigate();
 
     const handleCardClick = () => {
-        // Navigate to the new page, passing the classId in the URL
         navigate(`/app/classes/${classInfo._id}`);
     };
 
@@ -48,8 +66,10 @@ const ClassCard = ({ classInfo }) => {
                 <h3 className={styles.className}>{displayName}</h3>
             </div>
             <div className={styles.cardBody}>
-                <p><Subject fontSize="small" /> <span>{classInfo.subject}</span></p>
-                <p><CalendarToday fontSize="small" /> <span>Year: {classInfo.year}</span></p>
+                <h3 className={styles.className}>
+                    {classInfo.className}
+                </h3>
+                <p className={styles.classMeta}>{gradeDisplay}</p>
             </div>
         </div>
     );

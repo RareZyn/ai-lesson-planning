@@ -1,29 +1,40 @@
 // frontend/client/src/routes.js - UPDATED WITH NEW ROUTES
 import { createBrowserRouter } from "react-router-dom";
-import AssessmentPage from "./pages/assesstment/AssessmentPage";
-import ActivityViewerPage from "./pages/assesstment/ActivityViewerPage";
-import RubricViewerPage from "./pages/assesstment/RubricViewerPage";
-import MainLayout from "./layout/MainLayout";
-import HomePage from "./pages/general/HomePage";
+import React from "react";
+// important to render pages
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import UnauthorizedPage from "./pages/general/UnauthorizedPage";
-import FileDownloadPage from "./pages/downloads/FileDownloadPage";
-import ProtectedRoute from "./components/general/ProtectedRoute";
+import HomePage from "./pages/general/HomePage";
 import MyLessons from "./pages/planner/mylesson/PlannerPage";
-import MaterialManagement from "./pages/material/MaterialManagement";
-import ClassManagement from "./pages/class/ClassManagement";
-import MultiStepPlanner from "./pages/planner/MultiStepPlanner/MultiStepPlanner";
-import Community from "./pages/community/Community";
-import DisplayLessonPage from "./pages/planner/displaylesson/DisplayLessonPage";
-import ClassLessonsPage from "./pages/class/ClassLessonsPage";
-import SubmissionUploadPage from "./pages/answerChecker/SubmissionUploadPage";
-import SubmissionListPage from "./pages/answerChecker/SubmissionListPage";
+import MainLayout from "./layout/MainLayout";
 import AssessmentSubmissionsPage from "./pages/answerChecker/AssessmentSubmissionsPage";
-import SubmissionReviewPage from "./pages/answerChecker/SubmissionReviewPage";
 import AnalyticsDashboard from "./pages/analytics/AnalyticsDashboard";
 import StudentProgressView from "./pages/analytics/StudentProgressView";
 import ClassAnalyticsView from "./pages/analytics/ClassAnalyticsView";
+import DisplaySyllabus from "./pages/admin/DisplaySyllabus";
+
+// not so important
+const AssessmentPage = React.lazy(() => import("./pages/assesstment/AssessmentPage"));
+const ActivityViewerPage = React.lazy(() => import("./pages/assesstment/ActivityViewerPage"));
+const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricViewerPage"));
+
+const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
+const FileDownloadPage = React.lazy(() => import("./pages/downloads/FileDownloadPage"));
+const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
+// const MyLessons = React.lazy(() => import("./pages/planner/mylesson/PlannerPage"));
+const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
+const ClassManagement = React.lazy(() => import("./pages/class/ClassManagement"));
+const MultiStepPlanner = React.lazy(() => import("./pages/planner/MultiStepPlanner/MultiStepPlanner"));
+const Community = React.lazy(() => import("./pages/community/Community"));
+const DisplayLessonPage = React.lazy(() => import("./pages/planner/displaylesson/DisplayLessonPage"));
+const ClassLessonsPage = React.lazy(() => import("./pages/class/ClassLessonsPage"));
+const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
+// const DisplaySyllabus = React.lazy(() => import("./pages/admin/DisplaySyllabus"));
+
+// NEW IMPORTS - Answer Checker Module
+const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
+const SubmissionListPage = React.lazy(() => import("./pages/answerChecker/SubmissionListPage"));
+const SubmissionReviewPage = React.lazy(() => import("./pages/answerChecker/SubmissionReviewPage"));
 
 const router = createBrowserRouter(
   [
@@ -60,11 +71,16 @@ const router = createBrowserRouter(
         { path: "downloads", element: <FileDownloadPage /> },
 
         { path: "community", element: <Community /> },
+        { path: "lessons/:id", element: <DisplayLessonPage /> },
+        { path: "classes/:classId", element: <ClassLessonsPage /> },
 
-
+        //admin
+        { path: "admin", element: <AdminLayout /> },
+        { path: "admin/syllabuses/:id", element: <DisplaySyllabus /> },
       ],
     },
     { path: "/", element: <LoginPage /> },
+    { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
     { path: "/unauthorized", element: <UnauthorizedPage /> },
   ],

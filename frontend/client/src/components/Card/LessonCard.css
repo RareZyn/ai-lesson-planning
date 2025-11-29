@@ -660,4 +660,9 @@
     font-size: 14px;
     margin-bottom: 10px;
   }
+
+  .lesson-stats {
+    padding: 16px;
+    gap: 16px;
+  }
 }

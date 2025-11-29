@@ -367,3 +367,35 @@
   width: 100%;
   text-align: center;
 }
+
+/* Add to MultiStepPlanner.module.css */
+
+.textareaWrapper {
+  position: relative;
+}
+
+.enhanceButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #f0e6ff;
+  color: #6a5acd;
+  border: 1px solid #d3bfff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.enhanceButton:hover {
+  background-color: #6a5acd;
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(106, 90, 205, 0.4);
+}

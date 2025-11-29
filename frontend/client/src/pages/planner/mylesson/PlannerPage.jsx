@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import styles from "./PlannerPage.module.css";
-import CalendarView from "./CalendarView";
-import LessonCard from "../displaylesson/LessonCard";
-import MaterialManagement from "../../material/MaterialManagement";
-import { getAllLessonPlans } from "../../../services/lessonService";
-import { sendLessonForApproval } from "../../../services/adminService";
-import { useNavigate } from "react-router-dom";
-import LessonStatusIcon from "../../../components/LessonStatusIcon.jsx";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import styles from './PlannerPage.module.css';
+import CalendarView from './CalendarView';
+import LessonCard from '../displaylesson/LessonCard';
+import MaterialManagement from '../../material/MaterialManagement';
+import {
+  getAllLessonPlans,
+} from '../../../services/lessonService';
+import { sendLessonForApproval } from '../../../services/adminService';
+import { useNavigate } from 'react-router-dom';
+import LessonStatusIcon from '../../../components/LessonStatusIcon.jsx';
 
-import { FaPlus, FaSearch, FaTh, FaBars } from "react-icons/fa";
-import dayjs from "dayjs";
+import { FaPlus, FaSearch, FaTh, FaBars } from 'react-icons/fa';
+import dayjs from 'dayjs';
 
 const CreateLessonCard = ({ showModal }) => (
   <div
@@ -22,7 +24,7 @@ const CreateLessonCard = ({ showModal }) => (
     }}
   >
     <div className={styles.createIconWrapper}>
-      <FaPlus style={{ fontSize: "24px" }} />
+      <FaPlus style={{ fontSize: '24px' }} />
     </div>
     <h3 className={styles.createCardTitle}>Create New Lesson</h3>
     <p className={styles.createCardText}>Click to schedule a date</p>
@@ -55,14 +57,14 @@ const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
 };
 
 const PlannerPage = () => {
-  const [activeTab, setActiveTab] = useState("lessons");
+  const [activeTab, setActiveTab] = useState('lessons');
   const [lessons, setLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const [viewMode, setViewMode] = useState("grid");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState(null);
   const [filteredLessons, setFilteredLessons] = useState([]);
 
@@ -83,31 +85,27 @@ const PlannerPage = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === "lessons") {
+    if (activeTab === 'lessons') {
       fetchLessons();
     }
   }, [activeTab, fetchLessons]);
 
   const uniqueSubjects = useMemo(() => {
-    const subjects = lessons.map((l) => l.classId?.subject).filter(Boolean);
+    const subjects = lessons.map(l => l.classId?.subject).filter(Boolean);
     return [...new Set(subjects)];
   }, [lessons]);
 
   useEffect(() => {
     let results = lessons;
     if (filterSubject) {
-      results = results.filter((l) => l.classId?.subject === filterSubject);
+      results = results.filter(l => l.classId?.subject === filterSubject);
     }
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
-      results = results.filter((l) => {
-        const title =
-          l.parameters?.specificTopic ||
-          l.parameters?.sow?.topic ||
-          l.title ||
-          "";
-        const subject = l.classId?.subject || "";
-        const className = l.classId?.className || "";
+      results = results.filter(l => {
+        const title = l.parameters?.specificTopic || l.parameters?.sow?.topic || l.title || '';
+        const subject = l.classId?.subject || '';
+        const className = l.classId?.className || '';
         return (
           title.toLowerCase().includes(lowerSearch) ||
           subject.toLowerCase().includes(lowerSearch) ||
@@ -124,8 +122,8 @@ const PlannerPage = () => {
 
   const handleCreateLesson = () => {
     if (selectedNewDate && selectedNewDate.isValid()) {
-      navigate("/app/planner", {
-        state: { selectedDate: selectedNewDate.toISOString() },
+      navigate('/app/planner', {
+        state: { selectedDate: selectedNewDate.toISOString() }
       });
       setIsModalVisible(false);
     } else {
@@ -133,18 +131,16 @@ const PlannerPage = () => {
     }
   };
 
-  // handleSendForApproval is now handled directly in renderListView
-  // to avoid duplicate approval submission handling
-  // const handleSendForApproval = async (lessonId) => {
-  //   if (!window.confirm("Send this lesson plan for approval?")) return;
-  //   try {
-  //     await sendLessonForApproval(lessonId);
-  //     alert("Lesson plan sent for approval successfully!");
-  //     fetchLessons();
-  //   } catch (error) {
-  //     alert(error.message);
-  //   }
-  // };
+  const handleSendForApproval = async (lessonId) => {
+    if (!window.confirm("Send this lesson plan for approval?")) return;
+    try {
+      await sendLessonForApproval(lessonId);
+      alert("Lesson plan sent for approval successfully!");
+      fetchLessons();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   const renderListView = () => {
     if (filteredLessons.length === 0 && (searchTerm || filterSubject)) {
@@ -182,6 +178,8 @@ const PlannerPage = () => {
       }
     };
 
+
+
     return (
       <div className={styles.lessonList}>
         {ListHeader()}
@@ -194,12 +192,8 @@ const PlannerPage = () => {
             <div className={styles.listTitle}>
               {lesson.parameters?.specificTopic || "Untitled Lesson"}
             </div>
-            <div className={styles.listDetail}>
-              {lesson.classId?.className || "N/A"}
-            </div>
-            <div className={styles.listDetail}>
-              {lesson.classId?.subject || "N/A"}
-            </div>
+            <div className={styles.listDetail}>{lesson.classId?.className || "N/A"}</div>
+            <div className={styles.listDetail}>{lesson.classId?.subject || "N/A"}</div>
             <div className={styles.listMeta}>
               {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
             </div>
@@ -212,9 +206,9 @@ const PlannerPage = () => {
                 <LessonStatusIcon
                   status="draft"
                   onClick={() => handleSendForApprovalClick(lesson._id)} // Pass the handler
-                  // Note: We pass null for the event because LessonStatusIcon's internal handler
-                  // already calls stopPropagation. If you needed the event object here for something,
-                  // you'd modify LessonStatusIcon to pass it up.
+                // Note: We pass null for the event because LessonStatusIcon's internal handler
+                // already calls stopPropagation. If you needed the event object here for something,
+                // you'd modify LessonStatusIcon to pass it up.
                 />
               ) : (
                 <LessonStatusIcon status={lesson.approvalStatus} />
@@ -226,13 +220,11 @@ const PlannerPage = () => {
     );
   };
 
+
   const renderAllLessonsContent = () => {
-    if (isLoading)
-      return (
-        <div className={styles.statusMessage}>Loading your lessons...</div>
-      );
+    if (isLoading) return <div className={styles.statusMessage}>Loading your lessons...</div>;
     if (error) return <div className={styles.statusMessage_error}>{error}</div>;
-    if (viewMode === "list") return renderListView();
+    if (viewMode === 'list') return renderListView();
 
     return (
       <div className={styles.lessonsGrid}>
@@ -244,10 +236,7 @@ const PlannerPage = () => {
         ) : (
           <div className={styles.statusMessage_empty}>
             <h3>No Lesson Plans Found</h3>
-            <p>
-              Start by scheduling your first lesson above or adjust your search
-              filters.
-            </p>
+            <p>Start by scheduling your first lesson above or adjust your search filters.</p>
           </div>
         )}
       </div>
@@ -277,6 +266,13 @@ const PlannerPage = () => {
           ))}
         </div>
 
+        {activeTab !== 'lessons' && (
+          <button onClick={showModal} className={styles.createLessonButton}>
+            <FaPlus style={{ marginRight: '8px' }} />
+            Create New Lesson
+          </button>
+        )}
+
         {activeTab !== "lessons" && (
           <button onClick={showModal} className={styles.createLessonButton}>
             <FaPlus style={{ marginRight: "8px" }} />
@@ -284,6 +280,51 @@ const PlannerPage = () => {
           </button>
         )}
       </header>
+
+      {activeTab === 'lessons' && (
+        <div className={styles.controlBarWrapper}>
+          <div className={styles.searchFilterGroup}>
+            <div className={styles.customSearchBar}>
+              <FaSearch className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search lessons, subjects, or classes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={styles.searchInput}
+              />
+            </div>
+
+            <select
+              value={filterSubject || ''}
+              onChange={(e) => setFilterSubject(e.target.value || null)}
+              className={`${styles.customSelect} ${styles.subjectFilter}`}
+            >
+              <option value="">Filter by Subject</option>
+              {uniqueSubjects.map(subject => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.viewToggle}>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={viewMode === 'grid' ? styles.active : ''}
+              title="Grid View"
+            >
+              <FaTh />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={viewMode === 'list' ? styles.active : ''}
+              title="List View"
+            >
+              <FaBars />
+            </button>
+          </div>
+        </div>
+      )}
 
       {activeTab === "lessons" && (
         <div className={styles.controlBarWrapper}>
@@ -333,10 +374,27 @@ const PlannerPage = () => {
       )}
 
       <main className={styles.tabContent}>
-        {activeTab === "lessons" && renderAllLessonsContent()}
+        {activeTab === "lessons" && renderAllLessonsContentContent()}
         {activeTab === "calendar" && <CalendarView />}
         {activeTab === "materials" && <MaterialManagement />}
       </main>
+
+      <CustomModal
+        title="Schedule New Lesson"
+        isVisible={isModalVisible}
+        onOk={handleCreateLesson}
+        onClose={handleCancel}
+      >
+        <p style={{ marginBottom: '15px' }}>
+          Choose the date for the lesson you wish to create:
+        </p>
+        <input
+          type="date"
+          value={selectedNewDate.format('YYYY-MM-DD')}
+          onChange={(e) => onDateChange(dayjs(e.target.value))}
+          className={styles.customDatePicker}
+        />
+      </CustomModal>
 
       <CustomModal
         title="Schedule New Lesson"

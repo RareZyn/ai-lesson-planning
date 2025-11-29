@@ -2,14 +2,14 @@
 const express = require("express");
 const { body } = require("express-validator");
 const {
-  register,
+  registerTeacherWithToken,
   login,
-  googleAuth,
+  googleAuthWithToken,
+  findOrCreateFirebaseUser,
   getMe,
   updateProfile,
   logout,
   changePassword,
-  findOrCreateFirebaseUser,
   getGeminiApiKey,
   updateGeminiApiKey,
 } = require("../controller/authController");
@@ -88,10 +88,34 @@ const updateApiKeyValidation = [
     .withMessage("Invalid API key format"),
 ];
 
+// Teacher registration with token (for email/password users)
+router.post(
+  "/register-teacher",
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('registrationToken').notEmpty().withMessage('Registration token is required'),
+  ],
+  registerTeacherWithToken
+);
+
 // Public routes (NO authentication required)
-router.post("/register", registerValidation, register);
+// router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
-router.post("/google", googleAuth);
+// router.post("/google", googleAuth);
+
+// New route for Google sign-in requiring a token for new teachers
+router.post(
+  "/google-register-teacher",
+  [
+    body('googleId').notEmpty().withMessage('Google ID is required'),
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    body('registrationToken').notEmpty().withMessage('Registration token is required'),
+  ],
+  googleAuthWithToken
+);
+
 router.post("/firebase-user", findOrCreateFirebaseUser);
 
 // Protected routes (authentication required)

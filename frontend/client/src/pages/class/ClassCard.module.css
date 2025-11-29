@@ -1,13 +1,14 @@
+/* --- Card Styles with Background Image (New Standard) --- */
 .card {
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
-  padding: 1.5rem;
-  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
 }
+
 .card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
@@ -59,15 +60,35 @@
   backdrop-filter: blur(10px);
 }
 
-.className {
-  font-size: 1.25rem;
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.2),
+    rgba(0, 0, 0, 0.4)
+  );
+}
+
+.subjectBadge {
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: white;
   margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.cardBody p {
+/* Card body section */
+.cardBody {
+  padding: 1rem; /* Adjusted for better spacing */
+  flex-grow: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -83,14 +104,24 @@
 .sectionHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  background: white;
 }
 
-.sectionHeader h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #343a40;
+.className {
+  margin: 0 0 0.5rem 0; /* Reduced margin */
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Class Year/Grade Info */
+.classMeta {
   margin: 0;
 }
 

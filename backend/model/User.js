@@ -1,4 +1,3 @@
-// models/User.js - Updated with geminiApiKey field
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -57,15 +56,18 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        // Password is required only if there's no googleId (regular email/password users)
-        return !this.googleId;
+        // Password is required only if there's no googleId or firebaseUid (regular email/password users)
+        return !this.googleId && !this.firebaseUid;
       },
       minlength: [6, "Password must be at least 6 characters"],
+      select: false, // Don't return password by default
     },
-    schoolName: {
-      type: String,
-      // required: [true, "School name is required"],
-      trim: true,
+    // REPLACED schoolName with schoolId
+    schoolId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School", // Reference to the School model
+      // required: [true, "School is required"], // Will be required for 'teacher' and 'school_admin' roles
+      // Make it conditionally required based on role later if needed
     },
     geminiApiKey: {
       type: String,
@@ -75,7 +77,15 @@ const userSchema = new mongoose.Schema(
     roles: {
       type: [String],
       default: ["teacher"],
-      enum: ["teacher", "admin", "student"],
+      enum: [
+        "teacher",
+        "math_head",
+        "english_head",
+        "science_head",
+        "principal",
+        "school_admin",
+        "super_admin",
+      ],
     },
     isEmailVerified: {
       type: Boolean,
@@ -103,13 +113,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // NEW: Bookmarks field for storing user's bookmarked lesson plans
     bookmarks: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "LessonPlan",
       },
     ],
+    // For password reset functionality (if you implement it later)
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
   },
   {
     timestamps: true,
@@ -125,7 +137,7 @@ const getEncryptionSecret = () => {
   return secret;
 };
 
-// Pre-save hook to encrypt Gemini API key
+// Pre-save hook to encrypt Gemini API key and hash password
 userSchema.pre("save", async function (next) {
   try {
     // Encrypt Gemini API key if it's modified and exists
@@ -134,7 +146,7 @@ userSchema.pre("save", async function (next) {
       this.geminiApiKey = encrypt(this.geminiApiKey, secret);
     }
 
-    // Hash password if modified (existing logic)
+    // Hash password if modified and password is provided
     if (this.isModified("password") && this.password) {
       const salt = await bcrypt.genSalt(12);
       this.password = await bcrypt.hash(this.password, salt);
@@ -152,6 +164,8 @@ userSchema.methods.getGeminiApiKey = function () {
 
   try {
     const secret = getEncryptionSecret();
+    // 'this' refers to the user document, which needs 'select: false' overridden
+    // to access geminiApiKey
     return decrypt(this.geminiApiKey, secret);
   } catch (error) {
     console.error("Failed to decrypt Gemini API key:", error);
@@ -159,10 +173,11 @@ userSchema.methods.getGeminiApiKey = function () {
   }
 };
 
-// Instance method to check password (only for users with passwords)
+// Instance method to compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  // Check if a password exists before comparing
   if (!this.password) {
-    throw new Error("User does not have a password set");
+    return false; // No password to compare
   }
   return bcrypt.compare(candidatePassword, this.password);
 };
@@ -191,8 +206,8 @@ userSchema.methods.hasBookmarked = function (lessonPlanId) {
 // Instance method to transform user object (remove sensitive data)
 userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
-  delete userObject.password;
-  delete userObject.geminiApiKey; // Never expose encrypted API key
+  delete userObject.password; // Ensure password is not sent
+  delete userObject.geminiApiKey; // Ensure encrypted API key is not sent
   delete userObject.__v;
   return userObject;
 };

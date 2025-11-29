@@ -131,6 +131,7 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
 
     return (
         <div className="search-container" ref={searchRef}>
+            <div className="search-container" ref={searchRef}>
             {/* Toggle Button (visible only on mobile) */}
             <button
                 type="button"
@@ -141,20 +142,21 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
                 {isSearchExpanded ? <CloseIcon /> : <SearchIcon />}
             </button>
 
-            <form className={`modern-search-bar ${isSearchExpanded ? 'expanded' : ''}`} onSubmit={handleSearch}>
-                <div className="search-icon">
-                    <SearchIcon />
-                </div>
-                <input
-                    ref={inputRef}
+            <form className={`modern-search-bar ${isSearchExpanded ? 'expanded' : ''}`} onSubmit={(e) => e.preventDefault()}>
+                    <div className="search-icon">
+                        <SearchIcon />
+                    </div>
+                    <input
+                        ref={inputRef}
                     type="text"
-                    placeholder={placeholder}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                        placeholder={placeholder}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => { if (searchTerm) setShowResults(true); }}
+                        onKeyDown={handleKeyDown}
                     onFocus={() => searchTerm && suggestions.length > 0 && setShowSuggestions(true)}
                     className="search-input"
-                    autoComplete="off"
+                        autoComplete="off"
                 />
                 {searchTerm && (
                     <button
@@ -166,7 +168,9 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
                         <CloseIcon fontSize="small" />
                     </button>
                 )}
-            </form>
+                </form>
+            {renderResults()}
+        </div>
 
             {showSuggestions && suggestions.length > 0 && (
                 <div className="search-suggestions">

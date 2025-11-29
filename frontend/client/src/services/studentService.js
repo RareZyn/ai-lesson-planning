@@ -219,6 +219,22 @@ export const studentAPI = {
       };
     }
   },
+
+  bulkAddStudents: async (classId, studentsData, onUploadProgress) => {
+    try {
+      const response = await apiClient.post(`/${classId}/students/bulk`, { students: studentsData }, {
+        onUploadProgress: onUploadProgress, // Pass progress callback to Axios
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error bulk adding students:", error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to bulk add students.",
+        data: error.response?.data?.data // For individual student failures
+      };
+    }
+  },
 };
 
 // Utility functions

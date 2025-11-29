@@ -1,0 +1,239 @@
+
+
+/* --- Header & Controls --- */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end; /* Align tabs and button on the bottom line */
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap; /* Allow header items to wrap on smaller screens */
+}
+
+/* --- Modern Tab Design --- */
+.tabsContainer {
+    display: flex;
+    gap: 0.25rem; /* Small gap between tabs */
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0; /* Prevent tabs from shrinking */
+}
+
+.tabButton {
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px; /* Overlap with border-bottom of tabsContainer */
+    border-radius: 8px 8px 0 0;
+}
+
+.tabButton:hover {
+    color: #343a40;
+    background-color: #e9ecef;
+}
+
+.tabButton.active {
+    color: #3f51b5;
+    background-color: #fff;
+    font-weight: 600;
+    border-bottom-color: #3f51b5;
+}
+
+/* --- Control Bar Wrapper --- */
+.controlBarWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-top: 10px;
+    flex-wrap: wrap;
+    gap: 15px; /* Added gap for better spacing on wrap */
+}
+
+.searchFilterGroup {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap; /* Allow search and filter to wrap */
+}
+
+/*
+  ==========================================
+  --- DEDICATED SEARCH BAR STYLES (FIXED) ---
+  ==========================================
+*/
+.customSearchBar {
+    display: flex;
+    align-items: center;
+    width: 350px;
+    /* Default desktop width */
+    height: 40px;
+    padding: 0 15px;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    /* Square rounded corners seen in screenshot */
+    transition: all 0.2s ease;
+}
+
+.customSearchBar:focus-within {
+    border-color: #3f51b5;
+    /* Primary blue focus */
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+}
+
+.searchIcon {
+    color: #adb5bd;
+    /* Gray icon color */
+    font-size: 1.2rem;
+    margin-right: 10px;
+}
+
+.searchInput {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: #343a40;
+    background: transparent;
+}
+
+.searchInput::placeholder {
+    color: #adb5bd;
+}
+
+/* --- Custom Select Styling --- */
+.customSelect {
+    width: 200px;
+    height: 40px;
+    padding: 0 15px;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #343a40;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.customSelect:focus,
+.customSelect:hover {
+    border-color: #3f51b5 !important;
+    /* Primary blue focus */
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2) !important;
+}
+
+/* --- Standard View Toggle Styles --- */
+.viewToggle {
+    display: flex;
+    border: 1px solid #cfd8dc;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.viewToggle button {
+    padding: 0.5rem 1rem;
+    background-color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: #333;
+}
+
+.viewToggle .active {
+    background-color: #6d88f7;
+    color: white;
+    font-weight: 600;
+}
+
+.viewToggle button:hover:not(.active) {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* --- END View Toggle --- */
+
+/* --- Create New Lesson Button --- */
+.createLessonButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #3f51b5;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.createLessonButton:hover {
+    background-color: #3645a0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Responsive adjustment for layout --- */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .header h1 {
+        margin-bottom: 1rem;
+    }
+
+    .tabsContainer {
+        width: 100%;
+        justify-content: space-around; /* Distribute tabs evenly */
+    }
+
+    .tabButton {
+        flex-grow: 1; /* Allow tabs to grow */
+        text-align: center;
+        padding: 10px 10px; /* Adjust padding for smaller screens */
+        font-size: 0.9rem;
+    }
+
+    .controlBarWrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .searchFilterGroup {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 15px;
+    }
+
+    /* Mobile sizing for search/filter inputs */
+    .customSearchBar {
+        width: 100%;
+        max-width: none;
+    }
+
+    .customSelect {
+        width: 100%;
+    }
+
+    .viewToggle {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .createLessonButton {
+        width: 100%;
+    }
+}

@@ -1,4 +1,3 @@
-// middleware/auth.js - Fixed version
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
 
@@ -67,8 +66,11 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-// Grant access to specific roles
+/// Grant access to specific roles
 exports.authorize = (...roles) => {
+
+  // console.log("Authorized roles:", roles);
+  // console.log("User role in authorize middleware:", req => req.user ? req.user.role : 'No user');
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -77,52 +79,45 @@ exports.authorize = (...roles) => {
       });
     }
 
-    // Check if user has any of the required roles
-    const hasRole = roles.some((role) => req.user.roles.includes(role));
+    const userRoles = Array.isArray(req.user.roles)
+      ? req.user.roles
+      : [req.user.role || "teacher"]; // fallback for single role field
+
+    const hasRole = roles.some((role) => userRoles.includes(role));
 
     if (!hasRole) {
       return res.status(403).json({
         success: false,
-        message: `User role(s) ${req.user.roles.join(
-          ", "
-        )} are not authorized to access this route`,
+        message: `User role(s) ${userRoles.join(", ")} are not authorized to access this route`,
       });
     }
 
     next();
   };
 };
-
 // Optional authentication - doesn't fail if no token
 exports.optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    // Check for token in headers
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
       token = req.headers.authorization.split(" ")[1];
-    }
-    // Check for token in cookies (with null check)
-    else if (req.cookies && req.cookies.token) {
+    } else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
 
     if (token) {
       try {
-        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Get user from token
         const user = await User.findById(decoded.id);
 
         if (user && user.isActive) {
           req.user = user;
         }
       } catch (error) {
-        // Token is invalid, but we don't fail the request
         console.log("Invalid token in optional auth:", error.message);
       }
     }

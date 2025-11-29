@@ -5,6 +5,13 @@
   align-items: flex-end;
   /* Align tabs and button on the bottom line */
   margin-bottom: 1.5rem;
+/* --- Header & Controls --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  /* Align tabs and button on the bottom line */
+  margin-bottom: 1.5rem;
 }
 
 .header h1 {

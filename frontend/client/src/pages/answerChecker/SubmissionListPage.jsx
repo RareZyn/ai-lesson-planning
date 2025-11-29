@@ -64,6 +64,12 @@ const SubmissionListPage = () => {
         params.classId = filterClass;
       }
 
+      const params = {};
+
+      if (filterClass) {
+        params.classId = filterClass;
+      }
+
       const response = await axios.get(
         `${API_BASE_URL}/assessment/my-assessments`,
         {
@@ -81,6 +87,8 @@ const SubmissionListPage = () => {
         setError(response.data.message);
       }
     } catch (err) {
+      setError("Failed to load assessments");
+      console.error(err);
       setError("Failed to load assessments");
       console.error(err);
     } finally {
@@ -163,6 +171,7 @@ const SubmissionListPage = () => {
               <h2 className="mb-2">Answer Recognition</h2>
               <p className="text-muted mb-0">
                 Select an assessment to view student submissions
+                Select an assessment to view student submissions
               </p>
             </div>
             <Button
@@ -170,6 +179,7 @@ const SubmissionListPage = () => {
               onClick={() => navigate("/app/submissions/upload")}
             >
               <PlusOutlined className="me-2" />
+              Upload Submission
               Upload Submission
             </Button>
           </div>
@@ -187,6 +197,7 @@ const SubmissionListPage = () => {
               </Form.Label>
               <Form.Select
                 value={filterClass}
+                onChange={(e) => setFilterClass(e.target.value)}
                 onChange={(e) => setFilterClass(e.target.value)}
               >
                 <option value="">All Classes</option>
@@ -217,9 +228,11 @@ const SubmissionListPage = () => {
                 onClick={fetchAssessments}
                 className="w-100"
               >
-                <ReloadOutlined className="me-2" />
+                <ReloadOutlined className="me-2 " />
                 Refresh
               </Button>
+            </Col>
+          </Row>
             </Col>
           </Row>
         </Card.Body>
@@ -248,6 +261,7 @@ const SubmissionListPage = () => {
             >
               <Button
                 variant="primary"
+                onClick={() => navigate("/app/assessment")}
                 onClick={() => navigate("/app/assessment")}
               >
                 Create Assessment

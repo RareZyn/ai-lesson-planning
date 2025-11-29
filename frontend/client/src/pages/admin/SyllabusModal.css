@@ -1,0 +1,423 @@
+/********************************************
+ * Minimalist Modal Styling - Indigo Theme
+ ********************************************/
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Main Card */
+.modalContent {
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(63, 81, 181, 0.15);
+    width: 80%;
+    max-width: 540px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: fadeIn 0.2s ease;
+}
+
+.modalContent.largeModal {
+    max-width: 900px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom Scrollbar */
+.modalContent::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+    background: #6d88f7;
+    border-radius: 3px;
+}
+
+/* Header */
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e8eaf6;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #3f51b5;
+    font-weight: 600;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: #9e9e9e;
+    transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+    background: #f5f5f5;
+    color: #3f51b5;
+}
+
+/* Body */
+.modalBody {
+    margin-bottom: 24px;
+    color: #424242;
+    line-height: 1.6;
+}
+
+.hint-text {
+    color: #757575;
+    font-size: 0.9rem;
+    margin: 8px 0;
+    padding: 10px 12px;
+    background: #f5f7ff;
+    border-left: 3px solid #6d88f7;
+    border-radius: 4px;
+}
+
+/* Footer */
+.modalFooter {
+    border-top: 1px solid #e8eaf6;
+    padding-top: 20px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/***************************************************
+ * BUTTONS
+ ***************************************************/
+
+.modalActionButton,
+.cancelButton,
+.confirmButton,
+.downloadButton {
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.downloadButton {
+    background: #3f51b5;
+    color: #fff;
+}
+
+.downloadButton:hover:not(:disabled) {
+    background: #303f9f;
+}
+
+.downloadButton:disabled {
+    background: #c5cae9;
+    cursor: not-allowed;
+}
+
+.cancelButton {
+    background: #f5f5f5;
+    color: #424242;
+}
+
+.cancelButton:hover {
+    background: #eeeeee;
+}
+
+.confirmButton {
+    background: #6d88f7;
+    color: #fff;
+}
+
+.confirmButton:hover:not(:disabled) {
+    background: #5c7de6;
+}
+
+.confirmButton:disabled {
+    background: #c5cae9;
+    cursor: not-allowed;
+}
+
+/***************************************************
+ * INPUTS + SELECTS
+ ***************************************************/
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #3f51b5;
+    font-size: 0.95rem;
+}
+
+.formGroup input[type="text"],
+.formGroup select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    color: #424242;
+}
+
+.formGroup input[type="text"]:focus,
+.formGroup select:focus {
+    border-color: #6d88f7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(109, 136, 247, 0.1);
+}
+
+.formGroup input[type="text"]::placeholder {
+    color: #bdbdbd;
+}
+
+/***************************************************
+ * FILE UPLOAD
+ ***************************************************/
+
+.fileUpload {
+    margin: 20px 0;
+}
+
+.fileUpload input[type="file"] {
+    display: none;
+}
+
+.uploadLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #3f51b5;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.uploadLabel:hover {
+    background: #303f9f;
+}
+
+.errorText {
+    color: #d32f2f;
+    font-size: 0.9rem;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #ffebee;
+    border-left: 3px solid #d32f2f;
+    border-radius: 4px;
+}
+
+/***************************************************
+ * DYNAMIC FIELD BUILDER
+ ***************************************************/
+
+.schemaDefinition {
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 8px;
+    background: #fafafa;
+    margin-bottom: 20px;
+}
+
+.schemaFieldRow {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.sub-field-row {
+    margin-left: 24px;
+    border-left: 2px solid #6d88f7;
+    background: #f5f7ff;
+}
+
+.field-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.expand-toggle {
+    background: #6d88f7;
+    color: white;
+    border: none;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.expand-toggle:hover {
+    background: #5c7de6;
+}
+
+.schemaFieldRow input.field-name-input {
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 150px;
+}
+
+.schemaFieldRow select.field-type-select {
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    min-width: 180px;
+}
+
+.schemaFieldRow input.field-name-input:focus,
+.schemaFieldRow select.field-type-select:focus {
+    border-color: #6d88f7;
+    outline: none;
+}
+
+/* Remove Button */
+.removeFieldButton {
+    background: none;
+    border: none;
+    color: #d32f2f;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.removeFieldButton:hover:not(:disabled) {
+    background: #ffebee;
+}
+
+.removeFieldButton:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Add Buttons */
+.addFieldButton,
+.addSubFieldButton {
+    background: #6d88f7;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.addFieldButton:hover,
+.addSubFieldButton:hover {
+    background: #5c7de6;
+}
+
+.subFieldsContainer {
+    margin-top: 12px;
+    padding-left: 12px;
+}
+
+/***************************************************
+ * PREVIEW BOX
+ ***************************************************/
+
+.syllabusPreview {
+    background: #fafafa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.syllabusPreview h4 {
+    margin: 0 0 12px 0;
+    color: #3f51b5;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.syllabusPreview p {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #424242;
+}
+
+.json-preview {
+    background: #263238;
+    color: #eceff1;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.json-preview::-webkit-scrollbar {
+    height: 6px;
+}
+
+.json-preview::-webkit-scrollbar-track {
+    background: #1c2326;
+}
+
+.json-preview::-webkit-scrollbar-thumb {
+    background: #6d88f7;
+    border-radius: 3px;
+}

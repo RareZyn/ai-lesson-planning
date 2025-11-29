@@ -32,7 +32,19 @@ const SubmissionUploadPage = () => {
   const [currentStep, setCurrentStep] = useState(
     preSelectedAssessmentId ? 1 : 0
   );
+  const location = useLocation();
 
+  // Get pre-selected assessment from navigation state
+  const preSelectedAssessmentId = location.state?.assessmentId;
+  const preSelectedClassId = location.state?.classId;
+  const preSelectedAssessmentTitle = location.state?.assessmentTitle;
+
+  // Step management - start at step 1 if assessment is pre-selected
+  const [currentStep, setCurrentStep] = useState(
+    preSelectedAssessmentId ? 1 : 0
+  );
+
+  // Form data - Initialize with pre-selected values
   // Form data - Initialize with pre-selected values
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(

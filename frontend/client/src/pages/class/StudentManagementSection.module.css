@@ -242,3 +242,69 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* StudentManagementSection.module.css */
+
+/* ... existing styles ... */
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+  /* Space between buttons */
+  align-items: center;
+}
+
+/* You might want specific styles for the bulk upload error list */
+.bulkUploadErrors ul {
+  padding-left: 20px;
+}
+
+.bulkUploadErrors li {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.bulkUploadErrors li.text-danger {
+  color: #dc3545;
+}
+
+.bulkUploadErrors li.text-warning {
+  color: #ffc107;
+  /* For client-side validation warnings */
+}
+
+/* spinner for loading in modals */
+.modalLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.modalLoading .spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #0d6efd;
+  /* Bootstrap primary color */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Additional styling for the download template button */
+.modal .btn-outline-secondary {
+  width: 100%;
+  /* Make it full width in the modal body */
+}

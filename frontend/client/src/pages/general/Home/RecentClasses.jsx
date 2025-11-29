@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./RecentClasses.css";
+import "./RecentClasses.css"; // Keep this for container/header styles
 import { getRecentClasses } from "../../../services/classService";
 import ClassCard from "../../class/ClassCard";
 
@@ -37,6 +37,10 @@ const RecentClasses = () => {
           <div className="class-card-skeleton"></div>
         </div>
       );
+    }
+    
+    if (recentClasses.length === 0) {
+        return <p>No recent classes found.</p>
     }
 
     return (

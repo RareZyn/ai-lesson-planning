@@ -2,15 +2,24 @@
 
 body {
   margin: 0;
-  font-family: "Quicksand", "Segoe UI", sans-serif;
+  font-family: "Quicksand", "Segoe UI", sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: #f9fafb;
   box-sizing: border-box;
   -ms-overflow-style: none;
+}
+
+/* You might also need to target Ant Design components specifically */
+.ant-typography,
+.ant-btn,
+.ant-card,
+.ant-tag,
+.ant-alert,
+.ant-descriptions {
+  font-family: 'Quicksand', "Segoe UI", sans-serif !important;
 }
 
 @import "bootstrap/dist/css/bootstrap.min.css";
@@ -34,11 +43,13 @@ body {
 
 /* Allow scrolling but hide the scrollbar */
 html {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 html::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
 }
-

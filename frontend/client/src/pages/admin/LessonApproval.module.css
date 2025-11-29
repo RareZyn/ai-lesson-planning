@@ -1,0 +1,298 @@
+/* --- TAB BAR (Pill/Circle Style) --- */
+.tabBar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.tabButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #5a5a5a;
+    background-color: #f1f3f9;
+    border: none;
+    border-radius: 9999px;
+    /* full pill */
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: inset 0 0 0 1px #e0e6ed;
+}
+
+.tabButton:hover {
+    background-color: #e4e7fb;
+    color: #3f51b5;
+    box-shadow: inset 0 0 0 1px #3f51b5;
+    transform: translateY(-1px);
+}
+
+.activeTab {
+    background-color: #3f51b5;
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(63, 81, 181, 0.2);
+    transform: translateY(-1px);
+}
+
+.badge {
+    background: #ffffff;
+    color: #3f51b5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 100%;
+    min-width: 20px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1px #3f51b5;
+}
+
+.activeTab .badge {
+    background: #fff;
+    color: #3f51b5;
+    box-shadow: none;
+}
+
+
+/* --- LESSON LIST --- */
+.lessonList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- HEADER ROW --- */
+.listHeader {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr 1fr 1fr;
+    align-items: center;
+    padding: 16px 25px;
+    background: #f0f4f8 !important;
+    border: 1px solid #d4dae0 !important;
+    border-radius: 10px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* --- LIST ITEM --- */
+.listItem {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr 1fr 1fr;
+    align-items: center;
+    padding: 18px 25px;
+    background-color: #ffffff;
+    border: 1px solid #e0e6ed;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+.listItem:hover:not(.listHeader) {
+    border-color: #a7b7ed;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    background-color: #fcfdfe;
+}
+
+/* --- ACTION BUTTONS --- */
+.listActions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.listActions svg {
+    cursor: pointer;
+    font-size: 22px;
+    transition: all 0.25s ease;
+}
+
+.listActions svg:hover {
+    transform: scale(1.15);
+}
+
+.listActions .approveIcon {
+    color: #3f51b5;
+}
+
+.listActions .approveIcon:hover {
+    color: #2e3b9e;
+}
+
+.listActions .rejectIcon {
+    color: #dc3545;
+}
+
+.listActions .rejectIcon:hover {
+    color: #c82333;
+}
+
+/* --- STATUS MESSAGE --- */
+.statusMessage {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.1rem;
+    color: #666;
+    background: #fff;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* --- MODAL --- */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease;
+}
+
+.modalContent h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 10px;
+}
+
+.modalContent p {
+    color: #555;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.remarkInput {
+    width: 100%;
+    min-height: 80px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: none;
+    transition: all 0.2s;
+}
+
+.remarkInput:focus {
+    outline: none;
+    border-color: #3f51b5;
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+}
+
+/* --- MODAL BUTTONS --- */
+.modalButtons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.cancelButton {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    color: #333;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.cancelButton:hover {
+    border-color: #3f51b5;
+    color: #3f51b5;
+}
+
+.approveButton {
+    background: #3f51b5;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.approveButton:hover {
+    background: #3645a0;
+}
+
+.rejectButton {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.rejectButton:hover {
+    background: #c82333;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+
+    .listItem,
+    .listHeader {
+        grid-template-columns: 1.6fr 1fr 1fr 0.8fr 1fr;
+    }
+
+    .listHeader div:nth-child(3),
+    .listHeader div:nth-child(5),
+    .listItem div:nth-child(3),
+    .listItem div:nth-child(5) {
+        display: none;
+    }
+
+    .container h2 {
+        font-size: 1.5rem;
+    }
+
+    .modalContent {
+        width: 90%;
+    }
+}
+
+/* --- ANIMATION --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

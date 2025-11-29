@@ -5,6 +5,93 @@ const Assessment = require("../model/Assessment");
 const StudentAnswer = require("../model/StudentAnswer");
 const { lessonPlanValidationSchema } = require("../utils/validationSchema");
 
+// --- HELPER FUNCTIONS ---
+
+/**
+ * Helper function to check for conditional GET request (If-Modified-Since).
+ * Checks the User's updatedAt timestamp for collection modification status.
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {string} userId - ID of the current user
+ * @returns {Promise<string|null>} Returns the lastModified UTC string if modified, or null if 304 response was sent.
+ */
+const checkIfDataModified = async (req, res, userId) => {
+  // 1. Find the User's latest modification time
+  const user = await User.findById(userId)
+    .select('updatedAt')
+    .lean()
+    .read('primary'); // Ensures a fresh read
+
+  const lastModified = user ? user.updatedAt.toUTCString() : null;
+
+  // 2. Check the client's cache header
+  const ifModifiedSince = req.header('if-modified-since');
+
+  // --- DEBUG LOGS ---
+  console.log(`[Cache Check] Route: ${req.path}`);
+  console.log(`[Cache Check] Server Last Modified: ${lastModified}`);
+  console.log(`[Cache Check] Client If-Modified-Since: ${ifModifiedSince}`);
+  // --- END DEBUG LOGS ---
+
+  if (lastModified && ifModifiedSince) {
+    const serverTime = new Date(lastModified).getTime();
+    const clientTime = new Date(ifModifiedSince).getTime();
+
+    // --- DEBUG LOG ---
+    console.log(`[Cache Check] Comparison: Server (${serverTime}) vs Client (${clientTime})`);
+    // --- END DEBUG LOG ---
+
+    // If the server's update time is <= client's timestamp, the data is not modified
+    if (serverTime <= clientTime) {
+      console.log(`Sending 304 Not Modified for list view.`);
+      res.setHeader('Last-Modified', lastModified);
+      res.status(304).send();
+      return null;
+    }
+  }
+
+  // 3. If modified or no header, set the header for the upcoming 200 OK response
+  if (lastModified) {
+    res.setHeader('Last-Modified', lastModified);
+  }
+
+  return lastModified;
+};
+
+/**
+ * Handles common Gemini API key and quota errors.
+ * @param {object} res - Express response object
+ * @param {Error} error - The error object
+ * @returns {boolean} True if an error response was sent, false otherwise.
+ */
+const handleGeminiApiError = (res, error) => {
+  if (
+    error.message.includes("API_KEY") ||
+    error.message.includes("401") ||
+    error.message.includes("Invalid API key")
+  ) {
+    res.status(401).json({
+      success: false,
+      message: "Invalid Gemini API key. Please check your API key in profile settings.",
+    });
+    return true;
+  }
+
+  if (
+    error.message.includes("quota") ||
+    error.message.includes("429")
+  ) {
+    res.status(429).json({
+      success: false,
+      message: "Gemini API quota exceeded. Please try again later or check your API limits.",
+    });
+    return true;
+  }
+  return false;
+};
+
+// --- CONTROLLER FUNCTIONS ---
+
 exports.createLesson = async (req, res, next) => {
   try {
     const {
@@ -34,28 +121,21 @@ exports.createLesson = async (req, res, next) => {
       });
     }
 
-    // Get the user with their Gemini API key
     const user = await User.findById(req.user.id).select("+geminiApiKey");
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found.",
-      });
+      return res.status(404).json({ success: false, message: "User not found." });
     }
 
-    // Get and decrypt the user's Gemini API key
     const geminiApiKey = user.getGeminiApiKey();
 
     if (!geminiApiKey) {
       return res.status(400).json({
         success: false,
-        message:
-          "No Gemini API key found. Please add your API key in your profile settings.",
+        message: "No Gemini API key found. Please add your API key in your profile settings.",
       });
     }
 
-    // Initialize Gemini with the user's API key
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
     // --- The prompt remains the same ---
@@ -71,14 +151,9 @@ exports.createLesson = async (req, res, next) => {
       - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
       - Additional Notes: ${additionalNotes || "None"}
       - Type of Activity: ${activityType}
-      ${
-        activityConfiguration
-          ? `- Activity Configuration: ${JSON.stringify(
-              activityConfiguration,
-              null,
-              2
-            )}`
-          : ""
+      ${activityConfiguration
+        ? `- Activity Configuration: ${JSON.stringify(activityConfiguration, null, 2)}`
+        : ""
       }
 
       Generate a creative and practical lesson plan based on the SoW's learning outline.
@@ -133,79 +208,38 @@ exports.createLesson = async (req, res, next) => {
           .trim();
         generatedPlan = JSON.parse(cleanedText);
       } catch (parseError) {
-        console.error(
-          "Failed to parse Gemini response as JSON. Raw text:",
-          text
-        );
+        console.error("Failed to parse Gemini response as JSON. Raw text:", text);
         throw new Error("The AI response was not in a valid JSON format.");
       }
 
-      console.log("Generated Lesson Plan:", generatedPlan);
-      // --- NEW: VALIDATION STEP ---
-      const { error, value } =
-        lessonPlanValidationSchema.validate(generatedPlan);
+      const { error, value } = lessonPlanValidationSchema.validate(generatedPlan);
 
       if (error) {
-        // If validation fails, log the details and throw a specific error.
         console.error("Joi Validation Error:", error.details);
-        // The error message will be something like "Success criteria are required."
-        throw new Error(
-          `AI response failed validation: ${error.details[0].message}`
-        );
+        throw new Error(`AI response failed validation: ${error.details[0].message}`);
       }
-      // --- END OF VALIDATION STEP ---
 
-      // If validation passes, 'value' is the validated (and potentially type-coerced) data.
-      // It's good practice to use 'value' from here on.
-      res.status(200).json({
-        success: true,
-        data: value,
-      });
+      res.status(200).json({ success: true, data: value });
+
     } catch (geminiError) {
       console.error("Gemini AI generation error:", geminiError.message);
-
-      // Check if it's an API key related error
-      if (
-        geminiError.message.includes("API_KEY") ||
-        geminiError.message.includes("401") ||
-        geminiError.message.includes("Invalid API key")
-      ) {
-        return res.status(401).json({
-          success: false,
-          message:
-            "Invalid Gemini API key. Please check your API key in profile settings.",
-        });
-      }
-
-      // Check if it's a quota error
-      if (
-        geminiError.message.includes("quota") ||
-        geminiError.message.includes("429")
-      ) {
-        return res.status(429).json({
-          success: false,
-          message:
-            "Gemini API quota exceeded. Please try again later or check your API limits.",
-        });
-      }
-
+      if (handleGeminiApiError(res, geminiError)) return;
       throw geminiError;
     }
   } catch (error) {
     console.error("Lesson generation error:", error.message);
     res.status(500).json({
       success: false,
-      message:
-        error.message || "An error occurred while generating the lesson plan.",
+      message: error.message || "An error occurred while generating the lesson plan.",
     });
   }
 };
 
-// @desc    Get all lessons
+// @desc    Get all lessons (Admin/Internal use)
 // @access  Private (Admin/Teacher)
 exports.getLessons = async (req, res) => {
   try {
-    const lessons = await Lesson.find().populate("createdBy", "name");
+    const lessons = await LessonPlan.find().populate("createdBy", "name");
     return res.status(200).json({
       success: true,
       data: lessons,
@@ -221,14 +255,14 @@ exports.getLessons = async (req, res) => {
 
 /**
  * @desc    Save a new, user-confirmed lesson plan
- * @route   POST /api/lessons
+ * @route   POST /api/lessons/save
  * @access  Private
  */
 exports.saveLessonPlan = async (req, res, next) => {
   try {
-    req.body.createdBy = req.user.id;
+    const userId = req.user.id;
+    req.body.createdBy = userId;
 
-    // The classId is inside the parameters object
     const classId = req.body.parameters?.classId;
     if (!classId) {
       return res.status(400).json({
@@ -237,19 +271,25 @@ exports.saveLessonPlan = async (req, res, next) => {
       });
     }
 
-    // Create a new lesson plan document in the database
-    const lessonPlan = await LessonPlan.create({
-      createdBy: req.body.createdBy,
-      classId: classId,
-      lessonDate: req.body.date,
-      parameters: req.body.parameters,
-      plan: req.body.plan,
-    });
+    // Execute creation and cache invalidation concurrently
+    const [lessonPlan] = await Promise.all([
+      // 1. Create the new lesson
+      LessonPlan.create({
+        createdBy: userId,
+        classId: classId,
+        lessonDate: req.body.date,
+        parameters: req.body.parameters,
+        plan: req.body.plan,
+        status: req.body.status || "draft",
+      }),
+      // 2. CACHE FIX: Touch the user document to invalidate list caches
+      User.findByIdAndUpdate(userId, { $set: { updatedAt: new Date() } }).exec()
+    ]);
 
     res.status(201).json({
       success: true,
       message: "Lesson plan saved successfully!",
-      data: lessonPlan, // Return the newly created document
+      data: lessonPlan,
     });
   } catch (error) {
     console.error("Error saving lesson plan:", error);
@@ -270,7 +310,7 @@ exports.getLessonPlanById = async (req, res, next) => {
     const lessonPlan = await LessonPlan.findById(req.params.id).populate(
       "classId",
       "className grade"
-    ); // Optional: get class name and grade
+    );
 
     if (!lessonPlan) {
       return res.status(404).json({
@@ -279,7 +319,6 @@ exports.getLessonPlanById = async (req, res, next) => {
       });
     }
 
-    // Optional: Check if the user is authorized to view this plan
     if (lessonPlan.createdBy.toString() !== req.user.id) {
       return res.status(401).json({
         success: false,
@@ -307,6 +346,7 @@ exports.getLessonPlanById = async (req, res, next) => {
  */
 exports.updateLessonPlan = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     let lessonPlan = await LessonPlan.findById(req.params.id);
 
     if (!lessonPlan) {
@@ -316,18 +356,18 @@ exports.updateLessonPlan = async (req, res, next) => {
       });
     }
 
-    // Make sure user is the lesson plan owner
-    if (lessonPlan.createdBy.toString() !== req.user.id) {
+    if (lessonPlan.createdBy.toString() !== userId) {
       return res.status(401).json({
         success: false,
         message: "Not authorized to update this lesson plan",
       });
     }
 
-    // We only allow the 'plan' field to be updated.
-    // This prevents accidental changes to parameters, classId, etc.
     lessonPlan.plan = req.body.plan;
-    await lessonPlan.save();
+    await lessonPlan.save(); // Mongoose updates lessonPlan.updatedAt
+
+    // CACHE FIX: Touch the user document to invalidate list caches
+    await User.findByIdAndUpdate(userId, { $set: { updatedAt: new Date() } }).exec();
 
     res.status(200).json({ success: true, data: lessonPlan });
   } catch (error) {
@@ -335,6 +375,7 @@ exports.updateLessonPlan = async (req, res, next) => {
     next(error);
   }
 };
+
 /**
  * @desc    Delete a lesson plan by its ID (with cascade deletion)
  * @route   DELETE /api/lessons/:id
@@ -342,6 +383,7 @@ exports.updateLessonPlan = async (req, res, next) => {
  */
 exports.deleteLessonPlan = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     const lessonPlan = await LessonPlan.findById(req.params.id);
 
     if (!lessonPlan) {
@@ -351,8 +393,7 @@ exports.deleteLessonPlan = async (req, res, next) => {
       });
     }
 
-    // Make sure user is the lesson plan owner
-    if (lessonPlan.createdBy.toString() !== req.user.id) {
+    if (lessonPlan.createdBy.toString() !== userId) {
       return res.status(401).json({
         success: false,
         message: "Not authorized to delete this lesson plan",
@@ -389,6 +430,10 @@ exports.deleteLessonPlan = async (req, res, next) => {
     // Step 4: Delete the lesson plan itself
     await lessonPlan.deleteOne();
 
+    // CACHE FIX: Touch the user document to invalidate list caches
+    await User.findByIdAndUpdate(userId, { $set: { updatedAt: new Date() } }).exec();
+
+
     res.status(200).json({
       success: true,
       message: "Lesson plan and all related data deleted successfully",
@@ -403,23 +448,29 @@ exports.deleteLessonPlan = async (req, res, next) => {
   }
 };
 
+
 /**
- * @desc    Get all lesson plans created by the logged-in user
+ * @desc    Get all lesson plans created by the currently logged-in user
  * @route   GET /api/lessons
  * @access  Private
  */
 exports.getAllUserLessonPlans = async (req, res, next) => {
   try {
+    // 1. Check cache status (sends 304 if not modified)
+    const lastModifiedResult = await checkIfDataModified(req, res, req.user.id);
+
+    if (lastModifiedResult === null) {
+      return; // 304 response sent by helper
+    }
+
+    // 2. Fetch data if modified
     const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
       .populate({
         path: "classId",
-        select: "className subject grade", // Add 'grade' here
+        select: "className subject grade",
       })
       .sort({ lessonDate: -1 });
 
-    console.log(
-      `Fetched ${lessonPlans.length} lesson plans for user ${req.user.id}`
-    );
     res.status(200).json({
       success: true,
       count: lessonPlans.length,
@@ -431,17 +482,26 @@ exports.getAllUserLessonPlans = async (req, res, next) => {
   }
 };
 
+
 /**
- * @desc    Get the 5 most recently updated lesson plans for the user
+ * @desc    Get the 5 most recently updated lesson plans for the currently logged-in user
  * @route   GET /api/lessons/recent
  * @access  Private
  */
 exports.getRecentLessonPlans = async (req, res, next) => {
   try {
+    // 1. Check cache status (sends 304 if not modified)
+    const lastModifiedResult = await checkIfDataModified(req, res, req.user.id);
+
+    if (lastModifiedResult === null) {
+      return; // 304 response sent by helper
+    }
+
+    // 2. Fetch data if modified
     const lessonPlans = await LessonPlan.find({ createdBy: req.user.id })
       .populate({
         path: "classId",
-        select: "className subject grade", // Add 'grade' here
+        select: "className subject grade",
       })
       .sort({ updatedAt: -1 })
       .limit(5);
@@ -464,6 +524,8 @@ exports.getRecentLessonPlans = async (req, res, next) => {
  */
 exports.getLessonPlansByClass = async (req, res, next) => {
   try {
+    // NOTE: For class-specific lists, ideally we would track the class's updatedAt 
+    // rather than the user's, but for simplicity, we skip caching here.
     const { classId } = req.params;
 
     const lessonPlans = await LessonPlan.find({
@@ -472,7 +534,7 @@ exports.getLessonPlansByClass = async (req, res, next) => {
     })
       .populate({
         path: "classId",
-        select: "className subject grade", // Add 'grade' here
+        select: "className subject grade",
       })
       .sort({ lessonDate: -1 });
 
@@ -484,5 +546,257 @@ exports.getLessonPlansByClass = async (req, res, next) => {
   } catch (error) {
     console.error("Error fetching lesson plans by class:", error);
     next(error);
+  }
+};
+
+/**
+ * @desc    Enhance a specific section of a lesson plan using AI
+ * @route   POST /api/lessons/enhance
+ * @access  Private
+ */
+exports.enhanceLessonSection = async (req, res, next) => {
+  try {
+    const { sectionKey, currentContent, userPrompt, context } = req.body;
+
+    // 1. --- Validate Input ---
+    if (!sectionKey || !currentContent || !userPrompt || !context) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for enhancement.",
+      });
+    }
+
+    // 2. --- Get User and Gemini API Key ---
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    const geminiApiKey = user.getGeminiApiKey();
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message: "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+    // 3. --- Craft the Enhancement Prompt ---
+    const isArray = Array.isArray(currentContent);
+    const outputFormatInstruction = isArray
+      ? 'The response MUST be a valid JSON array of strings. Example: ["New item 1.", "New item 2."]'
+      : 'The response MUST be a single JSON string. Example: "This is the new, enhanced content."';
+
+    const prompt = `
+      You are an expert curriculum designer and teacher's assistant. Your task is to refine and enhance a specific section of an existing lesson plan based on a teacher's request.
+
+      Here is the context for the lesson:
+      - Grade: ${context.grade || "Not specified"}
+      - Subject: ${context.subject || "Not specified"}
+      - Topic: ${context.topic || "Not specified"}
+
+      Here is the section you need to enhance:
+      - Section Name: "${sectionKey}"
+      - Current Content of the Section:
+      ${JSON.stringify(currentContent, null, 2)}
+
+      Here is the teacher's instruction for enhancement:
+      - Teacher's Request: "${userPrompt}"
+
+      Based on the teacher's request, rewrite and improve the "Current Content".
+
+      **CRITICAL OUTPUT RULES:**
+      1. The format of your response MUST exactly match the format of the "Current Content".
+      2. ${outputFormatInstruction}
+      3. Do NOT include any surrounding text, explanations, or markdown like \`\`\`json. Your entire response must be ONLY the raw JSON content itself.
+    `;
+
+    // 4. --- Call Gemini and Process Response ---
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      let enhancedContent;
+      try {
+        const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        enhancedContent = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error("Failed to parse Gemini response for enhancement. Raw text:", text);
+        throw new Error("The AI enhancement response was not in a valid format.");
+      }
+
+      // Basic type validation
+      if (Array.isArray(currentContent) && !Array.isArray(enhancedContent)) {
+        throw new Error("AI response format mismatch: Expected an array.");
+      }
+      if (!Array.isArray(currentContent) && typeof enhancedContent !== 'string') {
+        throw new Error("AI response format mismatch: Expected a string.");
+      }
+
+      res.status(200).json({
+        success: true,
+        enhancedContent: enhancedContent,
+      });
+    } catch (geminiError) {
+      console.error("Gemini AI enhancement error:", geminiError.message);
+      if (handleGeminiApiError(res, geminiError)) return;
+      throw geminiError;
+    }
+  } catch (error) {
+    console.error("Enhancement controller error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || "An error occurred during the enhancement process.",
+    });
+  }
+};
+
+exports.sendForApproval = async (req, res) => {
+  try {
+    const lesson = await LessonPlan.findById(req.params.id)
+      .populate("classId", "subject")
+      .populate("createdBy", "school");
+
+    if (!lesson) return res.status(404).json({ success: false, message: "Lesson not found." });
+    if (lesson.createdBy?._id?.toString() !== req.user.id && lesson.createdBy?.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Unauthorized." });
+    }
+
+    lesson.approvalStatus = "pending";
+    await lesson.save();
+
+    // Optional: notify the relevant subject head or principal
+
+    res.status(200).json({ success: true, message: "Lesson sent for approval." });
+  } catch (err) {
+    console.error("Send for approval error:", err);
+    res.status(500).json({ success: false, message: "Failed to send for approval." });
+  }
+};
+
+exports.getPendingLessons = async (req, res) => {
+  try {
+    let filter = { approvalStatus: "pending" };
+
+    const lessons = await LessonPlan.find(filter)
+      .populate("classId", "className subject grade")
+      .populate("createdBy", "name email");
+
+    res.status(200).json({ success: true, data: lessons });
+  } catch (err) {
+    console.error("Error fetching pending lessons:", err);
+    res.status(500).json({ success: false, message: "Failed to get pending lessons." });
+  }
+};
+
+exports.approveLesson = async (req, res) => {
+  try {
+    const lesson = await LessonPlan.findById(req.params.id);
+    if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+
+    lesson.approvalStatus = 'approved';
+    lesson.approvedBy = req.user.id;
+    lesson.approvalDate = new Date();
+    await lesson.save();
+
+    res.json({ success: true, message: 'Lesson approved successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.rejectLesson = async (req, res) => {
+  try {
+    const lesson = await LessonPlan.findById(req.params.id);
+    if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+
+    lesson.approvalStatus = 'rejected';
+    lesson.approvedBy = req.user.id;
+    lesson.approvalDate = new Date();
+    lesson.rejectionReason = req.body.reason || 'No reason specified.';
+    await lesson.save();
+
+    res.json({ success: true, message: 'Lesson rejected successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getAllLessonsForApproval = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Map subject head roles → subjects
+    const roleToSubject = {
+      math_head: "Mathematics",
+      english_head: "English",
+      science_head: "Science",
+      history_head: "History",
+      geography_head: "Geography",
+    };
+
+    // Base filter — exclude drafts
+    let matchStage = {
+      approvalStatus: { $nin: ["draft", null] }, // exclude drafts + nulls
+    };
+
+    const subjectRole = user.roles.find((r) => roleToSubject[r]);
+
+    // Subject Head → Only their subject
+    if (subjectRole) {
+      matchStage = {
+        ...matchStage,
+        "classInfo.subject": roleToSubject[subjectRole],
+      };
+    }
+
+    // Principal or School Admin → Only their school
+    else if (
+      user.roles.includes("principal") ||
+      user.roles.includes("school_admin")
+    ) {
+      matchStage = {
+        ...matchStage,
+        "classInfo.schoolId": user.schoolId,
+      };
+    }
+
+    // Super Admin → Can see everything (still no drafts)
+    else if (user.roles.includes("super_admin")) {
+      // already covered by base match
+    }
+
+    // Aggregation
+    const lessons = await LessonPlan.aggregate([
+      {
+        $lookup: {
+          from: "classes",
+          localField: "classId",
+          foreignField: "_id",
+          as: "classInfo",
+        },
+      },
+      { $unwind: "$classInfo" },
+      { $match: matchStage },
+      { $sort: { createdAt: -1 } },
+    ]);
+
+    // Populate createdBy field
+    await LessonPlan.populate(lessons, {
+      path: "createdBy",
+      select: "name email roles",
+    });
+
+    res.status(200).json({
+      success: true,
+      lessons,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching lessons for approval:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch lessons.",
+    });
   }
 };

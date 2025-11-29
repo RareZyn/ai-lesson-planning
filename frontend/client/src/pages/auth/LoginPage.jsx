@@ -5,7 +5,7 @@ import {
   UserOutlined,
   LockOutlined,
   GoogleOutlined,
-  BankOutlined,
+  BarcodeOutlined, // Changed from BankOutlined for token
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -37,17 +37,20 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Handle modal submit for Google sign-in (now includes token)
   const handleModalSubmit = async (values) => {
     if (!pendingGoogleUser) return;
 
     setModalLoading(true);
     try {
-      // Register user in MongoDB backend via Google OAuth
-      const response = await authAPI.googleAuth({
+      // Register user in MongoDB backend via Google OAuth with registrationToken
+      // IMPORTANT: The backend /auth/google endpoint will need to be updated
+      // to accept 'registrationToken' and assign the schoolId based on it.
+      const response = await authAPI.googleAuthWithToken({ // Renamed or update existing googleAuth
         googleId: pendingGoogleUser.uid,
         email: pendingGoogleUser.email,
         name: values.name,
-        schoolName: values.schoolName,
+        registrationToken: values.registrationToken, // Pass the token here
         avatar: pendingGoogleUser.photoURL || "",
         geminiApiKey: values.geminiApiKey || "",
       });
@@ -62,7 +65,7 @@ const LoginPage = () => {
         throw new Error(response.message || "Registration failed");
       }
     } catch (error) {
-      console.error("Error completing registration:", error);
+      console.error("Error completing Google registration:", error);
       message.error("Failed to complete registration");
     } finally {
       setModalLoading(false);
@@ -82,21 +85,21 @@ const LoginPage = () => {
           firebaseUid: user.uid,
           email: user.email,
           name: user.displayName || "",
-          displayName: user.displayName || "",
           photoURL: user.photoURL || "",
         });
 
         if (response.success && response.user) {
-          // Check if user has required fields (schoolName)
-          if (!response.user.schoolName) {
-            // New user or incomplete profile - show modal
+          // Check if user has required fields (schoolId)
+          // The backend should return the user's role and schoolId
+          if (!response.user.schoolId) { // Check for schoolId instead of schoolName
+            // New user or incomplete profile - show modal to get token
             setPendingGoogleUser(user);
             form.setFieldsValue({
               name: user.displayName || "",
             });
             setModalVisible(true);
           } else {
-            // Existing user with complete profile
+            // Existing user with complete profile and schoolId
             message.success("Google login successful!");
             navigate(location.state?.from?.pathname || "/app/", {
               replace: true,
@@ -108,7 +111,7 @@ const LoginPage = () => {
       } catch (error) {
         console.error("MongoDB sync error:", error);
 
-        // If user doesn't exist in MongoDB, show registration modal
+        // If user doesn't exist in MongoDB, show registration modal to get token
         setPendingGoogleUser(user);
         form.setFieldsValue({
           name: user.displayName || "",
@@ -170,7 +173,6 @@ const LoginPage = () => {
   };
 
   const handleForgotPassword = () => {
-    // Add forgot password logic here
     message.info("Forgot password functionality coming soon!");
   };
 
@@ -285,9 +287,9 @@ const LoginPage = () => {
         </Form>
       </div>
 
-      {/* Modal for Google Sign-in Additional Info */}
+      {/* Modal for Google Sign-in Additional Info (now requires token for new teachers) */}
       <Modal
-        title="Complete Your Profile"
+        title="Complete Your Teacher Profile"
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -298,8 +300,8 @@ const LoginPage = () => {
         destroyOnClose
       >
         <p className="text-muted mb-4">
-          Please provide some additional information to complete your
-          registration.
+          Please provide some additional information and your school's
+          registration token to complete your teacher registration.
         </p>
         <Form form={form} layout="vertical" onFinish={handleModalSubmit}>
           <Form.Item
@@ -316,16 +318,21 @@ const LoginPage = () => {
             />
           </Form.Item>
 
+          {/* NEW: Registration Token Input in Modal */}
           <Form.Item
-            name="schoolName"
-            label="School Name"
+            name="registrationToken"
+            label="School Registration Token"
             rules={[
-              { required: true, message: "Please input your school name!" },
+              {
+                required: true,
+                message: "Please enter the registration token from your admin!",
+              },
             ]}
+            tooltip="Your school administrator will provide this token."
           >
             <Input
-              prefix={<BankOutlined className="site-form-item-icon" />}
-              placeholder="School Name"
+              prefix={<BarcodeOutlined className="site-form-item-icon" />}
+              placeholder="Enter Registration Token"
               size="large"
             />
           </Form.Item>

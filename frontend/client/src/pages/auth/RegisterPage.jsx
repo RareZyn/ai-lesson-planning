@@ -5,7 +5,7 @@ import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
-  BankOutlined,
+  BarcodeOutlined, // Changed from BankOutlined for token
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,7 +17,7 @@ import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./LoginPage.css";
+import "./LoginPage.css"; // Assuming shared styling
 
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
@@ -51,20 +51,23 @@ const RegisterPage = () => {
         displayName: values.name,
       });
 
-      // 3. Register user in MongoDB backend
+      // 3. Register user in MongoDB backend with registrationToken
       try {
-        const response = await authAPI.register({
+        // IMPORTANT: The backend API /auth/register will need to be updated
+        // to accept 'registrationToken' instead of 'schoolName'.
+        // It will then validate the token and assign the schoolId.
+        const response = await authAPI.registerTeacherWithToken({ // Renamed for clarity, or update existing authAPI.register
           name: values.name,
           email: values.email,
           password: values.password,
-          schoolName: values.schoolName,
+          registrationToken: values.registrationToken, // Pass the token here
           firebaseUid: userCredential.user.uid,
           geminiApiKey: values.geminiApiKey || "",
         });
 
         if (response.success) {
-          console.log("✅ User registered successfully");
-          message.success("Registration successful!");
+          console.log("✅ Teacher registered successfully via token");
+          message.success("Registration successful! Welcome to your school.");
           navigate("/app/", { replace: true });
         } else {
           throw new Error(response.message || "Registration failed");
@@ -106,7 +109,7 @@ const RegisterPage = () => {
           </div>
 
           <p className="text-muted">
-            Create your account to start planning your lessons.
+            Create your teacher account using a token from your school admin.
           </p>
         </div>
 
@@ -159,15 +162,21 @@ const RegisterPage = () => {
             />
           </Form.Item>
 
+          {/* NEW: Registration Token Input */}
           <Form.Item
-            name="schoolName"
+            name="registrationToken"
+            label="School Registration Token"
             rules={[
-              { required: true, message: "Please input your school name!" },
+              {
+                required: true,
+                message: "Please enter the registration token from your admin!",
+              },
             ]}
+            tooltip="Your school administrator will provide this token."
           >
             <Input
-              prefix={<BankOutlined className="site-form-item-icon" />}
-              placeholder="School Name"
+              prefix={<BarcodeOutlined className="site-form-item-icon" />}
+              placeholder="Enter Registration Token"
               size="large"
             />
           </Form.Item>
