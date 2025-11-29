@@ -15,7 +15,7 @@ import { authAPI } from "../services/api";
 
 const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [isPinned, setIsPinned] = useState(false);
+  const [isPinned, setIsPinned] = useState(true);
   const [user, setUser] = useState(null); // ✅ state to store user
   const [loading, setLoading] = useState(true);
 

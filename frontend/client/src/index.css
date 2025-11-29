@@ -18,11 +18,17 @@ body {
 .ant-card,
 .ant-tag,
 .ant-alert,
-.ant-descriptions {
+.ant-descriptions,
+.ant-space,
+.ant-row,
+.ant-col,
+.ant-divider,
+.ant-anchor,
+.ant-pagination a {
   font-family: 'Quicksand', "Segoe UI", sans-serif !important;
 }
 
-@import "bootstrap/dist/css/bootstrap.min.css";
+
 
 :root {
   --white: #ffffff;

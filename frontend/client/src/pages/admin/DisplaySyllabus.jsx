@@ -1,22 +1,34 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faArrowLeft,
-    faEdit,
-    faTrash,
-    faBook,
-    faGraduationCap,
-    faCalendar,
-    faUser,
-    faListOl,
-    faBookOpen,
-    faLink,
-    faChevronLeft, // For pagination
-    faChevronRight // For pagination
-} from '@fortawesome/free-solid-svg-icons';
 import { getSyllabusById, deleteSyllabus } from '../../services/adminService';
-import styles from './DisplaySyllabus.module.css';
+// Ant Design Imports
+import {
+    Card,
+    Button,
+    Tag,
+    Descriptions,
+    Space,
+    Row,
+    Col,
+    Typography,
+    Divider,
+    Alert,
+    Anchor,
+    Pagination
+} from 'antd';
+import {
+    ArrowLeftOutlined,
+    EditOutlined,
+    DeleteOutlined,
+    BookOutlined,
+    UserOutlined,
+    CalendarOutlined,
+    NumberOutlined,
+    ReadOutlined
+} from '@ant-design/icons';
+
+const { Title, Text, Paragraph } = Typography;
+const { Link: AnchorLink } = Anchor;
 
 const DisplaySyllabus = () => {
     const { id } = useParams();
@@ -27,12 +39,17 @@ const DisplaySyllabus = () => {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10); // Display 10 items per page
+    const [itemsPerPage] = useState(10);
 
-    // Refs for each syllabus item to enable scrolling
+    // Refs for scrolling
     const itemRefs = useRef({});
 
-    const fetchSyllabusDetails = useCallback(async () => {
+    useEffect(() => {
+        fetchSyllabusDetails();
+        setCurrentPage(1);
+    }, [id]);
+
+    const fetchSyllabusDetails = async () => {
         try {
             setLoading(true);
             const data = await getSyllabusById(id);
@@ -67,25 +84,16 @@ const DisplaySyllabus = () => {
         alert('Edit functionality coming soon!');
     };
 
-    // Function to scroll to a specific syllabus item
-    const scrollToSection = (sectionId) => {
-        const element = itemRefs.current[sectionId];
-        if (element) {
-            const yOffset = -80;
-            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-            window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-    };
-
+    // Helper to render values recursively
     const renderValue = (value) => {
         if (value === null || value === undefined || value === '') {
-            return <span className={styles.notSpecified}>Not specified</span>;
+            return <Text type="secondary" italic>Not specified</Text>;
         }
 
         if (Array.isArray(value)) {
-            if (value.length === 0) return <span className={styles.notSpecified}>None</span>;
+            if (value.length === 0) return <Text type="secondary" italic>None</Text>;
             return (
-                <ul className={styles.nestedList}>
+                <ul style={{ paddingLeft: '20px', margin: 0 }}>
                     {value.map((item, idx) => (
                         <li key={idx}>{renderValue(item)}</li>
                     ))}
@@ -95,263 +103,219 @@ const DisplaySyllabus = () => {
 
         if (typeof value === 'object') {
             return (
-                <div className={styles.paramNestedObject}>
+                <Card size="small" style={{ marginTop: '8px', background: '#fafafa' }}>
                     {Object.entries(value).map(([key, val]) => (
-                        <div key={key} className={styles.nestedObjectField}>
-                            <strong>{key}:</strong> {renderValue(val)}
+                        <div key={key} style={{ marginBottom: '4px' }}>
+                            <Text strong>{key}: </Text> {renderValue(val)}
                         </div>
                     ))}
-                </div>
+                </Card>
             );
         }
 
-        return String(value);
+        return <Text>{String(value)}</Text>;
     };
 
     if (loading) {
         return (
-            <div className={styles.pageWrapper}>
-                <div className={styles.statusContainer}>Loading syllabus...</div>
+            <div className="d-flex justify-content-center align-items-center" style={{ height: "60vh" }}>
+                <div className="text-center">
+                    <div className="spinner-border text-primary mb-3" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <Text type="secondary">Loading syllabus...</Text>
+                </div>
             </div>
         );
     }
 
     if (error || !syllabus) {
         return (
-            <div className={styles.pageWrapper}>
-                <div className={`${styles.statusContainer} ${styles.error}`}>
-                    {error || 'Syllabus not found'}
-                </div>
+            <div className="container mt-4">
+                <Alert
+                    message="Error Loading Syllabus"
+                    description={error || 'Syllabus not found'}
+                    type="error"
+                    showIcon
+                    action={
+                        <Button size="small" onClick={() => navigate('/app/admin/syllabuses')}>
+                            Back to List
+                        </Button>
+                    }
+                />
             </div>
         );
     }
 
     const syllabusItems = Array.isArray(syllabus.data) ? syllabus.data : [syllabus.data];
 
-    // Pagination logic
+    // Pagination Logic
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = syllabusItems.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(syllabusItems.length / itemsPerPage);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-    const nextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-            // Scroll to the top of the main content when changing page
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-
-    const prevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-            // Scroll to the top of the main content when changing page
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    };
-
-    const pageNumbers = [];
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-            pageNumbers.push(i);
-        }
-    } else {
-        // More complex pagination for many pages (e.g., 1 2 3 ... 9 10)
-        if (currentPage <= 4) {
-            for (let i = 1; i <= 5; i++) pageNumbers.push(i);
-            pageNumbers.push('...');
-            pageNumbers.push(totalPages);
-        } else if (currentPage >= totalPages - 3) {
-            pageNumbers.push(1);
-            pageNumbers.push('...');
-            for (let i = totalPages - 4; i <= totalPages; i++) pageNumbers.push(i);
-        } else {
-            pageNumbers.push(1);
-            pageNumbers.push('...');
-            for (let i = currentPage - 1; i <= currentPage + 1; i++) pageNumbers.push(i);
-            pageNumbers.push('...');
-            pageNumbers.push(totalPages);
-        }
-    }
-
 
     return (
-        <div className={styles.pageWrapper}>
-            <div className={styles.mainLayout}>
-                {/* Main Content */}
-                <div className={styles.mainContent}>
-                    <button onClick={() => navigate(-1)} className={styles.backButton}>
-                        <FontAwesomeIcon icon={faArrowLeft} /> Back to Syllabuses
-                    </button>
-
-                    <div className={styles.lessonHeader}>
-                        <div>
-                            <h1 className={styles.lessonTitle}>{syllabus.subject} Syllabus</h1>
-                            <p className={styles.lessonMeta}>{syllabus.grade}</p>
-                        </div>
-                        <div className={styles.headerActions}>
-                            <button onClick={handleEdit} className={`${styles.actionButton} ${styles.editButton}`}>
-                                <FontAwesomeIcon icon={faEdit} /> Edit
-                            </button>
-                            <button onClick={handleDelete} className={`${styles.actionButton} ${styles.deleteButton}`}>
-                                <FontAwesomeIcon icon={faTrash} /> Delete
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <nav className={styles.paginationContainer}>
-                            <button
-                                onClick={prevPage}
-                                className={styles.paginationButton}
-                                disabled={currentPage === 1}
-                            >
-                                <FontAwesomeIcon icon={faChevronLeft} />
-                            </button>
-                            <ul className={styles.paginationList}>
-                                {pageNumbers.map((number, index) => (
-                                    <li key={index}>
-                                        {number === '...' ? (
-                                            <span className={styles.paginationEllipsis}>...</span>
-                                        ) : (
-                                            <button
-                                                onClick={() => paginate(number)}
-                                                className={`${styles.paginationButton} ${currentPage === number ? styles.activePage : ''}`}
-                                            >
-                                                {number}
-                                            </button>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button
-                                onClick={nextPage}
-                                className={styles.paginationButton}
-                                disabled={currentPage === totalPages}
-                            >
-                                <FontAwesomeIcon icon={faChevronRight} />
-                            </button>
-                        </nav>
-                    )}
-
-                    {/* Syllabus Items */}
-                    {currentItems.map((item, index) => {
-                        // Calculate global index for accurate TOC links
-                        const globalIndex = indexOfFirstItem + index;
-                        const itemId = `syllabus-item-${globalIndex}`;
-                        return (
-                            <div
-                                key={globalIndex} // Use globalIndex for key to avoid issues when changing pages
-                                id={itemId}
-                                ref={el => itemRefs.current[itemId] = el}
-                                className={styles.lessonBlock}
-                            >
-                                <h3 className={styles.blockTitle}>
-                                    <FontAwesomeIcon icon={faBookOpen} />
-                                    {item.Title || `Item ${globalIndex + 1}`}
-                                </h3>
-
-                                {/* Render all fields dynamically */}
-                                <div className={styles.syllabusItemContent}>
-                                    {Object.entries(item).map(([key, value]) => {
-                                        if (key === 'Title') return null;
-
-                                        return (
-                                            <div key={key} className={styles.fieldSection}>
-                                                <h4 className={styles.fieldLabel}>{key}:</h4>
-                                                <div className={styles.fieldValue}>
-                                                    {renderValue(value)}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
+        <div className="container-fluid py-4" style={{ minHeight: "100vh" }}>
+            <div className="container">
+                {/* Back Button */}
+                <div className="mb-3">
+                    <Button
+                        type="link"
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => navigate('/app/admin/syllabuses')}
+                        className="p-0"
+                    >
+                        Back to Syllabuses
+                    </Button>
                 </div>
 
-                {/* Sidebar */}
-                <aside className={styles.sidebar}>
-                    <div className={styles.sidebarSticky}>
-                        <div className={styles.sidebarCard}>
-                            <h3 className={styles.sidebarTitle}>Syllabus Information</h3>
-
-                            <div className={styles.metaItem}>
-                                <FontAwesomeIcon icon={faGraduationCap} />
-                                <div>
-                                    <strong>Grade:</strong> {syllabus.grade}
-                                </div>
+                {/* Header Card */}
+                <Card className="mb-4" style={{ borderRadius: "12px" }}>
+                    <Row justify="space-between" align="middle">
+                        <Col xs={24} lg={16}>
+                            <Title level={2} className="mb-1">
+                                {syllabus.subject} Syllabus
+                            </Title>
+                            <Text type="secondary" className="fs-5">
+                                {syllabus.grade}
+                            </Text>
+                            <div className="mt-2">
+                                <Space>
+                                    <Tag color="blue">{syllabus.schoolType || 'KSSM'}</Tag>
+                                    <Tag color="cyan">{syllabusItems.length} Items</Tag>
+                                </Space>
                             </div>
-
-                            <div className={styles.metaItem}>
-                                <FontAwesomeIcon icon={faBook} />
-                                <div>
-                                    <strong>Subject:</strong> {syllabus.subject}
-                                </div>
+                        </Col>
+                        <Col xs={24} lg={8}>
+                            <div className="d-flex justify-content-end gap-2 mt-3 mt-lg-0">
+                                <Button icon={<EditOutlined />} onClick={handleEdit}>
+                                    Edit
+                                </Button>
+                                <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={handleDelete}
+                                >
+                                    Delete
+                                </Button>
                             </div>
+                        </Col>
+                    </Row>
+                </Card>
 
-                            <div className={styles.metaItem}>
-                                <FontAwesomeIcon icon={faUser} />
-                                <div>
-                                    <strong>Created By:</strong> {syllabus.createdBy}
-                                </div>
-                            </div>
+                <Row gutter={[24, 24]}>
+                    {/* Main Content - Syllabus Items */}
+                    <Col xs={24} xl={16}>
 
-                            <div className={styles.metaItem}>
-                                <FontAwesomeIcon icon={faCalendar} />
-                                <div>
-                                    <strong>Date:</strong> {syllabus.date}
-                                </div>
-                            </div>
-
-                            <div className={styles.metaItem}>
-                                <FontAwesomeIcon icon={faListOl} />
-                                <div>
-                                    <strong>Total Items:</strong> {syllabusItems.length}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Table of Contents */}
-                        {syllabusItems.length > 0 && (
-                            <div className={styles.sidebarCard}>
-                                <h3 className={styles.sidebarTitle}>Table of Contents</h3>
-                                <div className={styles.tocContainer}>
-                                    <ul className={styles.tocList}>
-                                        {syllabusItems.map((item, index) => {
-                                            const itemId = `syllabus-item-${index}`;
-                                            return (
-                                                <li key={index}>
-                                                    <a
-                                                        href={`#${itemId}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            // Calculate page number for the item
-                                                            const itemPage = Math.ceil((index + 1) / itemsPerPage);
-                                                            setCurrentPage(itemPage); // Navigate to the correct page
-                                                            // Allow time for the content to render before scrolling
-                                                            setTimeout(() => scrollToSection(itemId), 100);
-                                                        }}
-                                                        className={styles.tocLink}
-                                                    >
-                                                        {index + 1}.
-                                                        <FontAwesomeIcon icon={faLink} />
-                                                        {item.Title || `Item ${index + 1}`}
-                                                    </a>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>
+                        {/* Pagination */}
+                        {syllabusItems.length > itemsPerPage && (
+                            <div className="d-flex justify-content-center mb-4">
+                                <Pagination
+                                    current={currentPage}
+                                    total={syllabusItems.length}
+                                    pageSize={itemsPerPage}
+                                    onChange={handlePageChange}
+                                    showSizeChanger={false}
+                                />
                             </div>
                         )}
+                        {currentItems.map((item, index) => {
+                            const globalIndex = indexOfFirstItem + index;
+                            const itemId = `syllabus-item-${globalIndex}`;
 
-                    </div>
-                </aside>
+                            return (
+                                <Card
+                                    key={globalIndex}
+                                    id={itemId}
+                                    className="mb-4"
+                                    title={
+                                        <Space>
+                                            <ReadOutlined style={{ color: '#1890ff' }} />
+                                            <span>{item.Title || `Item ${globalIndex + 1}`}</span>
+                                        </Space>
+                                    }
+                                >
+                                    <div ref={el => itemRefs.current[itemId] = el}>
+                                        {Object.entries(item).map(([key, value]) => {
+                                            if (key === 'Title') return null;
+                                            return (
+                                                <div key={key} className="mb-3">
+                                                    <Text strong style={{ display: 'block', marginBottom: '4px' }}>
+                                                        {key}:
+                                                    </Text>
+                                                    <div style={{ marginLeft: '8px' }}>
+                                                        {renderValue(value)}
+                                                    </div>
+                                                    <Divider style={{ margin: '12px 0' }} dashed />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </Col>
+
+                    {/* Sidebar - Metadata & TOC */}
+                    <Col xs={24} xl={8}>
+                        <Card title="Syllabus Information" className="mb-4">
+                            <Descriptions column={1} size="small">
+                                <Descriptions.Item label={<Space><BookOutlined /> Subject</Space>}>
+                                    <Text strong>{syllabus.subject}</Text>
+                                </Descriptions.Item>
+                                <Descriptions.Item label={<Space><NumberOutlined /> Grade</Space>}>
+                                    <Tag color="geekblue">{syllabus.grade}</Tag>
+                                </Descriptions.Item>
+                                <Descriptions.Item label={<Space><UserOutlined /> Created By</Space>}>
+                                    <Text>{syllabus.createdBy}</Text>
+                                </Descriptions.Item>
+                                <Descriptions.Item label={<Space><CalendarOutlined /> Date</Space>}>
+                                    <Text>{syllabus.date}</Text>
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        {syllabusItems.length > 0 && (
+                            <Card title="Table of Contents" className="mb-4" bodyStyle={{ padding: '0 12px' }}>
+                                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px 0' }}>
+                                    <Anchor
+                                        affix={false}
+                                        showInkInFixed={true}
+                                        onClick={(e, link) => {
+                                            e.preventDefault();
+                                            const index = parseInt(link.href.split('-').pop());
+                                            const page = Math.ceil((index + 1) / itemsPerPage);
+                                            if (page !== currentPage) {
+                                                setCurrentPage(page);
+                                                // Wait for render then scroll
+                                                setTimeout(() => {
+                                                    const el = document.getElementById(`syllabus-item-${index}`);
+                                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }, 100);
+                                            } else {
+                                                const el = document.getElementById(`syllabus-item-${index}`);
+                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                            }
+                                        }}
+                                    >
+                                        {syllabusItems.map((item, index) => (
+                                            <AnchorLink
+                                                key={index}
+                                                href={`#syllabus-item-${index}`}
+                                                title={`${index + 1}. ${item.Title || `Item ${index + 1}`}`}
+                                            />
+                                        ))}
+                                    </Anchor>
+                                </div>
+                            </Card>
+                        )}
+                    </Col>
+                </Row>
             </div>
         </div>
     );

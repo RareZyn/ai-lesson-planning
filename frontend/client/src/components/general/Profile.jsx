@@ -5,19 +5,29 @@ import { auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
   Avatar,
-  Menu,
-  MenuItem,
+  Badge,
+  Button,
   Divider,
-} from "@mui/material";
-import LogoutIcon from "@mui/icons-material/Logout";
-import SettingsIcon from "@mui/icons-material/Settings";
-import { Modal, Form, Input, Button, message } from "antd";
+  Dropdown,
+  Form,
+  Input,
+  Modal,
+  message,
+  theme,
+} from "antd";
+import {
+  BellOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import "./Profile.css";
-import { useUser } from "../../context/UserContext"; 
-import { useAuth } from "../../context/AuthContext"; 
+import { useUser } from "../../context/UserContext";
+import { useAuth } from "../../context/AuthContext";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { token } = theme.useToken();
 
   // Use your context providers instead of direct Firebase auth
   const { user: contextUser, logout: contextLogout } = useUser();
@@ -26,16 +36,11 @@ const Profile = () => {
   // Use whichever user data is available
   const user = contextUser || firebaseUser;
 
-  const [notifAnchorEl, setNotifAnchorEl] = useState(null);
-  const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [form] = Form.useForm();
-
-  const notifOpen = Boolean(notifAnchorEl);
-  const profileOpen = Boolean(profileAnchorEl);
 
   useEffect(() => {
     // Mock notifications data
@@ -63,8 +68,6 @@ const Profile = () => {
   };
 
   const handleSettingsOpen = async () => {
-    handleProfileClose();
-
     // Fetch current API key from backend
     try {
       const token = localStorage.getItem("authToken");
@@ -155,7 +158,6 @@ const Profile = () => {
 
     try {
       setIsLoggingOut(true);
-      handleProfileClose(); // Close the menu immediately
 
       // Call both Firebase and context logout
       await Promise.all([
@@ -185,66 +187,42 @@ const Profile = () => {
   const photoURL = user.avatar || user.photoURL;
   const email = user.email;
 
-  return (
-    <div className="profile-container">
+  // Notification Menu Items
+  const notificationItems = [
+    {
+      key: "header",
+      label: <span style={{ fontWeight: "bold" }}>Notifications</span>,
+      disabled: true,
+    },
+    { type: "divider" },
+    ...(notifications.length > 0
+      ? notifications.map((notification) => ({
+        key: notification.id,
+        label: (
+          <div className={`notification-item ${notification.read ? "" : "unread"}`}>
+            <div className="notification-content">
+              <div className="notification-text">{notification.text}</div>
+              <div className="notification-time">{notification.time}</div>
+            </div>
+          </div>
+        ),
+      }))
+      : [
+        {
+          key: "empty",
+          label: <span className="empty-notifications">No new notifications</span>,
+          disabled: true,
+        },
+      ]),
+  ];
 
-      <Menu
-        anchorEl={notifAnchorEl}
-        open={notifOpen}
-        onClose={handleNotifClose}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        PaperProps={{
-          style: {
-            width: "320px",
-            maxHeight: "400px",
-            padding: 0,
-          },
-        }}
-      >
-        <MenuItem className="menu-title" style={{ fontWeight: "bold" }}>
-          Notifications
-        </MenuItem>
-        <Divider />
-
-        {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <MenuItem
-              key={notification.id}
-              className={`notification-item ${
-                notification.read ? "" : "unread"
-              }`}
-            >
-              <div className="notification-content">
-                <div className="notification-text">{notification.text}</div>
-                <div className="notification-time">{notification.time}</div>
-              </div>
-            </MenuItem>
-          ))
-        ) : (
-          <MenuItem className="empty-notifications">
-            No new notifications
-          </MenuItem>
-        )}
-      </Menu>
-
-      {/* Profile Dropdown */}
-      <div className="profile-avatar" onClick={handleProfileOpen}>
-        <Avatar src={photoURL} alt={displayName} sx={{ width: 36, height: 36 }}>
-          {/* Fallback to first letter if no photo */}
-          {!photoURL && displayName.charAt(0).toUpperCase()}
-        </Avatar>
-      </div>
-
-      <Menu
-        anchorEl={profileAnchorEl}
-        open={profileOpen}
-        onClose={handleProfileClose}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-      >
+  // Profile Menu Items
+  const profileItems = [
+    {
+      key: "info",
+      label: (
         <div className="profile-menu-header">
-          <Avatar src={photoURL} sx={{ width: 40, height: 40 }}>
+          <Avatar src={photoURL} size={40} icon={<UserOutlined />}>
             {!photoURL && displayName.charAt(0).toUpperCase()}
           </Avatar>
           <div className="profile-menu-user-info">
@@ -252,23 +230,56 @@ const Profile = () => {
             <div className="profile-menu-email">{email}</div>
           </div>
         </div>
+      ),
+    },
+    { type: "divider" },
+    {
+      key: "settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
+      onClick: handleSettingsOpen,
+    },
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: isLoggingOut ? "Signing out..." : "Sign Out",
+      onClick: handleLogout,
+      disabled: isLoggingOut,
+      danger: true,
+    },
+  ];
 
-        <Divider />
+  return (
+    <div className="profile-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Notifications Dropdown */}
+      <Dropdown
+        menu={{ items: notificationItems }}
+        trigger={["click"]}
+        placement="bottomRight"
+        overlayStyle={{ width: 320 }}
+      >
+        <Badge count={unreadCount} size="small">
+          <Button
+            type="text"
+            icon={<BellOutlined style={{ fontSize: '20px' }} />}
+            className="notification-icon"
+            disabled={isLoggingOut}
+          />
+        </Badge>
+      </Dropdown>
 
-        <MenuItem onClick={handleSettingsOpen} className="settings-item">
-          <SettingsIcon fontSize="small" className="menu-icon" />
-          <span>Settings</span>
-        </MenuItem>
-
-        <MenuItem
-          onClick={handleLogout}
-          className="logout-item"
-          disabled={isLoggingOut}
-        >
-          <LogoutIcon fontSize="small" className="menu-icon" />
-          <span>{isLoggingOut ? "Signing out..." : "Sign Out"}</span>
-        </MenuItem>
-      </Menu>
+      {/* Profile Dropdown */}
+      <Dropdown
+        menu={{ items: profileItems }}
+        trigger={["click"]}
+        placement="bottomRight"
+      >
+        <div className="profile-avatar" style={{ cursor: 'pointer' }}>
+          <Avatar src={photoURL} size={36} icon={<UserOutlined />}>
+            {!photoURL && displayName.charAt(0).toUpperCase()}
+          </Avatar>
+        </div>
+      </Dropdown>
 
       {/* Settings Modal */}
       <Modal

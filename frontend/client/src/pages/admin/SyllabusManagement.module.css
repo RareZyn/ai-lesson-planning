@@ -8,13 +8,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: 30px;
 }
 
 .syllabusHeader h2 {
-    font-size: 1.5rem;
-    color: #343a40;
+    font-size: 1.8rem;
+    color: #2c3e50;
     margin: 0;
+    font-weight: 700;
+}
+
+.headerActions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
 }
 
 .createButton {
@@ -35,127 +42,226 @@
 
 .createButton:hover {
     background-color: #5c7de6;
-    box-shadow: 0 2px 8px rgba(109, 136, 247, 0.3);
+    box-shadow: 0 4px 12px rgba(109, 136, 247, 0.3);
 }
 
-/* Filter Controls */
-.filterControls {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-}
-
-.filterControls label {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-weight: 500;
-    color: #3f51b5;
-    font-size: 0.95rem;
-    min-width: 200px;
-}
-
-.filterControls select {
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid #e0e0e0;
-    background: #ffffff;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    color: #424242;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233f51b5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 36px;
-}
-
-.filterControls select:hover:not(:disabled) {
-    border-color: #6d88f7;
-}
-
-.filterControls select:focus {
-    border-color: #6d88f7;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(109, 136, 247, 0.1);
-}
-
-.filterControls select:disabled {
-    background-color: #f5f5f5;
-    color: #9e9e9e;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.filterControls select option {
-    padding: 8px;
-}
-
-/* List container for proper spacing */
-.listContainer {
+/* --- Grade Grid (Level 1) --- */
+.gradeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
     margin-top: 20px;
 }
 
-/* --- List View (4-Column Grid) --- */
-.syllabusList {
+.gradeCard {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-}
-
-/* 4-COLUMN DEFINITION */
-.listItem {
-    display: grid;
-    /* Grade | Subject | Created By | Date Created */
-    grid-template-columns: 1fr 1fr 2fr 2fr;
     align-items: center;
-    padding: 18px 25px;
-    background-color: #ffffff;
-    border: 1px solid #e0e6ed;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    transition: all 0.25s ease;
-}
-
-/* Clickable Row Styling */
-.listItem.clickable {
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
     cursor: pointer;
+    transition: all 0.3s ease;
+    height: 180px;
 }
 
-.listItem.clickable:hover {
-    border-color: #a7b7ed;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-    background-color: #fcfdfe;
+.gradeCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-color: #6d88f7;
 }
 
-/* List Header Specific Styling */
-.listHeader {
-    /* Ensure header also uses 4 columns */
-    grid-template-columns: 1fr 1fr 2fr 2fr;
-    background: #f0f4f8 !important;
-    border: 1px solid #d4dae0 !important;
-    box-shadow: none !important;
-    cursor: default !important;
-    margin-bottom: 10px;
-    position: sticky;
+.gradeIcon {
+    font-size: 2.5rem;
+    color: #6d88f7;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.gradeCard h3 {
+    margin: 0 0 8px 0;
+    color: #343a40;
+    font-size: 1.2rem;
+}
+
+.gradeCard p {
+    margin: 0;
+    color: #868e96;
+    font-size: 0.9rem;
+}
+
+/* --- Subject View (Level 2) --- */
+.subjectView {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.backButton {
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 0;
+    font-weight: 500;
+}
+
+.backButton:hover {
+    color: #343a40;
+}
+
+.viewTitle {
+    font-size: 1.5rem;
+    color: #343a40;
+    margin-bottom: 24px;
+}
+
+.highlight {
+    color: #6d88f7;
+}
+
+.subjectGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* --- Syllabus Card (Styled like LessonCard) --- */
+.card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+    height: 100px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.imageOverlay {
+    position: absolute;
     top: 0;
-    z-index: 10;
-    font-weight: 700;
-    color: #4a5568;
-    text-transform: uppercase;
-    font-size: 0.9em;
-    letter-spacing: 0.05em;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6));
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
-.listDetail {
-    color: #4a5568;
-    font-size: 0.95rem;
+.card:hover .imageOverlay {
+    opacity: 1;
+}
+
+.subjectBadge {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.card:hover .subjectBadge {
+    transform: scale(1.05);
+}
+
+.cardContent {
+    padding: 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.cardTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin: 0 !important;
+}
+
+.cardClass {
+    font-size: 0.95rem;
+    color: #34495e;
+    font-weight: 500;
+    margin: 0 !important;
+}
+
+.cardSubject {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin: 0 0 0.5rem 0 !important;
+}
+
+.cardMeta {
+    font-size: 0.75rem;
+    color: #95a5a6;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f0f0f0;
+    margin: 0 !important;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 60px;
+    background: white;
+    border-radius: 12px;
+    border: 1px dashed #ced4da;
+}
+
+.emptyState p {
+    color: #868e96;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
 }
 
 /* Loading and Error States */
@@ -167,6 +273,7 @@
     justify-content: center;
     padding: 40px 20px;
     text-align: center;
+    min-height: 300px;
 }
 
 .loadingContainer p,
@@ -191,30 +298,80 @@
     background: #5c7de6;
 }
 
-/* Responsive adjustment (Mobile View: 2 Columns) */
+/* Responsive */
 @media (max-width: 768px) {
-
-    .listItem,
-    .listHeader {
-        /* Show only Grade and Subject */
-        grid-template-columns: 1fr 1.5fr !important;
-        padding: 15px 20px;
-    }
-
-    /* Hide Created By (3rd) and Date Created (4th) on small screens */
-    .listItem .listDetail:nth-child(3),
-    .listItem .listDetail:nth-child(4),
-    .listHeader .listDetail:nth-child(3),
-    .listHeader .listDetail:nth-child(4) {
-        display: none !important;
-    }
-
-    .filterControls {
+    .syllabusHeader {
         flex-direction: column;
-        gap: 12px;
+        align-items: flex-start;
+        gap: 16px;
     }
 
-    .filterControls label {
-        min-width: 100%;
+    .headerActions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .gradeGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cardHeader {
+        height: 80px;
+    }
+
+    .subjectBadge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.6rem;
+    }
+
+    .cardContent {
+        padding: 0.8rem;
+    }
+
+    .cardTitle {
+        font-size: 0.9rem;
+    }
+
+    .cardMeta {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .gradeGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .headerActions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .card {
+        border-radius: 6px;
+    }
+
+    .cardHeader {
+        height: 70px;
+    }
+
+    .subjectBadge {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 8px;
+    }
+
+    .cardContent {
+        padding: 0.75rem;
+    }
+
+    .cardTitle {
+        font-size: 0.85rem;
+        -webkit-line-clamp: 1;
+    }
+
+    .cardMeta {
+        font-size: 0.65rem;
     }
 }

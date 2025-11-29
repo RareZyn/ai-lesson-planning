@@ -21,7 +21,7 @@ const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricView
 const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
 const FileDownloadPage = React.lazy(() => import("./pages/downloads/FileDownloadPage"));
 const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
-// const MyLessons = React.lazy(() => import("./pages/planner/mylesson/PlannerPage"));
+
 const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
 const ClassManagement = React.lazy(() => import("./pages/class/ClassManagement"));
 const MultiStepPlanner = React.lazy(() => import("./pages/planner/MultiStepPlanner/MultiStepPlanner"));
@@ -29,13 +29,11 @@ const Community = React.lazy(() => import("./pages/community/Community"));
 const DisplayLessonPage = React.lazy(() => import("./pages/planner/displaylesson/DisplayLessonPage"));
 const ClassLessonsPage = React.lazy(() => import("./pages/class/ClassLessonsPage"));
 const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
-// const DisplaySyllabus = React.lazy(() => import("./pages/admin/DisplaySyllabus"));
 
 // NEW IMPORTS - Answer Checker Module
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
 const SubmissionListPage = React.lazy(() => import("./pages/answerChecker/SubmissionListPage"));
 const SubmissionReviewPage = React.lazy(() => import("./pages/answerChecker/SubmissionReviewPage"));
-
 const router = createBrowserRouter(
   [
     {
