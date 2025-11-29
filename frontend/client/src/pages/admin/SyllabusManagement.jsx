@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './SyllabusManagement.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faArrowLeft, faBook, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faArrowLeft, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 import CreateSyllabusModal from './CreateSyllabusModal';
 import { getSyllabuses } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
@@ -16,7 +16,6 @@ const SyllabusManagement = ({ searchTerm }) => {
     const { currentUser } = useAuth();
     const [syllabuses, setSyllabuses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // State for view management
     const [schoolType, setSchoolType] = useState('KSSM'); // Default fallback
@@ -39,10 +38,8 @@ const SyllabusManagement = ({ searchTerm }) => {
             setLoading(true);
             const response = await getSyllabuses();
             setSyllabuses(response.data || response);
-            setError('');
         } catch (err) {
             console.error('Error fetching syllabuses:', err);
-            setError('Failed to load syllabuses');
         } finally {
             setLoading(false);
         }

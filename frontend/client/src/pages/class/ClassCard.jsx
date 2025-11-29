@@ -1,8 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { School } from '@mui/icons-material';
 import styles from './ClassCard.module.css';
 
+// Function to get subject-specific images
+const getSubjectImage = (subject) => {
+    const subjectImages = {
+        'English': '/grade/form1.png',
+        'Mathematics': '/grade/form2.png',
+        'Science': '/grade/form3.png',
+        'History': '/grade/form4.png',
+        'Geography': '/grade/form5.png',
+    };
+    return subjectImages[subject] || '/grade/form1.png'; // Default image
+};
 
 const ClassCard = ({ classInfo }) => {
     const navigate = useNavigate();

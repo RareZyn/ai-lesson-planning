@@ -27,7 +27,7 @@ import {
     ReadOutlined
 } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Link: AnchorLink } = Anchor;
 
 const DisplaySyllabus = () => {
@@ -44,12 +44,7 @@ const DisplaySyllabus = () => {
     // Refs for scrolling
     const itemRefs = useRef({});
 
-    useEffect(() => {
-        fetchSyllabusDetails();
-        setCurrentPage(1);
-    }, [id]);
-
-    const fetchSyllabusDetails = async () => {
+    const fetchSyllabusDetails = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getSyllabusById(id);
