@@ -11,6 +11,17 @@ const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
     navigate(`/app/lessons/${lesson._id}`);
   };
 
+  // Helper to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return "No date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   // Helper to format date relative to now (used for 'isRecent' view)
   const formatRelativeDate = (dateString) => {
     const date = new Date(dateString);
@@ -69,7 +80,8 @@ const LessonCard = ({ lesson, isRecent = false, assessments = [] }) => {
     lesson.title ||
     "Untitled Lesson";
 
-  const imageUrl = getSubjectImage(subject);
+  // Get gradient for this lesson
+  const gradient = getGradientForId(lesson._id);
 
   return (
     <div

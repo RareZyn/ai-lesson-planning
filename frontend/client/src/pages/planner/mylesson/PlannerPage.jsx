@@ -131,17 +131,6 @@ const PlannerPage = () => {
     }
   };
 
-  const handleSendForApproval = async (lessonId) => {
-    if (!window.confirm("Send this lesson plan for approval?")) return;
-    try {
-      await sendLessonForApproval(lessonId);
-      alert("Lesson plan sent for approval successfully!");
-      fetchLessons();
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
   const renderListView = () => {
     if (filteredLessons.length === 0 && (searchTerm || filterSubject)) {
       return (
@@ -272,13 +261,6 @@ const PlannerPage = () => {
             Create New Lesson
           </button>
         )}
-
-        {activeTab !== "lessons" && (
-          <button onClick={showModal} className={styles.createLessonButton}>
-            <FaPlus style={{ marginRight: "8px" }} />
-            Create New Lesson
-          </button>
-        )}
       </header>
 
       {activeTab === 'lessons' && (
@@ -326,55 +308,8 @@ const PlannerPage = () => {
         </div>
       )}
 
-      {activeTab === "lessons" && (
-        <div className={styles.controlBarWrapper}>
-          <div className={styles.searchFilterGroup}>
-            <div className={styles.customSearchBar}>
-              <FaSearch className={styles.searchIcon} />
-              <input
-                type="text"
-                placeholder="Search lessons, subjects, or classes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
-
-            <select
-              value={filterSubject || ""}
-              onChange={(e) => setFilterSubject(e.target.value || null)}
-              className={`${styles.customSelect} ${styles.subjectFilter}`}
-            >
-              <option value="">Filter by Subject</option>
-              {uniqueSubjects.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.viewToggle}>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={viewMode === "grid" ? styles.active : ""}
-              title="Grid View"
-            >
-              <FaTh />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? styles.active : ""}
-              title="List View"
-            >
-              <FaBars />
-            </button>
-          </div>
-        </div>
-      )}
-
       <main className={styles.tabContent}>
-        {activeTab === "lessons" && renderAllLessonsContentContent()}
+        {activeTab === "lessons" && renderAllLessonsContent()}
         {activeTab === "calendar" && <CalendarView />}
         {activeTab === "materials" && <MaterialManagement />}
       </main>
@@ -391,23 +326,6 @@ const PlannerPage = () => {
         <input
           type="date"
           value={selectedNewDate.format('YYYY-MM-DD')}
-          onChange={(e) => onDateChange(dayjs(e.target.value))}
-          className={styles.customDatePicker}
-        />
-      </CustomModal>
-
-      <CustomModal
-        title="Schedule New Lesson"
-        isVisible={isModalVisible}
-        onOk={handleCreateLesson}
-        onClose={handleCancel}
-      >
-        <p style={{ marginBottom: "15px" }}>
-          Choose the date for the lesson you wish to create:
-        </p>
-        <input
-          type="date"
-          value={selectedNewDate.format("YYYY-MM-DD")}
           onChange={(e) => onDateChange(dayjs(e.target.value))}
           className={styles.customDatePicker}
         />

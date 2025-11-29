@@ -5,13 +5,10 @@ import { auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
   Avatar,
-  IconButton,
   Menu,
   MenuItem,
-  Badge,
   Divider,
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Modal, Form, Input, Button, message } from "antd";
@@ -52,10 +49,6 @@ const Profile = () => {
       },
     ]);
   }, []);
-
-  const handleNotifOpen = (event) => {
-    setNotifAnchorEl(event.currentTarget);
-  };
 
   const handleNotifClose = () => {
     setNotifAnchorEl(null);
@@ -183,8 +176,6 @@ const Profile = () => {
       setIsLoggingOut(false);
     }
   };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Don't render if no user or if logging out
   if (!user || isLoggingOut) return null;

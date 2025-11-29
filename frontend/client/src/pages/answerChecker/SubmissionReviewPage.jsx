@@ -24,7 +24,6 @@ const { TextArea } = Input;
 
 const SubmissionReviewPage = () => {
   const { assessmentId, submissionId, id } = useParams();
-  const { assessmentId, submissionId, id } = useParams();
   const navigate = useNavigate();
 
   // Use submissionId from new route structure, fallback to id for backward compatibility

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -32,12 +32,7 @@ const DisplaySyllabus = () => {
     // Refs for each syllabus item to enable scrolling
     const itemRefs = useRef({});
 
-    useEffect(() => {
-        fetchSyllabusDetails();
-        setCurrentPage(1); // Reset to first page on syllabus change
-    }, [id]);
-
-    const fetchSyllabusDetails = async () => {
+    const fetchSyllabusDetails = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getSyllabusById(id);
@@ -49,7 +44,12 @@ const DisplaySyllabus = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchSyllabusDetails();
+        setCurrentPage(1); // Reset to first page on syllabus change
+    }, [fetchSyllabusDetails]);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this syllabus?')) {

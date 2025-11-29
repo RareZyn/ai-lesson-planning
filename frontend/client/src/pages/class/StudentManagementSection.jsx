@@ -1,6 +1,6 @@
 // frontend/client/src/pages/class/StudentManagementSection.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react"; // Import useRef
-import { Modal, Button, Form, Alert, ProgressBar } from "react-bootstrap"; // Add ProgressBar
+import { Modal, Button, Form, Alert, ProgressBar, Row, Col } from "react-bootstrap"; // Add ProgressBar
 import { Modal as AntModal } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import { studentAPI } from "../../services/studentService";
@@ -47,23 +47,6 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     notes: "",
   });
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    // Filter students based on search
-    const filtered = students.filter(
-      (student) =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) // Assuming studentId is available
-    );
-    setFilteredStudents(filtered);
-  }, [searchTerm, students]);
-
-  const fetchStudents = async () => {
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -88,20 +71,20 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   }, [classId]);
 
   useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId, fetchStudents]);
-
-  useEffect(() => {
     // Filter students based on search
     const filtered = students.filter(
       (student) =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) // Assuming studentId is available
     );
     setFilteredStudents(filtered);
   }, [searchTerm, students]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();

@@ -1,25 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { School } from '@mui/icons-material';
 import styles from './ClassCard.module.css';
-// Icons are no longer used in the image-based card style
-
-// Map subject to appropriate background images (Keep this utility here)
-const getSubjectImage = (subject) => {
-    const subjectImages = {
-        English: "/Class/english.jpg",
-        Mathematics: "/Class/mathematics.jpg",
-        Science: "/Class/science.jpg",
-        History: "/Class/history.jpg",
-        Geography: "/Class/geography.jpg",
-        Physics: "/Class/physics.jpg",
-        Chemistry: "/Class/chemistry.jpg",
-        Biology: "/Class/biology.jpg",
-        // Default fallback
-        default: "/Class/english.jpg",
-    };
-
-    return subjectImages[subject] || subjectImages["default"];
-};
 
 
 const ClassCard = ({ classInfo }) => {
@@ -36,7 +18,7 @@ const ClassCard = ({ classInfo }) => {
         return match ? match[0] : '';
     };
 
-    // Generate gradient based on form number 
+    // Generate gradient based on form number
     const getGradientClass = (grade) => {
         const gradients = [
             styles.gradient1,
@@ -57,13 +39,16 @@ const ClassCard = ({ classInfo }) => {
         ? `${formNumber} ${classInfo.className}`
         : classInfo.className;
 
+    // Format grade display
+    const gradeDisplay = classInfo.grade || 'Unknown Grade';
+
     return (
         <div className={`${styles.card} ${getGradientClass(classInfo.grade)}`} onClick={handleCardClick}>
             <div className={styles.cardHeader}>
                 <div className={styles.iconWrapper}>
-                    <School fontSize="large" />
+                    <School className={styles.icon} />
                 </div>
-                <h3 className={styles.className}>{displayName}</h3>
+                <h3 className={styles.headerTitle}>{displayName}</h3>
             </div>
             <div className={styles.cardBody}>
                 <h3 className={styles.className}>

@@ -10,7 +10,6 @@ import LessonCard from "../../components/Card/LessonCard";
 import UploadLessonModal from "../../components/Modal/UploadLessonModal";
 import { communityAPI } from "../../services/communityService";
 import { assessmentAPI } from "../../services/assessmentService";
-import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
 import "./Community.css";
 
@@ -101,10 +100,6 @@ const Community = () => {
         setLessons(lessonsData);
         // Fetch assessments for community lessons
         fetchAssessmentsForLessons(lessonsData);
-        const lessonsData = communityResponse.data || [];
-        setLessons(lessonsData);
-        // Fetch assessments for community lessons
-        fetchAssessmentsForLessons(lessonsData);
       }
 
       if (userResponse.success) {
@@ -114,10 +109,6 @@ const Community = () => {
       }
 
       if (bookmarksResponse.success) {
-        const bookmarkedData = bookmarksResponse.data || [];
-        setBookmarkedLessons(bookmarkedData);
-        // Fetch assessments for bookmarked lessons
-        fetchAssessmentsForLessons(bookmarkedData);
         const bookmarkedData = bookmarksResponse.data || [];
         setBookmarkedLessons(bookmarkedData);
         // Fetch assessments for bookmarked lessons
@@ -145,10 +136,6 @@ const Community = () => {
       });
 
       if (communityResponse.success) {
-        const lessonsData = communityResponse.data || [];
-        setLessons(lessonsData);
-        // Fetch assessments for community lessons
-        fetchAssessmentsForLessons(lessonsData);
         const lessonsData = communityResponse.data || [];
         setLessons(lessonsData);
         // Fetch assessments for community lessons
@@ -464,7 +451,6 @@ const Community = () => {
               onLike={handleLike}
               onDownload={handleDownload}
               onBookmark={handleBookmark}
-              onUnshare={handleUnshare}
               onUnshare={handleUnshare}
               currentUserId={userId}
               assessments={assessmentsByLesson[lesson._id] || []}

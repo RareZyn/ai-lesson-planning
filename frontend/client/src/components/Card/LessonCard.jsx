@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tag, Button, Avatar, Tooltip, Modal, message, Divider, Empty } from "antd";
-import { Card, Tag, Button, Avatar, Tooltip, Modal, message, Divider, Empty } from "antd";
 import {
   HeartOutlined,
   HeartFilled,
@@ -13,9 +12,6 @@ import {
   ClockCircleOutlined,
   BookOutlined,
   UserOutlined,
-  FileTextOutlined,
-  CheckCircleOutlined,
-  RollbackOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
   RollbackOutlined,

@@ -51,3 +51,5 @@ models/
 
 CLAUDE.md
 SPM_ANSWER_SHEET_RECOGNITION.md
+
+backend\scripts\encryptKey.js

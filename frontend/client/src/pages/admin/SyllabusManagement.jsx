@@ -4,7 +4,7 @@ import styles from './SyllabusManagement.module.css'; // <-- Changed import
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons'; 
 import CreateSyllabusModal from './CreateSyllabusModal';
-import { getSyllabuses, deleteSyllabus } from '../../services/adminService';
+import { getSyllabuses } from '../../services/adminService';
 
 const SyllabusManagement = ({ searchTerm }) => {
     const navigate = useNavigate();
