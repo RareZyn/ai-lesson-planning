@@ -1,0 +1,92 @@
+/* Offline Placeholder Styles */
+
+.offline-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  min-height: 400px;
+}
+
+.offline-placeholder-card {
+  max-width: 600px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.offline-placeholder-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.04);
+  margin: 0 auto;
+}
+
+.offline-placeholder-content {
+  text-align: center;
+  max-width: 500px;
+}
+
+.offline-placeholder-compact {
+  margin: 16px 0;
+}
+
+.offline-sync-pending {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #fff7e6;
+  border-radius: 6px;
+  border: 1px solid #ffd591;
+}
+
+.spin-animation {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .offline-placeholder {
+    padding: 20px 16px;
+    min-height: 300px;
+  }
+
+  .offline-placeholder-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .offline-placeholder-card {
+    padding: 20px;
+  }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  .offline-placeholder-card {
+    background-color: #1f1f1f;
+    border-color: #434343;
+  }
+
+  .offline-placeholder-icon {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .offline-sync-pending {
+    background-color: #2a2a2a;
+    border-color: #595959;
+  }
+}

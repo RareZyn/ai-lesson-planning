@@ -1,19 +1,16 @@
 // AI Lesson Planning System - Service Worker
 // Provides offline support and caching strategies
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `ai-lesson-planning-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
 
 // Static assets to cache immediately on install
+// Note: In development mode, only cache essential files
+// Runtime caching will handle CSS/JS files automatically
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/static/css/main.css',
-  '/static/js/main.js',
   '/manifest.json',
-  '/favicon.ico',
   '/offline.html' // Fallback page when offline
 ];
 
@@ -42,9 +39,26 @@ self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[Service Worker] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+
+      // Cache assets individually to handle missing files gracefully
+      const cachePromises = STATIC_ASSETS.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response);
+            console.log(`[Service Worker] Cached: ${url}`);
+          } else {
+            console.warn(`[Service Worker] Skipped (${response.status}): ${url}`);
+          }
+        } catch (error) {
+          console.warn(`[Service Worker] Failed to cache: ${url}`, error.message);
+        }
+      });
+
+      await Promise.all(cachePromises);
+      console.log('[Service Worker] Static assets caching complete');
     })
   );
 

@@ -1,0 +1,59 @@
+/* Pending Actions Viewer Styles */
+
+.pending-actions-viewer {
+  margin: 20px 0;
+}
+
+.pending-actions-compact {
+  margin: 12px 0;
+  border-radius: 8px;
+}
+
+.spin {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* List item hover effect */
+.pending-actions-viewer .ant-list-item {
+  transition: background-color 0.2s;
+}
+
+.pending-actions-viewer .ant-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Status tags */
+.pending-actions-viewer .ant-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .pending-actions-viewer .ant-card-extra {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pending-actions-viewer .ant-space-item button {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pending-actions-viewer .ant-list-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}

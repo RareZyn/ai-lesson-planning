@@ -1,0 +1,76 @@
+/* Offline Mode Page Styles */
+
+.offline-mode-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.offline-mode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: 8px 8px 0 0;
+  background-color: #fafafa;
+  border: 1px solid #d9d9d9;
+}
+
+.offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background-color: #fff;
+  border-bottom-color: #fff;
+}
+
+.offline-mode-page .ant-tabs-content {
+  padding: 24px;
+  background-color: #fff;
+  border: 1px solid #d9d9d9;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.offline-mode-page ul {
+  line-height: 2;
+}
+
+.offline-mode-page ol {
+  line-height: 2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .offline-mode-page {
+    padding: 16px;
+  }
+
+  .offline-mode-header {
+    flex-direction: column;
+  }
+
+  .offline-mode-page .ant-tabs-content {
+    padding: 16px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    background-color: #1f1f1f;
+    border-color: #434343;
+  }
+
+  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+    background-color: #141414;
+    border-bottom-color: #141414;
+  }
+
+  .offline-mode-page .ant-tabs-content {
+    background-color: #141414;
+    border-color: #434343;
+  }
+}

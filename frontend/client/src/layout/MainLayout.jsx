@@ -4,11 +4,19 @@ import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Breadcrumb from "./Breadcrumb";
 import { Outlet } from "react-router-dom";
+import NetworkStatus from "../components/NetworkStatus/NetworkStatus";
+import UpdateNotification from "../components/NetworkStatus/UpdateNotification";
 import "./MainLayout.css";
 
 const MainLayout = () => {
   return (
     <div className="app-container">
+      {/* Service Worker Update Notification */}
+      <UpdateNotification />
+
+      {/* Network Status Banner */}
+      <NetworkStatus showOnlineStatus={false} />
+
       <Navbar />
       <div className="content-wrapper">
         <Sidebar />
