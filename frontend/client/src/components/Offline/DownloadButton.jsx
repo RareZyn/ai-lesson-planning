@@ -8,8 +8,7 @@ import { Button, Tooltip, message } from 'antd';
 import {
   CloudDownloadOutlined,
   CheckCircleOutlined,
-  LoadingOutlined,
-  DeleteOutlined
+  LoadingOutlined
 } from '@ant-design/icons';
 
 import offlineStorageManager, { DOWNLOAD_TYPES } from '../../services/offline/offlineStorageManager';
@@ -29,11 +28,7 @@ const DownloadButton = ({
   const [downloading, setDownloading] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  useEffect(() => {
-    checkOfflineStatus();
-  }, [contentType, contentId]);
-
-  const checkOfflineStatus = async () => {
+  const checkOfflineStatus = React.useCallback(async () => {
     setChecking(true);
     try {
       const offline = await offlineStorageManager.isContentOffline(contentType, contentId);
@@ -43,7 +38,11 @@ const DownloadButton = ({
     } finally {
       setChecking(false);
     }
-  };
+  }, [contentType, contentId]);
+
+  useEffect(() => {
+    checkOfflineStatus();
+  }, [checkOfflineStatus]);
 
   const handleDownload = async () => {
     // Check storage space before downloading

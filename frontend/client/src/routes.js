@@ -34,6 +34,9 @@ const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
 const SubmissionListPage = React.lazy(() => import("./pages/answerChecker/SubmissionListPage"));
 const SubmissionReviewPage = React.lazy(() => import("./pages/answerChecker/SubmissionReviewPage"));
+
+// NEW IMPORTS - Offline Mode Module
+const OfflineModePage = React.lazy(() => import("./pages/general/OfflineModePage"));
 const router = createBrowserRouter(
   [
     {
@@ -71,6 +74,9 @@ const router = createBrowserRouter(
         { path: "community", element: <Community /> },
         { path: "lessons/:id", element: <DisplayLessonPage /> },
         { path: "classes/:classId", element: <ClassLessonsPage /> },
+
+        // Offline Mode
+        { path: "offline-mode", element: <OfflineModePage /> },
 
         //admin
         { path: "admin", element: <AdminLayout /> },

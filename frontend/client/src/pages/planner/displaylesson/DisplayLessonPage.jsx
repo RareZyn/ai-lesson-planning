@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getLessonPlanById,
   deleteLessonPlan,
-  updateLessonPlan,
 } from "../../../services/lessonService";
 import { exportToPdf, exportToDocx } from "../../../services/exportService";
+import offlineLessonService from "../../../services/offline/offlineLessonService";
+import lessonOfflineService from "../../../services/offline/lessonOfflineService";
 
 // Import Ant Design components
 import {
@@ -106,6 +107,15 @@ const DisplayLessonPage = () => {
         const data = await getLessonPlanById(id);
         setLessonPlan(data);
         console.log("Lesson plan loaded:", data);
+
+        // Auto-save to offline cache for offline editing
+        try {
+          await lessonOfflineService.saveLessonOffline(data);
+          console.log("Lesson saved to offline cache");
+        } catch (cacheErr) {
+          console.warn("Failed to save to offline cache:", cacheErr);
+          // Don't throw - this is just a convenience feature
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -361,13 +371,20 @@ const DisplayLessonPage = () => {
   const handleSaveEdit = async () => {
     setIsSaving(true);
     try {
-      const updatedData = await updateLessonPlan(id, editedPlan);
-      setLessonPlan(updatedData);
+      // Use offline-aware update service
+      const result = await offlineLessonService.updateLesson(id, { plan: editedPlan });
+
+      // Update local state with returned data
+      setLessonPlan({ ...lessonPlan, plan: result.data.plan || editedPlan });
       setIsEditing(false);
       setEditedPlan(null);
+
+      // Show appropriate message based on whether action was queued
       Modal.success({
         title: 'Success',
-        content: 'Lesson plan updated successfully!',
+        content: result.queued
+          ? 'Lesson plan updated offline. Changes will sync when you\'re back online.'
+          : 'Lesson plan updated successfully!',
       });
     } catch (err) {
       Modal.error({

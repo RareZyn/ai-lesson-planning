@@ -28,3 +28,11 @@ export * from './offlineQueueService';
 // Offline-aware service wrappers
 export { default as offlineLessonService } from './offlineLessonService';
 export { default as offlineAssessmentService } from './offlineAssessmentService';
+
+// Phase 5: Conflict detection and resolution
+export { default as conflictDetectionService } from './conflictDetectionService';
+export * from './conflictDetectionService';
+
+// Phase 5: Enhanced sync service
+export { default as syncService } from './syncService';
+export * from './syncService';

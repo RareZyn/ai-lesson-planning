@@ -10,8 +10,7 @@ import {
   Wifi,
   SignalHigh,
   SignalMedium,
-  SignalLow,
-  RefreshCw
+  SignalLow
 } from 'lucide-react';
 import * as networkStatus from '../../services/networkStatus';
 import './NetworkStatus.css';
@@ -44,7 +43,7 @@ const NetworkStatus = ({
     setShow(!status.online || showOnlineStatus);
 
     return () => unsubscribe();
-  }, [showOnlineStatus]);
+  }, [showOnlineStatus, status.online]);
 
   // Don't render if online and showOnlineStatus is false
   if (!show) {

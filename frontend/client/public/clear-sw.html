@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Service Workers & Cache</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #1890ff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background: #40a9ff;
+    }
+    button.danger {
+      background: #ff4d4f;
+    }
+    button.danger:hover {
+      background: #ff7875;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      border-left: 4px solid #1890ff;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success {
+      color: #52c41a;
+    }
+    .error {
+      color: #ff4d4f;
+    }
+    .info {
+      color: #1890ff;
+    }
+    .warning {
+      background: #fffbe6;
+      border-left-color: #faad14;
+      color: #ad8b00;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Service Worker & Cache Cleaner</h1>
+    <p class="subtitle">Clear all service workers and caches to resolve offline module issues</p>
+
+    <div class="warning">
+      ⚠️ <strong>Important:</strong> This will unregister all service workers and clear all caches.
+      You will need to reload the application after this operation.
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <button onclick="clearAll()">🧹 Clear Everything</button>
+      <button onclick="clearServiceWorkers()">🔧 Clear Service Workers Only</button>
+      <button onclick="clearCaches()">🗑️ Clear Caches Only</button>
+      <button onclick="checkStatus()">ℹ️ Check Status</button>
+      <button class="danger" onclick="hardReset()">⚠️ Hard Reset</button>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function log(message, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const line = `[${time}] ${message}\n`;
+      const span = document.createElement('span');
+      span.className = type;
+      span.textContent = line;
+      output.appendChild(span);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    async function clearServiceWorkers() {
+      log('Starting service worker cleanup...', 'info');
+
+      if (!('serviceWorker' in navigator)) {
+        log('❌ Service Workers not supported in this browser', 'error');
+        return;
+      }
+
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+
+        if (registrations.length === 0) {
+          log('✅ No service workers found', 'success');
+          return;
+        }
+
+        log(`Found ${registrations.length} service worker(s)`, 'info');
+
+        for (const registration of registrations) {
+          await registration.unregister();
+          log(`✅ Unregistered service worker: ${registration.scope}`, 'success');
+        }
+
+        log('✅ All service workers unregistered successfully!', 'success');
+      } catch (error) {
+        log(`❌ Error clearing service workers: ${error.message}`, 'error');
+      }
+    }
+
+    async function clearCaches() {
+      log('Starting cache cleanup...', 'info');
+
+      if (!('caches' in window)) {
+        log('❌ Cache API not supported in this browser', 'error');
+        return;
+      }
+
+      try {
+        const cacheNames = await caches.keys();
+
+        if (cacheNames.length === 0) {
+          log('✅ No caches found', 'success');
+          return;
+        }
+
+        log(`Found ${cacheNames.length} cache(s)`, 'info');
+
+        for (const cacheName of cacheNames) {
+          await caches.delete(cacheName);
+          log(`✅ Deleted cache: ${cacheName}`, 'success');
+        }
+
+        log('✅ All caches cleared successfully!', 'success');
+      } catch (error) {
+        log(`❌ Error clearing caches: ${error.message}`, 'error');
+      }
+    }
+
+    async function clearAll() {
+      output.innerHTML = '';
+      log('🧹 Starting complete cleanup...', 'info');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      await clearServiceWorkers();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      await clearCaches();
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('✨ Cleanup complete! Please reload the page.', 'success');
+
+      // Offer to reload
+      setTimeout(() => {
+        if (confirm('Cleanup complete! Reload the page now?')) {
+          window.location.reload(true);
+        }
+      }, 1000);
+    }
+
+    async function checkStatus() {
+      output.innerHTML = '';
+      log('📊 Checking service worker and cache status...', 'info');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Check service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        log(`Service Workers: ${registrations.length} registered`, registrations.length > 0 ? 'warning' : 'success');
+
+        registrations.forEach((reg, i) => {
+          log(`  [${i + 1}] Scope: ${reg.scope}`, 'info');
+          log(`      Active: ${reg.active ? 'Yes' : 'No'}`, 'info');
+          log(`      Waiting: ${reg.waiting ? 'Yes' : 'No'}`, 'info');
+          log(`      Installing: ${reg.installing ? 'Yes' : 'No'}`, 'info');
+        });
+      } else {
+        log('Service Workers: Not supported', 'error');
+      }
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Check caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        log(`Caches: ${cacheNames.length} found`, cacheNames.length > 0 ? 'warning' : 'success');
+
+        if (cacheNames.length > 0) {
+          let totalSize = 0;
+          for (const cacheName of cacheNames) {
+            const cache = await caches.open(cacheName);
+            const requests = await cache.keys();
+            log(`  [${cacheName}]: ${requests.length} entries`, 'info');
+          }
+        }
+      } else {
+        log('Cache API: Not supported', 'error');
+      }
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Check IndexedDB
+      if ('indexedDB' in window) {
+        try {
+          const databases = await indexedDB.databases();
+          log(`IndexedDB: ${databases.length} database(s)`, databases.length > 0 ? 'info' : 'success');
+          databases.forEach((db, i) => {
+            log(`  [${i + 1}] ${db.name} (v${db.version})`, 'info');
+          });
+        } catch (e) {
+          log('IndexedDB: Cannot enumerate databases', 'warning');
+        }
+      }
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('✅ Status check complete', 'success');
+    }
+
+    async function hardReset() {
+      if (!confirm('⚠️ This will clear EVERYTHING including IndexedDB! Are you sure?')) {
+        return;
+      }
+
+      output.innerHTML = '';
+      log('🔥 Starting HARD RESET...', 'warning');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Clear service workers
+      await clearServiceWorkers();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Clear caches
+      await clearCaches();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Clear localStorage
+      log('Clearing localStorage...', 'info');
+      localStorage.clear();
+      log('✅ localStorage cleared', 'success');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Clear sessionStorage
+      log('Clearing sessionStorage...', 'info');
+      sessionStorage.clear();
+      log('✅ sessionStorage cleared', 'success');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+      // Clear IndexedDB
+      if ('indexedDB' in window) {
+        try {
+          log('Clearing IndexedDB databases...', 'info');
+          const databases = await indexedDB.databases();
+
+          for (const db of databases) {
+            indexedDB.deleteDatabase(db.name);
+            log(`✅ Deleted database: ${db.name}`, 'success');
+          }
+        } catch (e) {
+          log(`⚠️ IndexedDB cleanup: ${e.message}`, 'warning');
+        }
+      }
+
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('✨ HARD RESET COMPLETE!', 'success');
+      log('🔄 The page will reload in 2 seconds...', 'info');
+
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    }
+
+    // Auto-check status on load
+    window.addEventListener('load', () => {
+      setTimeout(checkStatus, 500);
+    });
+  </script>
+</body>
+</html>

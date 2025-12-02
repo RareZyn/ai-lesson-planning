@@ -1,7 +1,7 @@
 // AI Lesson Planning System - Service Worker
 // Provides offline support and caching strategies
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3'; // Updated to fix auth caching issues
 const CACHE_NAME = `ai-lesson-planning-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
@@ -23,12 +23,23 @@ const API_ROUTES = [
   '/api/community'
 ];
 
-// Routes that should never be cached (AI endpoints)
+// Routes that should never be cached (AI endpoints + Auth endpoints)
 const NO_CACHE_ROUTES = [
   '/api/assessment/generate',
   '/api/grading',
   '/api/ocr',
-  '/api/gpt'
+  '/api/gpt',
+  // Authentication routes - NEVER CACHE
+  '/api/auth/',
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/google',
+  '/api/auth/firebase-user',
+  '/api/auth/logout',
+  '/api/auth/me',
+  '/api/auth/profile',
+  '/api/auth/password',
+  '/api/auth/gemini-key'
 ];
 
 // ============================
@@ -105,12 +116,62 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip non-GET requests
+  // Skip webpack hot module replacement (HMR) requests
+  if (url.pathname.includes('.hot-update.')) {
+    return;
+  }
+
+  // Skip sockjs-node (webpack dev server)
+  if (url.pathname.includes('sockjs-node')) {
+    return;
+  }
+
+  // Skip webpack dev server
+  if (url.port === '3000' && url.pathname === '/ws') {
+    return;
+  }
+
+  // Skip non-GET requests (POST, PUT, DELETE should always go to network)
   if (request.method !== 'GET') {
     return;
   }
 
-  // Strategy 1: Network-Only for AI endpoints
+  // NEVER cache navigation routes (all page routes)
+  // In development, always fetch fresh to avoid login loops
+  const navigationRoutes = [
+    '/',
+    '/login',
+    '/register',
+    '/home',
+    '/class',
+    '/planner',
+    '/assessment',
+    '/community',
+    '/analytics',
+    '/admin'
+  ];
+
+  const isNavigationRoute = navigationRoutes.some(route =>
+    url.pathname === route || url.pathname.startsWith(route + '/')
+  );
+
+  if (isNavigationRoute) {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          // Only return offline page if truly offline
+          return caches.match('/offline.html').then(response => {
+            return response || new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
+        })
+    );
+    return;
+  }
+
+  // Strategy 1: Network-Only for AI endpoints and Auth endpoints
   if (shouldSkipCache(url.pathname)) {
     event.respondWith(fetch(request));
     return;

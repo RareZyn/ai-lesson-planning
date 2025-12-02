@@ -195,7 +195,7 @@ export async function deleteRubricsByAssessment(assessmentId) {
   }
 }
 
-export default {
+const rubricOfflineService = {
   saveRubricOffline,
   getRubricOffline,
   getAllRubricsOffline,
@@ -208,3 +208,5 @@ export default {
   searchRubricsOffline,
   deleteRubricsByAssessment
 };
+
+export default rubricOfflineService;

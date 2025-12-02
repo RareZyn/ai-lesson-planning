@@ -357,7 +357,7 @@ export function formatBytes(bytes, decimals = 2) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-export default {
+const storageQuotaManager = {
   isStorageApiSupported,
   isPersistentStorageSupported,
   getStorageEstimate,
@@ -372,3 +372,5 @@ export default {
   getCleanupSuggestions,
   formatBytes
 };
+
+export default storageQuotaManager;

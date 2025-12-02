@@ -224,7 +224,7 @@ export async function getLessonsByDateRange(startDate, endDate) {
   }
 }
 
-export default {
+const lessonOfflineService = {
   saveLessonOffline,
   getLessonOffline,
   getAllLessonsOffline,
@@ -239,3 +239,5 @@ export default {
   getRecentlyDownloaded,
   getLessonsByDateRange
 };
+
+export default lessonOfflineService;

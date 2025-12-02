@@ -76,7 +76,8 @@ const ProtectedRoute = ({ children, roles }) => {
         setRedirectCountdown(3); // Reset countdown
       }
     }
-  }, [isLoading, hasValidAuth, user, isAuthenticated, roles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, hasValidAuth, user?.uid, user?._id, user?.id, isAuthenticated]);
 
   // Show loading state while auth is being determined
   if (isLoading) {

@@ -231,7 +231,7 @@ export function waitForReady() {
   return Promise.reject(new Error('Service Workers not supported'));
 }
 
-export default {
+const serviceWorkerRegistration = {
   register,
   unregister,
   skipWaiting,
@@ -244,3 +244,5 @@ export default {
   isOffline,
   waitForReady,
 };
+
+export default serviceWorkerRegistration;

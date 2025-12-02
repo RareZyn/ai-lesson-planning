@@ -10,6 +10,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -40,4 +42,7 @@ export {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  // browserSessionPersistence is no longer used - we always persist login
 };

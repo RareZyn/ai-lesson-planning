@@ -290,7 +290,7 @@ export async function getTopPerformingStudents(limit = 10) {
   }
 }
 
-export default {
+const studentOfflineService = {
   saveStudentOffline,
   getStudentOffline,
   getStudentByStudentId,
@@ -306,3 +306,5 @@ export default {
   getStudentStats,
   getTopPerformingStudents
 };
+
+export default studentOfflineService;

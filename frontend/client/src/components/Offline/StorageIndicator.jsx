@@ -8,8 +8,7 @@ import { Progress, Card, Typography, Space, Tag, Tooltip, Button } from 'antd';
 import {
   DatabaseOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
-  DeleteOutlined
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import {
   getStorageEstimate,
@@ -19,7 +18,7 @@ import {
   isStoragePersisted
 } from '../../services/offline/storageQuotaManager';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const StorageIndicator = ({ compact = false, showDetails = true }) => {
   const [storageInfo, setStorageInfo] = useState(null);

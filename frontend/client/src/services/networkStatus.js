@@ -274,7 +274,7 @@ export async function getDetailedNetworkStatus() {
 // Initialize monitoring when module loads
 initNetworkMonitoring();
 
-export default {
+const networkStatusService = {
   initNetworkMonitoring,
   stopNetworkMonitoring,
   getNetworkStatus,
@@ -286,3 +286,5 @@ export default {
   testConnectivity,
   getDetailedNetworkStatus,
 };
+
+export default networkStatusService;

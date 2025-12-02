@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card, Tabs, Space, Typography, Alert, Button } from 'antd';
+import { Card, Tabs, Space, Typography, Alert } from 'antd';
 import {
   Download,
   Database,
@@ -17,7 +17,9 @@ import {
 import {
   StorageIndicator,
   OfflineContentManager,
-  PendingActionsViewer
+  PendingActionsViewer,
+  ConflictsManager,
+  SyncProgress
 } from '../../components/Offline';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './OfflineModePage.css';
@@ -93,6 +95,30 @@ const OfflineModePage = () => {
           key="pending"
         >
           <PendingActionsViewer showStats={true} />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <Activity size={16} style={{ marginRight: 8 }} />
+              Sync Status
+            </span>
+          }
+          key="sync"
+        >
+          <SyncProgress showHistory={true} />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <RefreshCw size={16} style={{ marginRight: 8 }} />
+              Conflicts
+            </span>
+          }
+          key="conflicts"
+        >
+          <ConflictsManager />
         </TabPane>
 
         <TabPane

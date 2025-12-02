@@ -1,0 +1,101 @@
+/* Sync Progress Styles */
+
+.sync-progress {
+  width: 100%;
+}
+
+.sync-progress .ant-card-head {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.sync-progress .ant-card-head-title {
+  color: white;
+}
+
+.sync-progress .ant-card-extra .ant-btn {
+  border-color: white;
+  color: white;
+}
+
+.sync-progress .ant-card-extra .ant-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: white;
+}
+
+/* Sync Status */
+.sync-status {
+  padding: 16px 0;
+}
+
+.sync-step {
+  margin-top: 12px;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Sync History */
+.sync-history {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.sync-history h4 {
+  margin-bottom: 16px;
+  color: #262626;
+  font-weight: 600;
+}
+
+.sync-time {
+  color: #999;
+  font-size: 12px;
+}
+
+.sync-duration,
+.sync-results {
+  color: #666;
+  font-size: 13px;
+}
+
+/* Compact Mode */
+.sync-progress-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-progress-compact .ant-progress {
+  margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sync-progress .ant-row {
+    gap: 8px;
+  }
+
+  .sync-history .ant-timeline {
+    padding-left: 0;
+  }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .sync-history {
+    border-top-color: #434343;
+  }
+
+  .sync-history h4 {
+    color: #d9d9d9;
+  }
+
+  .sync-step {
+    color: #bfbfbf;
+  }
+
+  .sync-duration,
+  .sync-results {
+    color: #bfbfbf;
+  }
+}

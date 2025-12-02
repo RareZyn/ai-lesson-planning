@@ -5,7 +5,6 @@ import "./AITools.css";
 const AITools = () => {
   const navigate = useNavigate();
 
-
   const tools = [
     {
       id: "lesson-plans",
@@ -26,10 +25,10 @@ const AITools = () => {
       path: "submissions",
     },
     {
-      id: "downloads",
-      title: "Downloads",
+      id: "offline-mode",
+      title: "Offline Mode",
       icon: "/logo/folders.webp",
-      path: "downloads",
+      path: "offline-mode",
     },
     {
       id: "materials",

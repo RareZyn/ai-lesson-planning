@@ -1,6 +1,6 @@
 // src/pages/auth/LoginPage.jsx
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, Checkbox, message, Modal } from "antd";
+import { Form, Input, Button, message, Modal } from "antd";
 import {
   UserOutlined,
   LockOutlined,
@@ -13,6 +13,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   googleProvider,
+  setPersistence,
+  browserLocalPersistence,
 } from "../../firebase";
 import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
@@ -25,17 +27,32 @@ const LoginPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+  const [hasNavigated, setHasNavigated] = useState(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loading: authLoading } = useUser();
+  const { isAuthenticated, loading: authLoading, isReady } = useUser();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only once when ready)
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate("/app", { replace: true });
+    // Prevent multiple navigations
+    if (hasNavigated) {
+      console.log('🚫 LoginPage: Already navigated, skipping...');
+      return;
     }
-  }, [isAuthenticated, authLoading, navigate]);
+
+    if (!authLoading && isReady && isAuthenticated) {
+      console.log('✅ LoginPage: User authenticated, redirecting...');
+      setHasNavigated(true);
+      const from = location.state?.from?.pathname || "/app";
+      // Use setTimeout to avoid React state update warnings
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+    } else {
+      console.log('⏳ LoginPage: Waiting for auth...', { authLoading, isReady, isAuthenticated });
+    }
+  }, [isAuthenticated, authLoading, isReady, navigate, location.state?.from?.pathname, hasNavigated]);
 
   // Handle modal submit for Google sign-in (now includes token)
   const handleModalSubmit = async (values) => {
@@ -75,6 +92,9 @@ const LoginPage = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Set persistence to LOCAL for Google sign-in (always remember)
+      await setPersistence(auth, browserLocalPersistence);
+
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
@@ -98,12 +118,12 @@ const LoginPage = () => {
               name: user.displayName || "",
             });
             setModalVisible(true);
+            setGoogleLoading(false);
           } else {
             // Existing user with complete profile and schoolId
             message.success("Google login successful!");
-            navigate(location.state?.from?.pathname || "/app/", {
-              replace: true,
-            });
+            // Don't navigate manually - let UserContext and the useEffect handle it
+            setGoogleLoading(false);
           }
         } else {
           throw new Error(response.message || "Authentication failed");
@@ -117,6 +137,7 @@ const LoginPage = () => {
           name: user.displayName || "",
         });
         setModalVisible(true);
+        setGoogleLoading(false);
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
@@ -125,7 +146,6 @@ const LoginPage = () => {
         errorMessage = error.response.data.message || errorMessage;
       }
       message.error(errorMessage);
-    } finally {
       setGoogleLoading(false);
     }
   };
@@ -133,10 +153,13 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // 1. Sign in with Firebase
+      // 1. Set Firebase persistence to LOCAL (always remember login)
+      await setPersistence(auth, browserLocalPersistence);
+
+      // 2. Sign in with Firebase
       await signInWithEmailAndPassword(auth, values.email, values.password);
 
-      // 2. Login to MongoDB backend
+      // 3. Login to MongoDB backend
       try {
         const response = await authAPI.login({
           email: values.email,
@@ -145,9 +168,7 @@ const LoginPage = () => {
 
         if (response.success) {
           message.success("Login successful!");
-          navigate(location.state?.from?.pathname || "/app/", {
-            replace: true,
-          });
+          // Don't navigate here - let the useEffect handle it after UserContext updates
         } else {
           throw new Error(response.message || "Login failed");
         }
@@ -175,6 +196,44 @@ const LoginPage = () => {
   const handleForgotPassword = () => {
     message.info("Forgot password functionality coming soon!");
   };
+
+  // Show loading while checking authentication
+  if (authLoading || !isReady) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p>Checking your session...</p>
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated (prevents flash)
+  if (isAuthenticated && !modalVisible) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div className="spinner-border text-success" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p>Redirecting to dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">
@@ -216,7 +275,6 @@ const LoginPage = () => {
         <Form
           name="login_form"
           className="login-form"
-          initialValues={{ remember: true }}
           onFinish={onFinish}
         >
           <Form.Item
@@ -240,10 +298,7 @@ const LoginPage = () => {
             />
           </Form.Item>
           <Form.Item>
-            <div className="d-flex justify-content-between align-items-center">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox>Remember me</Checkbox>
-              </Form.Item>
+            <div className="d-flex justify-content-end align-items-center">
               <button
                 type="button"
                 className="login-form-forgot"

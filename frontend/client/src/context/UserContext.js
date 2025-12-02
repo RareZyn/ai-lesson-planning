@@ -26,6 +26,7 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [lastFirebaseUid, setLastFirebaseUid] = useState(null); // Track last processed Firebase UID
 
   const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
@@ -101,27 +102,48 @@ export const UserProvider = ({ children }) => {
     }
 
     const initializeAuth = async () => {
-      setLoading(true);
-      // If a Firebase user object exists and our context isn't authenticated yet,
-      // this is the primary path for login (Google, email, page refresh).
-      if (firebaseUser && !isAuthenticated) {
+      const currentFirebaseUid = firebaseUser?.uid || null;
+
+      // If a Firebase user object exists and we haven't processed this user yet
+      if (firebaseUser && currentFirebaseUid && currentFirebaseUid !== lastFirebaseUid) {
+        console.log('🔐 UserContext: New Firebase user detected, syncing with backend...');
+        setLoading(true);
+        setLastFirebaseUid(currentFirebaseUid); // Mark this UID as processed
         await handleFirebaseLogin(firebaseUser);
+        setLoading(false);
+        setIsReady(true);
       }
-      // If no Firebase user, check for a lingering JWT as a fallback.
-      else if (!firebaseUser) {
+      // If no Firebase user and we had one before, clear auth
+      else if (!firebaseUser && lastFirebaseUid) {
+        console.log('🔓 UserContext: Firebase user logged out, clearing state...');
+        setLoading(true);
+        setLastFirebaseUid(null);
+        clearAuthenticatedState();
+        setLoading(false);
+        setIsReady(true);
+      }
+      // Initial load with no Firebase user - check for JWT
+      else if (!firebaseUser && !lastFirebaseUid && !isReady) {
+        console.log('🔍 UserContext: Initial load, checking for existing JWT...');
+        setLoading(true);
         await checkExistingAuth();
+        setLoading(false);
+        setIsReady(true);
       }
-      setLoading(false);
-      setIsReady(true);
+      // If already processed, just ensure we're ready
+      else if (!isReady) {
+        console.log('✅ UserContext: Auth already processed, marking ready...');
+        setLoading(false);
+        setIsReady(true);
+      }
     };
 
     initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    firebaseUser,
+    firebaseUser?.uid, // Only track UID changes, not the entire user object
     authLoading,
-    isAuthenticated,
-    handleFirebaseLogin,
-    checkExistingAuth,
+    // Do NOT add lastFirebaseUid or isReady to dependencies as they are set inside
   ]);
 
   const logout = async () => {

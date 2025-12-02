@@ -6,7 +6,7 @@
  */
 
 import api from '../api';
-import { lessonOfflineService } from './lessonOfflineService';
+import lessonOfflineService from './lessonOfflineService';
 import { queueAction, ACTION_TYPES } from './offlineQueueService';
 import networkStatus from '../networkStatus';
 
@@ -401,7 +401,7 @@ export async function getLessonsByDateRange(startDate, endDate) {
   return { data: results, source: 'offline' };
 }
 
-export default {
+const offlineLessonService = {
   getLesson,
   getAllLessons,
   getLessonsByClass,
@@ -416,3 +416,5 @@ export default {
   getRecentlyDownloaded,
   getLessonsByDateRange,
 };
+
+export default offlineLessonService;

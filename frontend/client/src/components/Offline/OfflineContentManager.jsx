@@ -17,19 +17,15 @@ import {
   Tabs,
   Empty,
   Popconfirm,
-  Input,
-  Select
+  Input
 } from 'antd';
 import {
-  DownloadOutlined,
   DeleteOutlined,
   FileTextOutlined,
   BookOutlined,
   TeamOutlined,
   UserOutlined,
-  SearchOutlined,
-  SyncOutlined,
-  CloudDownloadOutlined
+  SearchOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -54,6 +50,7 @@ const OfflineContentManager = () => {
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('lessons');

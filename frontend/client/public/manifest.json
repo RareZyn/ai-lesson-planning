@@ -1,6 +1,7 @@
 {
   "name": "AI Lesson Planning System - Malaysian Teachers",
   "short_name": "Lesson Planner",
+  "id": "/",
   "description": "AI-powered lesson planning and assessment management system for Malaysian teachers aligned with KSSR and KSSM curriculum",
   "start_url": "/",
   "scope": "/",

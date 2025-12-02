@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = 'ai-lesson-planning-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 3; // Incremented to fix offlineQueue schema (id vs _id issue)
 
 // Object Store Names
 export const STORES = {
@@ -16,7 +16,9 @@ export const STORES = {
   CLASSES: 'classes',
   STUDENTS: 'students',
   OFFLINE_QUEUE: 'offlineQueue',
-  METADATA: 'metadata'
+  METADATA: 'metadata',
+  CONFLICTS: 'conflicts',         // Phase 5: Conflict tracking
+  SYNC_HISTORY: 'syncHistory'     // Phase 5: Sync history
 };
 
 /**
@@ -40,6 +42,19 @@ export function openDB() {
     request.onupgradeneeded = (event) => {
       console.log('[IndexedDB] Database upgrade needed, creating object stores...');
       const db = event.target.result;
+      const oldVersion = event.oldVersion;
+      const newVersion = event.newVersion;
+
+      // Migration from version 2 to 3: Clear offlineQueue due to schema change (id vs _id)
+      if (oldVersion === 2 && newVersion === 3) {
+        console.log('[IndexedDB] Migrating from v2 to v3: Clearing offlineQueue due to schema fix');
+        const transaction = event.target.transaction;
+        if (db.objectStoreNames.contains(STORES.OFFLINE_QUEUE)) {
+          const queueStore = transaction.objectStore(STORES.OFFLINE_QUEUE);
+          queueStore.clear();
+          console.log('[IndexedDB] Cleared offlineQueue for schema migration');
+        }
+      }
 
       // Store: Lesson Plans
       if (!db.objectStoreNames.contains(STORES.LESSONS)) {
@@ -120,6 +135,29 @@ export function openDB() {
         });
         metadataStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         console.log('[IndexedDB] Created metadata store');
+      }
+
+      // Phase 5: Store: Conflicts (for sync conflict resolution)
+      if (!db.objectStoreNames.contains(STORES.CONFLICTS)) {
+        const conflictsStore = db.createObjectStore(STORES.CONFLICTS, {
+          keyPath: '_id'
+        });
+        conflictsStore.createIndex('status', 'status', { unique: false });
+        conflictsStore.createIndex('resourceType', 'resourceType', { unique: false });
+        conflictsStore.createIndex('severity', 'severity', { unique: false });
+        conflictsStore.createIndex('createdAt', 'createdAt', { unique: false });
+        console.log('[IndexedDB] Created conflicts store');
+      }
+
+      // Phase 5: Store: Sync History (for tracking sync operations)
+      if (!db.objectStoreNames.contains(STORES.SYNC_HISTORY)) {
+        const syncHistoryStore = db.createObjectStore(STORES.SYNC_HISTORY, {
+          keyPath: '_id'
+        });
+        syncHistoryStore.createIndex('timestamp', 'timestamp', { unique: false });
+        syncHistoryStore.createIndex('status', 'status', { unique: false });
+        syncHistoryStore.createIndex('syncType', 'syncType', { unique: false });
+        console.log('[IndexedDB] Created sync history store');
       }
 
       console.log('[IndexedDB] Database upgrade complete');
@@ -389,13 +427,13 @@ export async function addBatch(storeName, items) {
     const transaction = db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
 
-    const promises = items.map(item => {
+    items.forEach(item => {
       const itemToAdd = {
         ...item,
         downloadedAt: item.downloadedAt || new Date().toISOString(),
         lastModified: new Date().toISOString()
       };
-      return store.add(itemToAdd);
+      store.add(itemToAdd);
     });
 
     transaction.oncomplete = () => {
@@ -437,7 +475,7 @@ export async function deleteDatabase() {
   });
 }
 
-export default {
+const indexedDBService = {
   openDB,
   addItem,
   updateItem,
@@ -452,3 +490,5 @@ export default {
   deleteDatabase,
   STORES
 };
+
+export default indexedDBService;

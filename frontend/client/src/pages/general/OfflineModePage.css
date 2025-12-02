@@ -4,6 +4,8 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+  background-color: #f0f2f5;
+  min-height: 100vh;
 }
 
 .offline-mode-header {
@@ -15,31 +17,169 @@
   gap: 20px;
 }
 
+/* Main tabs styling */
 .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
   border-radius: 8px 8px 0 0;
   background-color: #fafafa;
   border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
 }
 
 .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
   background-color: #fff;
   border-bottom-color: #fff;
+  color: #1890ff;
+  font-weight: 500;
 }
 
 .offline-mode-page .ant-tabs-content {
   padding: 24px;
-  background-color: #fff;
+  background-color: #fff !important;
   border: 1px solid #d9d9d9;
   border-top: none;
   border-radius: 0 0 8px 8px;
+  min-height: 400px;
+}
+
+/* Fix for list items - ensure white background and visible text */
+.offline-mode-page .ant-list {
+  background-color: transparent !important;
+}
+
+.offline-mode-page .ant-list-item {
+  background-color: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 8px;
+  padding: 16px !important;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.offline-mode-page .ant-list-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #1890ff !important;
+  transform: translateY(-2px);
+}
+
+/* Ensure all text is visible */
+.offline-mode-page .ant-list-item-meta-title {
+  color: #262626 !important;
+  font-weight: 500;
+}
+
+.offline-mode-page .ant-list-item-meta-description {
+  color: #595959 !important;
+}
+
+.offline-mode-page .ant-typography {
+  color: #262626 !important;
+}
+
+/* Cards styling */
+.offline-mode-page .ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff !important;
+  margin-bottom: 16px;
+}
+
+.offline-mode-page .ant-card-body {
+  padding: 24px;
+  background-color: #ffffff !important;
+}
+
+/* Inner tabs (content manager tabs) */
+.offline-mode-page .ant-card .ant-tabs {
+  margin: -24px -24px 0 -24px;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-nav {
+  padding: 0 24px;
+  margin-bottom: 0;
+  background-color: #fafafa;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-content-holder {
+  padding: 24px;
+  background-color: #ffffff !important;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-tabpane {
+  background-color: #ffffff !important;
+}
+
+/* Tag styling */
+.offline-mode-page .ant-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* Search bar */
+.offline-mode-page .ant-input-search {
+  max-width: 100%;
+}
+
+.offline-mode-page .ant-input-affix-wrapper {
+  border-radius: 8px;
+  background-color: #ffffff !important;
+}
+
+.offline-mode-page .ant-input {
+  background-color: #ffffff !important;
+  color: #262626 !important;
+}
+
+/* Empty state */
+.offline-mode-page .ant-empty {
+  padding: 40px 0;
+}
+
+.offline-mode-page .ant-empty-description {
+  color: #8c8c8c !important;
+}
+
+/* Button styling */
+.offline-mode-page .ant-btn {
+  border-radius: 6px;
+}
+
+.offline-mode-page .ant-btn-text.ant-btn-dangerous:hover {
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+/* Alert styling */
+.offline-mode-page .ant-alert {
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+/* List item actions */
+.offline-mode-page .ant-list-item-action {
+  margin-left: 16px;
+}
+
+.offline-mode-page .ant-list-item-action > li {
+  padding: 0;
+}
+
+/* Icons */
+.offline-mode-page .anticon {
+  vertical-align: middle;
 }
 
 .offline-mode-page ul {
   line-height: 2;
+  color: #262626;
 }
 
 .offline-mode-page ol {
   line-height: 2;
+  color: #262626;
+}
+
+.offline-mode-page li {
+  color: #262626;
 }
 
 /* Responsive Design */
@@ -55,22 +195,12 @@
   .offline-mode-page .ant-tabs-content {
     padding: 16px;
   }
-}
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
-    background-color: #1f1f1f;
-    border-color: #434343;
+  .offline-mode-page .ant-card-body {
+    padding: 16px;
   }
 
-  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
-    background-color: #141414;
-    border-bottom-color: #141414;
-  }
-
-  .offline-mode-page .ant-tabs-content {
-    background-color: #141414;
-    border-color: #434343;
+  .offline-mode-page .ant-list-item {
+    padding: 12px !important;
   }
 }

@@ -14,7 +14,6 @@ import {
   Space,
   Typography,
   Empty,
-  Modal,
   message,
   Statistic,
   Row,
@@ -33,11 +32,11 @@ import {
   Play,
   Info
 } from 'lucide-react';
-import offlineQueueService, { ACTION_STATUS, ACTION_TYPES } from '../../services/offline/offlineQueueService';
+import offlineQueueService, { ACTION_STATUS } from '../../services/offline/offlineQueueService';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './PendingActionsViewer.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const PendingActionsViewer = ({ compact = false, showStats = true }) => {
   const [actions, setActions] = useState([]);
@@ -250,13 +249,13 @@ const PendingActionsViewer = ({ compact = false, showStats = true }) => {
 
     return (
       <List.Item
-        key={action._id}
+        key={action.id}
         actions={[
           <Tooltip title="Delete action">
             <Popconfirm
               title="Delete this action?"
               description="This cannot be undone."
-              onConfirm={() => handleDeleteAction(action._id)}
+              onConfirm={() => handleDeleteAction(action.id)}
               okText="Delete"
               cancelText="Cancel"
               okButtonProps={{ danger: true }}

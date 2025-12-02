@@ -229,7 +229,7 @@ export async function getClassStats() {
   }
 }
 
-export default {
+const classOfflineService = {
   saveClassOffline,
   getClassOffline,
   getAllClassesOffline,
@@ -243,3 +243,5 @@ export default {
   searchClassesOffline,
   getClassStats
 };
+
+export default classOfflineService;

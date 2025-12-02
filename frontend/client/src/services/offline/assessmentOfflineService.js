@@ -277,7 +277,7 @@ export async function getAssessmentStats() {
   }
 }
 
-export default {
+const assessmentOfflineService = {
   saveAssessmentOffline,
   getAssessmentOffline,
   getAllAssessmentsOffline,
@@ -294,3 +294,5 @@ export default {
   getAssessmentsWithContent,
   getAssessmentStats
 };
+
+export default assessmentOfflineService;

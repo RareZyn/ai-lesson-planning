@@ -12,10 +12,14 @@ import * as studentService from './studentOfflineService';
 import { addItem, updateItem, getItem, getAllItems, STORES } from '../indexedDB';
 
 // Import API services for downloading data
-import { getAllLessons, getLessonById } from '../lessonService';
-import { getAllAssessments, getAssessmentById } from '../assessmentService';
+import { getAllLessonPlans as getAllLessons, getLessonPlanById as getLessonById } from '../lessonService';
+import { assessmentAPI } from '../assessmentService';
 import { getAllClasses, getClassById } from '../classService';
-import { getAllStudents, getStudentsByClass } from '../studentService';
+import { studentAPI } from '../studentService';
+
+// Destructure needed methods
+const { getAssessmentById, getUserAssessments: getAllAssessments } = assessmentAPI;
+const { getStudentsByClass } = studentAPI;
 
 /**
  * Download Types
@@ -504,7 +508,7 @@ export async function getAllDownloadMetadata() {
   }
 }
 
-export default {
+const offlineStorageManager = {
   downloadLesson,
   downloadLessons,
   downloadClassLessons,
@@ -519,3 +523,5 @@ export default {
   getAllDownloadMetadata,
   DOWNLOAD_TYPES
 };
+
+export default offlineStorageManager;
