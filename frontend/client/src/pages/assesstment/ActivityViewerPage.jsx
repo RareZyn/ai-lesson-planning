@@ -20,6 +20,7 @@ import {
 import { assessmentAPI } from "../../services/assessmentService";
 import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
 import { printAssessmentContent } from "../../utils/assessmentPrint";
+import { isOnline } from "../../services/networkStatus";
 
 const { Title, Text } = Typography;
 
@@ -332,8 +333,15 @@ const ActivityViewerPage = () => {
       }
     } catch (error) {
       console.error("Error fetching assessment:", error);
-      setError("Failed to load assessment. Please try again.");
-      message.error("Failed to load assessment");
+
+      // Check if offline and show appropriate message
+      if (!isOnline()) {
+        setError("Offline assessment only");
+        message.warning("Offline assessment only", 3);
+      } else {
+        setError("Failed to load assessment. Please try again.");
+        message.error("Failed to load assessment");
+      }
     } finally {
       setLoading(false);
     }
