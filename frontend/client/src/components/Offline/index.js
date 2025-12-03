@@ -16,3 +16,9 @@ export { default as PendingActionsViewer } from './PendingActionsViewer';
 export { default as ConflictResolutionModal } from './ConflictResolutionModal';
 export { default as ConflictsManager } from './ConflictsManager';
 export { default as SyncProgress } from './SyncProgress';
+
+// Phase 7 Components - UI/UX Enhancements
+export { default as BulkDownloadButton } from './BulkDownloadButton';
+export { default as OfflineBadge, OfflineBadgeCompact, OfflineBadgeWithCount } from './OfflineBadge';
+export { default as SyncStatusBadge, SyncStatusBadgeCompact, SyncStatusWithProgress, LastSyncedIndicator } from './SyncStatusBadge';
+export { default as OnlineFeatureGuard, withOnlineGuard, useFeatureAvailable } from './OnlineFeatureGuard';

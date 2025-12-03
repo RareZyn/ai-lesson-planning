@@ -98,27 +98,22 @@ export const getSyncStatus = async () => {
  * @returns {Promise<Object>} Full sync results
  */
 export const performFullSync = async (lastSyncTimestamp) => {
-  try {
-    // This is a composite operation that:
-    // 1. Gets pending local changes
-    // 2. Checks for conflicts
-    // 3. Uploads changes (if no conflicts)
-    // 4. Downloads server updates
-    // 5. Returns comprehensive results
+  // This is a composite operation that:
+  // 1. Gets pending local changes
+  // 2. Checks for conflicts
+  // 3. Uploads changes (if no conflicts)
+  // 4. Downloads server updates
+  // 5. Returns comprehensive results
 
-    // Implementation will be in syncService.js which orchestrates this
-    // This is just the API wrapper
-    return {
-      success: true,
-      message: "Use syncService.sync() for full sync orchestration",
-    };
-  } catch (error) {
-    console.error("Error in full sync:", error);
-    throw error;
-  }
+  // Implementation will be in syncService.js which orchestrates this
+  // This is just the API wrapper
+  return {
+    success: true,
+    message: "Use syncService.sync() for full sync orchestration",
+  };
 };
 
-export default {
+const syncApiService = {
   getUpdatesSince,
   batchUploadChanges,
   checkConflicts,
@@ -126,3 +121,5 @@ export default {
   getSyncStatus,
   performFullSync,
 };
+
+export default syncApiService;
