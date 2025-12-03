@@ -325,7 +325,7 @@ export const saveConflict = async (conflict) => {
     resolution: null
   };
 
-  await indexedDBService.add('conflicts', conflictRecord);
+  await indexedDBService.addItem('conflicts', conflictRecord);
 
   // Dispatch event
   window.dispatchEvent(new CustomEvent('conflict-detected', {
@@ -339,7 +339,7 @@ export const saveConflict = async (conflict) => {
  * Get all pending conflicts
  */
 export const getPendingConflicts = async () => {
-  const allConflicts = await indexedDBService.getAll('conflicts');
+  const allConflicts = await indexedDBService.getAllItems('conflicts');
   return allConflicts.filter(c => c.status === 'pending');
 };
 
@@ -347,7 +347,7 @@ export const getPendingConflicts = async () => {
  * Get conflicts by resource type
  */
 export const getConflictsByType = async (resourceType) => {
-  const allConflicts = await indexedDBService.getAll('conflicts');
+  const allConflicts = await indexedDBService.getAllItems('conflicts');
   return allConflicts.filter(c => c.resourceType === resourceType && c.status === 'pending');
 };
 
@@ -391,7 +391,7 @@ export const resolveConflict = async (conflictId, strategy, customData = null) =
     }
   };
 
-  await indexedDBService.update('conflicts', conflictId, updatedConflict);
+  await indexedDBService.updateItem('conflicts', updatedConflict);
 
   // Dispatch event
   window.dispatchEvent(new CustomEvent('conflict-resolved', {
@@ -412,7 +412,7 @@ export const resolveConflict = async (conflictId, strategy, customData = null) =
  * Delete conflict
  */
 export const deleteConflict = async (conflictId) => {
-  await indexedDBService.delete('conflicts', conflictId);
+  await indexedDBService.deleteItem('conflicts', conflictId);
 
   window.dispatchEvent(new CustomEvent('conflict-deleted', {
     detail: { conflictId }
@@ -423,7 +423,7 @@ export const deleteConflict = async (conflictId) => {
  * Clear all resolved conflicts older than specified days
  */
 export const clearOldConflicts = async (daysOld = 7) => {
-  const allConflicts = await indexedDBService.getAll('conflicts');
+  const allConflicts = await indexedDBService.getAllItems('conflicts');
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
@@ -431,7 +431,7 @@ export const clearOldConflicts = async (daysOld = 7) => {
 
   for (const conflict of allConflicts) {
     if (conflict.status === 'resolved' && new Date(conflict.resolvedAt) < cutoffDate) {
-      await indexedDBService.delete('conflicts', conflict._id);
+      await indexedDBService.deleteItem('conflicts', conflict._id);
       deletedCount++;
     }
   }
@@ -443,7 +443,7 @@ export const clearOldConflicts = async (daysOld = 7) => {
  * Get conflict statistics
  */
 export const getConflictStats = async () => {
-  const allConflicts = await indexedDBService.getAll('conflicts');
+  const allConflicts = await indexedDBService.getAllItems('conflicts');
 
   const stats = {
     total: allConflicts.length,

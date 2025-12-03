@@ -244,7 +244,7 @@ class SyncService {
     const conflicts = [];
 
     // Check lessons for conflicts
-    const lessons = await indexedDBService.getAll('lessons');
+    const lessons = await indexedDBService.getAllItems('lessons');
     const lessonsWithPendingChanges = lessons.filter(lesson => lesson.__pendingSync);
 
     for (const lesson of lessonsWithPendingChanges) {
@@ -275,7 +275,7 @@ class SyncService {
     }
 
     // Check assessments for conflicts
-    const assessments = await indexedDBService.getAll('assessments');
+    const assessments = await indexedDBService.getAllItems('assessments');
     const assessmentsWithPendingChanges = assessments.filter(a => a.__pendingSync);
 
     for (const assessment of assessmentsWithPendingChanges) {
@@ -327,7 +327,7 @@ class SyncService {
       if (lessonsResponse.ok) {
         const updatedLessons = await lessonsResponse.json();
         for (const lesson of updatedLessons) {
-          await indexedDBService.update('lessons', lesson._id, lesson);
+          await indexedDBService.updateItem('lessons', lesson);
           results.lessons++;
         }
       }
@@ -337,7 +337,7 @@ class SyncService {
       if (assessmentsResponse.ok) {
         const updatedAssessments = await assessmentsResponse.json();
         for (const assessment of updatedAssessments) {
-          await indexedDBService.update('assessments', assessment._id, assessment);
+          await indexedDBService.updateItem('assessments', assessment);
           results.assessments++;
         }
       }
@@ -361,7 +361,7 @@ class SyncService {
 
     try {
       // Get items marked for sync
-      const lessons = await indexedDBService.getAll('lessons');
+      const lessons = await indexedDBService.getAllItems('lessons');
       const pendingLessons = lessons.filter(l => l.__pendingSync);
 
       for (const lesson of pendingLessons) {
@@ -375,7 +375,7 @@ class SyncService {
           if (response.ok) {
             // Remove pending sync flag
             delete lesson.__pendingSync;
-            await indexedDBService.update('lessons', lesson._id, lesson);
+            await indexedDBService.updateItem('lessons', lesson);
             results.uploaded++;
           } else {
             results.failed++;
@@ -404,10 +404,10 @@ class SyncService {
       timestamp: new Date().toISOString()
     };
 
-    await indexedDBService.add('syncHistory', historyEntry);
+    await indexedDBService.addItem('syncHistory', historyEntry);
 
     // Keep only last 50 entries
-    const allHistory = await indexedDBService.getAll('syncHistory');
+    const allHistory = await indexedDBService.getAllItems('syncHistory');
     if (allHistory.length > 50) {
       const sorted = allHistory.sort((a, b) =>
         new Date(b.timestamp) - new Date(a.timestamp)
@@ -415,7 +415,7 @@ class SyncService {
 
       // Delete oldest entries
       for (let i = 50; i < sorted.length; i++) {
-        await indexedDBService.delete('syncHistory', sorted[i]._id);
+        await indexedDBService.deleteItem('syncHistory', sorted[i]._id);
       }
     }
   }
@@ -427,7 +427,7 @@ class SyncService {
    * @returns {Array} Sync history entries
    */
   async getSyncHistory(limit = 20) {
-    const allHistory = await indexedDBService.getAll('syncHistory');
+    const allHistory = await indexedDBService.getAllItems('syncHistory');
     return allHistory
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, limit);
