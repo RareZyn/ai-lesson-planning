@@ -16,7 +16,6 @@ import {
   Descriptions,
   Space,
   Dropdown,
-  Menu,
   Alert,
   Row,
   Col,
@@ -465,29 +464,25 @@ const DisplayLessonPage = () => {
     lessonPlan.activityConfiguration || parameters?.activityConfiguration;
   const activityType = lessonPlan.activityType || parameters?.activityType;
 
-  // Export menu for dropdown
-  const exportMenu = (
-    <Menu>
-      <Menu.Item
-        key="pdf"
-        icon={<FilePdfOutlined />}
-        onClick={() => {
-          exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId);
-        }}
-      >
-        Export as PDF
-      </Menu.Item>
-      <Menu.Item
-        key="docx"
-        icon={<FileWordOutlined />}
-        onClick={() => {
-          exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId);
-        }}
-      >
-        Export as DOCX
-      </Menu.Item>
-    </Menu>
-  );
+  // Export menu items for dropdown
+  const exportMenuItems = [
+    {
+      key: 'pdf',
+      icon: <FilePdfOutlined />,
+      label: 'Export as PDF',
+      onClick: () => {
+        exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId);
+      }
+    },
+    {
+      key: 'docx',
+      icon: <FileWordOutlined />,
+      label: 'Export as DOCX',
+      onClick: () => {
+        exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId);
+      }
+    }
+  ];
 
   return (
     <div
@@ -555,7 +550,7 @@ const DisplayLessonPage = () => {
                 ) : (
                   <Space>
                     <Dropdown
-                      overlay={exportMenu}
+                      menu={{ items: exportMenuItems }}
                       trigger={["click"]}
                       placement="bottomRight"
                     >
