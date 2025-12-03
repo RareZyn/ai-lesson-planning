@@ -21,6 +21,7 @@ import indexedDBService from '../indexedDB';
 import offlineQueueService from './offlineQueueService';
 import conflictDetectionService from './conflictDetectionService';
 import networkStatus from '../networkStatus';
+import syncApiService from '../syncApiService'; // PHASE 6: Backend sync API integration
 
 // Sync status types
 export const SYNC_STATUS = {
@@ -319,26 +320,42 @@ class SyncService {
     };
 
     try {
-      // Get last sync timestamp
-      const lastSync = this.lastSyncTime || 0;
+      // PHASE 6: Use new sync API endpoint for differential sync
+      const lastSync = this.lastSyncTime || new Date(0).toISOString();
 
-      // Fetch updated lessons
-      const lessonsResponse = await fetch(`/api/lessons?since=${lastSync}`);
-      if (lessonsResponse.ok) {
-        const updatedLessons = await lessonsResponse.json();
-        for (const lesson of updatedLessons) {
-          await indexedDBService.updateItem('lessons', lesson);
-          results.lessons++;
+      const response = await syncApiService.getUpdatesSince(lastSync);
+
+      if (response.success && response.data) {
+        // Update lessons
+        if (response.data.lessons) {
+          for (const lesson of response.data.lessons) {
+            await indexedDBService.updateItem('lessons', lesson);
+            results.lessons++;
+          }
         }
-      }
 
-      // Fetch updated assessments
-      const assessmentsResponse = await fetch(`/api/assessment?since=${lastSync}`);
-      if (assessmentsResponse.ok) {
-        const updatedAssessments = await assessmentsResponse.json();
-        for (const assessment of updatedAssessments) {
-          await indexedDBService.updateItem('assessments', assessment);
-          results.assessments++;
+        // Update assessments
+        if (response.data.assessments) {
+          for (const assessment of response.data.assessments) {
+            await indexedDBService.updateItem('assessments', assessment);
+            results.assessments++;
+          }
+        }
+
+        // Update classes
+        if (response.data.classes) {
+          for (const classItem of response.data.classes) {
+            await indexedDBService.updateItem('classes', classItem);
+            results.classes++;
+          }
+        }
+
+        // Update students
+        if (response.data.students) {
+          for (const student of response.data.students) {
+            await indexedDBService.updateItem('students', student);
+            results.students++;
+          }
         }
       }
 
@@ -356,33 +373,56 @@ class SyncService {
   async uploadChanges() {
     const results = {
       uploaded: 0,
-      failed: 0
+      failed: 0,
+      conflicts: 0
     };
 
     try {
-      // Get items marked for sync
+      // PHASE 6: Collect all items marked for sync
       const lessons = await indexedDBService.getAllItems('lessons');
-      const pendingLessons = lessons.filter(l => l.__pendingSync);
+      const assessments = await indexedDBService.getAllItems('assessments');
+      const classes = await indexedDBService.getAllItems('classes');
+      const students = await indexedDBService.getAllItems('students');
 
-      for (const lesson of pendingLessons) {
-        try {
-          const response = await fetch(`/api/lessons/${lesson._id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lesson)
-          });
+      const pendingLessons = lessons.filter(l => l.__pendingSync || l.syncStatus === 'pending');
+      const pendingAssessments = assessments.filter(a => a.__pendingSync || a.syncStatus === 'pending');
+      const pendingClasses = classes.filter(c => c.__pendingSync || c.syncStatus === 'pending');
+      const pendingStudents = students.filter(s => s.__pendingSync || s.syncStatus === 'pending');
 
-          if (response.ok) {
-            // Remove pending sync flag
-            delete lesson.__pendingSync;
-            await indexedDBService.updateItem('lessons', lesson);
+      // Use batch upload API
+      if (pendingLessons.length > 0 || pendingAssessments.length > 0 ||
+          pendingClasses.length > 0 || pendingStudents.length > 0) {
+
+        const response = await syncApiService.batchUploadChanges({
+          lessons: pendingLessons,
+          assessments: pendingAssessments,
+          classes: pendingClasses,
+          students: pendingStudents
+        });
+
+        if (response.success && response.data) {
+          // Process successful uploads
+          for (const item of response.data.success) {
+            // Update local item to remove pending flags
+            const storeName = `${item.type}s`;
+            const localItem = await indexedDBService.getItem(storeName, item.id);
+            if (localItem) {
+              delete localItem.__pendingSync;
+              localItem.syncStatus = 'synced';
+              localItem.version = item.version;
+              await indexedDBService.updateItem(storeName, localItem);
+            }
             results.uploaded++;
-          } else {
-            results.failed++;
           }
-        } catch (error) {
-          console.error(`Failed to upload lesson ${lesson._id}:`, error);
-          results.failed++;
+
+          // Handle conflicts
+          results.conflicts = response.data.conflicts.length;
+          for (const conflict of response.data.conflicts) {
+            await conflictDetectionService.saveConflict(conflict);
+          }
+
+          // Track failures
+          results.failed = response.data.errors.length;
         }
       }
 

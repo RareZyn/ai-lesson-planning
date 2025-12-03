@@ -83,8 +83,38 @@ const classSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    // ===== PHASE 6: OFFLINE SYNC SUPPORT =====
+    version: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    syncStatus: {
+      type: String,
+      enum: ["synced", "pending", "conflict", "error"],
+      default: "synced",
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    offlineCreated: {
+      type: Boolean,
+      default: false,
+    },
+    lastModifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    conflictData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    // ===== END PHASE 6 =====
   },
   {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
@@ -171,5 +201,15 @@ classSchema.methods.updateClassStats = async function () {
 
   return this.save();
 };
+
+// PHASE 6: Pre-save middleware for version tracking
+classSchema.pre("save", function (next) {
+  if (this.isModified() && !this.isNew) {
+    this.version = (this.version || 1) + 1;
+    this.syncStatus = "pending";
+    this.lastModifiedBy = this.createdBy;
+  }
+  next();
+});
 
 module.exports = mongoose.model("Class", classSchema);
