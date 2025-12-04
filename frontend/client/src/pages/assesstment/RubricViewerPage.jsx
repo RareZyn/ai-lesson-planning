@@ -368,27 +368,17 @@ const RubricViewerPage = () => {
       if (answerKeyHTML) {
         return answerKeyHTML;
       } else if (answerKeyContent) {
-        console.log(
-          "✅ Converting answerKeyContent to HTML for",
-          assessment.activityType
-        );
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
       // For other types (essay, textbook, activity), use rubric content
       if (rubricHTML) {
-        console.log("✅ Using rubricHTML for", assessment.activityType);
         return rubricHTML;
       } else if (rubricContent) {
-        console.log(
-          "✅ Converting rubricContent to HTML for",
-          assessment.activityType
-        );
         return convertRubricContentToHTML(rubricContent);
       }
     }
 
-    console.log("❌ No teacher content found for", assessment.activityType);
     return null;
   };
 

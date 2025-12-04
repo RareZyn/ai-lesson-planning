@@ -106,7 +106,6 @@ export const UserProvider = ({ children }) => {
 
       // If a Firebase user object exists and we haven't processed this user yet
       if (firebaseUser && currentFirebaseUid && currentFirebaseUid !== lastFirebaseUid) {
-        console.log('🔐 UserContext: New Firebase user detected, syncing with backend...');
         setLoading(true);
         setLastFirebaseUid(currentFirebaseUid); // Mark this UID as processed
         await handleFirebaseLogin(firebaseUser);
@@ -115,7 +114,6 @@ export const UserProvider = ({ children }) => {
       }
       // If no Firebase user and we had one before, clear auth
       else if (!firebaseUser && lastFirebaseUid) {
-        console.log('🔓 UserContext: Firebase user logged out, clearing state...');
         setLoading(true);
         setLastFirebaseUid(null);
         clearAuthenticatedState();
@@ -124,7 +122,6 @@ export const UserProvider = ({ children }) => {
       }
       // Initial load with no Firebase user - check for JWT
       else if (!firebaseUser && !lastFirebaseUid && !isReady) {
-        console.log('🔍 UserContext: Initial load, checking for existing JWT...');
         setLoading(true);
         await checkExistingAuth();
         setLoading(false);
@@ -132,7 +129,6 @@ export const UserProvider = ({ children }) => {
       }
       // If already processed, just ensure we're ready
       else if (!isReady) {
-        console.log('✅ UserContext: Auth already processed, marking ready...');
         setLoading(false);
         setIsReady(true);
       }

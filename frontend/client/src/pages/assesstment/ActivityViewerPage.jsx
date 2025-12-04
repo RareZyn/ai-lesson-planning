@@ -386,48 +386,28 @@ const ActivityViewerPage = () => {
       examContent,
     } = assessment.generatedContent;
 
-    console.log("🔍 Content detection for", assessment.activityType, {
-      activityHTML: !!activityHTML,
-      assessmentHTML: !!assessmentHTML,
-      examHTML: !!examHTML,
-      activityContent: !!activityContent,
-      assessmentContent: !!assessmentContent,
-      examContent: !!examContent,
-    });
-
     if (assessment.activityType === "spm-exam") {
       if (examHTML) {
-        console.log("✅ Using examHTML for SPM exam");
         return examHTML;
       } else if (assessmentHTML) {
-        console.log("✅ Using assessmentHTML for SPM exam");
         return assessmentHTML;
       } else if (examContent) {
-        console.log("✅ Converting examContent to HTML for SPM exam");
         return convertAssessmentContentToHTML(examContent);
       } else if (assessmentContent) {
-        console.log("✅ Converting assessmentContent to HTML for SPM exam");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else if (assessment.activityType === "assessment") {
       // For regular assessments: assessmentHTML -> assessmentContent
       if (assessmentHTML) {
-        console.log("✅ Using assessmentHTML for assessment");
         return assessmentHTML;
       } else if (assessmentContent) {
-        console.log("✅ Converting assessmentContent to HTML for assessment");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else {
       // For other types: activityHTML -> activityContent
       if (activityHTML) {
-        console.log("✅ Using activityHTML for", assessment.activityType);
         return activityHTML;
       } else if (activityContent) {
-        console.log(
-          "✅ Converting activityContent to HTML for",
-          assessment.activityType
-        );
         return convertActivityContentToHTML(
           activityContent,
           assessment.activityType
@@ -435,7 +415,6 @@ const ActivityViewerPage = () => {
       }
     }
 
-    console.log("❌ No student content found for", assessment.activityType);
     return null;
   };
 

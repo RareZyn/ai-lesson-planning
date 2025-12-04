@@ -393,11 +393,15 @@ export async function countItems(storeName) {
 }
 
 /**
- * Batch add multiple items
+ * Batch add/update multiple items
  * @param {string} storeName - Name of the object store
- * @param {array} items - Array of items to add
+ * @param {array} items - Array of items to add or update
  */
 export async function addBatch(storeName, items) {
+  if (!items || items.length === 0) {
+    return Promise.resolve(0);
+  }
+
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
@@ -410,7 +414,8 @@ export async function addBatch(storeName, items) {
         downloadedAt: item.downloadedAt || new Date().toISOString(),
         lastModified: new Date().toISOString()
       };
-      store.add(itemToAdd);
+      // Use put() instead of add() to handle both insert and update
+      store.put(itemToAdd);
     });
 
     transaction.oncomplete = () => {
@@ -419,6 +424,7 @@ export async function addBatch(storeName, items) {
     };
 
     transaction.onerror = () => {
+      console.error(`[IndexedDB] Batch operation error in ${storeName}:`, transaction.error);
       reject(transaction.error);
     };
   });

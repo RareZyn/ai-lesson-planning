@@ -40,7 +40,6 @@ import { getStorageStats } from '../../services/offline/offlineStorageManager';
 dayjs.extend(relativeTime);
 
 const { Text, Title } = Typography;
-const { TabPane } = Tabs;
 const { Search } = Input;
 
 const OfflineContentManager = () => {
@@ -150,7 +149,7 @@ const OfflineContentManager = () => {
       <List
         dataSource={filteredLessons}
         loading={loading}
-        locale={{ emptyText: <Empty description="No offline lessons" /> }}F
+        locale={{ emptyText: <Empty description="No offline lessons" /> }}
         renderItem={(lesson) => (
           <List.Item
             actions={[
@@ -401,52 +400,52 @@ const OfflineContentManager = () => {
 
       {/* Content Tabs */}
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane
-            tab={
-              <span>
-                <FileTextOutlined />
-                Lessons ({lessons.length})
-              </span>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'lessons',
+              label: (
+                <span>
+                  <FileTextOutlined />
+                  Lessons ({lessons.length})
+                </span>
+              ),
+              children: renderLessonList()
+            },
+            {
+              key: 'assessments',
+              label: (
+                <span>
+                  <BookOutlined />
+                  Assessments ({assessments.length})
+                </span>
+              ),
+              children: renderAssessmentList()
+            },
+            {
+              key: 'classes',
+              label: (
+                <span>
+                  <TeamOutlined />
+                  Classes ({classes.length})
+                </span>
+              ),
+              children: renderClassList()
+            },
+            {
+              key: 'students',
+              label: (
+                <span>
+                  <UserOutlined />
+                  Students ({students.length})
+                </span>
+              ),
+              children: renderStudentList()
             }
-            key="lessons"
-          >
-            {renderLessonList()}
-          </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <BookOutlined />
-                Assessments ({assessments.length})
-              </span>
-            }
-            key="assessments"
-          >
-            {renderAssessmentList()}
-          </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <TeamOutlined />
-                Classes ({classes.length})
-              </span>
-            }
-            key="classes"
-          >
-            {renderClassList()}
-          </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <UserOutlined />
-                Students ({students.length})
-              </span>
-            }
-            key="students"
-          >
-            {renderStudentList()}
-          </TabPane>
-        </Tabs>
+          ]}
+        />
       </Card>
 
       {/* Download Progress Modal */}

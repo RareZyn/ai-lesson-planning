@@ -12,7 +12,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="navbar-logo">
             <img
-              src="./../logo/LessonPlanning.webp"
+              src="/logo/LessonPlanning.webp"
               alt="Company Logo"
               className="logo-img"
             />

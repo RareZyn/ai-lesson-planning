@@ -105,12 +105,10 @@ const DisplayLessonPage = () => {
       try {
         const data = await getLessonPlanById(id);
         setLessonPlan(data);
-        console.log("Lesson plan loaded:", data);
 
         // Auto-save to offline cache for offline editing
         try {
           await lessonOfflineService.saveLessonOffline(data);
-          console.log("Lesson saved to offline cache");
         } catch (cacheErr) {
           console.warn("Failed to save to offline cache:", cacheErr);
           // Don't throw - this is just a convenience feature

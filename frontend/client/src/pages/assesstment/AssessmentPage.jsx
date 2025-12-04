@@ -309,18 +309,6 @@ const AssessmentPage = () => {
       });
 
       if (assessmentWithActivity) {
-        console.log("🎯 Navigating to assessment:", {
-          assessmentId: assessmentWithActivity._id,
-          activityType: assessmentWithActivity.activityType,
-          hasActivity: assessmentWithActivity.hasActivity,
-          contentStatus: {
-            activityHTML:
-              !!assessmentWithActivity.generatedContent?.activityHTML,
-            assessmentHTML:
-              !!assessmentWithActivity.generatedContent?.assessmentHTML,
-            examHTML: !!assessmentWithActivity.generatedContent?.examHTML,
-          },
-        });
         navigate(`/app/assessment/${assessmentWithActivity._id}`);
       } else {
         message.warning("No activity content available for this assessment");
@@ -610,12 +598,6 @@ const AssessmentPage = () => {
         configuredFor: activityConfig.configuredFor,
       };
 
-      console.log("🚀 Generating assessment with:", {
-        activityType: activityConfig.type,
-        lessonPlanId: record._id,
-        hasConfiguration: !!activityConfig,
-      });
-
       // Call the API to generate assessment
       const response = await assessmentAPI.generateFromLessonPlan(
         lessonPlanData,
@@ -630,10 +612,6 @@ const AssessmentPage = () => {
 
         // Navigate to view the generated assessment
         if (response.data?._id) {
-          console.log(
-            "✅ Assessment generated, navigating to:",
-            response.data._id
-          );
           setTimeout(() => {
             navigate(`/app/assessment/${response.data._id}`);
           }, 1000);
@@ -652,8 +630,6 @@ const AssessmentPage = () => {
   };
 
   const handleStandaloneActivitySelect = (activityType, assessmentData) => {
-    console.log("🎯 Activity selected:", { activityType, assessmentData });
-
     setStandaloneActivityType(activityType);
     setStandaloneAssessmentData(assessmentData);
     setStandaloneModalOpen(false);
@@ -664,12 +640,6 @@ const AssessmentPage = () => {
   const handleStandaloneActivitySubmit = async (formData) => {
     try {
       setLoading(true);
-      console.log("📝 Submitting standalone activity:", {
-        formData,
-        standaloneAssessmentData,
-        activityType: standaloneActivityType,
-      });
-
       let mappedActivityType = standaloneActivityType;
 
       // Prepare the data for standalone assessment creation
@@ -687,8 +657,6 @@ const AssessmentPage = () => {
           formData.additionalRequirement ||
           `Standalone ${getActivityTypeDisplay(mappedActivityType)} assessment`,
       };
-
-      console.log("🔄 Calling API with:", standaloneData);
 
       // Call the standalone assessment API
       const response = await assessmentAPI.createStandaloneAssessment(
@@ -708,10 +676,6 @@ const AssessmentPage = () => {
 
         // Navigate to view the created assessment
         if (response.data?._id) {
-          console.log(
-            "✅ Standalone assessment created, navigating to:",
-            response.data._id
-          );
           setTimeout(() => {
             navigate(`/app/assessment/${response.data._id}`);
           }, 1000);
@@ -734,7 +698,6 @@ const AssessmentPage = () => {
   };
 
   const handleCloseStandaloneModals = () => {
-    console.log("🔒 Closing standalone modals");
     setStandaloneModalOpen(false);
     setStandaloneActivityModalOpen(false);
     setStandaloneActivityType(null);
@@ -1103,8 +1066,6 @@ const AssessmentPage = () => {
       onSubmit: handleStandaloneActivitySubmit,
       assessmentData: standaloneAssessmentData,
     };
-
-    console.log("🔧 Modal props:", commonProps);
 
     switch (standaloneActivityType) {
       case "activity":

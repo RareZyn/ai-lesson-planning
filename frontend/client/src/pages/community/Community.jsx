@@ -52,8 +52,6 @@ const Community = () => {
           }
         })
       );
-
-      console.log(`Cached ${lessonsToCache.length} lessons for offline access`);
     } catch (error) {
       console.warn("Error caching lessons:", error);
       // Silently fail - caching is optional
@@ -80,8 +78,6 @@ const Community = () => {
           }
         })
       );
-
-      console.log(`Cached ${assessmentsToCacheArray.length} assessments for offline access`);
     } catch (error) {
       console.warn("Error caching assessments:", error);
       // Silently fail - caching is optional

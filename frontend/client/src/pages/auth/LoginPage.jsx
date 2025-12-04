@@ -37,12 +37,10 @@ const LoginPage = () => {
   useEffect(() => {
     // Prevent multiple navigations
     if (hasNavigated) {
-      console.log('🚫 LoginPage: Already navigated, skipping...');
       return;
     }
 
     if (!authLoading && isReady && isAuthenticated) {
-      console.log('✅ LoginPage: User authenticated, redirecting...');
       setHasNavigated(true);
       const from = location.state?.from?.pathname || "/app";
       // Use setTimeout to avoid React state update warnings
@@ -50,7 +48,6 @@ const LoginPage = () => {
         navigate(from, { replace: true });
       }, 100);
     } else {
-      console.log('⏳ LoginPage: Waiting for auth...', { authLoading, isReady, isAuthenticated });
     }
   }, [isAuthenticated, authLoading, isReady, navigate, location.state?.from?.pathname, hasNavigated]);
 
@@ -241,7 +238,7 @@ const LoginPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/LessonPlanning.webp" alt="App Icon" />
+              <img src="/logo/LessonPlanning.webp" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>

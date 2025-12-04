@@ -14,57 +14,15 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "/logo/LessonPlanning.webp",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "logo512.png",
+      "src": "/logo/LessonPlanning.webp",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any maskable"
     }
   ],
@@ -96,53 +54,25 @@
       "name": "Create Lesson Plan",
       "short_name": "New Lesson",
       "description": "Create a new AI-powered lesson plan",
-      "url": "/planner/multi-step",
-      "icons": [
-        {
-          "src": "/icons/shortcut-new-lesson.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/planner/multi-step"
     },
     {
       "name": "My Classes",
       "short_name": "Classes",
       "description": "View and manage your classes",
-      "url": "/class-management",
-      "icons": [
-        {
-          "src": "/icons/shortcut-classes.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/class-management"
     },
     {
       "name": "Assessments",
       "short_name": "Assessments",
       "description": "Generate and manage assessments",
-      "url": "/assessment",
-      "icons": [
-        {
-          "src": "/icons/shortcut-assessment.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/assessment"
     },
     {
       "name": "Offline Content",
       "short_name": "Offline",
       "description": "Access downloaded offline content",
-      "url": "/offline",
-      "icons": [
-        {
-          "src": "/icons/shortcut-offline.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/offline"
     }
   ],
   "prefer_related_applications": false

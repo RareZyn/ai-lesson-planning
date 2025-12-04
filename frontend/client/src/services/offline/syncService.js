@@ -64,7 +64,6 @@ class SyncService {
 
         // Register background sync tag
         await registration.sync.register('sync-offline-data');
-        console.log('✅ Background sync registered');
       } catch (error) {
         console.warn('⚠️ Background sync not available:', error);
       }
@@ -78,7 +77,6 @@ class SyncService {
    */
   setupNetworkListeners() {
     window.addEventListener('online', () => {
-      console.log('📡 Network online - triggering auto-sync');
       this.triggerAutoSync();
     });
 
@@ -90,7 +88,6 @@ class SyncService {
         const FIVE_MINUTES = 5 * 60 * 1000;
 
         if (timeSinceLastSync > FIVE_MINUTES) {
-          console.log('📡 Tab visible - triggering sync');
           this.triggerAutoSync();
         }
       }
@@ -102,7 +99,6 @@ class SyncService {
    */
   async triggerAutoSync() {
     if (this.syncInProgress) {
-      console.log('⏭️ Sync already in progress, skipping');
       return;
     }
 
@@ -135,8 +131,6 @@ class SyncService {
       this.syncInProgress = true;
       this.notifyListeners({ status: SYNC_STATUS.SYNCING, progress: 0 });
 
-      console.log(`🔄 Starting ${syncType} sync...`);
-
       // Step 1: Process pending actions from queue
       this.notifyListeners({ status: SYNC_STATUS.SYNCING, progress: 20, step: 'Processing queue' });
       const queueResults = await offlineQueueService.processPendingActions();
@@ -146,12 +140,6 @@ class SyncService {
       const conflicts = await this.detectConflicts();
 
       if (conflicts.length > 0) {
-        console.log(`⚠️ Found ${conflicts.length} conflicts`);
-        this.notifyListeners({
-          status: SYNC_STATUS.CONFLICT,
-          progress: 50,
-          conflicts
-        });
 
         // Save conflicts for user resolution
         for (const conflict of conflicts) {
@@ -195,8 +183,6 @@ class SyncService {
         progress: 100,
         result: syncResult
       });
-
-      console.log(`✅ Sync completed in ${duration}ms`);
 
       // Dispatch success event
       window.dispatchEvent(new CustomEvent('sync-complete', {
@@ -359,7 +345,6 @@ class SyncService {
         }
       }
 
-      console.log('📥 Downloaded updates:', results);
     } catch (error) {
       console.error('Error downloading updates:', error);
     }
@@ -426,7 +411,6 @@ class SyncService {
         }
       }
 
-      console.log('📤 Uploaded changes:', results);
     } catch (error) {
       console.error('Error uploading changes:', error);
     }
@@ -529,14 +513,12 @@ class SyncService {
     // Set new interval
     this.periodicSyncInterval = setInterval(() => {
       if (networkStatus.isOnline() && !this.syncInProgress) {
-        console.log('⏰ Periodic sync triggered');
         this.sync(SYNC_TYPES.PERIODIC).catch(error => {
           console.error('Periodic sync failed:', error);
         });
       }
     }, intervalMinutes * 60 * 1000);
 
-    console.log(`⏰ Periodic sync scheduled every ${intervalMinutes} minutes`);
   }
 
   /**
@@ -546,7 +528,6 @@ class SyncService {
     if (this.periodicSyncInterval) {
       clearInterval(this.periodicSyncInterval);
       this.periodicSyncInterval = null;
-      console.log('⏰ Periodic sync stopped');
     }
   }
 
