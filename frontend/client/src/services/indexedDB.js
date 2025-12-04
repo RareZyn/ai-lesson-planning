@@ -30,29 +30,24 @@ export function openDB() {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      console.error('[IndexedDB] Database failed to open:', request.error);
       reject(request.error);
     };
 
     request.onsuccess = () => {
-      console.log('[IndexedDB] Database opened successfully');
       resolve(request.result);
     };
 
     request.onupgradeneeded = (event) => {
-      console.log('[IndexedDB] Database upgrade needed, creating object stores...');
       const db = event.target.result;
       const oldVersion = event.oldVersion;
       const newVersion = event.newVersion;
 
       // Migration from version 2 to 3: Clear offlineQueue due to schema change (id vs _id)
       if (oldVersion === 2 && newVersion === 3) {
-        console.log('[IndexedDB] Migrating from v2 to v3: Clearing offlineQueue due to schema fix');
         const transaction = event.target.transaction;
         if (db.objectStoreNames.contains(STORES.OFFLINE_QUEUE)) {
           const queueStore = transaction.objectStore(STORES.OFFLINE_QUEUE);
           queueStore.clear();
-          console.log('[IndexedDB] Cleared offlineQueue for schema migration');
         }
       }
 
@@ -66,7 +61,6 @@ export function openDB() {
         lessonStore.createIndex('grade', 'grade', { unique: false });
         lessonStore.createIndex('downloadedAt', 'downloadedAt', { unique: false });
         lessonStore.createIndex('lastModified', 'lastModified', { unique: false });
-        console.log('[IndexedDB] Created lessons store');
       }
 
       // Store: Assessments
@@ -78,7 +72,6 @@ export function openDB() {
         assessmentStore.createIndex('classId', 'classId', { unique: false });
         assessmentStore.createIndex('assessmentType', 'assessmentType', { unique: false });
         assessmentStore.createIndex('downloadedAt', 'downloadedAt', { unique: false });
-        console.log('[IndexedDB] Created assessments store');
       }
 
       // Store: Rubrics (part of assessments but can be stored separately for quick access)
@@ -88,7 +81,6 @@ export function openDB() {
         });
         rubricStore.createIndex('assessmentId', 'assessmentId', { unique: false });
         rubricStore.createIndex('downloadedAt', 'downloadedAt', { unique: false });
-        console.log('[IndexedDB] Created rubrics store');
       }
 
       // Store: Classes
@@ -100,7 +92,6 @@ export function openDB() {
         classStore.createIndex('grade', 'grade', { unique: false });
         classStore.createIndex('subject', 'subject', { unique: false });
         classStore.createIndex('downloadedAt', 'downloadedAt', { unique: false });
-        console.log('[IndexedDB] Created classes store');
       }
 
       // Store: Students
@@ -112,7 +103,6 @@ export function openDB() {
         studentStore.createIndex('studentId', 'studentId', { unique: true });
         studentStore.createIndex('name', 'name', { unique: false });
         studentStore.createIndex('downloadedAt', 'downloadedAt', { unique: false });
-        console.log('[IndexedDB] Created students store');
       }
 
       // Store: Offline Queue (for pending actions when offline)
@@ -125,7 +115,6 @@ export function openDB() {
         queueStore.createIndex('status', 'status', { unique: false });
         queueStore.createIndex('actionType', 'actionType', { unique: false });
         queueStore.createIndex('retryCount', 'retryCount', { unique: false });
-        console.log('[IndexedDB] Created offline queue store');
       }
 
       // Store: Metadata (for tracking downloads, sync status, etc.)
@@ -134,7 +123,6 @@ export function openDB() {
           keyPath: 'key'
         });
         metadataStore.createIndex('updatedAt', 'updatedAt', { unique: false });
-        console.log('[IndexedDB] Created metadata store');
       }
 
       // Phase 5: Store: Conflicts (for sync conflict resolution)
@@ -146,7 +134,6 @@ export function openDB() {
         conflictsStore.createIndex('resourceType', 'resourceType', { unique: false });
         conflictsStore.createIndex('severity', 'severity', { unique: false });
         conflictsStore.createIndex('createdAt', 'createdAt', { unique: false });
-        console.log('[IndexedDB] Created conflicts store');
       }
 
       // Phase 5: Store: Sync History (for tracking sync operations)
@@ -157,10 +144,8 @@ export function openDB() {
         syncHistoryStore.createIndex('timestamp', 'timestamp', { unique: false });
         syncHistoryStore.createIndex('status', 'status', { unique: false });
         syncHistoryStore.createIndex('syncType', 'syncType', { unique: false });
-        console.log('[IndexedDB] Created sync history store');
       }
 
-      console.log('[IndexedDB] Database upgrade complete');
     };
   });
 }
@@ -191,7 +176,6 @@ export async function addItem(storeName, data) {
     const request = store.add(itemToAdd);
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Added item to ${storeName}:`, request.result);
       resolve(request.result);
     };
 
@@ -227,7 +211,6 @@ export async function updateItem(storeName, data) {
     const request = store.put(itemToUpdate);
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Updated item in ${storeName}:`, request.result);
       resolve(request.result);
     };
 
@@ -256,7 +239,6 @@ export async function getItem(storeName, key) {
     const request = store.get(key);
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Retrieved item from ${storeName}:`, request.result);
       resolve(request.result);
     };
 
@@ -284,7 +266,6 @@ export async function getAllItems(storeName) {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Retrieved all items from ${storeName}:`, request.result.length);
       resolve(request.result);
     };
 
@@ -313,7 +294,6 @@ export async function deleteItem(storeName, key) {
     const request = store.delete(key);
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Deleted item from ${storeName}:`, key);
       resolve(key);
     };
 
@@ -341,7 +321,6 @@ export async function clearStore(storeName) {
     const request = store.clear();
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Cleared all items from ${storeName}`);
       resolve();
     };
 
@@ -372,7 +351,6 @@ export async function getByIndex(storeName, indexName, value) {
     const request = index.getAll(value);
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Query ${storeName} by ${indexName}=${value}:`, request.result.length);
       resolve(request.result);
     };
 
@@ -400,7 +378,6 @@ export async function countItems(storeName) {
     const request = store.count();
 
     request.onsuccess = () => {
-      console.log(`[IndexedDB] Count of items in ${storeName}:`, request.result);
       resolve(request.result);
     };
 
@@ -437,13 +414,11 @@ export async function addBatch(storeName, items) {
     });
 
     transaction.oncomplete = () => {
-      console.log(`[IndexedDB] Batch added ${items.length} items to ${storeName}`);
       db.close();
       resolve(items.length);
     };
 
     transaction.onerror = () => {
-      console.error(`[IndexedDB] Batch add failed for ${storeName}:`, transaction.error);
       reject(transaction.error);
     };
   });
@@ -464,12 +439,10 @@ export async function deleteDatabase() {
     const request = indexedDB.deleteDatabase(DB_NAME);
 
     request.onsuccess = () => {
-      console.log('[IndexedDB] Database deleted successfully');
       resolve();
     };
 
     request.onerror = () => {
-      console.error('[IndexedDB] Error deleting database:', request.error);
       reject(request.error);
     };
   });

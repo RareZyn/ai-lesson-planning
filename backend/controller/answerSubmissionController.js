@@ -17,7 +17,8 @@ exports.submitAnswer = async (req, res) => {
       classId,
       studentId,
       submissionMethod,
-      answers, // Array of { questionNumber, originalImage }
+      answers, // Array of { questionNumber, originalImage } - for individual mode
+      files, // Array of { fileName, fileType, fileData, fileIndex } - for bulk mode
     } = req.body;
 
     // Validate required fields
@@ -29,10 +30,14 @@ exports.submitAnswer = async (req, res) => {
       });
     }
 
-    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+    // Check if either answers or files are provided
+    if (
+      (!answers || !Array.isArray(answers) || answers.length === 0) &&
+      (!files || !Array.isArray(files) || files.length === 0)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "At least one answer is required",
+        message: "At least one answer or file is required",
       });
     }
 
@@ -69,20 +74,48 @@ exports.submitAnswer = async (req, res) => {
     }
 
     // Format answers for database
-    const formattedAnswers = answers.map((answer) => ({
-      questionNumber: answer.questionNumber,
-      questionText: answer.questionText || "",
-      originalImage: answer.originalImage || "",
-      uploadedAt: new Date(),
-      ocrData: {
-        extractedText: "",
-        confidence: 0,
-        metadata: {},
-        processedAt: null,
-      },
-      grading: {},
-      status: "pending_ocr",
-    }));
+    let formattedAnswers;
+    let totalItems;
+
+    if (submissionMethod === "upload_bulk" && files) {
+      // Handle bulk upload mode - store files as answers
+      formattedAnswers = files.map((file) => ({
+        questionNumber: file.fileIndex,
+        questionText: file.fileName,
+        originalImage: file.fileData,
+        uploadedAt: new Date(),
+        ocrData: {
+          extractedText: "",
+          confidence: 0,
+          metadata: {
+            fileName: file.fileName,
+            fileType: file.fileType,
+            isPdf: file.fileType === "application/pdf",
+          },
+          processedAt: null,
+        },
+        grading: {},
+        status: "pending_ocr",
+      }));
+      totalItems = files.length;
+    } else {
+      // Handle individual upload mode
+      formattedAnswers = answers.map((answer) => ({
+        questionNumber: answer.questionNumber,
+        questionText: answer.questionText || "",
+        originalImage: answer.originalImage || "",
+        uploadedAt: new Date(),
+        ocrData: {
+          extractedText: "",
+          confidence: 0,
+          metadata: {},
+          processedAt: null,
+        },
+        grading: {},
+        status: "pending_ocr",
+      }));
+      totalItems = answers.length;
+    }
 
     // Create student answer document
     const studentAnswer = await StudentAnswer.create({
@@ -94,7 +127,7 @@ exports.submitAnswer = async (req, res) => {
       submittedAt: new Date(),
       answers: formattedAnswers,
       overallStats: {
-        totalQuestions: answers.length,
+        totalQuestions: totalItems,
         questionsAttempted: 0,
         totalScore: 0,
         maxPossibleScore: 0,
