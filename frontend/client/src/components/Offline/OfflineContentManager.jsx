@@ -141,16 +141,16 @@ const OfflineContentManager = () => {
 
   const renderLessonList = () => {
     const filteredLessons = filterContent(lessons, [
-      'specificTopic',
+      'parameters.specificTopic',
       'learningObjective',
-      'grade'
+      'parameters.grade'
     ]);
 
     return (
       <List
         dataSource={filteredLessons}
         loading={loading}
-        locale={{ emptyText: <Empty description="No offline lessons" /> }}
+        locale={{ emptyText: <Empty description="No offline lessons" /> }}F
         renderItem={(lesson) => (
           <List.Item
             actions={[
@@ -170,8 +170,8 @@ const OfflineContentManager = () => {
               avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
               title={
                 <Space>
-                  <span>{lesson.specificTopic || 'Untitled Lesson'}</span>
-                  <Tag color="blue">{lesson.grade}</Tag>
+                  <span>{lesson.parameters?.specificTopic || 'Untitled Lesson'}</span>
+                  <Tag color="blue">{lesson.parameters?.grade}</Tag>
                 </Space>
               }
               description={
