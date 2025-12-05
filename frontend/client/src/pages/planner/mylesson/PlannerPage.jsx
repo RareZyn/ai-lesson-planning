@@ -12,6 +12,8 @@ import LessonStatusIcon from '../../../components/LessonStatusIcon.jsx';
 
 import { FaPlus, FaSearch, FaTh, FaBars } from 'react-icons/fa';
 import dayjs from 'dayjs';
+import { Modal as AntModal, message } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 const CreateLessonCard = ({ showModal }) => (
   <div
@@ -127,7 +129,7 @@ const PlannerPage = () => {
       });
       setIsModalVisible(false);
     } else {
-      alert("Please select a valid date.");
+      message.warning("Please select a valid date.");
     }
   };
 
@@ -153,18 +155,35 @@ const PlannerPage = () => {
       </div>
     );
 
-    const handleSendForApprovalClick = async (lessonId) => {
+    const handleSendForApprovalClick = async (lessonId, lessonTopic) => {
       console.log("Draft clicked for:", lessonId);
 
-      if (!window.confirm("Send this lesson plan for approval?")) return;
-
-      try {
-        await sendLessonForApproval(lessonId);
-        await fetchLessons();
-        alert("Lesson plan sent for approval!");
-      } catch (error) {
-        alert(error.message);
-      }
+      AntModal.confirm({
+        title: 'Send for Approval',
+        icon: <ExclamationCircleOutlined />,
+        content: (
+          <div>
+            <p>Send this lesson plan for approval?</p>
+            {lessonTopic && (
+              <p className="mb-0">
+                <strong>Topic:</strong> {lessonTopic}
+              </p>
+            )}
+          </div>
+        ),
+        okText: 'Send',
+        okType: 'primary',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          try {
+            await sendLessonForApproval(lessonId);
+            await fetchLessons();
+            message.success("Lesson plan sent for approval!");
+          } catch (error) {
+            message.error(error.message || "Failed to send for approval");
+          }
+        },
+      });
     };
 
 
@@ -194,7 +213,7 @@ const PlannerPage = () => {
                 // Directly render LessonStatusIcon and pass the handler to it
                 <LessonStatusIcon
                   status="draft"
-                  onClick={() => handleSendForApprovalClick(lesson._id)} // Pass the handler
+                  onClick={() => handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic)} // Pass the handler
                 // Note: We pass null for the event because LessonStatusIcon's internal handler
                 // already calls stopPropagation. If you needed the event object here for something,
                 // you'd modify LessonStatusIcon to pass it up.

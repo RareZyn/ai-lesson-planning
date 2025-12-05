@@ -10,6 +10,7 @@ import {
   ReloadOutlined,
   FlagOutlined,
   ExclamationCircleOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { submissionService } from "../../services/submissionService";
@@ -57,6 +58,16 @@ const SubmissionReviewPage = () => {
       );
 
       if (result.success) {
+        console.log("Submission data received:", result.data);
+        console.log("Number of answers:", result.data.answers?.length);
+        // Debug: Log image data for each answer
+        result.data.answers?.forEach((answer, idx) => {
+          console.log(`Question ${answer.questionNumber}:`, {
+            hasImage: !!answer.originalImage,
+            imageLength: answer.originalImage?.length || 0,
+            imagePrefix: answer.originalImage?.substring(0, 50) || "N/A"
+          });
+        });
         setSubmission(result.data);
       } else {
         setError(result.message);
@@ -442,38 +453,180 @@ const SubmissionReviewPage = () => {
         </Card>
       )}
 
+      {/* SPM Answer Sheet - Show once at the top */}
+      {submission.answerSheetImage && (() => {
+        const isPdf = submission.answerSheetImage.startsWith("data:application/pdf");
+        const isImage = submission.answerSheetImage.startsWith("data:image/");
+
+        return (
+          <Card className="mb-4" style={{ borderLeft: "4px solid #1890ff" }}>
+            <Card.Body>
+              <h5 className="mb-3">
+                📄 SPM Paper 1 Answer Sheet
+                <small className="text-muted ms-2">(Shared across all 40 questions)</small>
+              </h5>
+              <div className="row">
+                <div className="col-md-8 mx-auto">
+                  {isPdf ? (
+                    // PDF Display - Compact Version
+                    <div>
+                      <div
+                        className="d-flex align-items-center justify-content-between p-3"
+                        style={{
+                          borderRadius: "8px",
+                          border: "2px solid #1890ff",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <div className="d-flex align-items-center">
+                          <FilePdfOutlined
+                            style={{
+                              fontSize: "48px",
+                              color: "#ff4d4f",
+                              marginRight: "20px",
+                            }}
+                          />
+                          <div>
+                            <h6 className="mb-1">PDF Answer Sheet</h6>
+                            <small className="text-muted">
+                              All 40 questions detected from this PDF document
+                            </small>
+                          </div>
+                        </div>
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            // Open PDF in new tab
+                            const pdfWindow = window.open();
+                            pdfWindow.document.write(
+                              `<iframe width='100%' height='100%' src='${submission.answerSheetImage}'></iframe>`
+                            );
+                          }}
+                        >
+                          <FilePdfOutlined className="me-2" />
+                          View PDF
+                        </Button>
+                      </div>
+                      <Alert variant="info" className="mt-3 mb-0">
+                        <small>
+                          💡 <strong>Tip:</strong> Click "View PDF" to open the answer sheet in a new tab.
+                        </small>
+                      </Alert>
+                    </div>
+                  ) : isImage ? (
+                    // Image Display
+                    <div>
+                      <Image
+                        src={submission.answerSheetImage}
+                        alt="SPM Answer Sheet"
+                        style={{
+                          width: "100%",
+                          maxHeight: "600px",
+                          objectFit: "contain",
+                          borderRadius: "8px",
+                          border: "2px solid #1890ff",
+                        }}
+                        preview={{
+                          mask: "Click to view full answer sheet",
+                        }}
+                      />
+                      <Alert variant="info" className="mt-3 mb-0">
+                        <small>
+                          💡 <strong>Tip:</strong> Click the image above to view the full answer sheet in detail.
+                          The answers below were automatically detected from this sheet.
+                        </small>
+                      </Alert>
+                    </div>
+                  ) : (
+                    // Fallback for unknown format
+                    <Alert variant="warning">
+                      Unsupported file format. Unable to display the answer sheet.
+                    </Alert>
+                  )}
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        );
+      })()}
+
       {/* Answers */}
       <h5 className="mb-3">Student Answers</h5>
 
-      {submission.answers.map((answer, index) => (
-        <Card key={index} className="mb-4">
-          <Card.Body>
-            <div className="row">
-              {/* Question Image */}
-              <div className="col-md-4">
-                <h6 className="mb-3">
-                  Question {answer.questionNumber}{" "}
-                  {getStatusBadge(answer.status)}
-                </h6>
-                {answer.originalImage && (
-                  <Image
-                    src={answer.originalImage}
-                    alt={`Question ${answer.questionNumber}`}
-                    style={{
-                      width: "100%",
-                      maxHeight: "300px",
-                      objectFit: "contain",
-                      borderRadius: "8px",
-                      border: "1px solid #ddd",
-                    }}
-                  />
+      {submission.answers.map((answer, index) => {
+        // Check if this is SPM Paper 1 (has answerSheetImage at submission level)
+        const isSpmSheet = submission.answerSheetImage && !answer.originalImage;
+
+        // For regular assessments, show individual question images
+        const imageToDisplay = answer.originalImage;
+        const hasImage = imageToDisplay && imageToDisplay.length > 0;
+        const isValidBase64 = hasImage && (
+          imageToDisplay.startsWith("data:image/") ||
+          imageToDisplay.startsWith("data:application/pdf")
+        );
+
+        return (
+          <Card key={index} className="mb-4">
+            <Card.Body>
+              <div className="row">
+                {/* Question Image - Only show for non-SPM assessments */}
+                {!isSpmSheet && (
+                  <div className="col-md-4">
+                    <h6 className="mb-3">
+                      Question {answer.questionNumber}{" "}
+                      {getStatusBadge(answer.status)}
+                    </h6>
+                    {hasImage && isValidBase64 ? (
+                      <Image
+                        src={imageToDisplay}
+                        alt={`Question ${answer.questionNumber}`}
+                        style={{
+                          width: "100%",
+                          maxHeight: "300px",
+                          objectFit: "contain",
+                          borderRadius: "8px",
+                          border: "1px solid #ddd",
+                        }}
+                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                        preview={{
+                          mask: "Click to preview",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="d-flex align-items-center justify-content-center text-muted"
+                        style={{
+                          width: "100%",
+                          height: "200px",
+                          borderRadius: "8px",
+                          border: "1px dashed #ddd",
+                          backgroundColor: "#f8f9fa",
+                        }}
+                      >
+                        <div className="text-center">
+                          <p className="mb-0">No image uploaded</p>
+                          <small>
+                            {hasImage && !isValidBase64
+                              ? "Invalid image format"
+                              : "Image not provided for this question"}
+                          </small>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
 
               {/* Extracted Text & Editing */}
-              <div className="col-md-4">
+              <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <h6 className="mb-0">Extracted Text</h6>
+                  <h6 className="mb-0">
+                    {isSpmSheet && (
+                      <span className="me-2">
+                        Q{answer.questionNumber}.
+                      </span>
+                    )}
+                    Extracted Text
+                  </h6>
                   {answer.ocrData?.confidence !== undefined && (
                     <span>{getConfidenceBadge(answer.ocrData.confidence)}</span>
                   )}
@@ -527,12 +680,6 @@ const SubmissionReviewPage = () => {
                             "No text extracted"}
                       </pre>
                     </div>
-                    {answer.isEdited && (
-                      <small className="text-warning">
-                        <EditOutlined className="me-1" />
-                        Manually edited
-                      </small>
-                    )}
                     <Button
                       variant="outline-primary"
                       size="sm"
@@ -547,8 +694,15 @@ const SubmissionReviewPage = () => {
               </div>
 
               {/* Grading Results */}
-              <div className="col-md-4">
-                <h6 className="mb-3">Grading Results</h6>
+              <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
+                <h6 className="mb-3">
+                  {isSpmSheet && (
+                    <span className="me-2">
+                      Q{answer.questionNumber}.
+                    </span>
+                  )}
+                  Grading Results
+                </h6>
 
                 {answer.grading && answer.grading.aiScore ? (
                   <div>
@@ -662,7 +816,8 @@ const SubmissionReviewPage = () => {
             </div>
           </Card.Body>
         </Card>
-      ))}
+        );
+      })}
 
       {/* Score Adjustment Modal */}
       <Modal show={showScoreModal} onHide={() => setShowScoreModal(false)}>

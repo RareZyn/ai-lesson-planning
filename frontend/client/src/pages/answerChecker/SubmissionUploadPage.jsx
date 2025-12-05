@@ -270,7 +270,7 @@ const SubmissionUploadPage = () => {
           // Navigate to review page
           setTimeout(() => {
             navigate(
-              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+              `/app/submissions/${selectedAssessment}/${result.submissionId}`
             );
           }, 1000);
         } else {
@@ -279,7 +279,7 @@ const SubmissionUploadPage = () => {
           );
           setTimeout(() => {
             navigate(
-              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+              `/app/submissions/${selectedAssessment}/${result.submissionId}`
             );
           }, 2000);
         }
@@ -419,6 +419,7 @@ const SubmissionUploadPage = () => {
                   classId={selectedClass}
                   selectedStudent={selectedStudent}
                   onStudentSelect={setSelectedStudent}
+                  assessmentId={selectedAssessment}
                 />
               )}
             </div>
@@ -487,7 +488,7 @@ const SubmissionUploadPage = () => {
                       // Navigate to review page after a short delay
                       setTimeout(() => {
                         navigate(
-                          `/app/submissions/${selectedAssessment}/review/${results.submissionId}`
+                          `/app/submissions/${selectedAssessment}/${results.submissionId}`
                         );
                       }, 1500);
                     }}

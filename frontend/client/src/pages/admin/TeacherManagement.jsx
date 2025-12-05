@@ -13,6 +13,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getTeachers, getInvitationCode } from "../../services/adminService";
 import { authAPI } from "../../services/api";
+import { Modal as AntModal, message } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 
 const TeacherManagement = ({ searchTerm = "" }) => {
   const [teachers, setTeachers] = useState([]);
@@ -44,39 +46,65 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   // ===========================
   // DELETE TEACHER
   // ===========================
-  const handleDeleteTeacher = async (id, name) => {
-    if (!window.confirm(`Delete teacher "${name}"? This action cannot be undone.`)) return;
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("authToken");
-      const res = await authAPI.deleteTeacher(id, token);
-      if (res.success) {
-        setTeachers((prev) => prev.filter((t) => t._id !== id));
-      } else {
-        alert(res.message || "Failed to delete teacher.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting teacher.");
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteTeacher = async (id, name, email) => {
+    AntModal.confirm({
+      title: 'Delete Teacher',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Are you sure you want to delete this teacher?</p>
+          <p className="mb-1">
+            <strong>Name:</strong> {name}
+          </p>
+          <p className="mb-1">
+            <strong>Email:</strong> {email}
+          </p>
+          <p className="text-danger mb-0">
+            <small>This action cannot be undone.</small>
+          </p>
+        </div>
+      ),
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const token = localStorage.getItem("authToken");
+          const res = await authAPI.deleteTeacher(id, token);
+          if (res.success) {
+            setTeachers((prev) => prev.filter((t) => t._id !== id));
+            message.success('Teacher deleted successfully');
+          } else {
+            message.error(res.message || "Failed to delete teacher.");
+          }
+        } catch (err) {
+          console.error(err);
+          message.error("Error deleting teacher.");
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   // ===========================
   // INVITE TEACHER (FAKE EXAMPLE)
   // ===========================
   const handleSendInvitation = async () => {
-    if (!email) return alert("Please enter an email.");
+    if (!email) {
+      message.warning("Please enter an email.");
+      return;
+    }
     try {
       setLoading(true);
 
       // Use the already generated invitationCode
-      alert(`Invitation sent to ${email}! Code: ${invitationCode}`);
+      message.success(`Invitation sent to ${email}! Code: ${invitationCode}`);
       setEmail(""); // optionally reset email input
     } catch (err) {
       console.error("Error sending invite:", err);
-      alert("Failed to send invitation.");
+      message.error("Failed to send invitation.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +126,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   // ===========================
   const handleCopyCode = () => {
     navigator.clipboard.writeText(invitationCode);
-    alert("Invitation code copied to clipboard!");
+    message.success("Invitation code copied to clipboard!");
   };
 
   return (
@@ -154,7 +182,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
               </div>
               <div className="listActions">
                 <button
-                  onClick={() => handleDeleteTeacher(teacher._id, teacher.name)}
+                  onClick={() => handleDeleteTeacher(teacher._id, teacher.name, teacher.email)}
                   className="actionButton delete"
                 >
                   <FontAwesomeIcon icon={faTrash} />

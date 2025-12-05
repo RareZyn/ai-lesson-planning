@@ -63,7 +63,7 @@ const router = createBrowserRouter(
         { path: "submissions", element: <SubmissionListPage /> },
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
         { path: "submissions/:assessmentId", element: <AssessmentSubmissionsPage /> },
-        { path: "submissions/:assessmentId/review/:submissionId", element: <SubmissionReviewPage /> },
+        { path: "submissions/:assessmentId/:submissionId", element: <SubmissionReviewPage /> },
 
         { path: "analytics", element: <AnalyticsDashboard /> },
         { path: "analytics/:id", element: <StudentProgressView /> },

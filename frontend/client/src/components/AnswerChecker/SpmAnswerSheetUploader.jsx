@@ -538,7 +538,7 @@ const SpmAnswerSheetUploader = ({
             onClick={() => {
               setShowResultsModal(false);
               if (results && results.submissionId) {
-                window.location.href = `/app/answer-checker/review/${results.submissionId}`;
+                window.location.href = `/app/submissions/${assessmentId}/${results.submissionId}`;
               }
             }}
           >
