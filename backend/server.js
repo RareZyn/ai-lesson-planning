@@ -8,17 +8,22 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Check if MONGO_URI is loaded
-if (!process.env.MONGO_URI) {
+// Check if MONGO_URI is loaded (skip in serverless build phase)
+if (!process.env.MONGO_URI && process.env.NODE_ENV !== 'build') {
   console.error("❌ MONGO_URI environment variable is not defined");
   console.log("Available environment variables:");
   console.log(Object.keys(process.env).filter((key) => key.includes("MONGO")));
-  process.exit(1);
+  // Don't exit in serverless environment, just warn
+  if (process.env.VERCEL !== '1') {
+    process.exit(1);
+  }
 }
 
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3001"],
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL, /\.vercel\.app$/]
+    : ["http://localhost:3000", "http://localhost:3001"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -33,7 +38,6 @@ app.use(morgan("dev"));
 
 // Import routes
 const authRoutes = require("./route/auth");
-const openAiRoutes = require("./route/openAiRoutes");
 const assessmentRoutes = require("./route/assessment");
 const dskpRoutes = require("./route/dskp");
 const textbookRoutes = require("./route/textbook");
@@ -53,7 +57,6 @@ const syncRoutes = require("./route/syncRoutes"); // PHASE 6: Offline Sync
 
 // Use routes
 app.use("/api/auth", authRoutes);
-app.use("/api/gpt", openAiRoutes);
 app.use("/api/assessment", assessmentRoutes);
 app.use("/api/dskp", dskpRoutes);
 app.use("/api/textbook", textbookRoutes);
@@ -133,30 +136,36 @@ app.use((err, req, res, next) => {
 });
 
 // Connect to MongoDB
-console.log("🔄 Connecting to MongoDB...");
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB connected successfully");
-    console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
-  })
-  .catch((err) => {
-    console.log("❌ MongoDB connection error:", err);
-    process.exit(1);
+if (process.env.MONGO_URI) {
+  console.log("🔄 Connecting to MongoDB...");
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log("✅ MongoDB connected successfully");
+      console.log(`📁 Database: ${mongoose.connection.db.databaseName}`);
+    })
+    .catch((err) => {
+      console.log("❌ MongoDB connection error:", err);
+    });
+}
+
+// Only start server if not in serverless environment
+if (process.env.VERCEL !== '1' && require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
   });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);
-});
-
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
-  server.close(() => {
-    mongoose.connection.close();
-    process.exit(0);
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received. Shutting down gracefully...");
+    server.close(() => {
+      mongoose.connection.close();
+      process.exit(0);
+    });
   });
-});
+}
+
+// Export for Vercel serverless
+module.exports = app;

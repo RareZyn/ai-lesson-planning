@@ -1,31 +1,12 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "cd frontend/client && npm install && npm run build",
+  "outputDirectory": "frontend/client/build",
+  "installCommand": "npm install && cd backend && npm install && cd ../frontend/client && npm install",
+  "rewrites": [
     {
-      "src": "backend/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "frontend/client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/client/build"
-      }
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/client/$1"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "installCommand": "npm run install-all",
-  "buildCommand": "npm run build"
+  ]
 }
