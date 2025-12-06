@@ -5,13 +5,13 @@ import styles from './ClassCard.module.css';
 // Function to get subject-specific images
 const getSubjectImage = (subject) => {
     const subjectImages = {
-        'English': '/grade/form1.png',
-        'Mathematics': '/grade/form2.png',
-        'Science': '/grade/form3.png',
-        'History': '/grade/form4.png',
-        'Geography': '/grade/form5.png',
+        'English': '/grade/form1.webp',
+        'Mathematics': '/grade/form2.webp',
+        'Science': '/grade/form3.webp',
+        'History': '/grade/form4.webp',
+        'Geography': '/grade/form5.webp',
     };
-    return subjectImages[subject] || '/grade/form1.png'; // Default image
+    return subjectImages[subject] || '/grade/form1.webp'; 
 };
 
 const ClassCard = ({ classInfo }) => {

@@ -113,7 +113,7 @@ const SyllabusManagement = ({ searchTerm }) => {
                         let gradeImage = null;
                         if (grade.toLowerCase().includes('form')) {
                             const formNum = grade.split(' ')[1];
-                            gradeImage = `/grade/form${formNum}.png`;
+                            gradeImage = `/grade/form${formNum}.webp`;
                         }
                         // Add KSSR mapping if images exist, otherwise fallback or use default
 
@@ -171,15 +171,15 @@ const SyllabusManagement = ({ searchTerm }) => {
                             {filteredSyllabuses.map(syllabus => {
                                 // Determine image based on subject
                                 const subjectImages = {
-                                    English: "/subject/english_subject.png",
-                                    Mathematics: "/Class/mathematics.jpg",
-                                    Science: "/Class/science.jpg",
-                                    History: "/Class/history.jpg",
-                                    Geography: "/Class/geography.jpg",
-                                    Physics: "/Class/physics.jpg",
-                                    Chemistry: "/Class/chemistry.jpg",
-                                    Biology: "/Class/biology.jpg",
-                                    default: "/Class/english.jpg",
+                                  English: "/Class/english.webp",
+                                  Mathematics: "/Class/mathematics.webp",
+                                  Science: "/Class/science.webp",
+                                  History: "/Class/history.webp",
+                                  Geography: "/Class/geography.webp",
+                                  Physics: "/Class/physics.webp",
+                                  Chemistry: "/Class/chemistry.webp",
+                                  Biology: "/Class/biology.webp",
+                                  default: "/Class/education.webp",
                                 };
                                 const imageUrl = subjectImages[syllabus.subject] || subjectImages["default"];
 

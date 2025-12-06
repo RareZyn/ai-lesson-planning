@@ -53,7 +53,7 @@ const manualEditRoutes = require("./route/manualEditRoutes");
 const reviewRoutes = require("./route/reviewRoutes");
 const analyticsRoutes = require("./route/analyticsRoutes");
 const adminRoutes = require("./route/adminRoutes");
-const syncRoutes = require("./route/syncRoutes"); // PHASE 6: Offline Sync
+const syncRoutes = require("./route/syncRoutes"); 
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -72,7 +72,7 @@ app.use("/api/manual-edit", manualEditRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/sync", syncRoutes); // PHASE 6: Offline Sync
+app.use("/api/sync", syncRoutes);
 
 
 
