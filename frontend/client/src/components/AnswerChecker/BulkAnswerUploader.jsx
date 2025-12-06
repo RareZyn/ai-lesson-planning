@@ -1,14 +1,12 @@
 // frontend/client/src/components/AnswerChecker/BulkAnswerUploader.jsx
 import React, { useState } from "react";
 import { Card, Button, Alert, ProgressBar, Badge } from "react-bootstrap";
-import { Upload, Image as AntImage } from "antd";
+import { Upload } from "antd";
 import {
   InboxOutlined,
   DeleteOutlined,
-  EyeOutlined,
   CheckCircleOutlined,
   WarningOutlined,
-  FileOutlined,
   FilePdfOutlined,
   FileImageOutlined,
 } from "@ant-design/icons";
