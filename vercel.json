@@ -9,7 +9,7 @@
       "src": "frontend/client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "frontend/client/build"
       }
     }
   ],
@@ -20,12 +20,12 @@
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/client/build/$1"
+      "dest": "frontend/client/$1"
     }
   ],
   "env": {
     "NODE_ENV": "production"
   },
   "installCommand": "npm run install-all",
-  "buildCommand": "cd frontend/client && npm run build"
+  "buildCommand": "npm run build"
 }

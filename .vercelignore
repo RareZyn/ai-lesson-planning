@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment files (IMPORTANT: Never deploy these!)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Development files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE files
+.vscode
+.idea
+*.sublime-*
+
+# Documentation
+CLAUDE.md
+SPM_ANSWER_SHEET_RECOGNITION.md
+FYP1 Report.txt
+FYP1 Report.docx
+
+# Scripts (security sensitive)
+backend/scripts/encryptKey.js
+backend/scripts/seedAdmin.js
+
+# Testing
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts (will be built on Vercel)
+frontend/client/build
+build
+dist
