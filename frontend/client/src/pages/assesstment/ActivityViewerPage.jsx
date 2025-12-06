@@ -592,7 +592,7 @@ const ActivityViewerPage = () => {
 
   if (error) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message="Error Loading Assessment"
           description={
@@ -636,7 +636,7 @@ const ActivityViewerPage = () => {
 
   if (!assessment) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message="Assessment Not Found"
           description="The requested assessment could not be found."
@@ -655,7 +655,7 @@ const ActivityViewerPage = () => {
   const studentContent = getStudentContent();
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
       <Card
         style={{ marginBottom: "24px" }}

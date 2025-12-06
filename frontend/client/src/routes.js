@@ -19,7 +19,6 @@ const ActivityViewerPage = React.lazy(() => import("./pages/assesstment/Activity
 const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricViewerPage"));
 
 const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
-const FileDownloadPage = React.lazy(() => import("./pages/downloads/FileDownloadPage"));
 const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
 
 const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
@@ -68,8 +67,6 @@ const router = createBrowserRouter(
         { path: "analytics", element: <AnalyticsDashboard /> },
         { path: "analytics/:id", element: <StudentProgressView /> },
         { path: "analytics/:id/:id", element: <ClassAnalyticsView /> },
-
-        { path: "downloads", element: <FileDownloadPage /> },
 
         { path: "community", element: <Community /> },
         { path: "lessons/:id", element: <DisplayLessonPage /> },

@@ -1,12 +1,11 @@
 @import url("https://fonts.googleapis.com/css?family=Quicksand");
 
 body {
-  margin: 0;
+  margin: 0 !important;
   font-family: "Quicksand", "Segoe UI", sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  margin: 0;
-  padding: 0;
+  padding: 0 !important;
   height: 100%;
   box-sizing: border-box;
   -ms-overflow-style: none;
