@@ -28,11 +28,15 @@ const Profile = () => {
   const navigate = useNavigate();
 
   // Use your context providers instead of direct Firebase auth
-  const { user: contextUser, logout: contextLogout } = useUser();
+  const { currentUser: contextUser, logout: contextLogout } = useUser();
   const { currentUser: firebaseUser } = useAuth();
 
   // Use whichever user data is available
   const user = contextUser || firebaseUser;
+
+  // Debug logging
+  useEffect(() => {
+  }, [contextUser, firebaseUser, user]);
 
   const [notifications, setNotifications] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
