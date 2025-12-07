@@ -103,9 +103,22 @@ const structureGeneratedContent = (
 
       if (structuredContent.answerKeyContent) {
         console.log("🔧 Converting exam answerKeyContent to HTML...");
-        structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
-          structuredContent.answerKeyContent
-        );
+        console.log("📄 Paper type:", additionalData.paperType);
+
+        // Paper 2: Use convertRubricToHTML for comprehensive marking scheme
+        // Paper 1: Use convertAnswerKeyToHTML for answer key with all 40 answers
+        if (additionalData.paperType === "paper2") {
+          console.log("📘 Using comprehensive rubric converter for Paper 2");
+          structuredContent.answerKeyHTML = convertRubricToHTML(
+            structuredContent.answerKeyContent
+          );
+        } else {
+          console.log("📗 Using answer key converter for Paper 1");
+          structuredContent.answerKeyHTML = convertAnswerKeyToHTML(
+            structuredContent.answerKeyContent
+          );
+        }
+
         console.log(
           "✅ Exam Answer Key HTML generated:",
           !!structuredContent.answerKeyHTML

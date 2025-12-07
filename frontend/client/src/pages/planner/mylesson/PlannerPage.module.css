@@ -303,7 +303,9 @@
   border: 2px dashed #d1d5db;
   border-radius: 12px;
   background-color: #f9fafb;
-  min-height: 180px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
   cursor: pointer;
   color: #6b7280;
   font-weight: 600;

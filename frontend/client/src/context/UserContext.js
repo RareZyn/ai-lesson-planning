@@ -29,11 +29,11 @@ export const UserProvider = ({ children }) => {
 
   const { currentUser: firebaseUser, loading: authLoading } = useAuth();
 
-  const setAuthenticatedState = (user) => {
+  const setAuthenticatedState = useCallback((user) => {
     setCurrentUser(user);
     setUserId(user._id || user.id);
     setIsAuthenticated(true);
-  };
+  }, []);
 
   const clearAuthenticatedState = useCallback(() => {
     setCurrentUser(null);
@@ -59,7 +59,7 @@ export const UserProvider = ({ children }) => {
       clearAuthenticatedState();
       return false;
     }
-  }, [clearAuthenticatedState]);
+  }, [clearAuthenticatedState, setAuthenticatedState]);
 
   // Centralized function to handle Firebase user login and backend sync
   const handleFirebaseLogin = useCallback(
@@ -92,7 +92,7 @@ export const UserProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [clearAuthenticatedState]
+    [clearAuthenticatedState, setAuthenticatedState]
   );
 
   useEffect(() => {

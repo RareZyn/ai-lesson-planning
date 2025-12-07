@@ -1,6 +1,8 @@
 // frontend/client/src/pages/class/StudentManagementSection.jsx
-import React, { useState, useEffect, useRef } from "react"; // Import useRef
-import { Modal, Button, Form, Alert, ProgressBar } from "react-bootstrap"; // Add ProgressBar
+import React, { useState, useEffect, useRef, useCallback } from "react"; // Import useRef
+import { Modal, Button, Form, Alert, ProgressBar, Row, Col } from "react-bootstrap"; // Add ProgressBar
+import { Modal as AntModal } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import { studentAPI } from "../../services/studentService";
 import {
   PersonAdd,
@@ -41,26 +43,11 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   const [formData, setFormData] = useState({
     name: "",
     rollNumber: "",
+    gender: "",
     notes: "",
   });
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    // Filter students based on search
-    const filtered = students.filter(
-      (student) =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) // Assuming studentId is available
-    );
-    setFilteredStudents(filtered);
-  }, [searchTerm, students]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -81,7 +68,23 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    // Filter students based on search
+    const filtered = students.filter(
+      (student) =>
+        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) // Assuming studentId is available
+    );
+    setFilteredStudents(filtered);
+  }, [searchTerm, students]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -93,6 +96,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
         name: formData.name.trim(),
         classId,
         rollNumber: formData.rollNumber || undefined,
+        gender: formData.gender || undefined,
         notes: formData.notes.trim(),
       });
 
@@ -121,6 +125,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
       const result = await studentAPI.updateStudent(editingStudent._id, {
         name: formData.name.trim(),
         rollNumber: formData.rollNumber || undefined,
+        gender: formData.gender || undefined,
         notes: formData.notes.trim(),
       });
 
@@ -142,27 +147,31 @@ const StudentManagementSection = ({ classId, classInfo }) => {
   };
 
   const handleDeleteStudent = async (student) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${student.name} (${student.studentId})? This action cannot be undone.`
-      )
-    ) {
-      setLoading(true);
-      try {
-        const result = await studentAPI.deleteStudent(student._id);
-        if (result.success) {
-          setSuccess("Student deleted successfully!");
-          await fetchStudents();
-          setTimeout(() => setSuccess(""), 3000);
-        } else {
-          setError(result.message);
+    AntModal.confirm({
+      title: "Delete Student",
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to delete ${student.name} (${student.studentId})? This action cannot be undone.`,
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        setLoading(true);
+        try {
+          const result = await studentAPI.deleteStudent(student._id);
+          if (result.success) {
+            setSuccess("Student deleted successfully!");
+            await fetchStudents();
+            setTimeout(() => setSuccess(""), 3000);
+          } else {
+            setError(result.message);
+          }
+        } catch (err) {
+          setError("Failed to delete student");
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError("Failed to delete student");
-      } finally {
-        setLoading(false);
-      }
-    }
+      },
+    });
   };
 
   const openEditModal = (student) => {
@@ -170,6 +179,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     setFormData({
       name: student.name,
       rollNumber: student.rollNumber || "",
+      gender: student.gender || "",
       notes: student.notes || "",
     });
     setShowEditModal(true);
@@ -179,6 +189,7 @@ const StudentManagementSection = ({ classId, classInfo }) => {
     setFormData({
       name: "",
       rollNumber: "",
+      gender: "",
       notes: "",
     });
   };
@@ -475,6 +486,9 @@ const StudentManagementSection = ({ classId, classInfo }) => {
                     Roll #{student.rollNumber}
                   </p>
                 )}
+                {student.gender && (
+                  <p className={styles.gender}>Gender: {student.gender}</p>
+                )}
                 {student.notes && (
                   <p className={styles.notes}>{student.notes}</p>
                 )}
@@ -535,21 +549,40 @@ const StudentManagementSection = ({ classId, classInfo }) => {
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Roll Number (Optional)</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="e.g., 1"
-                value={formData.rollNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, rollNumber: e.target.value })
-                }
-                min="1"
-              />
-              <Form.Text className="text-muted">
-                Class roll number for attendance
-              </Form.Text>
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Roll Number (Optional)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="e.g., 1"
+                    value={formData.rollNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rollNumber: e.target.value })
+                    }
+                    min="1"
+                  />
+                  <Form.Text className="text-muted">
+                    Class roll number for attendance
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Gender (Optional)</Form.Label>
+                  <Form.Select
+                    value={formData.gender}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gender: e.target.value })
+                    }
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Notes (Optional)</Form.Label>
@@ -620,18 +653,37 @@ const StudentManagementSection = ({ classId, classInfo }) => {
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Roll Number (Optional)</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="e.g., 1"
-                value={formData.rollNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, rollNumber: e.target.value })
-                }
-                min="1"
-              />
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Roll Number (Optional)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="e.g., 1"
+                    value={formData.rollNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rollNumber: e.target.value })
+                    }
+                    min="1"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Gender (Optional)</Form.Label>
+                  <Form.Select
+                    value={formData.gender}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gender: e.target.value })
+                    }
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Notes (Optional)</Form.Label>

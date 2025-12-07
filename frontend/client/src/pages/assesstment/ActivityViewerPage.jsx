@@ -1,5 +1,5 @@
 // Updated src/pages/assessment/ActivityViewerPage.jsx - Fixed SPM exam content detection
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -10,21 +10,16 @@ import {
   Typography,
   Tag,
   Space,
-  Divider,
-  Dropdown,
 } from "antd";
 import {
   ArrowLeftOutlined,
-  PrinterOutlined,
-  DownloadOutlined,
-  EditOutlined,
   EyeOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
-  CaretDownOutlined,
+  DownloadOutlined,
+  PrinterOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
-import { usePdfExport } from "../../hooks/usePdfExport";
+import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
+import { printAssessmentContent } from "../../utils/assessmentPrint";
 
 const { Title, Text } = Typography;
 
@@ -303,15 +298,10 @@ const ActivityViewerPage = () => {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
-  // PDF Export hook
-  const { exportElementToPdf, isExporting } = usePdfExport();
-
-  useEffect(() => {
-    fetchAssessment();
-  }, [id]);
-
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -347,7 +337,11 @@ const ActivityViewerPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
   // FIXED: Enhanced helper function to check content availability from raw data
   const getStudentContentFromData = (assessmentData) => {
@@ -474,122 +468,6 @@ const ActivityViewerPage = () => {
     return hasContent;
   };
 
-  const handlePrint = () => {
-    const studentContent = getStudentContent();
-    if (!studentContent) {
-      message.error("No content available to print");
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow && studentContent) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Assessment - ${assessment.title}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                line-height: 1.6;
-              }
-              @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
-              }
-            </style>
-          </head>
-          <body>
-            ${studentContent}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  // Enhanced handleDownload with PDF export using usePdfExport
-  const handleDownloadPdf = async () => {
-    const studentContent = getStudentContent();
-    if (!studentContent) {
-      message.error("No content available to download");
-      return;
-    }
-
-    try {
-      // Create a temporary element to render the content for PDF export
-      const tempDiv = document.createElement("div");
-      tempDiv.id = "temp-activity-content";
-      tempDiv.innerHTML = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1 style="color: #1890ff; margin-bottom: 10px;">${
-            assessment.title
-          }</h1>
-          <div style="margin-bottom: 15px; color: #666; font-size: 14px;">
-            <strong>Subject:</strong> ${assessment.classId?.subject || "N/A"} | 
-            <strong>Grade:</strong> ${assessment.classId?.grade || "N/A"} | 
-            <strong>Duration:</strong> ${assessment.duration || "N/A"}
-          </div>
-          <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-            <strong>Instructions:</strong> ${
-              assessment.description || "Complete the following assessment."
-            }
-          </div>
-          <div>${studentContent}</div>
-        </div>
-      `;
-
-      // Temporarily add to DOM
-      tempDiv.style.position = "absolute";
-      tempDiv.style.left = "-9999px";
-      tempDiv.style.width = "800px";
-      document.body.appendChild(tempDiv);
-
-      // Use the HTML element export method
-      const fileName = `${assessment.title.replace(
-        /[^a-z0-9]/gi,
-        "_"
-      )}_${getContentTypeName().replace(" ", "_")}.pdf`;
-      await exportElementToPdf("temp-activity-content", fileName, {
-        format: "a4",
-        orientation: "portrait",
-      });
-
-      // Clean up
-      document.body.removeChild(tempDiv);
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      message.error("Failed to export to PDF");
-    }
-  };
-
-  // HTML download as fallback
-  const handleDownloadHtml = () => {
-    const studentContent = getStudentContent();
-    if (!studentContent) {
-      message.error("No content available to download");
-      return;
-    }
-
-    const blob = new Blob([studentContent], {
-      type: "text/html",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${assessment.title}_${getContentTypeName().replace(
-      " ",
-      "_"
-    )}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    message.success(`${getContentTypeName()} downloaded successfully!`);
-  };
-
   const handleViewRubric = () => {
     if (hasTeacherContent()) {
       navigate(`/app/assessment/${id}/${id}`);
@@ -602,6 +480,75 @@ const ActivityViewerPage = () => {
 
   const handleGoBack = () => {
     navigate("/app/assessment");
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const studentContent = getStudentContent();
+
+      if (!studentContent) {
+        message.error("No content available to download");
+        return;
+      }
+
+      // Determine if this is SPM Paper 1
+      const isSpmPaper1 =
+        assessment.activityType === "spm-exam" &&
+        assessment.examConfiguration?.paperType === "paper1";
+
+      // Create a safe filename
+      const safeTitle = assessment.title
+        .replace(/[^a-z0-9]/gi, "_")
+        .substring(0, 50);
+      const fileName = `${safeTitle}_${getContentTypeName().replace(
+        /[^a-z0-9]/gi,
+        "_"
+      )}.pdf`;
+
+      await exportAssessmentToPdf(studentContent, {
+        fileName,
+        title: assessment.title,
+        isSpmPaper1,
+        paperType: assessment.examConfiguration?.paperType,
+      });
+
+      message.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      message.error("Failed to download PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      setPrinting(true);
+      const studentContent = getStudentContent();
+
+      if (!studentContent) {
+        message.error("No content available to print");
+        return;
+      }
+
+      // Determine if this is SPM Paper 1
+      const isSpmPaper1 =
+        assessment.activityType === "spm-exam" &&
+        assessment.examConfiguration?.paperType === "paper1";
+
+      await printAssessmentContent(studentContent, {
+        title: `${assessment.title} - ${getContentTypeName()}`,
+        isSpmPaper1,
+      });
+
+      message.success("Print dialog opened!");
+    } catch (error) {
+      console.error("Error printing:", error);
+      message.error("Failed to open print dialog. Please try again.");
+    } finally {
+      setPrinting(false);
+    }
   };
 
   // FIXED: Get appropriate content type name with SPM exam support
@@ -640,24 +587,6 @@ const ActivityViewerPage = () => {
         return "Teacher Guide";
     }
   };
-
-  // Download menu items
-  const downloadMenuItems = [
-    {
-      key: "pdf",
-      icon: <FilePdfOutlined />,
-      label: "Download as PDF",
-      onClick: handleDownloadPdf,
-      disabled: !getStudentContent() || isExporting,
-    },
-    {
-      key: "html",
-      icon: <FileWordOutlined />,
-      label: "Download as HTML",
-      onClick: handleDownloadHtml,
-      disabled: !getStudentContent(),
-    },
-  ];
 
   if (loading) {
     return (
@@ -810,6 +739,24 @@ const ActivityViewerPage = () => {
 
           {/* Action Buttons */}
           <Space wrap>
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+              type="default"
+              loading={printing}
+              disabled={!studentContent}
+            >
+              Print
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPdf}
+              type="primary"
+              loading={downloading}
+              disabled={!studentContent}
+            >
+              Download PDF
+            </Button>
             {hasTeacherContent() && (
               <Button
                 icon={<EyeOutlined />}
@@ -819,29 +766,6 @@ const ActivityViewerPage = () => {
                 View {getTeacherContentName()}
               </Button>
             )}
-            <Button
-              icon={<PrinterOutlined />}
-              onClick={handlePrint}
-              type="default"
-              disabled={!studentContent}
-            >
-              Print
-            </Button>
-            <Dropdown
-              menu={{ items: downloadMenuItems }}
-              trigger={["click"]}
-              disabled={!studentContent}
-            >
-              <Button
-                type="primary"
-                loading={isExporting}
-                disabled={!studentContent}
-              >
-                <DownloadOutlined />
-                Download
-                <CaretDownOutlined />
-              </Button>
-            </Dropdown>
           </Space>
         </div>
       </Card>

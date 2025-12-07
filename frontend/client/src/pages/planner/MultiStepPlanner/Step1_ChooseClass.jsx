@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./MultiStepPlanner.module.css";
 import { getAllClasses } from "../../../services/classService";
 import CreateClassModal from "../../class/CreateClassModal";
+import { Modal } from "antd";
 
 const Step1_ChooseClass = ({ data, updateData, onNext }) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -38,7 +39,10 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
     if (data.classId && data.grade) {
       onNext();
     } else {
-      alert("Please select a class to continue.");
+      Modal.warning({
+        title: 'Class Required',
+        content: 'Please select a class to continue.',
+      });
     }
   };
 
@@ -54,6 +58,7 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
     // Automatically select the new class
     updateData("classId", newClass._id);
     updateData("grade", newClass.grade);
+    updateData("subject", newClass.subject); // NEW
     setIsCreating(false);
   };
 
@@ -85,6 +90,7 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
             if (selectedClass) {
               updateData("classId", selectedClass._id);
               updateData("grade", selectedClass.grade);
+              updateData("subject", selectedClass.subject); // NEW: Save subject for context
             }
           }}
           disabled={isCreating || isLoading || error}
@@ -93,8 +99,8 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
             {isLoading
               ? "Loading classes..."
               : error
-              ? error
-              : "-- Please select a class --"}
+                ? error
+                : "-- Please select a class --"}
           </option>
 
           {!isLoading &&

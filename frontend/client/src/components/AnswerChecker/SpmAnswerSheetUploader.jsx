@@ -8,7 +8,6 @@ import {
   EyeOutlined,
   CheckCircleOutlined,
   WarningOutlined,
-  UploadOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
 import { gradingService } from "../../services/gradingServiceClient";
@@ -60,7 +59,6 @@ const SpmAnswerSheetUploader = ({
 
         // Check if compression needed
         const sizeInMB = (base64Image.length * 0.75) / (1024 * 1024);
-        let finalImage = base64Image;
 
         if (sizeInMB > 10) {
           console.log(`📦 Compressing image (${sizeInMB.toFixed(2)} MB)...`);

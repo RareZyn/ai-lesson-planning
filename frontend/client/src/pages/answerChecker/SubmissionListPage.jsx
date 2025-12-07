@@ -1,7 +1,16 @@
 // frontend/client/src/pages/answerChecker/SubmissionListPage.jsx
-import React, { useState, useEffect } from "react";
-import { Card, Button, Badge, Table, Alert, Form, Row, Col } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin, Progress } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  Button,
+  Badge,
+  Table,
+  Alert,
+  Form,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { Tooltip, Empty, Spin, Progress } from "antd";
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -9,6 +18,7 @@ import {
   FilterOutlined,
   FileTextOutlined,
   TeamOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -27,17 +37,9 @@ const SubmissionListPage = () => {
 
   // Filters
   const [filterClass, setFilterClass] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchClasses();
-    fetchAssessments();
-  }, []);
-
-  useEffect(() => {
-    fetchAssessments();
-  }, [filterClass]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(`${API_BASE_URL}/classes`, {
@@ -48,9 +50,9 @@ const SubmissionListPage = () => {
     } catch (err) {
       console.error("Failed to fetch classes:", err);
     }
-  };
+  }, []);
 
-  const fetchAssessments = async () => {
+  const fetchAssessments = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -84,7 +86,16 @@ const SubmissionListPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterClass]);
+
+  useEffect(() => {
+    fetchClasses();
+    fetchAssessments();
+  }, [fetchClasses, fetchAssessments]);
+
+  useEffect(() => {
+    fetchAssessments();
+  }, [filterClass, fetchAssessments]);
 
   const fetchSubmissionStats = async (assessmentList) => {
     const token = localStorage.getItem("authToken");
@@ -149,7 +160,7 @@ const SubmissionListPage = () => {
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2 className="mb-2">Answer Recognition - Assessments</h2>
+              <h2 className="mb-2">Answer Recognition</h2>
               <p className="text-muted mb-0">
                 Select an assessment to view student submissions
               </p>
@@ -169,7 +180,7 @@ const SubmissionListPage = () => {
       <Card className="mb-4">
         <Card.Body>
           <Row className="g-3">
-            <Col md={6}>
+            <Col md={4}>
               <Form.Label>
                 <FilterOutlined className="me-2" />
                 Filter by Class
@@ -187,11 +198,24 @@ const SubmissionListPage = () => {
               </Form.Select>
             </Col>
 
-            <Col md={6} className="d-flex align-items-end">
+            <Col md={4}>
+              <Form.Label>
+                <SearchOutlined className="me-2" />
+                Search Assessment
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Search by title..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Col>
+
+            <Col md={4} className="d-flex align-items-end">
               <Button
                 variant="outline-secondary"
                 onClick={fetchAssessments}
-                className="w-40"
+                className="w-100"
               >
                 <ReloadOutlined className="me-2 " />
                 Refresh
@@ -229,6 +253,20 @@ const SubmissionListPage = () => {
                 Create Assessment
               </Button>
             </Empty>
+          ) : assessments.filter((assessment) =>
+              assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length === 0 ? (
+            <Empty
+              description={`No assessments match "${searchTerm}"`}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button
+                variant="outline-secondary"
+                onClick={() => setSearchTerm("")}
+              >
+                Clear Search
+              </Button>
+            </Empty>
           ) : (
             <Table responsive hover>
               <thead>
@@ -245,7 +283,13 @@ const SubmissionListPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {assessments.map((assessment) => {
+                {assessments
+                  .filter((assessment) =>
+                    assessment.title
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase())
+                  )
+                  .map((assessment) => {
                   const stats = assessmentStats[assessment._id] || {
                     totalSubmissions: 0,
                     totalStudentsInClass: 0,

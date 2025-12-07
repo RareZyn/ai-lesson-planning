@@ -1,5 +1,5 @@
 // src/pages/auth/LoginPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Checkbox, message, Modal } from "antd";
 import {
   UserOutlined,
@@ -15,6 +15,7 @@ import {
   googleProvider,
 } from "../../firebase";
 import { authAPI } from "../../services/api";
+import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "./LoginPage.css";
 
@@ -27,6 +28,14 @@ const LoginPage = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, loading: authLoading } = useUser();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/app", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   // Handle modal submit for Google sign-in (now includes token)
   const handleModalSubmit = async (values) => {
@@ -159,9 +168,8 @@ const LoginPage = () => {
   const handleTabChange = (tab) => {
     if (tab === "signup") {
       navigate("/register");
-    } else if (tab === "login") {
-      navigate("/");
     }
+    // No need to navigate if already on login
   };
 
   const handleForgotPassword = () => {
@@ -174,7 +182,7 @@ const LoginPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/LessonPlanning.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.webp" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>

@@ -1,5 +1,5 @@
 //src/pages/assessment/RubricViewerPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -11,20 +11,19 @@ import {
   Tag,
   Space,
   Divider,
-  Dropdown,
 } from "antd";
 import {
   ArrowLeftOutlined,
-  PrinterOutlined,
-  DownloadOutlined,
-  EditOutlined,
   EyeOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
-  CaretDownOutlined,
+  DownloadOutlined,
+  PrinterOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
-import { usePdfExport } from "../../hooks/usePdfExport";
+import {
+  exportRubricToPdf,
+  exportAnswerKeyToPdf,
+} from "../../utils/assessmentPdfExport";
+import { printRubric, printAnswerKey } from "../../utils/assessmentPrint";
 
 const { Title, Text } = Typography;
 
@@ -316,15 +315,10 @@ const RubricViewerPage = () => {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
-  // PDF Export hook
-  const { exportElementToPdf, isExporting } = usePdfExport();
-
-  useEffect(() => {
-    fetchAssessment();
-  }, [id]);
-
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
       const response = await assessmentAPI.getAssessmentById(id);
@@ -340,19 +334,6 @@ const RubricViewerPage = () => {
           response.data.generatedContent?.answerKeyContent
         );
 
-        console.log(
-          "🔍 Teacher content detection for",
-          response.data.activityType,
-          {
-            rubricHTML: !!response.data.generatedContent?.rubricHTML,
-            answerKeyHTML: !!response.data.generatedContent?.answerKeyHTML,
-            rubricContent: !!response.data.generatedContent?.rubricContent,
-            answerKeyContent:
-              !!response.data.generatedContent?.answerKeyContent,
-            hasTeacherContent,
-          }
-        );
-
         if (!hasTeacherContent) {
           setError("No teacher content found for this assessment.");
         }
@@ -366,7 +347,11 @@ const RubricViewerPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
   // FIXED: Enhanced getTeacherContent function with proper SPM exam support
   const getTeacherContent = () => {
@@ -375,20 +360,12 @@ const RubricViewerPage = () => {
     const { rubricHTML, answerKeyHTML, rubricContent, answerKeyContent } =
       assessment.generatedContent;
 
-    console.log("🎯 Getting teacher content for", assessment.activityType, {
-      rubricHTML: !!rubricHTML,
-      answerKeyHTML: !!answerKeyHTML,
-      rubricContent: !!rubricContent,
-      answerKeyContent: !!answerKeyContent,
-    });
-
     // CRITICAL: Handle SPM exam and assessment types - they should use answer key content
     if (
       assessment.activityType === "spm-exam" ||
       assessment.activityType === "assessment"
     ) {
       if (answerKeyHTML) {
-        console.log("✅ Using answerKeyHTML for", assessment.activityType);
         return answerKeyHTML;
       } else if (answerKeyContent) {
         console.log(
@@ -459,7 +436,7 @@ const RubricViewerPage = () => {
     switch (assessment.activityType) {
       case "assessment":
         return "Assessment Paper";
-      case "spm-exam": 
+      case "spm-exam":
         return "SPM Examination Paper";
       case "essay":
         return "Essay Activity";
@@ -469,144 +446,6 @@ const RubricViewerPage = () => {
         return "Class Activity";
       default:
         return "Activity";
-    }
-  };
-
-  const handlePrint = () => {
-    const teacherContent = getTeacherContent();
-    if (!teacherContent) {
-      message.error("No content available to print");
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow && teacherContent) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${getTeacherContentName()} - ${assessment.title}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                line-height: 1.6;
-              }
-              table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-              }
-              th, td {
-                border: 1px solid #ddd;
-                padding: 12px;
-                text-align: left;
-              }
-              th {
-                background-color: #f2f2f2;
-                font-weight: bold;
-              }
-              @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
-              }
-            </style>
-          </head>
-          <body>
-            ${teacherContent}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  // Enhanced handleDownload with PDF export using usePdfExport
-  const handleDownloadPdf = async () => {
-    const teacherContent = getTeacherContent();
-    if (!teacherContent) {
-      message.error("No content available to download");
-      return;
-    }
-
-    try {
-      // Create a temporary element to render the content for PDF export
-      const tempDiv = document.createElement("div");
-      tempDiv.id = "temp-rubric-content";
-      tempDiv.innerHTML = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1 style="color: #52c41a; margin-bottom: 10px;">${
-            assessment.title
-          } - ${getTeacherContentName()}</h1>
-          <div style="margin-bottom: 15px; color: #666; font-size: 14px;">
-            <strong>Subject:</strong> ${assessment.classId?.subject || "N/A"} | 
-            <strong>Grade:</strong> ${assessment.classId?.grade || "N/A"} | 
-            <strong>Type:</strong> ${assessment.activityType}
-          </div>
-          <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-            <strong>Instructions:</strong> ${
-              assessment.activityType === "assessment" ||
-              assessment.activityType === "smp-exam"
-                ? "Use this answer key to evaluate student responses efficiently."
-                : "Use this rubric to evaluate student performance consistently."
-            }
-          </div>
-          <div>${teacherContent}</div>
-        </div>
-      `;
-
-      // Temporarily add to DOM
-      tempDiv.style.position = "absolute";
-      tempDiv.style.left = "-9999px";
-      tempDiv.style.width =
-        assessment.activityType === "assessment" ||
-        assessment.activityType === "smp-exam"
-          ? "800px"
-          : "1200px"; // Wider for rubrics
-      document.body.appendChild(tempDiv);
-
-      // Use the HTML element export method
-      const fileName = `${assessment.title.replace(
-        /[^a-z0-9]/gi,
-        "_"
-      )}_${getTeacherContentName().replace(" ", "_")}.pdf`;
-      await exportElementToPdf("temp-rubric-content", fileName, {
-        format: "a4",
-        orientation:
-          assessment.activityType === "assessment" ||
-          assessment.activityType === "smp-exam"
-            ? "portrait"
-            : "landscape",
-      });
-
-      // Clean up
-      document.body.removeChild(tempDiv);
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      message.error("Failed to export to PDF");
-    }
-  };
-
-  // HTML download as fallback
-  const handleDownloadHtml = () => {
-    const teacherContent = getTeacherContent();
-    if (teacherContent) {
-      const blob = new Blob([teacherContent], {
-        type: "text/html",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${assessment.title}_${getTeacherContentName().replace(
-        " ",
-        "_"
-      )}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      message.success(`${getTeacherContentName()} downloaded successfully!`);
     }
   };
 
@@ -624,23 +463,88 @@ const RubricViewerPage = () => {
     navigate("/app/assessment");
   };
 
-  // Download menu items
-  const downloadMenuItems = [
-    {
-      key: "pdf",
-      icon: <FilePdfOutlined />,
-      label: "Download as PDF",
-      onClick: handleDownloadPdf,
-      disabled: !getTeacherContent() || isExporting,
-    },
-    {
-      key: "html",
-      icon: <FileWordOutlined />,
-      label: "Download as HTML",
-      onClick: handleDownloadHtml,
-      disabled: !getTeacherContent(),
-    },
-  ];
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const teacherContent = getTeacherContent();
+
+      if (!teacherContent) {
+        message.error("No content available to download");
+        return;
+      }
+
+      // Determine if this is an answer key (for SPM/assessment) or rubric
+      const isAnswerKey =
+        assessment.activityType === "spm-exam" ||
+        assessment.activityType === "assessment";
+
+      // Create a safe filename
+      const safeTitle = assessment.title
+        .replace(/[^a-z0-9]/gi, "_")
+        .substring(0, 50);
+      const contentTypeName = getTeacherContentName().replace(
+        /[^a-z0-9]/gi,
+        "_"
+      );
+      const fileName = `${safeTitle}_${contentTypeName}.pdf`;
+
+      // Use appropriate export function based on content type
+      if (isAnswerKey) {
+        await exportAnswerKeyToPdf(teacherContent, {
+          fileName,
+          title: `${assessment.title} - Answer Key`,
+          isSpmPaper1: false, // Answer key doesn't need answer sheet
+        });
+      } else {
+        await exportRubricToPdf(teacherContent, {
+          fileName,
+          title: `${assessment.title} - Rubric`,
+        });
+      }
+
+      message.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      message.error("Failed to download PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      setPrinting(true);
+      const teacherContent = getTeacherContent();
+
+      if (!teacherContent) {
+        message.error("No content available to print");
+        return;
+      }
+
+      // Determine if this is an answer key (for SPM/assessment) or rubric
+      const isAnswerKey =
+        assessment.activityType === "spm-exam" ||
+        assessment.activityType === "assessment";
+
+      // Use appropriate print function based on content type
+      if (isAnswerKey) {
+        await printAnswerKey(teacherContent, {
+          title: `${assessment.title} - ${getTeacherContentName()}`,
+        });
+      } else {
+        await printRubric(teacherContent, {
+          title: `${assessment.title} - ${getTeacherContentName()}`,
+        });
+      }
+
+      message.success("Print dialog opened!");
+    } catch (error) {
+      console.error("Error printing:", error);
+      message.error("Failed to open print dialog. Please try again.");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -795,6 +699,24 @@ const RubricViewerPage = () => {
 
           {/* Action Buttons */}
           <Space wrap>
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+              type="default"
+              loading={printing}
+              disabled={!teacherContent}
+            >
+              Print
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPdf}
+              type="primary"
+              loading={downloading}
+              disabled={!teacherContent}
+            >
+              Download PDF
+            </Button>
             {hasStudentContent() && (
               <Button
                 icon={<EyeOutlined />}
@@ -804,29 +726,6 @@ const RubricViewerPage = () => {
                 View {getStudentContentName()}
               </Button>
             )}
-            <Button
-              icon={<PrinterOutlined />}
-              onClick={handlePrint}
-              type="default"
-              disabled={!teacherContent}
-            >
-              Print
-            </Button>
-            <Dropdown
-              menu={{ items: downloadMenuItems }}
-              trigger={["click"]}
-              disabled={!teacherContent}
-            >
-              <Button
-                type="primary"
-                loading={isExporting}
-                disabled={!teacherContent}
-              >
-                <DownloadOutlined />
-                Download
-                <CaretDownOutlined />
-              </Button>
-            </Dropdown>
           </Space>
         </div>
       </Card>

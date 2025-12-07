@@ -396,3 +396,74 @@
 .exportMenu svg {
     color: #6b7280;
 }
+
+.ant-description-item-content {
+    overflow: scroll !important;
+    text-wrap: wrap !important;
+
+}
+
+
+.fixedTableLayout table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Custom Syllabus Display (replacing Ant Design Descriptions) */
+.syllabusContainer {
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.syllabusRow {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.syllabusRow:last-child {
+    border-bottom: none;
+}
+
+.syllabusLabel {
+    flex: 0 0 40%;
+    background-color: #fafafa;
+    padding: 12px 16px;
+    font-weight: 500;
+    color: #1f2937;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    align-items: flex-start;
+}
+
+.syllabusValue {
+    flex: 1;
+    padding: 12px 16px;
+    color: #4b5563;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+}
+
+/* Mobile responsiveness for syllabus */
+@media (max-width: 576px) {
+    .syllabusRow {
+        flex-direction: column;
+    }
+
+    .syllabusLabel {
+        flex: 0 0 auto;
+        max-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #f0f0f0;
+        background-color: #f8fafc;
+        padding: 8px 16px;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .syllabusValue {
+        padding: 10px 16px 16px;
+    }
+}

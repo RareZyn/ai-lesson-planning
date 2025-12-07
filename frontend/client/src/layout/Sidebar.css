@@ -164,7 +164,7 @@
   transition: fill 0.3s ease;
 }
 
-/* Bottom Navigation Styles (Unchanged) */
+/* Bottom Navigation Styles */
 .bottom-navigation {
   position: fixed;
   bottom: 0;
@@ -173,6 +173,7 @@
   background-color: #EDEDED;
   z-index: 1000;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
 }
 
 .bottom-menu {
@@ -181,49 +182,128 @@
   margin: 0;
   display: flex;
   justify-content: space-around;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .bottom-menu-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
+  justify-content: center;
+  padding: 6px 8px;
   text-decoration: none;
-  color: inherit;
-  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 11px;
   flex: 1;
+  min-width: 60px;
+  max-width: 80px;
+  transition: all 0.2s ease;
+}
+
+.bottom-menu-item:hover {
+  background-color: rgba(88, 128, 241, 0.05);
+  border-radius: 8px;
 }
 
 .bottom-menu-item.active {
   color: #5880F1;
+  font-weight: 500;
 }
 
 .bottom-menu-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  flex-shrink: 0;
 }
 
 .bottom-menu-label {
-  font-size: 12px;
+  font-size: 10px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
 }
 
 
-/* Responsive Adjustments (Unchanged) */
+/* Responsive Adjustments */
 @media (min-width: 769px) {
   .bottom-navigation {
     display: none;
   }
 }
 
-
 @media (max-width: 768px) {
   .sidebar {
     display: none;
+  }
+
+  .bottom-navigation {
+    padding: 6px 0 8px 0;
+  }
+
+  .bottom-menu-item {
+    padding: 6px 6px;
+  }
+
+  .bottom-menu-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-menu-label {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-navigation {
+    padding: 4px 0 6px 0;
+  }
+
+  .bottom-menu-item {
+    padding: 4px 4px;
+    min-width: 50px;
+    max-width: 70px;
+  }
+
+  .bottom-menu-icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 2px;
+  }
+
+  .bottom-menu-label {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 360px) {
+  .bottom-navigation {
+    padding: 3px 0 5px 0;
+  }
+
+  .bottom-menu-item {
+    padding: 3px 2px;
+    min-width: 45px;
+    max-width: 60px;
+  }
+
+  .bottom-menu-icon {
+    width: 16px;
+    height: 16px;
+    margin-bottom: 2px;
+  }
+
+  .bottom-menu-label {
+    font-size: 8px;
   }
 }
 

@@ -167,7 +167,8 @@ const Profile = () => {
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = 2;
 
   // Don't render if no user or if logging out
   if (!user || isLoggingOut) return null;

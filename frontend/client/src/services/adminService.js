@@ -145,7 +145,6 @@ const getAuthToken = () => {
 // Get all syllabuses
 export const getSyllabuses = async () => {
     try {
-        const token = getAuthToken();
         const response = await axios.get(
             '/api/admin/syllabuses',
             getAuthConfig()

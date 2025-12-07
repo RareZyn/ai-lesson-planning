@@ -1,5 +1,5 @@
 // frontend/client/src/components/AnswerChecker/StudentSelector.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Form, Button, Modal, Alert, Row, Col, Card } from "react-bootstrap";
 import { Spin, Empty } from "antd";
 import { PlusOutlined, UserOutlined } from "@ant-design/icons";
@@ -16,18 +16,13 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
   const [newStudent, setNewStudent] = useState({
     name: "",
     rollNumber: "",
+    gender: "",
     notes: "",
   });
 
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    if (classId) {
-      fetchStudents();
-    }
-  }, [classId]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -48,7 +43,13 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId, fetchStudents]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -69,6 +70,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
         name: newStudent.name.trim(),
         classId,
         rollNumber: newStudent.rollNumber || undefined,
+        gender: newStudent.gender || undefined,
         notes: newStudent.notes.trim() || "",
       });
 
@@ -78,6 +80,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
         setNewStudent({
           name: "",
           rollNumber: "",
+          gender: "",
           notes: "",
         });
         await fetchStudents();
@@ -248,7 +251,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
             </Form.Group>
 
             <Row>
-              <Col md={12}>
+              <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Roll Number (Optional)</Form.Label>
                   <Form.Control
@@ -263,6 +266,21 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
                   <Form.Text className="text-muted">
                     Class roll number for attendance
                   </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Gender (Optional)</Form.Label>
+                  <Form.Select
+                    value={newStudent.gender}
+                    onChange={(e) =>
+                      handleInputChange("gender", e.target.value)
+                    }
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </Form.Select>
                 </Form.Group>
               </Col>
             </Row>
@@ -295,7 +313,12 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               onClick={() => {
                 setShowAddModal(false);
                 setError("");
-                setNewStudent({ name: "", rollNumber: "", notes: "" });
+                setNewStudent({
+                  name: "",
+                  rollNumber: "",
+                  gender: "",
+                  notes: "",
+                });
                 setFormErrors({});
               }}
               disabled={loading}

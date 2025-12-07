@@ -153,7 +153,10 @@ const createStandaloneAssessment = async (req, res) => {
       questionCount: activityData.numberOfQuestions,
       duration:
         activityData.timeAllocation || activityData.duration || "60 minutes",
-      difficulty: activityData.difficultyLevel || "Intermediate",
+      difficulty: activityData.difficultyLevel
+        ? activityData.difficultyLevel.charAt(0).toUpperCase() +
+          activityData.difficultyLevel.slice(1).toLowerCase()
+        : "Intermediate",
       skills: activityData.skills || [],
 
       // Add SPM exam configuration if applicable
@@ -833,6 +836,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       page = 1,
       limit = 10,
       classId,
+      lessonPlanId,
       activityType: rawActivityType,
       status,
       search,
@@ -843,6 +847,7 @@ const getUserAssessmentsFiltered = async (req, res) => {
       page,
       limit,
       classId,
+      lessonPlanId,
       rawActivityType,
       status,
       search,
@@ -852,8 +857,20 @@ const getUserAssessmentsFiltered = async (req, res) => {
     // Build filter object
     const filter = { createdBy: req.user.id };
 
-    // Filter by lesson plan presence
-    if (hasLessonPlan !== undefined) {
+    // Filter by specific lesson plan ID (highest priority)
+    if (lessonPlanId) {
+      filter.lessonPlanId = lessonPlanId;
+      // Explicitly exclude standalone assessments when filtering by lesson plan
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { isStandalone: { $exists: false } },
+          { isStandalone: false },
+          { isStandalone: null }
+        ]
+      });
+    } else if (hasLessonPlan !== undefined) {
+      // Filter by lesson plan presence (only if lessonPlanId not specified)
       if (hasLessonPlan === "true") {
         filter.lessonPlanId = { $exists: true, $ne: null };
       } else if (hasLessonPlan === "false") {
@@ -1035,10 +1052,10 @@ const saveAssessment = async (req, res) => {
     });
   }
 };
-/**
 
-Get User Assessments
-*/
+/**
+ * Get User Assessments
+ */
 const getUserAssessments = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1119,9 +1136,8 @@ const getUserAssessments = async (req, res) => {
 };
 
 /**
-
-Get Assessment By ID
-*/
+ * Get Assessment By ID
+ */
 const getAssessmentById = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1172,9 +1188,8 @@ const getAssessmentById = async (req, res) => {
 };
 
 /**
-
-Delete Assessment
-*/
+ * Delete Assessment
+ */
 const deleteAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1246,9 +1261,8 @@ const deleteAssessment = async (req, res) => {
 };
 
 /**
-
-Update Assessment
-*/
+ * Update Assessment
+ */
 const updateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated
@@ -1321,9 +1335,8 @@ const updateAssessment = async (req, res) => {
 };
 
 /**
-
-Regenerate Assessment
-*/
+ * Regenerate Assessment
+ */
 const regenerateAssessment = async (req, res) => {
   try {
     // Check if user is authenticated

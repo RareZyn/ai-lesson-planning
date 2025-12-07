@@ -1,8 +1,55 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./RecentOpened.css"; // Keep container/header styles
+import dayjs from "dayjs";
+import "./RecentOpened.css";
 import { getRecentLessonPlans } from "../../../services/lessonService";
 import LessonCard from "../../planner/displaylesson/LessonCard";
+import { FaPlus } from "react-icons/fa";
+
+const CreateLessonCard = ({ onClick }) => (
+  <div
+    className="add-lesson-card"
+    onClick={onClick}
+    role="button"
+    tabIndex={0}
+    onKeyPress={(e) => {
+      if (e.key === "Enter" || e.key === " ") onClick();
+    }}
+  >
+    <div className="add-icon-wrapper">
+      <FaPlus />
+    </div>
+    <h3 className="add-card-title">Create New Lesson</h3>
+    <p className="add-card-text">Click to schedule</p>
+  </div>
+);
+
+// Reusing the CustomModal style logic from PlannerPage.
+const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
+  if (!isVisible) return null;
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{title}</h3>
+          <button onClick={onClose} className="modal-close-button">
+            &times;
+          </button>
+        </div>
+        <div className="modal-body">{children}</div>
+        <div className="modal-footer">
+          <button onClick={onClose} className="modal-button-secondary">
+            Cancel
+          </button>
+          <button onClick={onOk} className="modal-button-primary">
+            Start Planning
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RecentOpened = () => {
   const navigate = useNavigate();
 
@@ -10,12 +57,15 @@ const RecentOpened = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Modal State
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedNewDate, setSelectedNewDate] = useState(dayjs());
+
   useEffect(() => {
     const fetchRecent = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // NOTE: Keeping the cache-buster in lessonService for this route for reliability
         const data = await getRecentLessonPlans();
         setRecentItems(data);
       } catch (error) {
@@ -26,21 +76,31 @@ const RecentOpened = () => {
       }
     };
     fetchRecent();
-  }, []); // Run only on mount
+  }, []);
 
   const handleViewAll = () => {
-    navigate("/app/lessons");
+    navigate("/app/planner");
   };
 
   const handleCreateLessonClick = () => {
-    // This button might be redundant if the main dashboard has the "Create New Lesson" button,
-    // but kept here for historical context if needed.
-    navigate("/app/lessons/create");
+    setIsModalVisible(true);
   };
+
+  const handleConfirmCreate = () => {
+    if (selectedNewDate && selectedNewDate.isValid()) {
+      navigate('/app/planner', {
+        state: { selectedDate: selectedNewDate.toISOString() }
+      });
+      setIsModalVisible(false);
+    } else {
+      alert("Please select a valid date.");
+    }
+  };
+
+  const onDateChange = (date) => setSelectedNewDate(date);
 
   const renderContent = () => {
     if (isLoading) {
-      // Revert to simple skeleton divs, assuming styles for these exist in RecentOpened.css
       return (
         <div className="recent-opened-grid">
           <div className="recent-card-skeleton"></div>
@@ -65,15 +125,10 @@ const RecentOpened = () => {
       );
     }
 
-    if (recentItems.length === 0) {
-        return <p className="text-secondary text-center">You haven't opened any lesson plans recently.</p>;
-    }
-
     return (
       <div className="recent-opened-grid">
+        <CreateLessonCard onClick={handleCreateLessonClick} />
         {recentItems.map((item) => (
-          // Use the unified LessonCard component
-          // Pass isRecent=true to trigger the "Last opened" meta display
           <LessonCard key={item._id} lesson={item} isRecent={true} />
         ))}
       </div>
@@ -99,6 +154,23 @@ const RecentOpened = () => {
       </div>
 
       {renderContent()}
+
+      <CustomModal
+        title="Schedule New Lesson"
+        isVisible={isModalVisible}
+        onOk={handleConfirmCreate}
+        onClose={() => setIsModalVisible(false)}
+      >
+        <p style={{ marginBottom: '15px' }}>
+          Choose the date for the lesson you wish to create:
+        </p>
+        <input
+          type="date"
+          value={selectedNewDate.format('YYYY-MM-DD')}
+          onChange={(e) => onDateChange(dayjs(e.target.value))}
+          className="custom-date-picker"
+        />
+      </CustomModal>
     </div>
   );
 };

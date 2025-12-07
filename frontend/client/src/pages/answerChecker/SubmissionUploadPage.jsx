@@ -1,5 +1,5 @@
 // frontend/client/src/pages/answerChecker/SubmissionUploadPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, Button, Form, Alert, ProgressBar, Badge } from "react-bootstrap";
 import { Steps, message, Spin } from "antd";
 import {
@@ -35,8 +35,12 @@ const SubmissionUploadPage = () => {
 
   // Form data - Initialize with pre-selected values
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(preSelectedClassId || null);
-  const [selectedAssessment, setSelectedAssessment] = useState(preSelectedAssessmentId || null);
+  const [selectedClass, setSelectedClass] = useState(
+    preSelectedClassId || null
+  );
+  const [selectedAssessment, setSelectedAssessment] = useState(
+    preSelectedAssessmentId || null
+  );
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [assessmentDetails, setAssessmentDetails] = useState(null);
   const [images, setImages] = useState({});
@@ -50,19 +54,7 @@ const SubmissionUploadPage = () => {
     !!preSelectedAssessmentId
   );
 
-  // Fetch classes on mount
-  useEffect(() => {
-    fetchClasses();
-  }, []);
-
-  // Fetch assessment details when assessment is selected
-  useEffect(() => {
-    if (selectedAssessment) {
-      fetchAssessmentDetails();
-    }
-  }, [selectedAssessment]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(`${API_BASE_URL}/classes`, {
@@ -73,9 +65,9 @@ const SubmissionUploadPage = () => {
     } catch (err) {
       message.error("Failed to load classes");
     }
-  };
+  }, []);
 
-  const fetchAssessmentDetails = async () => {
+  const fetchAssessmentDetails = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("authToken");
@@ -92,9 +84,10 @@ const SubmissionUploadPage = () => {
 
       // If class wasn't pre-selected but assessment has classId, use it
       if (!selectedClass && assessment.classId) {
-        const classId = typeof assessment.classId === 'string'
-          ? assessment.classId
-          : assessment.classId._id;
+        const classId =
+          typeof assessment.classId === "string"
+            ? assessment.classId
+            : assessment.classId._id;
         setSelectedClass(classId);
       }
 
@@ -124,7 +117,19 @@ const SubmissionUploadPage = () => {
       setLoading(false);
       setInitializingPreSelected(false);
     }
-  };
+  }, [selectedAssessment, selectedClass]);
+
+  // Fetch classes on mount
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  // Fetch assessment details when assessment is selected
+  useEffect(() => {
+    if (selectedAssessment) {
+      fetchAssessmentDetails();
+    }
+  }, [selectedAssessment, fetchAssessmentDetails]);
 
   const handleImageChange = (questionNumber, base64Image) => {
     setImages((prev) => ({
@@ -299,7 +304,9 @@ const SubmissionUploadPage = () => {
           {preSelectedAssessmentId && (
             <Alert variant="info" className="mt-3 mb-0">
               <strong>Assessment:</strong>{" "}
-              {assessmentDetails?.title || preSelectedAssessmentTitle || "Loading..."}
+              {assessmentDetails?.title ||
+                preSelectedAssessmentTitle ||
+                "Loading..."}
               {assessmentDetails?.activityType && (
                 <>
                   <br />
@@ -375,7 +382,9 @@ const SubmissionUploadPage = () => {
               {initializingPreSelected || loading ? (
                 <div className="text-center py-5">
                   <Spin size="large" />
-                  <p className="mt-3 text-muted">Loading assessment details...</p>
+                  <p className="mt-3 text-muted">
+                    Loading assessment details...
+                  </p>
                 </div>
               ) : (
                 <StudentSelector
@@ -393,12 +402,16 @@ const SubmissionUploadPage = () => {
               {/* SPM Paper 1 - Single Answer Sheet Upload */}
               {assessmentDetails?.activityType === "spm-exam" ? (
                 <div>
-                  <h4 className="mb-4">Step 3: Upload SPM Paper 1 Answer Sheet</h4>
+                  <h4 className="mb-4">
+                    Step 3: Upload SPM Paper 1 Answer Sheet
+                  </h4>
 
                   <Alert variant="info" className="mb-4">
                     <i className="bi bi-info-circle me-2"></i>
-                    For SPM Paper 1, upload <strong>ONE answer sheet image</strong> containing all 40 answers.
-                    The system will automatically detect and grade all questions.
+                    For SPM Paper 1, upload{" "}
+                    <strong>ONE answer sheet image</strong> containing all 40
+                    answers. The system will automatically detect and grade all
+                    questions.
                   </Alert>
 
                   <SpmAnswerSheetUploader
@@ -408,7 +421,8 @@ const SubmissionUploadPage = () => {
                     studentName={
                       classes
                         .find((c) => c._id === selectedClass)
-                        ?.students?.find((s) => s._id === selectedStudent)?.name || "Student"
+                        ?.students?.find((s) => s._id === selectedStudent)
+                        ?.name || "Student"
                     }
                     onUploadComplete={(results) => {
                       message.success("Answer sheet processed successfully!");
@@ -440,8 +454,8 @@ const SubmissionUploadPage = () => {
 
                   <Alert variant="info" className="mb-4">
                     <i className="bi bi-info-circle me-2"></i>
-                    Upload a clear image for each question. Ensure handwriting is
-                    legible and the image is well-lit without shadows.
+                    Upload a clear image for each question. Ensure handwriting
+                    is legible and the image is well-lit without shadows.
                   </Alert>
 
                   {Object.keys(images).map((questionNumber) => (
@@ -477,7 +491,9 @@ const SubmissionUploadPage = () => {
 
           {/* Navigation Buttons */}
           {/* Hide submit button for SPM exams - the SpmAnswerSheetUploader handles submission */}
-          {!(currentStep === 2 && assessmentDetails?.activityType === "spm-exam") && (
+          {!(
+            currentStep === 2 && assessmentDetails?.activityType === "spm-exam"
+          ) && (
             <div className="d-flex justify-content-between mt-4">
               <Button
                 variant="secondary"
@@ -528,17 +544,18 @@ const SubmissionUploadPage = () => {
           )}
 
           {/* Back button for SPM exams */}
-          {currentStep === 2 && assessmentDetails?.activityType === "spm-exam" && (
-            <div className="d-flex justify-content-start mt-4">
-              <Button
-                variant="secondary"
-                onClick={handlePrevious}
-                disabled={submitting}
-              >
-                Back to Student Selection
-              </Button>
-            </div>
-          )}
+          {currentStep === 2 &&
+            assessmentDetails?.activityType === "spm-exam" && (
+              <div className="d-flex justify-content-start mt-4">
+                <Button
+                  variant="secondary"
+                  onClick={handlePrevious}
+                  disabled={submitting}
+                >
+                  Back to Student Selection
+                </Button>
+              </div>
+            )}
         </Card.Body>
       </Card>
     </div>

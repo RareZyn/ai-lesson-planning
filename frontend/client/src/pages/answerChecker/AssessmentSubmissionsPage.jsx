@@ -1,7 +1,7 @@
 // frontend/client/src/pages/answerChecker/AssessmentSubmissionsPage.jsx
 import React, { useState, useEffect } from "react";
 import { Card, Button, Badge, Table, Alert, Row, Col } from "react-bootstrap";
-import { Tag, Tooltip, Empty, Spin, Statistic } from "antd";
+import { Tooltip, Empty, Spin, Statistic } from "antd";
 import {
   EyeOutlined,
   DeleteOutlined,
@@ -31,10 +31,6 @@ const AssessmentSubmissionsPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState({});
 
-  useEffect(() => {
-    fetchAssessmentData();
-  }, [assessmentId]);
-
   const fetchAssessmentData = async () => {
     setLoading(true);
     setError("");
@@ -62,6 +58,11 @@ const AssessmentSubmissionsPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAssessmentData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assessmentId]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this submission?"))

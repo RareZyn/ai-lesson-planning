@@ -1,5 +1,5 @@
 // src/pages/community/Community.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Input, Select, Button, Row, Col, Tabs, message, Spin } from "antd";
 import {
   SearchOutlined,
@@ -17,15 +17,14 @@ const { Search } = Input;
 const { Option } = Select;
 
 const Community = () => {
-  const { user, userId, isAuthenticated } = useUser();
+  const { userId, isAuthenticated } = useUser();
   const [lessons, setLessons] = useState([]);
-  const [userLessons, setUserLessons] = useState([]);
   const [bookmarkedLessons, setBookmarkedLessons] = useState([]);
   const [filteredLessons, setFilteredLessons] = useState([]);
   const [activeTab, setActiveTab] = useState("discover");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [assessmentsByLesson, setAssessmentsByLesson] = useState({}); // Map of lessonId -> single assessment
+  const [assessmentsByLesson, setAssessmentsByLesson] = useState({}); // Map of lessonId -> array of assessments
   const [filters, setFilters] = useState({
     grade: "",
     subject: "",
@@ -33,52 +32,48 @@ const Community = () => {
     sortBy: "recent",
   });
 
-  useEffect(() => {
-    if (isAuthenticated && userId) {
-      loadCommunityData();
-    } else {
-      // If not authenticated, just load community lessons
-      loadCommunityLessonsOnly();
-    }
-  }, [isAuthenticated, userId]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [lessons, userLessons, bookmarkedLessons, filters, activeTab]);
-
-  // Fetch single assessment for a set of lessons (one assessment per lesson)
+  // Fetch ALL assessments for a set of lessons
   const fetchAssessmentsForLessons = async (lessonList) => {
     if (!lessonList || lessonList.length === 0) return;
 
     try {
       const assessmentsMap = {};
 
-      // Fetch assessment for each lesson (only the first one)
+      // Fetch ALL assessments for each lesson
       await Promise.all(
         lessonList.map(async (lesson) => {
           if (lesson._id) {
             try {
-              const response = await assessmentAPI.getAssessmentsByLessonPlan(lesson._id);
-              // Only store the first assessment since one lesson has only one assessment
-              if (response.success && response.data && response.data.length > 0) {
-                assessmentsMap[lesson._id] = response.data[0]; // Get only the first assessment
+              const response = await assessmentAPI.getAssessmentsByLessonPlan(
+                lesson._id
+              );
+              // Store ALL assessments for this lesson, not just the first one
+              if (
+                response.success &&
+                response.data &&
+                response.data.length > 0
+              ) {
+                assessmentsMap[lesson._id] = response.data; // Store all assessments as array
               }
             } catch (error) {
-              console.error(`Error fetching assessment for lesson ${lesson._id}:`, error);
+              console.error(
+                `Error fetching assessment for lesson ${lesson._id}:`,
+                error
+              );
               // Don't show error to user, just skip this lesson's assessment
             }
           }
         })
       );
 
-      setAssessmentsByLesson(prev => ({ ...prev, ...assessmentsMap }));
+      setAssessmentsByLesson((prev) => ({ ...prev, ...assessmentsMap }));
     } catch (error) {
-      console.error('Error fetching assessments:', error);
+      console.error("Error fetching assessments:", error);
       // Silently fail - assessments are optional
     }
   };
 
-  const loadCommunityData = async () => {
+  const loadCommunityData = useCallback(async () => {
     setLoading(true);
     try {
       // Load community lessons, user's lessons, and bookmarks in parallel
@@ -109,7 +104,6 @@ const Community = () => {
 
       if (userResponse.success) {
         const userLessonsData = userResponse.data || [];
-        setUserLessons(userLessonsData);
         // Fetch assessments for user lessons
         fetchAssessmentsForLessons(userLessonsData);
       }
@@ -130,9 +124,9 @@ const Community = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.sortBy, userId]);
 
-  const loadCommunityLessonsOnly = async () => {
+  const loadCommunityLessonsOnly = useCallback(async () => {
     setLoading(true);
     try {
       const communityResponse = await communityAPI.getCommunityLessons({
@@ -153,9 +147,18 @@ const Community = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.sortBy]);
 
-  const applyFilters = () => {
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      loadCommunityData();
+    } else {
+      // If not authenticated, just load community lessons
+      loadCommunityLessonsOnly();
+    }
+  }, [isAuthenticated, userId, loadCommunityData, loadCommunityLessonsOnly]);
+
+  const applyFilters = useCallback(() => {
     let dataToFilter = [];
 
     // Choose data source based on active tab
@@ -213,7 +216,11 @@ const Community = () => {
     }
 
     setFilteredLessons(filtered);
-  };
+  }, [lessons, bookmarkedLessons, filters, activeTab, userId]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleFilterChange = (type, value) => {
     setFilters((prev) => ({
@@ -367,9 +374,6 @@ const Community = () => {
       if (response.success) {
         // Remove the lesson from the local state
         setLessons((prev) => prev.filter((lesson) => lesson._id !== lessonId));
-        setUserLessons((prev) =>
-          prev.filter((lesson) => lesson._id !== lessonId)
-        );
         setBookmarkedLessons((prev) =>
           prev.filter((lesson) => lesson._id !== lessonId)
         );
@@ -449,7 +453,7 @@ const Community = () => {
               onBookmark={handleBookmark}
               onUnshare={handleUnshare}
               currentUserId={userId}
-              assessment={assessmentsByLesson[lesson._id] || null}
+              assessments={assessmentsByLesson[lesson._id] || []}
             />
           </Col>
         ))}

@@ -1,5 +1,5 @@
 // src/components/Modal/UploadLessonModal.jsx - Fixed with direct button handler
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Modal,
   Form,
@@ -38,18 +38,7 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
   const [classesLoading, setClassesLoading] = useState(false);
   const [lessonPlansLoading, setLessonPlansLoading] = useState(false);
 
-  // Load data when modal opens
-  useEffect(() => {
-    if (isOpen && currentUserId) {
-      loadInitialData();
-    }
-  }, [isOpen, currentUserId]);
-
-  const loadInitialData = async () => {
-    await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
-  };
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     setClassesLoading(true);
     try {
       const classesData = await getAllClasses();
@@ -61,9 +50,9 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
     } finally {
       setClassesLoading(false);
     }
-  };
+  }, []);
 
-  const fetchUserLessonPlans = async () => {
+  const fetchUserLessonPlans = useCallback(async () => {
     if (!currentUserId) {
       console.error("No currentUserId provided");
       return;
@@ -96,7 +85,18 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
     } finally {
       setLessonPlansLoading(false);
     }
-  };
+  }, [currentUserId]);
+
+  const loadInitialData = useCallback(async () => {
+    await Promise.all([fetchClasses(), fetchUserLessonPlans()]);
+  }, [fetchClasses, fetchUserLessonPlans]);
+
+  // Load data when modal opens
+  useEffect(() => {
+    if (isOpen && currentUserId) {
+      loadInitialData();
+    }
+  }, [isOpen, currentUserId, loadInitialData]);
 
   // Direct button click handler instead of form submission
   const handleShareButtonClick = async () => {
@@ -388,9 +388,8 @@ const UploadLessonModal = ({ isOpen, onClose, onSubmit, currentUserId }) => {
                     showSearch
                     optionLabelProp="label"
                     filterOption={(input, option) =>
-                      option.label
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
+                      option.label.toLowerCase().indexOf(input.toLowerCase()) >=
+                      0
                     }
                   >
                     {renderLessonPlanOptions()}

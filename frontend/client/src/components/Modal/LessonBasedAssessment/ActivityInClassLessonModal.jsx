@@ -9,8 +9,6 @@ import {
   Col,
   Typography,
   Tag,
-  Space,
-  Tooltip,
   Select,
   Divider,
   message,

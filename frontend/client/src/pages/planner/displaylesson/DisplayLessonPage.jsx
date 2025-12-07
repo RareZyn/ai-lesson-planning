@@ -155,17 +155,14 @@ const DisplayLessonPage = () => {
 
     switch (type) {
       case "essay":
-        return `${params.essayType || "Standard"} essay, ${
-          params.wordCount || "unspecified"
-        } words`;
+        return `${params.essayType || "Standard"} essay, ${params.wordCount || "unspecified"
+          } words`;
       case "assessment":
-        return `${params.assessmentType || "Standard"} assessment with ${
-          params.numberOfQuestions || "unspecified"
-        } questions`;
+        return `${params.assessmentType || "Standard"} assessment with ${params.numberOfQuestions || "unspecified"
+          } questions`;
       case "activityInClass":
-        return `${params.activityType || "General"} activity with ${
-          params.studentArrangement || "flexible"
-        } arrangement`;
+        return `${params.activityType || "General"} activity with ${params.studentArrangement || "flexible"
+          } arrangement`;
       case "textbook":
         return "Textbook-based activity with standard requirements";
       default:
@@ -306,12 +303,12 @@ const DisplayLessonPage = () => {
             <Text type="secondary">
               {activityConfiguration.configuredAt
                 ? new Date(
-                    activityConfiguration.configuredAt
-                  ).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
+                  activityConfiguration.configuredAt
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
                 : "Unknown date"}
             </Text>
           </Descriptions.Item>
@@ -459,7 +456,7 @@ const DisplayLessonPage = () => {
 
   return (
     <div
-      className="container-fluid py-4" 
+      className="container-fluid py-4"
       style={{ minHeight: "100vh" }}
     >
       <div className="container">
@@ -487,7 +484,9 @@ const DisplayLessonPage = () => {
               </Text>
               <div className="mt-2">
                 <Space wrap>
-                  <Tag color="blue">{parameters.sow?.focus || "General"}</Tag>
+                  <Tag color="blue">
+                    {parameters.sow?.focus || parameters.sow?.Focus || "General"}
+                  </Tag>
                   <Tag color="green">{parameters.proficiencyLevel}</Tag>
                   <Tag color="purple">
                     {parameters.hotsFocus?.toUpperCase()}
@@ -710,22 +709,67 @@ const DisplayLessonPage = () => {
               </Descriptions>
             </Card>
 
-            {/* Scheme of Work */}
-            <Card title="Scheme of Work" className="mb-4">
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Lesson Number">
-                  <Text strong>Lesson {parameters.sow?.lessonNo}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Topic">
-                  <Text>{parameters.sow?.topic}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Focus">
-                  <Tag color="blue">{parameters.sow?.focus}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Theme">
-                  <Text type="secondary">{parameters.sow?.theme}</Text>
-                </Descriptions.Item>
-              </Descriptions>
+            {/* Syllabus Content */}
+            <Card title="Syllabus Content" className="mb-4">
+              {parameters.sow ? (
+                <div className={styles.syllabusContainer}>
+                  {Object.entries(parameters.sow).map(([key, value]) => {
+                    // Filter out internal keys
+                    if (["id", "_id", "key", "topicKey"].includes(key)) return null;
+
+                    // Formatter
+                    const label = key
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/^./, (str) => str.toUpperCase())
+                      .trim();
+
+                    // Recursive helper
+                    const renderSyllabusValue = (val) => {
+                      if (Array.isArray(val)) {
+                        return (
+                          <ul style={{ paddingLeft: "1.2rem", marginBottom: 0, wordBreak: "break-word" }}>
+                            {val.map((item, index) => (
+                              <li key={index}>{renderSyllabusValue(item)}</li>
+                            ))}
+                          </ul>
+                        );
+                      }
+                      if (typeof val === "object" && val !== null) {
+                        // eslint-disable-next-line
+                        return (
+                          <div style={{ paddingLeft: "0.5rem", wordBreak: "break-word" }}>
+                            {Object.entries(val).map(([subKey, subValue]) => (
+                              <div key={subKey}>
+                                <Text strong>{subKey}: </Text>
+                                {renderSyllabusValue(subValue)}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return (
+                        <Paragraph
+                          ellipsis={{ rows: 3, expandable: true, symbol: "more" }}
+                          style={{ marginBottom: 0, wordBreak: "break-word", whiteSpace: "pre-wrap" }}
+                        >
+                          {String(val)}
+                        </Paragraph>
+                      );
+                    };
+
+                    return (
+                      <div key={key} className={styles.syllabusRow}>
+                        <div className={styles.syllabusLabel}>{label}</div>
+                        <div className={styles.syllabusValue}>
+                          {renderSyllabusValue(value)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Alert message="No syllabus data attached to this lesson." type="info" />
+              )}
             </Card>
 
             {/* Learning Parameters */}
@@ -779,8 +823,8 @@ const DisplayLessonPage = () => {
                   Configured:{" "}
                   {activityConfiguration.configuredAt
                     ? new Date(
-                        activityConfiguration.configuredAt
-                      ).toLocaleDateString()
+                      activityConfiguration.configuredAt
+                    ).toLocaleDateString()
                     : "Unknown date"}
                 </Text>
               </Card>

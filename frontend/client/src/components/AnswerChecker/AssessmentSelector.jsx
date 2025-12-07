@@ -1,7 +1,7 @@
 // frontend/client/src/components/AnswerChecker/AssessmentSelector.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Form, Button, Modal, Alert, Badge, Card } from "react-bootstrap";
-import { Spin, Empty, Tag } from "antd";
+import { Spin, Empty, Tag, Modal as AntModal } from "antd";
 import { EyeOutlined, FileTextOutlined } from "@ant-design/icons";
 import axios from "axios";
 
@@ -18,13 +18,7 @@ const AssessmentSelector = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewAssessment, setPreviewAssessment] = useState(null);
 
-  useEffect(() => {
-    if (classId) {
-      fetchAssessments();
-    }
-  }, [classId]);
-
-  const fetchAssessments = async () => {
+  const fetchAssessments = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -46,7 +40,13 @@ const AssessmentSelector = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    if (classId) {
+      fetchAssessments();
+    }
+  }, [classId, fetchAssessments]);
 
   const handlePreview = async (assessmentId) => {
     try {
@@ -62,7 +62,10 @@ const AssessmentSelector = ({
       setPreviewAssessment(response.data.data);
       setShowPreview(true);
     } catch (err) {
-      alert("Failed to load assessment details");
+      AntModal.error({
+        title: 'Error',
+        content: 'Failed to load assessment details',
+      });
     }
   };
 

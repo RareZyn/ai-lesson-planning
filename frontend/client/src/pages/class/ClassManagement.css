@@ -13,6 +13,11 @@
 /* --- Controls Section --- */
 .class-controls {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .search-bar {
@@ -22,8 +27,37 @@
   border-radius: 8px;
   padding: 0.75rem 1rem;
   max-width: 400px;
+  flex: 1;
+  min-width: 250px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e0e0e0;
+}
+
+.create-class-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(63, 81, 181, 0.2);
+  white-space: nowrap;
+}
+
+.create-class-button:hover {
+  background-color: #36459b;
+  box-shadow: 0 4px 8px rgba(63, 81, 181, 0.3);
+  transform: translateY(-2px);
+}
+
+.create-class-button:active {
+  transform: translateY(0);
 }
 
 .search-icon {
@@ -129,4 +163,57 @@
 
 .add-icon-wrapper svg {
   font-size: 2.25rem; /* Make the plus icon larger */
+}
+
+/* --- Mobile Responsive Styles --- */
+@media (max-width: 768px) {
+  .class-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .create-class-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Horizontal scroll for class cards on mobile */
+  .class-cards-container {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .class-cards-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .class-cards-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+
+  .class-cards-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+
+  .class-cards-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  .class-cards-container > * {
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+  }
 }

@@ -177,73 +177,10 @@ if (mongoose.models.LessonPlan) {
         },
 
         // Detailed Scheme of Work snapshot
+        // UPDATED: Changed to Mixed to support dynamic Syllabus columns
         sow: {
-          lessonNo: {
-            type: Number,
-            min: [1, "Lesson number must be at least 1"],
-          },
-          focus: {
-            type: String,
-            trim: true,
-          },
-          theme: {
-            type: String,
-            trim: true,
-          },
-          topic: {
-            type: String,
-            trim: true,
-          },
-          contentStandard: {
-            main: {
-              type: String,
-              trim: true,
-            },
-            comp: {
-              type: String,
-              trim: true,
-            },
-          },
-          learningStandard: {
-            main: {
-              type: String,
-              trim: true,
-            },
-            comp: {
-              type: String,
-              trim: true,
-            },
-          },
-          learningOutline: {
-            pre: {
-              type: String,
-              trim: true,
-            },
-            during: {
-              type: String,
-              trim: true,
-            },
-            post: {
-              type: String,
-              trim: true,
-            },
-          },
-          materials: [
-            {
-              type: String,
-              trim: true,
-            },
-          ],
-          differentiationStrategy: {
-            type: String,
-            trim: true,
-          },
-          cce: [
-            {
-              type: String,
-              trim: true,
-            },
-          ],
+          type: mongoose.Schema.Types.Mixed,
+          default: {}
         },
       },
 

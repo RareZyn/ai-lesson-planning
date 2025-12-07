@@ -13,14 +13,13 @@ import {
   Spinner,
   Alert,
 } from "react-bootstrap";
-import { Select, DatePicker, message } from "antd";
-import { BarChartOutlined, UserOutlined, DownloadOutlined } from "@ant-design/icons";
+import { Select, message } from "antd";
+import { BarChartOutlined, UserOutlined } from "@ant-design/icons";
 import ClassAnalyticsView from "./ClassAnalyticsView";
 import StudentProgressView from "./StudentProgressView";
 import axios from "axios";
 import "./AnalyticsDashboard.css";
 
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const AnalyticsDashboard = () => {

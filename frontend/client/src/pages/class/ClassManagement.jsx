@@ -3,7 +3,18 @@ import { getAllClasses } from '../../services/classService';
 import CreateClassModal from './CreateClassModal';
 import ClassCard from './ClassCard'; // The reusable card for displaying a class
 import { Add as AddIcon, Search as SearchIcon, Groups as GroupsIcon } from '@mui/icons-material';
+import { FaPlus } from 'react-icons/fa';
 import './ClassManagement.css';
+
+const CreateClassCard = ({ onClick }) => (
+  <div className="add-class-card" onClick={onClick}>
+    <div className="add-icon-wrapper">
+      <FaPlus />
+    </div>
+    <h3 className="add-class-card-title">Create New Class</h3>
+    <p className="add-class-card-text">Click to add class</p>
+  </div>
+);
 
 const ClassManagement = () => {
   const [classes, setClasses] = useState([]);
@@ -67,15 +78,9 @@ const ClassManagement = () => {
           </div>
         ) : (
           <div className="class-cards-container">
-            {/* --- The "Add Class" Card --- */}
-            {/* This card is always displayed as the first item */}
-            <div className="add-class-card" onClick={() => setIsModalOpen(true)}>
-              <div className="add-icon-wrapper">
-                <AddIcon />
-              </div>
-              <span>Create New Class</span>
-            </div>
-            
+            {/* --- Render the Create Class Card first --- */}
+            <CreateClassCard onClick={() => setIsModalOpen(true)} />
+
             {/* --- Render the fetched class cards --- */}
             {filteredClasses.map((cls) => (
               <ClassCard key={cls._id} classInfo={cls} />
@@ -83,10 +88,10 @@ const ClassManagement = () => {
 
             {/* --- Special message if search finds no results --- */}
             {classes.length > 0 && filteredClasses.length === 0 && searchTerm && (
-                <div className="empty-state">
-                    <GroupsIcon style={{ fontSize: 50, color: '#ccc' }}/>
-                    <p>No classes found matching your search.</p>
-                </div>
+              <div className="empty-state">
+                <GroupsIcon style={{ fontSize: 50, color: '#ccc' }} />
+                <p>No classes found matching your search.</p>
+              </div>
             )}
           </div>
         )}

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import {
   Card,
   Radio,
-  Button,
   Input,
   Row,
   Col,
@@ -23,7 +22,6 @@ import {
   FileTextOutlined,
   BookOutlined,
   EditOutlined,
-  ClockCircleOutlined,
   BulbOutlined,
   LoadingOutlined,
   RedoOutlined,
@@ -39,8 +37,6 @@ import {
   communicationFormats,
   essayTypes,
   promptComplexity,
-  questionTypes,
-  difficultyLevels,
   timeAllocations,
   validateSPMConfiguration,
 } from "../../../data/spmExamTypes";
@@ -122,14 +118,15 @@ const SPMExamLessonModal = ({
     }));
   };
 
-  const handleArrayToggle = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
-    }));
-  };
+  // Removed handleArrayToggle - not currently used but kept for future enhancements
+  // const handleArrayToggle = (field, value) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [field]: prev[field].includes(value)
+  //       ? prev[field].filter((item) => item !== value)
+  //       : [...prev[field], value],
+  //   }));
+  // };
 
   // Helper function to generate assessment title with fallback
   const generateAssessmentTitle = () => {

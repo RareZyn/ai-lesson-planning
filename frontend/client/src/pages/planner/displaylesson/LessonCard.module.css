@@ -1,179 +1,236 @@
 .card {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  /* Make card square */
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* --- Image Header Section --- */
+/* --- Document Preview Header (Real Data) --- */
 .cardHeader {
-  height: 100px;
+  height: 45%;
+  /* Reduced to 45% to give majority space to content */
+  background-color: #f0f2f5;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
-
-  /* Background Image styles */
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5%;
+  /* Relative padding */
+  border-bottom: 1px solid #e8e8e8;
 }
 
-.imageOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Darker overlay for text readability */
-  background: linear-gradient(to bottom,
-      rgba(0, 0, 0, 0.4),
-      rgba(0, 0, 0, 0.6));
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-/* Ensure the overlay is active */
-.card:hover .imageOverlay {
-  opacity: 1;
-}
-
-/* --- End Image Header Section --- */
-
-
-.subjectBadge {
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease;
-}
-
-.card:hover .subjectBadge {
-  transform: scale(1.05);
-}
-
-.cardContent {
-  padding: 1rem;
-  flex-grow: 1;
+.previewContainer {
+  width: 85%;
+  height: 115%;
+  /* Extend slightly beyond header to look cut off */
+  background-color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  /* Light shadow for paper depth */
+  padding: 8% 8%;
+  /* Relative padding */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 5%;
+  /* Relative gap */
+  pointer-events: none;
+  border-radius: 4px 4px 0 0;
+  /* Only top corners rounded */
+  border: 1px solid #e8e8e8;
+  border-bottom: none;
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
+}
+
+.previewRealTitle {
+  font-size: 8px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.previewRealMeta {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.previewRealTag {
+  font-size: 5px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.previewContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.previewRealSectionTitle {
+  font-size: 6px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 1px;
+}
+
+.previewRealText {
+  font-size: 5px;
+  color: #888;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: justify;
+}
+
+.previewRealList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.previewRealListItem {
+  font-size: 5px;
+  color: #888;
+  line-height: 1.4;
+  position: relative;
+  padding-left: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.previewRealListItem::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  font-size: 5px;
+  line-height: 1.4;
+}
+
+/* --- Card Body Content --- */
+.cardContent {
+  padding: 3% 5%;
+  /* Tight padding */
+  flex-grow: 1;
+  /* Allow it to fill remaining space */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.15rem;
+  background-color: white;
+  min-height: 0;
 }
 
 .cardTitle {
-  font-size: 1.1rem;
-  /* Slightly larger for main title */
+  font-size: 1.05rem;
   font-weight: 700;
-  /* Bolder */
   color: #2c3e50;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
+  /* Compatibility */
   -webkit-box-orient: vertical;
   margin: 0 !important;
+  flex-shrink: 0;
+  /* Prevent title from collapsing */
 }
 
 .cardClass {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #34495e;
-  /* Slightly darker than meta */
   font-weight: 500;
   margin: 0 !important;
+  display: flex;
+  align-items: center;
+}
+
+.gradeTag {
+  margin-left: 12px;
+  font-weight: 400;
+  color: #8c8c8c;
+  font-size: 0.85rem;
+}
+
+.subjectWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: auto;
+  /* Push meta to bottom */
+}
+
+/* Add a colored dot for subject similar to tags */
+.subjectDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  /* Default */
 }
 
 .cardSubject {
   font-size: 0.85rem;
   color: #7f8c8d;
-  margin: 0 0 0.5rem 0 !important;
+  margin: 0 !important;
 }
 
 .cardMeta {
   font-size: 0.75rem;
-  color: #95a5a6;
+  color: #bfbfbf;
   padding-top: 0.5rem;
-  /* Separator space */
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f5f5f5;
   margin: 0 !important;
+  margin-top: 0.3rem !important;
 }
 
-
-/* Responsive design (Keeping the original media queries) */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .cardHeader {
-    height: 80px;
-  }
 
-  .subjectBadge {
-    font-size: 0.65rem;
-    padding: 0.25rem 0.6rem;
-  }
 
-  .cardContent {
-    padding: 0.8rem;
+  .previewContainer {
+    /* Height is handled by percentages now */
+    width: 90%;
   }
 
   .cardTitle {
-    font-size: 0.9rem;
-  }
-
-  .cardGrade {
-    font-size: 0.8rem;
-  }
-
-  .cardMeta {
-    font-size: 0.7rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .card {
-    border-radius: 6px;
-  }
-
-  .cardHeader {
-    height: 70px;
-  }
-
-  .subjectBadge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 8px;
-  }
-
-  .cardContent {
-    padding: 0.75rem;
-  }
-
-  .cardTitle {
-    font-size: 0.85rem;
-    -webkit-line-clamp: 1;
-  }
-
-  .cardGrade {
-    font-size: 0.75rem;
-  }
-
-  .cardMeta {
-    font-size: 0.65rem;
+    font-size: 0.95rem;
   }
 }

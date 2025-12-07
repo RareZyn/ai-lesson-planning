@@ -157,6 +157,13 @@
   font-weight: 500;
 }
 
+.gender {
+  font-size: 0.9rem;
+  color: #495057;
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
 .notes {
   font-size: 0.85rem;
   color: #6c757d;

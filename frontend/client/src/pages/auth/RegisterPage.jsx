@@ -1,5 +1,5 @@
 // src/pages/auth/RegisterPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Input, Button, message } from "antd";
 import {
   UserOutlined,
@@ -14,6 +14,7 @@ import {
   updateProfile,
 } from "../../firebase";
 import { authAPI } from "../../services/api";
+import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./LoginPage.css"; // Assuming shared styling
@@ -21,6 +22,14 @@ import "./LoginPage.css"; // Assuming shared styling
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useUser();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/app", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const onFinish = async (values) => {
     if (values.password !== values.confirmPassword) {
@@ -82,11 +91,10 @@ const RegisterPage = () => {
   };
 
   const handleTabChange = (tab) => {
-    if (tab === "signup") {
-      navigate("/register");
-    } else if (tab === "login") {
+    if (tab === "login") {
       navigate("/");
     }
+    // No need to navigate if already on register
   };
 
   return (
@@ -95,7 +103,7 @@ const RegisterPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/LessonPlanning.png" alt="App Icon" />
+              <img src="./logo/LessonPlanning.webp" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>

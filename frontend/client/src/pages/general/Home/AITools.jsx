@@ -10,37 +10,37 @@ const AITools = () => {
     {
       id: "lesson-plans",
       title: "Lesson Plans",
-      icon: "/logo/lessonIcon.png",
+      icon: "/logo/lessonIcon.webp",
       path: "lessons",
     },
     {
       id: "activities",
       title: "Assessment",
-      icon: "/logo/choose.png",
+      icon: "/logo/choose.webp",
       path: "assessment",
     },
     {
       id: "answer-checker",
       title: "Answer Checker",
-      icon: "/logo/survey.png",
+      icon: "/logo/survey.webp",
       path: "submissions",
     },
     {
       id: "downloads",
       title: "Downloads",
-      icon: "/logo/folders.png",
+      icon: "/logo/folders.webp",
       path: "downloads",
     },
     {
       id: "materials",
       title: "Materials",
-      icon: "/logo/lessonIcon.png",
+      icon: "/logo/lessonIcon.webp",
       path: "materials",
     },
     {
       id: "analytics",
       title: "Analytics",
-      icon: "/logo/graph.png",
+      icon: "/logo/graph.webp",
       path: "analytics",
     },
   ];

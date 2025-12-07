@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./MultiStepPlanner.module.css";
+import { Modal } from "antd";
 
 import ProgressBar from "./ProgressBar";
-import Step1_ChooseClass from "./Step1_ChooseClass";
-import Step2_LessonDetails from "./Step2_LessonDetails";
-import Step3_AdditionalInfo from "./Step3_AdditionalInfo";
-import Step4_ConfirmPlan from "./Step4_ConfirmPlan";
+import Step1ChooseClass from "./Step1_ChooseClass";
+import Step2LessonDetails from "./Step2_LessonDetails";
+import Step3AdditionalInfo from "./Step3_AdditionalInfo";
+import Step4ConfirmPlan from "./Step4_ConfirmPlan";
 
 // --- IMPORT THE NEW SERVICE FUNCTION ---
 import {
@@ -31,6 +32,7 @@ const MultiStepPlanner = () => {
     hotsFocus: "",
     additionalNotes: "",
     grade: "",
+    subject: "", // NEW
   });
 
   const [generatedPlan, setGeneratedPlan] = useState(null);
@@ -40,7 +42,7 @@ const MultiStepPlanner = () => {
     return dateFromState ? new Date(dateFromState) : new Date();
   };
 
-  const [plannerDate, setPlannerDate] = useState(getInitialDate());
+  const [plannerDate] = useState(getInitialDate()); // setPlannerDate removed - not currently used
 
   useEffect(() => {
     console.log("Form data updated:", formData);
@@ -66,7 +68,10 @@ const MultiStepPlanner = () => {
       setGeneratedPlan(planObject);
       handleNext();
     } catch (error) {
-      alert(`Generation Failed: ${error.message}`);
+      Modal.error({
+        title: 'Generation Failed',
+        content: error.message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -90,12 +95,18 @@ const MultiStepPlanner = () => {
       const response = await saveLessonPlan(finalLessonPlan);
       if (response.success) {
         const newPlanId = response.data._id;
-        alert("Lesson Plan Saved Successfully with Activity Configuration!");
-        navigate(`/app/lessons/${newPlanId}`);
+        Modal.success({
+          title: 'Success',
+          content: 'Lesson Plan Saved Successfully with Activity Configuration!',
+          onOk: () => navigate(`/app/lessons/${newPlanId}`),
+        });
       }
     } catch (error) {
       console.error("Failed to save lesson plan:", error);
-      alert(`Error: ${error.message}`);
+      Modal.error({
+        title: 'Error',
+        content: error.message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +128,12 @@ const MultiStepPlanner = () => {
         userPrompt,
         context: {
           grade: formData.grade,
-          subject: formData.sow?.subject || "Unknown",
-          topic: formData.sow?.topic || "General",
+          subject: formData.subject || formData.sow?.subject || "Unknown",
+          topic: (() => {
+            const sow = formData.sow;
+            if (!sow) return "General";
+            return sow.Title || sow.Topic || sow.topic || sow.title || Object.values(sow)[0] || "General";
+          })(),
         },
       };
 
@@ -163,14 +178,14 @@ const MultiStepPlanner = () => {
       <main className={styles.stepContainer}>
         {/* ... (no changes for steps 1, 2, 3) ... */}
         {currentStep === 1 && (
-          <Step1_ChooseClass
+          <Step1ChooseClass
             data={formData}
             updateData={handleDataChange}
             onNext={handleNext}
           />
         )}
         {currentStep === 2 && (
-          <Step2_LessonDetails
+          <Step2LessonDetails
             data={formData}
             updateData={handleDataChange}
             onNext={handleNext}
@@ -178,7 +193,7 @@ const MultiStepPlanner = () => {
           />
         )}
         {currentStep === 3 && (
-          <Step3_AdditionalInfo
+          <Step3AdditionalInfo
             data={formData}
             updateData={handleDataChange}
             onGenerate={handleGenerate}
@@ -187,7 +202,7 @@ const MultiStepPlanner = () => {
           />
         )}
         {currentStep === 4 && (
-          <Step4_ConfirmPlan
+          <Step4ConfirmPlan
             plan={generatedPlan}
             updatePlan={handlePlanChange}
             onSave={handleSave}

@@ -171,34 +171,6 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
 
     // --- Excel Template Generation ---
 
-    const generateExcelHeadersAndPlaceholders = (fields, prefix = '') => {
-        let headers = [];
-        let rowPlaceholders = {}; // For the first data row
-        let hintRow = {}; // For providing instructions/hints
-
-        fields.forEach(field => {
-            const fullFieldName = prefix ? `${prefix}.${field.name}` : field.name;
-            if (field.type === 'object' && field.subFields && field.subFields.length > 0) {
-                const { headers: subHeaders, rowPlaceholders: subPlaceholders, hintRow: subHintRow } = generateExcelHeadersAndPlaceholders(field.subFields, fullFieldName);
-                headers = headers.concat(subHeaders);
-                rowPlaceholders = { ...rowPlaceholders, ...subPlaceholders };
-                hintRow = { ...hintRow, ...subHintRow };
-            } else {
-                headers.push(fullFieldName);
-                if (field.type === 'list') {
-                    rowPlaceholders[fullFieldName] = `Item 1\nItem 2\nItem 3`;
-                    hintRow[fullFieldName] = 'Enter each item on a new line within the cell.';
-                } else if (field.type === 'text') {
-                    rowPlaceholders[fullFieldName] = `Example ${field.name}`;
-                    hintRow[fullFieldName] = 'Enter single text value.';
-                } else { // Should not happen with current types, but fallback
-                    rowPlaceholders[fullFieldName] = '';
-                    hintRow[fullFieldName] = 'Unknown format, enter text.';
-                }
-            }
-        });
-        return { headers, rowPlaceholders, hintRow };
-    };
     const extractHeaders = (fields) => {
         let headers = [];
 
@@ -416,7 +388,6 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
 
         for (const schemaField of flatSchema) {
             const fieldName = schemaField.name;
-            const fieldType = schemaField.type;
 
             // Check if the flattened schema field name exists in the uploaded data keys
             if (!uploadedKeys.includes(fieldName)) {

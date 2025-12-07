@@ -922,71 +922,132 @@ const processSpmAnswerSheet = async (req, res) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-    // Specialized prompt for SPM answer sheet - HYBRID DETECTION
+    // Specialized prompt for SPM answer sheet - HYBRID DETECTION (UPDATED FORMAT)
     const prompt = `You are analyzing an SPM Paper 1 answer sheet with 40 questions.
 
-ANSWER SHEET STRUCTURE:
-The answer sheet has a table with 3 columns:
-1. Question numbers (1-40) in the left column
-2. Answer bubbles (A-H circles) in the middle column - for MCQ answers
-3. "SPACE FOR ANSWER THAT ARE A WORD, PHRASE OR NUMBER" in the right column - for written answers
+⚡ CRITICAL UPDATE - NEW ANSWER SHEET FORMAT:
+The answer sheet is split into TWO COLUMNS (left and right) with DIFFERENT QUESTION FORMATS:
 
-MCQ BUBBLE FORMAT (Questions 1-36):
-Each question row shows: A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝
-- The letter (A, B, C, D, E, F, G, or H) appears to the LEFT of each circle
-- When a student selects an answer, they FILL/BLACKEN/SHADE the circle next to that letter
-- Look for the FILLED/DARKENED/SHADED circle (⚫ or ●) and return the LETTER that appears to its LEFT
-- Example: If you see "A ⃝ B ● C ⃝ D ⃝", the answer is "B" (because B's circle is filled)
-- Example: If you see "A ⃝ B ⃝ C ⃝ D ⚫", the answer is "D" (because D's circle is filled)
+LEFT COLUMN (Questions 1-20):
+- MCQ bubbles only: A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝
 
-DETECTION RULES:
-- **Questions 1-36**: MCQ only - detect which circle is FILLED/BLACKENED, then return the LETTER to its left
-- **Questions 37-40**: Written answers only - extract the word/phrase/number from the RIGHT COLUMN (third column)
+RIGHT COLUMN (Questions 21-40):
+- Questions 21-32: MCQ bubbles (A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝)
+- Section header: "Part 5: Write your answers (Questions 33-40)"
+- Questions 33-40: LINES for written answers (no bubbles)
 
-Your task:
-1. For Q1-36: Find the FILLED/BLACKENED circle and return the letter to its LEFT.
-   - Scan the pattern: A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝
-   - Identify which circle is darkened/filled (looks like ⚫ or ● or completely shaded)
-   - Return the LETTER that appears immediately to the left of that filled circle
-   - If no circle is filled, return "BLANK"
-   - If multiple circles are filled, return "MULTIPLE"
+═══════════════════════════════════════════════════════════════════
 
-2. For Q37-40: Extract text from the RIGHT COLUMN (written answer space).
-   - Return the exact word/phrase/number written
-   - If nothing written, return "BLANK"
-   - Ignore bubbles for Q37-40
+MCQ BUBBLE DETECTION (Questions 1-32):
+Each MCQ row shows bubbles arranged horizontally:
+   A     B     C     D     E     F     G     H
+   ⃝     ⃝     ⃝     ⃝     ⃝     ⃝     ⃝     ⃝
+
+BUBBLE DETECTION TECHNIQUE:
+1. Each letter (A-H) is positioned ABOVE its circle
+2. When a student selects an answer, they FILL/BLACKEN/SHADE the circle BELOW that letter
+3. Look for the FILLED/DARKENED circle (⚫ or ●) and return the LETTER positioned ABOVE it
+4. The bubbles are LARGER (5mm diameter) and have WIDER SPACING (3mm between) for better detection
+
+EXAMPLES:
+   A     B     C     D     E     F     G     H
+   ⃝     ●     ⃝     ⃝     ⃝     ⃝     ⃝     ⃝     → Answer: "B"
+
+   A     B     C     D     E     F     G     H
+   ⃝     ⃝     ⃝     ⃝     ⃝     ⃝     ⃝     ⚫     → Answer: "H"
+
+═══════════════════════════════════════════════════════════════════
+
+WRITTEN ANSWER DETECTION (Questions 33-40):
+These questions have LINES for short written responses:
+- Format: "33. _________________________________"
+- Extract the HANDWRITTEN WORD/PHRASE on the line
+- These are ONE WORD answers from the passage (Part 5: Information Transfer)
+- Common answers: single nouns, verbs, adjectives (e.g., "nutrients", "stamina", "hydration")
+
+═══════════════════════════════════════════════════════════════════
+
+DETECTION RULES BY QUESTION NUMBER:
+
+📍 Questions 1-32 (MCQ - BUBBLE DETECTION):
+   ✓ Look for FILLED/BLACKENED circles
+   ✓ Return the LETTER positioned ABOVE the filled circle
+   ✓ Letters are arranged: A, B, C, D, E, F, G, H (8 options)
+   ✓ If no circle filled → return "BLANK"
+   ✓ If multiple circles filled → return "MULTIPLE"
+   ✓ If unclear/ambiguous → return "BLANK" with low confidence
+
+📍 Questions 33-40 (WRITTEN - TEXT RECOGNITION):
+   ✓ Extract HANDWRITTEN text from the answer line
+   ✓ Return the exact word/phrase written (case-insensitive)
+   ✓ These should be SINGLE WORDS (Part 5 information transfer format)
+   ✓ If nothing written or illegible → return "BLANK"
+   ✓ Clean up the text (remove extra spaces, capitalize properly)
+   ✓ Common characteristics: clear, single-word answers
+
+═══════════════════════════════════════════════════════════════════
+
+LAYOUT GUIDANCE:
+The sheet has 4 CORNER ALIGNMENT MARKS (black squares) for OCR calibration.
+Two-column layout:
+- LEFT: Questions 1-20 (MCQ bubbles)
+- RIGHT: Questions 21-32 (MCQ bubbles), then Questions 33-40 (written lines)
+
+═══════════════════════════════════════════════════════════════════
+
+YOUR TASK - PROCESS ALL 40 QUESTIONS:
 
 Return a JSON object with this EXACT structure:
 {
   "answers": [
     {"questionNumber": 1, "selectedAnswer": "A", "confidence": 0.95, "answerType": "mcq"},
     {"questionNumber": 2, "selectedAnswer": "B", "confidence": 0.90, "answerType": "mcq"},
-    ...questions 1-36 are "mcq" type...
-    {"questionNumber": 37, "selectedAnswer": "photosynthesis", "confidence": 0.85, "answerType": "written"},
-    {"questionNumber": 38, "selectedAnswer": "enzyme", "confidence": 0.90, "answerType": "written"},
-    {"questionNumber": 39, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
-    {"questionNumber": 40, "selectedAnswer": "mitochondria", "confidence": 0.88, "answerType": "written"}
+    ...
+    {"questionNumber": 32, "selectedAnswer": "D", "confidence": 0.88, "answerType": "mcq"},
+    {"questionNumber": 33, "selectedAnswer": "nutrients", "confidence": 0.85, "answerType": "written"},
+    {"questionNumber": 34, "selectedAnswer": "metabolism", "confidence": 0.92, "answerType": "written"},
+    {"questionNumber": 35, "selectedAnswer": "exercise", "confidence": 0.90, "answerType": "written"},
+    {"questionNumber": 36, "selectedAnswer": "BLANK", "confidence": 0.60, "answerType": "written"},
+    {"questionNumber": 37, "selectedAnswer": "hydration", "confidence": 0.87, "answerType": "written"},
+    {"questionNumber": 38, "selectedAnswer": "stamina", "confidence": 0.91, "answerType": "written"},
+    {"questionNumber": 39, "selectedAnswer": "cardiovascular", "confidence": 0.83, "answerType": "written"},
+    {"questionNumber": 40, "selectedAnswer": "immunity", "confidence": 0.89, "answerType": "written"}
   ],
-  "overallConfidence": 0.92,
+  "overallConfidence": 0.89,
   "metadata": {
     "totalQuestions": 40,
-    "mcqQuestions": 36,
-    "writtenQuestions": 4,
-    "answeredQuestions": 38,
-    "blankQuestions": 2,
+    "mcqQuestions": 32,
+    "writtenQuestions": 8,
+    "answeredQuestions": 39,
+    "blankQuestions": 1,
     "ambiguousQuestions": 0,
-    "notes": "Any relevant observations"
+    "layoutDetected": "two-column with alignment marks",
+    "notes": "Any relevant observations about scan quality, alignment, legibility"
   }
 }
 
-CRITICAL RULES:
-- Return ALL 40 questions even if blank
-- Confidence should be 0.0-1.0
-- Q1-36: The format is "LETTER ⃝" repeated (A ⃝ B ⃝ C ⃝ D ⃝ E ⃝ F ⃝ G ⃝ H ⃝)
-- When a circle is FILLED/BLACK (⚫), return the letter to its LEFT
-- Q37-40: Extract handwritten/printed text from RIGHT column (word/phrase/number space)
-- Be conservative: if uncertain, mark as "BLANK" with low confidence
-- For Q37-40, ignore the bubbles completely - only read the written answer space`;
+═══════════════════════════════════════════════════════════════════
+
+🎯 CRITICAL DETECTION RULES:
+
+✅ MUST return ALL 40 questions (no exceptions)
+✅ Questions 1-32: answerType = "mcq" | selectedAnswer = A-H letter OR "BLANK" OR "MULTIPLE"
+✅ Questions 33-40: answerType = "written" | selectedAnswer = extracted word/phrase OR "BLANK"
+✅ Confidence values: 0.0 to 1.0 (be honest about uncertainty)
+✅ For bubbles: Letter is ABOVE the circle, not to the left
+✅ For written answers: Clean up text (trim spaces, proper capitalization)
+
+🚨 ERROR PREVENTION:
+- If bubble detection is ambiguous (smudge, partial fill) → confidence < 0.7
+- If handwriting is unclear → confidence < 0.6 and consider "BLANK"
+- Never guess - when uncertain, return "BLANK" with low confidence
+- The 4 corner alignment marks help you identify sheet orientation
+
+💡 QUALITY TIPS:
+- Higher confidence (>0.9) for clearly filled bubbles and legible handwriting
+- Medium confidence (0.7-0.9) for slightly unclear but identifiable marks
+- Low confidence (<0.7) for ambiguous, smudged, or barely legible responses
+- Use metadata.notes to flag any unusual patterns or issues for teacher review`;
 
     console.log("🚀 Sending answer sheet to Gemini Vision API...");
 
