@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './SyllabusManagement.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faArrowLeft, faBook, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faArrowLeft, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 import CreateSyllabusModal from './CreateSyllabusModal';
 import { getSyllabuses } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
@@ -16,7 +16,6 @@ const SyllabusManagement = ({ searchTerm }) => {
     const { currentUser } = useAuth();
     const [syllabuses, setSyllabuses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // State for view management
     const [schoolType, setSchoolType] = useState('KSSM'); // Default fallback
@@ -39,10 +38,8 @@ const SyllabusManagement = ({ searchTerm }) => {
             setLoading(true);
             const response = await getSyllabuses();
             setSyllabuses(response.data || response);
-            setError('');
         } catch (err) {
             console.error('Error fetching syllabuses:', err);
-            setError('Failed to load syllabuses');
         } finally {
             setLoading(false);
         }
@@ -116,7 +113,7 @@ const SyllabusManagement = ({ searchTerm }) => {
                         let gradeImage = null;
                         if (grade.toLowerCase().includes('form')) {
                             const formNum = grade.split(' ')[1];
-                            gradeImage = `/grade/form${formNum}.png`;
+                            gradeImage = `/grade/form${formNum}.webp`;
                         }
                         // Add KSSR mapping if images exist, otherwise fallback or use default
 
@@ -174,15 +171,15 @@ const SyllabusManagement = ({ searchTerm }) => {
                             {filteredSyllabuses.map(syllabus => {
                                 // Determine image based on subject
                                 const subjectImages = {
-                                    English: "/subject/english_subject.png",
-                                    Mathematics: "/Class/mathematics.jpg",
-                                    Science: "/Class/science.jpg",
-                                    History: "/Class/history.jpg",
-                                    Geography: "/Class/geography.jpg",
-                                    Physics: "/Class/physics.jpg",
-                                    Chemistry: "/Class/chemistry.jpg",
-                                    Biology: "/Class/biology.jpg",
-                                    default: "/Class/english.jpg",
+                                  English: "/Class/english.webp",
+                                  Mathematics: "/Class/mathematics.webp",
+                                  Science: "/Class/science.webp",
+                                  History: "/Class/history.webp",
+                                  Geography: "/Class/geography.webp",
+                                  Physics: "/Class/physics.webp",
+                                  Chemistry: "/Class/chemistry.webp",
+                                  Biology: "/Class/biology.webp",
+                                  default: "/Class/education.webp",
                                 };
                                 const imageUrl = subjectImages[syllabus.subject] || subjectImages["default"];
 

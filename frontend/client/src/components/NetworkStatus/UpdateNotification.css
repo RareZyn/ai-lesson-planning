@@ -1,0 +1,132 @@
+/**
+ * UpdateNotification Component Styles
+ */
+
+.update-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100; /* Higher than network status banner */
+  animation: slideDownBounce 0.5s ease-out;
+}
+
+@keyframes slideDownBounce {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(10px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.update-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.update-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 50%;
+  color: #1890ff;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.update-message {
+  flex: 1;
+}
+
+.update-message strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  color: #1890ff;
+}
+
+.update-message p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #595959;
+}
+
+.update-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.update-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.update-button:hover {
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.dismiss-button {
+  color: #8c8c8c;
+}
+
+.dismiss-button:hover {
+  color: #595959;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .update-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .update-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .update-button,
+  .dismiss-button {
+    width: 100%;
+  }
+}
+
+/* Override Ant Design Alert for update notification */
+.update-notification .ant-alert-info {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-color: #91d5ff;
+  border-width: 2px;
+}
+
+/* Loading state */
+.update-button.ant-btn-loading {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

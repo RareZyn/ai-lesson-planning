@@ -368,27 +368,17 @@ const RubricViewerPage = () => {
       if (answerKeyHTML) {
         return answerKeyHTML;
       } else if (answerKeyContent) {
-        console.log(
-          "✅ Converting answerKeyContent to HTML for",
-          assessment.activityType
-        );
         return convertAnswerKeyContentToHTML(answerKeyContent);
       }
     } else {
       // For other types (essay, textbook, activity), use rubric content
       if (rubricHTML) {
-        console.log("✅ Using rubricHTML for", assessment.activityType);
         return rubricHTML;
       } else if (rubricContent) {
-        console.log(
-          "✅ Converting rubricContent to HTML for",
-          assessment.activityType
-        );
         return convertRubricContentToHTML(rubricContent);
       }
     }
 
-    console.log("❌ No teacher content found for", assessment.activityType);
     return null;
   };
 
@@ -566,7 +556,7 @@ const RubricViewerPage = () => {
 
   if (error) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message={`Error Loading ${getTeacherContentName()}`}
           description={
@@ -609,7 +599,7 @@ const RubricViewerPage = () => {
 
   if (!assessment) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message="Assessment Not Found"
           description="The requested assessment could not be found."
@@ -628,7 +618,7 @@ const RubricViewerPage = () => {
   const teacherContent = getTeacherContent();
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
       <Card
         style={{ marginBottom: "24px" }}

@@ -475,11 +475,11 @@ exports.processAndGradeSpmAnswerSheet = async (req, res) => {
       });
     }
 
-    // Validate base64 format
-    if (!image.startsWith("data:image/")) {
+    // Validate base64 format - accept both images and PDFs
+    if (!image.startsWith("data:image/") && !image.startsWith("data:application/pdf")) {
       return res.status(400).json({
         success: false,
-        message: "Invalid image format. Expected base64 data URL.",
+        message: "Invalid file format. Expected image or PDF base64 data URL.",
       });
     }
 
@@ -536,7 +536,7 @@ exports.processAndGradeSpmAnswerSheet = async (req, res) => {
 
     // Initialize Gemini for OCR
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Enhanced detection prompt based on the new SPM answer sheet template
     const prompt = `You are analyzing an SPM English Paper 1 answer sheet with 40 questions total.
@@ -691,7 +691,7 @@ CRITICAL REQUIREMENTS:
             confidence: detected.confidence,
             metadata: {
               detectionMethod: "bubble_detection",
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               answerType: detected.answerType, // Store answer type (mcq/written)
             },
             processedAt: new Date(),

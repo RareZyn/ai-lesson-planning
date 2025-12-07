@@ -263,11 +263,32 @@ if (mongoose.models.LessonPlan) {
       version: {
         type: Number,
         default: 1,
+        min: 1,
       },
       lastModifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
+
+      // ===== PHASE 6: OFFLINE SYNC SUPPORT =====
+      syncStatus: {
+        type: String,
+        enum: ["synced", "pending", "conflict", "error"],
+        default: "synced",
+      },
+      lastSyncedAt: {
+        type: Date,
+        default: null,
+      },
+      offlineCreated: {
+        type: Boolean,
+        default: false,
+      },
+      conflictData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+      // ===== END PHASE 6 =====
     },
     {
       timestamps: true,
@@ -430,6 +451,9 @@ if (mongoose.models.LessonPlan) {
     // Update lastModifiedBy when document is modified
     if (this.isModified() && !this.isNew) {
       this.lastModifiedBy = this.createdBy;
+      // PHASE 6: Increment version and mark as pending sync
+      this.version = (this.version || 1) + 1;
+      this.syncStatus = "pending";
     }
 
     // Ensure communityData exists if sharing to community

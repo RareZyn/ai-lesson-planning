@@ -1,12 +1,14 @@
 // frontend/client/src/components/AnswerChecker/StudentSelector.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Form, Button, Modal, Alert, Row, Col, Card } from "react-bootstrap";
+import { Form, Button, Modal, Alert, Row, Col, Card, Badge } from "react-bootstrap";
 import { Spin, Empty } from "antd";
 import { PlusOutlined, UserOutlined } from "@ant-design/icons";
 import { studentAPI } from "../../services/studentService";
+import { submissionService } from "../../services/submissionService";
 
-const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
+const StudentSelector = ({ classId, selectedStudent, onStudentSelect, assessmentId = null }) => {
   const [students, setStudents] = useState([]);
+  const [submittedStudentIds, setSubmittedStudentIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [error, setError] = useState("");
@@ -21,6 +23,26 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+
+  const fetchSubmittedStudents = useCallback(async () => {
+    if (!assessmentId) {
+      setSubmittedStudentIds([]);
+      return;
+    }
+
+    try {
+      const result = await submissionService.getSubmissionsByAssessment(assessmentId);
+      if (result.success) {
+        // Extract student IDs from submissions
+        const submittedIds = result.data
+          .map((submission) => submission.studentId?._id || submission.studentId)
+          .filter(Boolean);
+        setSubmittedStudentIds(submittedIds);
+      }
+    } catch (err) {
+      console.error("Failed to fetch submitted students:", err);
+    }
+  }, [assessmentId]);
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -48,8 +70,9 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
   useEffect(() => {
     if (classId) {
       fetchStudents();
+      fetchSubmittedStudents();
     }
-  }, [classId, fetchStudents]);
+  }, [classId, fetchStudents, fetchSubmittedStudents]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -84,6 +107,7 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
           notes: "",
         });
         await fetchStudents();
+        await fetchSubmittedStudents(); // Refresh submitted students list
         // Auto-select the newly added student
         onStudentSelect(result.data._id);
       } else {
@@ -119,9 +143,21 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
       )}
 
       <Form.Group className="mb-3">
-        <Form.Label>
-          Select Student <span className="text-danger">*</span>
-        </Form.Label>
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Form.Label className="mb-0">
+            Select Student <span className="text-danger">*</span>
+          </Form.Label>
+          {assessmentId && students.length > 0 && (
+            <div className="d-flex gap-2">
+              <Badge bg="success">
+                {students.filter(s => !submittedStudentIds.includes(s._id)).length} Not Submitted
+              </Badge>
+              <Badge bg="secondary">
+                {submittedStudentIds.length} Already Submitted
+              </Badge>
+            </div>
+          )}
+        </div>
 
         {!classId ? (
           <Alert variant="info" className="mb-0">
@@ -150,6 +186,11 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               </Button>
             </Card.Body>
           </Card>
+        ) : students.filter(s => !submittedStudentIds.includes(s._id)).length === 0 ? (
+          <Alert variant="warning" className="mb-2">
+            <i className="bi bi-check-circle me-2"></i>
+            All students in this class have already submitted for this assessment.
+          </Alert>
         ) : (
           <div>
             <Form.Select
@@ -158,12 +199,14 @@ const StudentSelector = ({ classId, selectedStudent, onStudentSelect }) => {
               className="mb-2"
             >
               <option value="">Choose a student...</option>
-              {students.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.name} ({student.studentId})
-                  {student.rollNumber ? ` - Roll #${student.rollNumber}` : ""}
-                </option>
-              ))}
+              {students
+                .filter((student) => !submittedStudentIds.includes(student._id))
+                .map((student) => (
+                  <option key={student._id} value={student._id}>
+                    {student.name} ({student.studentId})
+                    {student.rollNumber ? ` - Roll #${student.rollNumber}` : ""}
+                  </option>
+                ))}
             </Form.Select>
 
             <Button

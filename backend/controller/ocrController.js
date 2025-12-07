@@ -30,11 +30,11 @@ const extractTextFromImage = async (req, res) => {
       });
     }
 
-    // Validate base64 format
-    if (!image.startsWith("data:image/")) {
+    // Validate base64 format (accept both images and PDFs)
+    if (!image.startsWith("data:image/") && !image.startsWith("data:application/pdf")) {
       return res.status(400).json({
         success: false,
-        message: "Invalid image format. Expected base64 data URL.",
+        message: "Invalid file format. Expected image or PDF base64 data URL.",
       });
     }
 
@@ -71,10 +71,11 @@ const extractTextFromImage = async (req, res) => {
 
     const mimeType = matches[1];
     const base64Data = matches[2];
+    const isPdf = mimeType === "application/pdf";
 
-    // Check image size
+    // Check file size
     const sizeInMB = (base64Data.length * 0.75) / (1024 * 1024);
-    console.log(`📏 Image size: ${sizeInMB.toFixed(2)} MB`);
+    console.log(`📏 ${isPdf ? 'PDF' : 'Image'} size: ${sizeInMB.toFixed(2)} MB`);
 
     if (sizeInMB > 50) {
       return res.status(400).json({
@@ -90,7 +91,17 @@ const extractTextFromImage = async (req, res) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
     // Prepare prompt for OCR
-    const prompt = `Extract all handwritten text from this student answer sheet image. 
+    const prompt = isPdf
+      ? `Extract all text from this PDF document containing student answers.
+
+Instructions:
+- Extract text from all pages
+- Transcribe exactly what you see, maintaining the original layout and line breaks
+- If text is unclear or illegible, mark it as [unclear]
+- Preserve punctuation and formatting
+- If the PDF contains no text, respond with "No text detected"
+- Do not add explanations or commentary, only transcribe the text`
+      : `Extract all handwritten text from this student answer sheet image.
 
 Instructions:
 - Transcribe exactly what you see, maintaining the original layout and line breaks
@@ -169,7 +180,9 @@ Return the extracted text in this JSON format:
         metadata: {
           ...ocrResult.metadata,
           processingTime: `${processingTime}s`,
-          imageSize: `${sizeInMB.toFixed(2)} MB`,
+          fileSize: `${sizeInMB.toFixed(2)} MB`,
+          fileType: isPdf ? "PDF" : "Image",
+          mimeType: mimeType,
           model: "gemini-2.0-flash-exp",
         },
       },
@@ -265,10 +278,10 @@ const processSubmissionOCR = async (req, res) => {
       try {
         if (
           !answer.originalImage ||
-          !answer.originalImage.startsWith("data:image/")
+          (!answer.originalImage.startsWith("data:image/") && !answer.originalImage.startsWith("data:application/pdf"))
         ) {
           console.log(
-            `⚠️ Skipping question ${answer.questionNumber} - no valid image`
+            `⚠️ Skipping question ${answer.questionNumber} - no valid image or PDF`
           );
           answer.status = "ocr_completed";
           answer.ocrData = {
@@ -276,9 +289,9 @@ const processSubmissionOCR = async (req, res) => {
             confidence: 0,
             metadata: {
               language: "unknown",
-              textType: "no_image",
+              textType: "no_file",
               legibility: "n/a",
-              notes: "No image provided",
+              notes: "No file provided",
             },
             processedAt: new Date(),
           };
@@ -522,13 +535,13 @@ const batchProcessOCR = async (req, res) => {
           try {
             if (
               !answer.originalImage ||
-              !answer.originalImage.startsWith("data:image/")
+              (!answer.originalImage.startsWith("data:image/") && !answer.originalImage.startsWith("data:application/pdf"))
             ) {
               answer.status = "ocr_completed";
               answer.ocrData = {
                 extractedText: "",
                 confidence: 0,
-                metadata: { notes: "No image provided" },
+                metadata: { notes: "No file provided" },
                 processedAt: new Date(),
               };
               continue;
@@ -755,12 +768,12 @@ const retryFailedOCR = async (req, res) => {
       try {
         if (
           !answer.originalImage ||
-          !answer.originalImage.startsWith("data:image/")
+          (!answer.originalImage.startsWith("data:image/") && !answer.originalImage.startsWith("data:application/pdf"))
         ) {
           results.push({
             questionNumber: answer.questionNumber,
             success: false,
-            reason: "No valid image",
+            reason: "No valid file",
           });
           continue;
         }
@@ -876,11 +889,11 @@ const processSpmAnswerSheet = async (req, res) => {
       });
     }
 
-    // Validate base64 format
-    if (!image.startsWith("data:image/")) {
+    // Validate base64 format - accept both images and PDFs
+    if (!image.startsWith("data:image/") && !image.startsWith("data:application/pdf")) {
       return res.status(400).json({
         success: false,
-        message: "Invalid image format. Expected base64 data URL.",
+        message: "Invalid file format. Expected image or PDF base64 data URL.",
       });
     }
 

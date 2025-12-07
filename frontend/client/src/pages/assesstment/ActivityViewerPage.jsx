@@ -20,6 +20,7 @@ import {
 import { assessmentAPI } from "../../services/assessmentService";
 import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
 import { printAssessmentContent } from "../../utils/assessmentPrint";
+import { isOnline } from "../../services/networkStatus";
 
 const { Title, Text } = Typography;
 
@@ -332,8 +333,15 @@ const ActivityViewerPage = () => {
       }
     } catch (error) {
       console.error("Error fetching assessment:", error);
-      setError("Failed to load assessment. Please try again.");
-      message.error("Failed to load assessment");
+
+      // Check if offline and show appropriate message
+      if (!isOnline()) {
+        setError("Offline assessment only");
+        message.warning("Offline assessment only", 3);
+      } else {
+        setError("Failed to load assessment. Please try again.");
+        message.error("Failed to load assessment");
+      }
     } finally {
       setLoading(false);
     }
@@ -378,48 +386,28 @@ const ActivityViewerPage = () => {
       examContent,
     } = assessment.generatedContent;
 
-    console.log("🔍 Content detection for", assessment.activityType, {
-      activityHTML: !!activityHTML,
-      assessmentHTML: !!assessmentHTML,
-      examHTML: !!examHTML,
-      activityContent: !!activityContent,
-      assessmentContent: !!assessmentContent,
-      examContent: !!examContent,
-    });
-
     if (assessment.activityType === "spm-exam") {
       if (examHTML) {
-        console.log("✅ Using examHTML for SPM exam");
         return examHTML;
       } else if (assessmentHTML) {
-        console.log("✅ Using assessmentHTML for SPM exam");
         return assessmentHTML;
       } else if (examContent) {
-        console.log("✅ Converting examContent to HTML for SPM exam");
         return convertAssessmentContentToHTML(examContent);
       } else if (assessmentContent) {
-        console.log("✅ Converting assessmentContent to HTML for SPM exam");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else if (assessment.activityType === "assessment") {
       // For regular assessments: assessmentHTML -> assessmentContent
       if (assessmentHTML) {
-        console.log("✅ Using assessmentHTML for assessment");
         return assessmentHTML;
       } else if (assessmentContent) {
-        console.log("✅ Converting assessmentContent to HTML for assessment");
         return convertAssessmentContentToHTML(assessmentContent);
       }
     } else {
       // For other types: activityHTML -> activityContent
       if (activityHTML) {
-        console.log("✅ Using activityHTML for", assessment.activityType);
         return activityHTML;
       } else if (activityContent) {
-        console.log(
-          "✅ Converting activityContent to HTML for",
-          assessment.activityType
-        );
         return convertActivityContentToHTML(
           activityContent,
           assessment.activityType
@@ -427,7 +415,6 @@ const ActivityViewerPage = () => {
       }
     }
 
-    console.log("❌ No student content found for", assessment.activityType);
     return null;
   };
 
@@ -605,7 +592,7 @@ const ActivityViewerPage = () => {
 
   if (error) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message="Error Loading Assessment"
           description={
@@ -649,7 +636,7 @@ const ActivityViewerPage = () => {
 
   if (!assessment) {
     return (
-      <div style={{ padding: "24px" }}>
+      <div>
         <Alert
           message="Assessment Not Found"
           description="The requested assessment could not be found."
@@ -668,7 +655,7 @@ const ActivityViewerPage = () => {
   const studentContent = getStudentContent();
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
       <Card
         style={{ marginBottom: "24px" }}

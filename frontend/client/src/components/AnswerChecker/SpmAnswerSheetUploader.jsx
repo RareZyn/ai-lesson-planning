@@ -9,6 +9,7 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   FileTextOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { gradingService } from "../../services/gradingServiceClient";
 
@@ -35,10 +36,12 @@ const SpmAnswerSheetUploader = ({
     setUploading(true);
 
     try {
-      // Validate image
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+      // Validate file type - accept images and PDFs
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+      const isPdf = file.type === "application/pdf";
+
       if (!allowedTypes.includes(file.type)) {
-        setError("Invalid file type. Only JPG and PNG are supported.");
+        setError("Invalid file type. Only JPG, PNG, and PDF are supported.");
         setUploading(false);
         return false;
       }
@@ -57,7 +60,20 @@ const SpmAnswerSheetUploader = ({
       reader.onload = async () => {
         const base64Image = reader.result;
 
-        // Check if compression needed
+        // For PDFs, skip compression
+        if (isPdf) {
+          setImage(base64Image);
+          setFileInfo({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            isPdf: true,
+          });
+          setUploading(false);
+          return;
+        }
+
+        // Check if compression needed (for images only)
         const sizeInMB = (base64Image.length * 0.75) / (1024 * 1024);
 
         if (sizeInMB > 10) {
@@ -187,7 +203,7 @@ const SpmAnswerSheetUploader = ({
   const uploadProps = {
     name: "file",
     multiple: false,
-    accept: "image/*",
+    accept: "image/*,application/pdf",
     showUploadList: false,
     beforeUpload: handleUpload,
     disabled: disabled || uploading || processing,
@@ -242,7 +258,7 @@ const SpmAnswerSheetUploader = ({
                   Click or drag answer sheet to upload
                 </p>
                 <p className="ant-upload-hint">
-                  Supports: JPG, PNG (Max 50MB)
+                  Supports: JPG, PNG, PDF (Max 50MB)
                   <br />
                   <small className="text-muted">
                     Ensure the entire answer sheet is visible and well-lit
@@ -262,24 +278,53 @@ const SpmAnswerSheetUploader = ({
           ) : (
             <div>
               <div className="position-relative">
-                <AntImage
-                  src={image}
-                  alt="SPM Answer Sheet"
-                  style={{
-                    width: "100%",
-                    maxHeight: "500px",
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                    border: "2px solid #52c41a",
-                  }}
-                  preview={{
-                    mask: (
-                      <div>
-                        <EyeOutlined /> View Full Image
-                      </div>
-                    ),
-                  }}
-                />
+                {fileInfo?.isPdf ? (
+                  // PDF Preview
+                  <div
+                    style={{
+                      width: "100%",
+                      minHeight: "300px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "8px",
+                      border: "2px solid #52c41a",
+                      backgroundColor: "#f5f5f5",
+                      padding: "60px",
+                    }}
+                  >
+                    <FilePdfOutlined
+                      style={{
+                        fontSize: "100px",
+                        color: "#ff4d4f",
+                        marginBottom: "20px",
+                      }}
+                    />
+                    <h4>{fileInfo.name}</h4>
+                    <small className="text-muted">PDF Document Ready for Processing</small>
+                  </div>
+                ) : (
+                  // Image Preview
+                  <AntImage
+                    src={image}
+                    alt="SPM Answer Sheet"
+                    style={{
+                      width: "100%",
+                      maxHeight: "500px",
+                      objectFit: "contain",
+                      borderRadius: "8px",
+                      border: "2px solid #52c41a",
+                    }}
+                    preview={{
+                      mask: (
+                        <div>
+                          <EyeOutlined /> View Full Image
+                        </div>
+                      ),
+                    }}
+                  />
+                )}
               </div>
 
               {fileInfo && (
@@ -493,7 +538,7 @@ const SpmAnswerSheetUploader = ({
             onClick={() => {
               setShowResultsModal(false);
               if (results && results.submissionId) {
-                window.location.href = `/app/answer-checker/review/${results.submissionId}`;
+                window.location.href = `/app/submissions/${assessmentId}/${results.submissionId}`;
               }
             }}
           >

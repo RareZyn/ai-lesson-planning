@@ -1,26 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ClassCard.module.css';
-// Icons are no longer used in the image-based card style
-
-// Map subject to appropriate background images (Keep this utility here)
+// Function to get subject-specific images
 const getSubjectImage = (subject) => {
     const subjectImages = {
-        English: "/Class/english.jpg",
-        Mathematics: "/Class/mathematics.jpg",
-        Science: "/Class/science.jpg",
-        History: "/Class/history.jpg",
-        Geography: "/Class/geography.jpg",
-        Physics: "/Class/physics.jpg",
-        Chemistry: "/Class/chemistry.jpg",
-        Biology: "/Class/biology.jpg",
-        // Default fallback
-        default: "/Class/english.jpg",
+        'English': '/grade/form1.webp',
+        'Mathematics': '/grade/form2.webp',
+        'Science': '/grade/form3.webp',
+        'History': '/grade/form4.webp',
+        'Geography': '/grade/form5.webp',
     };
-
-    return subjectImages[subject] || subjectImages["default"];
+    return subjectImages[subject] || '/grade/form1.webp'; 
 };
-
 
 const ClassCard = ({ classInfo }) => {
     const navigate = useNavigate();

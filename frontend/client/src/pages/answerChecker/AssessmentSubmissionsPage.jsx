@@ -1,7 +1,7 @@
 // frontend/client/src/pages/answerChecker/AssessmentSubmissionsPage.jsx
 import React, { useState, useEffect } from "react";
 import { Card, Button, Badge, Table, Alert, Row, Col } from "react-bootstrap";
-import { Tooltip, Empty, Spin, Statistic } from "antd";
+import { Tooltip, Empty, Spin, Statistic, Modal as AntModal } from "antd";
 import {
   EyeOutlined,
   DeleteOutlined,
@@ -12,7 +12,7 @@ import {
   CheckCircleOutlined,
   PercentageOutlined,
   PlusOutlined,
-  
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { submissionService, submissionUtils } from "../../services/submissionService";
@@ -64,20 +64,49 @@ const AssessmentSubmissionsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentId]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this submission?"))
-      return;
-
-    try {
-      const result = await submissionService.deleteSubmission(id);
-      if (result.success) {
-        fetchAssessmentData();
-      } else {
-        alert(result.message);
-      }
-    } catch (err) {
-      alert("Failed to delete submission");
-    }
+  const handleDelete = async (id, studentName) => {
+    AntModal.confirm({
+      title: "Delete Submission",
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Are you sure you want to delete this submission?</p>
+          {studentName && (
+            <p className="mb-0">
+              <strong>Student:</strong> {studentName}
+            </p>
+          )}
+          <p className="text-danger mb-0">
+            <small>This action cannot be undone.</small>
+          </p>
+        </div>
+      ),
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          const result = await submissionService.deleteSubmission(id);
+          if (result.success) {
+            AntModal.success({
+              title: "Success",
+              content: "Submission deleted successfully",
+            });
+            fetchAssessmentData();
+          } else {
+            AntModal.error({
+              title: "Error",
+              content: result.message || "Failed to delete submission",
+            });
+          }
+        } catch (err) {
+          AntModal.error({
+            title: "Error",
+            content: "Failed to delete submission. Please try again.",
+          });
+        }
+      },
+    });
   };
 
   const getStatusBadge = (status) => {
@@ -324,7 +353,7 @@ const AssessmentSubmissionsPage = () => {
                             size="sm"
                             onClick={() =>
                               navigate(
-                                `/app/submissions/${assessmentId}/review/${submission._id}`
+                                `/app/submissions/${assessmentId}/${submission._id}`
                               )
                             }
                           >
@@ -335,7 +364,12 @@ const AssessmentSubmissionsPage = () => {
                           <Button
                             variant="outline-danger"
                             size="sm"
-                            onClick={() => handleDelete(submission._id)}
+                            onClick={() =>
+                              handleDelete(
+                                submission._id,
+                                submission.studentId?.name
+                              )
+                            }
                           >
                             <DeleteOutlined />
                           </Button>

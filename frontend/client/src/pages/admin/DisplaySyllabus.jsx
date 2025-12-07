@@ -14,7 +14,9 @@ import {
     Divider,
     Alert,
     Anchor,
-    Pagination
+    Pagination,
+    Modal as AntModal,
+    message
 } from 'antd';
 import {
     ArrowLeftOutlined,
@@ -24,10 +26,11 @@ import {
     UserOutlined,
     CalendarOutlined,
     NumberOutlined,
-    ReadOutlined
+    ReadOutlined,
+    ExclamationCircleOutlined
 } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Link: AnchorLink } = Anchor;
 
 const DisplaySyllabus = () => {
@@ -64,19 +67,41 @@ const DisplaySyllabus = () => {
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this syllabus?')) {
-            try {
-                await deleteSyllabus(id);
-                navigate('/app/admin/syllabuses');
-            } catch (err) {
-                console.error('Error deleting syllabus:', err);
-                alert('Failed to delete syllabus');
-            }
-        }
+        AntModal.confirm({
+            title: 'Delete Syllabus',
+            icon: <ExclamationCircleOutlined />,
+            content: (
+                <div>
+                    <p>Are you sure you want to delete this syllabus?</p>
+                    <p className="mb-1">
+                        <strong>Subject:</strong> {syllabus.subject}
+                    </p>
+                    <p className="mb-1">
+                        <strong>Grade:</strong> {syllabus.grade}
+                    </p>
+                    <p className="text-danger mb-0">
+                        <small>This action cannot be undone and will permanently delete all {syllabusItems.length} items.</small>
+                    </p>
+                </div>
+            ),
+            okText: 'Delete',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: async () => {
+                try {
+                    await deleteSyllabus(id);
+                    message.success('Syllabus deleted successfully');
+                    navigate('/app/admin/syllabuses');
+                } catch (err) {
+                    console.error('Error deleting syllabus:', err);
+                    message.error('Failed to delete syllabus');
+                }
+            },
+        });
     };
 
     const handleEdit = () => {
-        alert('Edit functionality coming soon!');
+        message.info('Edit functionality coming soon!');
     };
 
     // Helper to render values recursively

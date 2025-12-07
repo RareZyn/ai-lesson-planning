@@ -255,8 +255,8 @@ export const ocrAPI = {
   },
 
   /**
-   * Validate image before upload
-   * @param {File} file - Image file to validate
+   * Validate image or PDF before upload
+   * @param {File} file - Image or PDF file to validate
    * @returns {Object} Validation result
    */
   validateImage: (file) => {
@@ -269,9 +269,12 @@ export const ocrAPI = {
       return { isValid: false, errors, warnings };
     }
 
-    // Check file type
-    if (!file.type.startsWith("image/")) {
-      errors.push("File must be an image");
+    // Check file type - accept images and PDFs
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+
+    if (!isImage && !isPdf) {
+      errors.push("Invalid file type. Only JPG, PNG, and PDF are supported.");
     }
 
     // Check file size (50MB limit)
@@ -286,16 +289,18 @@ export const ocrAPI = {
       warnings.push(
         `Large file (${(file.size / 1024 / 1024).toFixed(
           2
-        )} MB) - will be compressed automatically`
+        )} MB) - ${isPdf ? 'PDF will be processed as-is' : 'will be compressed automatically'}`
       );
     }
 
-    // Check image format
-    const supportedFormats = ["image/jpeg", "image/jpg", "image/png"];
-    if (!supportedFormats.includes(file.type)) {
-      warnings.push(
-        `Format ${file.type} may not be optimal. JPEG/PNG recommended.`
-      );
+    // Check image format (only for images, not PDFs)
+    if (isImage) {
+      const supportedFormats = ["image/jpeg", "image/jpg", "image/png"];
+      if (!supportedFormats.includes(file.type)) {
+        warnings.push(
+          `Format ${file.type} may not be optimal. JPEG/PNG recommended.`
+        );
+      }
     }
 
     return {

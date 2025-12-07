@@ -1,5 +1,7 @@
 // src/services/assessmentService.js - Fixed version without syntax errors
 import axios from "axios";
+import { isOnline } from "./networkStatus";
+import assessmentOfflineService from "./offline/assessmentOfflineService";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -451,28 +453,118 @@ export const assessmentAPI = {
   },
 
   /**
-   * Get user's assessments with filtering and pagination
+   * Get user's assessments with filtering and pagination (offline-aware)
    */
   getUserAssessments: async (params = {}) => {
     try {
-      const response = await apiClient.get("/assessment/my-assessments", {
-        params,
-      });
-      return response.data;
+      // Check if online
+      if (isOnline()) {
+        // Try to fetch from API
+        const response = await apiClient.get("/assessment/my-assessments", {
+          params,
+        });
+        const assessmentsData = response.data;
+
+        // Save all assessments to offline cache
+        if (assessmentsData.data && Array.isArray(assessmentsData.data)) {
+          try {
+            await assessmentOfflineService.saveAssessmentsBatch(assessmentsData.data);
+          } catch (cacheErr) {
+            console.warn("Failed to cache assessments:", cacheErr);
+          }
+        }
+
+        return assessmentsData;
+      } else {
+        // Offline - fetch from IndexedDB
+        console.log("[AssessmentService] Offline mode - fetching assessments from cache");
+        const cachedAssessments = await assessmentOfflineService.getAllAssessmentsOffline();
+
+        // Apply client-side filtering for offline mode
+        let filteredAssessments = cachedAssessments || [];
+
+        if (params.hasLessonPlan) {
+          filteredAssessments = filteredAssessments.filter(a => {
+            const hasLesson = !!a.lessonPlanId;
+            return params.hasLessonPlan === "true" ? hasLesson : !hasLesson;
+          });
+        }
+
+        if (params.classId) {
+          filteredAssessments = filteredAssessments.filter(a =>
+            a.classId === params.classId || a.classId?._id === params.classId
+          );
+        }
+
+        if (params.activityType) {
+          filteredAssessments = filteredAssessments.filter(a =>
+            a.activityType === params.activityType
+          );
+        }
+
+        return { success: true, data: filteredAssessments };
+      }
     } catch (error) {
+      // If online but network failed, try offline cache as fallback
+      if (isOnline() && (error.code === 'ERR_NETWORK' || error.code === 'ERR_INTERNET_DISCONNECTED')) {
+        console.log("[AssessmentService] Network error - trying offline cache");
+        try {
+          const cachedAssessments = await assessmentOfflineService.getAllAssessmentsOffline();
+          return { success: true, data: cachedAssessments || [] };
+        } catch (offlineErr) {
+          console.error("Offline cache also failed:", offlineErr);
+        }
+      }
+
       console.error("Error fetching user assessments:", error);
       throw error;
     }
   },
 
   /**
-   * Get assessment by ID
+   * Get assessment by ID (offline-aware)
    */
   getAssessmentById: async (assessmentId) => {
     try {
-      const response = await apiClient.get(`/assessment/${assessmentId}`);
-      return response.data;
+      // Check if online
+      if (isOnline()) {
+        // Try to fetch from API
+        const response = await apiClient.get(`/assessment/${assessmentId}`);
+        const assessmentData = response.data;
+
+        // Save to offline cache for future offline access
+        try {
+          await assessmentOfflineService.saveAssessmentOffline(assessmentData.data || assessmentData);
+        } catch (cacheErr) {
+          console.warn("Failed to cache assessment:", cacheErr);
+        }
+
+        return assessmentData;
+      } else {
+        // Offline - fetch from IndexedDB
+        console.log("[AssessmentService] Offline mode - fetching from cache");
+        const cachedAssessment = await assessmentOfflineService.getAssessmentOffline(assessmentId);
+
+        if (!cachedAssessment) {
+          throw new Error("This assessment is not available offline. Please connect to the internet to view it.");
+        }
+
+        return { success: true, data: cachedAssessment };
+      }
     } catch (error) {
+      // If online but network failed, try offline cache as fallback
+      if (isOnline() && (error.code === 'ERR_NETWORK' || error.code === 'ERR_INTERNET_DISCONNECTED')) {
+        console.log("[AssessmentService] Network error - trying offline cache");
+        try {
+          const cachedAssessment = await assessmentOfflineService.getAssessmentOffline(assessmentId);
+          if (cachedAssessment) {
+            return { success: true, data: cachedAssessment };
+          }
+        } catch (offlineErr) {
+          console.error("Offline cache also failed:", offlineErr);
+        }
+      }
+
       console.error("Error fetching assessment:", error);
       throw error;
     }

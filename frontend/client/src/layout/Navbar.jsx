@@ -1,6 +1,6 @@
 import React from "react";
 import "./Navbar.css";
-// import Searchbar from "../components/general/Searchbar";
+import Searchbar from "../components/general/Searchbar";
 import Profile from "../components/general/Profile";
 
 const Navbar = () => {
@@ -12,17 +12,17 @@ const Navbar = () => {
           {/* Logo */}
           <div className="navbar-logo">
             <img
-              src="./../logo/LessonPlanning.webp"
+              src="/logo/LessonPlanning.webp"
               alt="Company Logo"
               className="logo-img"
             />
           </div>
 
-          {/* <Searchbar
+          <Searchbar
             placeholder="Type to search materials, lesson etc..."
             onSearch={(value) => console.log(value)}
             className="navbar-search-input"
-          /> */}
+          />
         </div>
         <div className="navbar-right-group">
           <Profile />

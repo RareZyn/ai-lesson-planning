@@ -11,6 +11,8 @@ import UploadLessonModal from "../../components/Modal/UploadLessonModal";
 import { communityAPI } from "../../services/communityService";
 import { assessmentAPI } from "../../services/assessmentService";
 import { useUser } from "../../context/UserContext";
+import lessonOfflineService from "../../services/offline/lessonOfflineService";
+import assessmentOfflineService from "../../services/offline/assessmentOfflineService";
 import "./Community.css";
 
 const { Search } = Input;
@@ -31,6 +33,56 @@ const Community = () => {
     search: "",
     sortBy: "recent",
   });
+
+  // Helper function to cache lessons to IndexedDB for offline access
+  const cacheLessonsOffline = async (lessonList) => {
+    if (!lessonList || lessonList.length === 0) return;
+
+    try {
+      // Cache up to 3 most recent lessons (similar to DisplayLessonPage pattern)
+      const lessonsToCache = lessonList.slice(0, 3);
+
+      await Promise.all(
+        lessonsToCache.map(async (lesson) => {
+          try {
+            await lessonOfflineService.saveLessonOffline(lesson);
+          } catch (cacheErr) {
+            console.warn(`Failed to cache lesson ${lesson._id}:`, cacheErr);
+            // Don't throw - caching is a convenience feature
+          }
+        })
+      );
+    } catch (error) {
+      console.warn("Error caching lessons:", error);
+      // Silently fail - caching is optional
+    }
+  };
+
+  // Helper function to cache assessments to IndexedDB for offline access
+  const cacheAssessmentsOffline = async (assessmentsMap) => {
+    if (!assessmentsMap || Object.keys(assessmentsMap).length === 0) return;
+
+    try {
+      // Cache assessments from the first 3 lessons
+      const assessmentsToCacheArray = Object.values(assessmentsMap)
+        .flat()
+        .slice(0, 3);
+
+      await Promise.all(
+        assessmentsToCacheArray.map(async (assessment) => {
+          try {
+            await assessmentOfflineService.saveAssessmentOffline(assessment);
+          } catch (cacheErr) {
+            console.warn(`Failed to cache assessment ${assessment._id}:`, cacheErr);
+            // Don't throw - caching is a convenience feature
+          }
+        })
+      );
+    } catch (error) {
+      console.warn("Error caching assessments:", error);
+      // Silently fail - caching is optional
+    }
+  };
 
   // Fetch ALL assessments for a set of lessons
   const fetchAssessmentsForLessons = async (lessonList) => {
@@ -67,6 +119,9 @@ const Community = () => {
       );
 
       setAssessmentsByLesson((prev) => ({ ...prev, ...assessmentsMap }));
+
+      // Cache assessments to IndexedDB for offline access
+      await cacheAssessmentsOffline(assessmentsMap);
     } catch (error) {
       console.error("Error fetching assessments:", error);
       // Silently fail - assessments are optional
@@ -98,12 +153,16 @@ const Community = () => {
       if (communityResponse.success) {
         const lessonsData = communityResponse.data || [];
         setLessons(lessonsData);
+        // Cache lessons for offline access (caches first 3)
+        await cacheLessonsOffline(lessonsData);
         // Fetch assessments for community lessons
         fetchAssessmentsForLessons(lessonsData);
       }
 
       if (userResponse.success) {
         const userLessonsData = userResponse.data || [];
+        // Cache user lessons for offline access
+        await cacheLessonsOffline(userLessonsData);
         // Fetch assessments for user lessons
         fetchAssessmentsForLessons(userLessonsData);
       }
@@ -111,6 +170,8 @@ const Community = () => {
       if (bookmarksResponse.success) {
         const bookmarkedData = bookmarksResponse.data || [];
         setBookmarkedLessons(bookmarkedData);
+        // Cache bookmarked lessons for offline access
+        await cacheLessonsOffline(bookmarkedData);
         // Fetch assessments for bookmarked lessons
         fetchAssessmentsForLessons(bookmarkedData);
       }
@@ -124,6 +185,7 @@ const Community = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.sortBy, userId]);
 
   const loadCommunityLessonsOnly = useCallback(async () => {
@@ -138,6 +200,8 @@ const Community = () => {
       if (communityResponse.success) {
         const lessonsData = communityResponse.data || [];
         setLessons(lessonsData);
+        // Cache lessons for offline access (caches first 3)
+        await cacheLessonsOffline(lessonsData);
         // Fetch assessments for community lessons
         fetchAssessmentsForLessons(lessonsData);
       }
@@ -147,6 +211,7 @@ const Community = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.sortBy]);
 
   useEffect(() => {

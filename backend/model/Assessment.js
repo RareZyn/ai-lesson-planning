@@ -234,6 +234,35 @@ const AssessmentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // ===== PHASE 6: OFFLINE SYNC SUPPORT =====
+    version: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    syncStatus: {
+      type: String,
+      enum: ["synced", "pending", "conflict", "error"],
+      default: "synced",
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    offlineCreated: {
+      type: Boolean,
+      default: false,
+    },
+    lastModifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    conflictData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    // ===== END PHASE 6 =====
   },
 
   {
@@ -350,6 +379,12 @@ AssessmentSchema.pre("save", function (next) {
     this.status = "Completed";
   } else if (this.hasActivity || this.hasRubric) {
     this.status = "Generated";
+  }
+
+  // PHASE 6: Increment version on updates (not on new documents)
+  if (this.isModified() && !this.isNew) {
+    this.version = (this.version || 1) + 1;
+    this.syncStatus = "pending";
   }
 
   next();

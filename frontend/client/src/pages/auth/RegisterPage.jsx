@@ -103,7 +103,7 @@ const RegisterPage = () => {
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
-              <img src="./logo/LessonPlanning.webp" alt="App Icon" />
+              <img src="/logo/LessonPlanning.webp" alt="App Icon" />
             </div>
             <h2 className="mt-3">Lesson Planner</h2>
           </div>

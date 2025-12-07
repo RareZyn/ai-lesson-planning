@@ -1,4 +1,6 @@
 import axios from "axios";
+import { isOnline } from "./networkStatus";
+import lessonOfflineService from "./offline/lessonOfflineService";
 
 const getAuthConfig = () => ({
   headers: {
@@ -76,13 +78,48 @@ export const saveLessonPlan = async (finalPlanData) => {
  */
 export const getLessonPlanById = async (id) => {
   try {
-    // This calls GET /api/lessons/:id
-    const response = await axios.get(`/api/lessons/${id}`, getAuthConfig());
-    return response.data.data; // The plan is nested in the 'data' property
+    // Check if online
+    if (isOnline()) {
+      // Try to fetch from API
+      const response = await axios.get(`/api/lessons/${id}`, getAuthConfig());
+      const lessonData = response.data.data;
+
+      // Save to offline cache for future offline access
+      try {
+        await lessonOfflineService.saveLessonOffline(lessonData);
+      } catch (cacheErr) {
+        console.warn("Failed to cache lesson:", cacheErr);
+      }
+
+      return lessonData;
+    } else {
+      // Offline - fetch from IndexedDB
+      console.log("[LessonService] Offline mode - fetching from cache");
+      const cachedLesson = await lessonOfflineService.getLessonOffline(id);
+
+      if (!cachedLesson) {
+        throw new Error("This lesson plan is not available offline. Please connect to the internet to view it.");
+      }
+
+      return cachedLesson;
+    }
   } catch (error) {
-    console.error("Error fetching lesson plan:", error.response?.data);
+    // If online but network failed, try offline cache as fallback
+    if (isOnline() && error.code === 'ERR_NETWORK') {
+      console.log("[LessonService] Network error - trying offline cache");
+      try {
+        const cachedLesson = await lessonOfflineService.getLessonOffline(id);
+        if (cachedLesson) {
+          return cachedLesson;
+        }
+      } catch (offlineErr) {
+        console.error("Offline cache also failed:", offlineErr);
+      }
+    }
+
+    console.error("Error fetching lesson plan:", error.response?.data || error.message);
     throw new Error(
-      error.response?.data?.message || "Could not fetch the lesson plan."
+      error.message || error.response?.data?.message || "Could not fetch the lesson plan."
     );
   }
 };
@@ -93,13 +130,49 @@ export const getLessonPlanById = async (id) => {
  */
 export const getAllLessonPlans = async () => {
   try {
-    // This calls GET /api/lessons
-    const response = await axios.get(`/api/lessons`, getAuthConfig());
-    return response.data.data; // The plans are nested in the 'data' property
+    // Check if online
+    if (isOnline()) {
+      // Try to fetch from API
+      const response = await axios.get(`/api/lessons`, getAuthConfig());
+      const lessonsData = response.data.data;
+
+      // Save all lessons to offline cache
+      try {
+        await lessonOfflineService.saveLessonsBatch(lessonsData);
+      } catch (cacheErr) {
+        console.warn("Failed to cache lessons:", cacheErr);
+      }
+
+      return lessonsData;
+    } else {
+      // Offline - fetch from IndexedDB
+      console.log("[LessonService] Offline mode - fetching all lessons from cache");
+      const cachedLessons = await lessonOfflineService.getAllLessonsOffline();
+
+      if (!cachedLessons || cachedLessons.length === 0) {
+        console.warn("No lessons available offline");
+        return [];
+      }
+
+      return cachedLessons;
+    }
   } catch (error) {
-    console.error("Error fetching lesson plans:", error.response?.data);
+    // If online but network failed, try offline cache as fallback
+    if (isOnline() && (error.code === 'ERR_NETWORK' || error.code === 'ERR_INTERNET_DISCONNECTED')) {
+      console.log("[LessonService] Network error - trying offline cache");
+      try {
+        const cachedLessons = await lessonOfflineService.getAllLessonsOffline();
+        if (cachedLessons) {
+          return cachedLessons;
+        }
+      } catch (offlineErr) {
+        console.error("Offline cache also failed:", offlineErr);
+      }
+    }
+
+    console.error("Error fetching lesson plans:", error.response?.data || error.message);
     throw new Error(
-      error.response?.data?.message || "Could not fetch the lesson plans."
+      error.message || error.response?.data?.message || "Could not fetch the lesson plans."
     );
   }
 };

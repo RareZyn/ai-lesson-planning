@@ -24,6 +24,7 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const navigate = useNavigate();
     const searchRef = useRef(null);
     const inputRef = useRef(null);
@@ -46,6 +47,16 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
             setSelectedIndex(-1);
         }
     }, [searchTerm]);
+
+    // Handle window resize to update isMobile state
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Close suggestions when clicking outside
     useEffect(() => {
@@ -131,7 +142,6 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
 
     return (
         <div className="search-container" ref={searchRef}>
-            <div className="search-container" ref={searchRef}>
             {/* Toggle Button (visible only on mobile) */}
             <button
                 type="button"
@@ -142,23 +152,23 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
                 {isSearchExpanded ? <CloseIcon /> : <SearchIcon />}
             </button>
 
-            <form className={`modern-search-bar ${isSearchExpanded ? 'expanded' : ''}`} onSubmit={(e) => e.preventDefault()}>
-                    <div className="search-icon">
-                        <SearchIcon />
-                    </div>
-                    <input
-                        ref={inputRef}
+            <form className={`modern-search-bar ${isSearchExpanded ? 'expanded' : ''}`} onSubmit={handleSearch}>
+                <div className="search-icon">
+                    <SearchIcon />
+                </div>
+                <input
+                    ref={inputRef}
                     type="text"
-                        placeholder={placeholder}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => { if (searchTerm) setShowResults(true); }}
-                        onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={() => searchTerm && suggestions.length > 0 && setShowSuggestions(true)}
+                    onKeyDown={handleKeyDown}
                     className="search-input"
-                        autoComplete="off"
+                    autoComplete="off"
                 />
-                {searchTerm && (
+                {/* Only show clear button on desktop, not on mobile when expanded */}
+                {searchTerm && !isMobile && (
                     <button
                         type="button"
                         className="clear-search-btn"
@@ -168,9 +178,7 @@ const Searchbar = ({ placeholder = "Type to search pages...", onSearch }) => {
                         <CloseIcon fontSize="small" />
                     </button>
                 )}
-                </form>
-            {renderResults()}
-        </div>
+            </form>
 
             {showSuggestions && suggestions.length > 0 && (
                 <div className="search-suggestions">

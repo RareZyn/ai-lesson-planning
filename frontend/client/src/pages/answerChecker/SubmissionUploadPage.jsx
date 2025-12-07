@@ -13,6 +13,7 @@ import StudentSelector from "../../components/AnswerChecker/StudentSelector";
 import AssessmentSelector from "../../components/AnswerChecker/AssessmentSelector";
 import ImageUploader from "../../components/AnswerChecker/ImageUploader";
 import SpmAnswerSheetUploader from "../../components/AnswerChecker/SpmAnswerSheetUploader";
+import BulkAnswerUploader from "../../components/AnswerChecker/BulkAnswerUploader";
 import { submissionService } from "../../services/submissionService";
 import { ocrAPI } from "../../services/ocrService";
 import axios from "axios";
@@ -44,6 +45,8 @@ const SubmissionUploadPage = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [assessmentDetails, setAssessmentDetails] = useState(null);
   const [images, setImages] = useState({});
+  const [uploadMode, setUploadMode] = useState("individual"); // "individual" or "bulk"
+  const [bulkFiles, setBulkFiles] = useState([]);
 
   // UI states
   const [loading, setLoading] = useState(false);
@@ -162,12 +165,19 @@ const SubmissionUploadPage = () => {
     }
 
     if (currentStep === 2) {
-      const uploadedImages = Object.values(images).filter(
-        (img) => img !== null
-      );
-      if (uploadedImages.length === 0) {
-        setError("Please upload at least one answer image");
-        return false;
+      if (uploadMode === "bulk") {
+        if (bulkFiles.length === 0) {
+          setError("Please upload at least one file");
+          return false;
+        }
+      } else {
+        const uploadedImages = Object.values(images).filter(
+          (img) => img !== null
+        );
+        if (uploadedImages.length === 0) {
+          setError("Please upload at least one answer image");
+          return false;
+        }
       }
       return true;
     }
@@ -200,24 +210,42 @@ const SubmissionUploadPage = () => {
     setUploadProgress(0);
 
     try {
-      // Prepare answers array
-      const answers = Object.entries(images)
-        .filter(([_, image]) => image !== null)
-        .map(([questionNumber, image]) => ({
-          questionNumber: parseInt(questionNumber),
-          questionText: `Question ${questionNumber}`,
-          originalImage: image,
-        }));
+      let submissionData;
 
-      // Prepare submission data
-      const submissionData = {
-        assessmentId: selectedAssessment,
-        lessonPlanId: assessmentDetails.lessonPlanId || null,
-        classId: selectedClass,
-        studentId: selectedStudent,
-        submissionMethod: "upload_image",
-        answers,
-      };
+      if (uploadMode === "bulk") {
+        // Prepare bulk submission with files
+        submissionData = {
+          assessmentId: selectedAssessment,
+          lessonPlanId: assessmentDetails.lessonPlanId || null,
+          classId: selectedClass,
+          studentId: selectedStudent,
+          submissionMethod: "upload_bulk",
+          files: bulkFiles.map((file, index) => ({
+            fileName: file.name,
+            fileType: file.type,
+            fileData: file.base64,
+            fileIndex: index + 1,
+          })),
+        };
+      } else {
+        // Prepare individual answers array
+        const answers = Object.entries(images)
+          .filter(([_, image]) => image !== null)
+          .map(([questionNumber, image]) => ({
+            questionNumber: parseInt(questionNumber),
+            questionText: `Question ${questionNumber}`,
+            originalImage: image,
+          }));
+
+        submissionData = {
+          assessmentId: selectedAssessment,
+          lessonPlanId: assessmentDetails.lessonPlanId || null,
+          classId: selectedClass,
+          studentId: selectedStudent,
+          submissionMethod: "upload_image",
+          answers,
+        };
+      }
 
       setUploadProgress(30);
 
@@ -242,7 +270,7 @@ const SubmissionUploadPage = () => {
           // Navigate to review page
           setTimeout(() => {
             navigate(
-              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+              `/app/submissions/${selectedAssessment}/${result.submissionId}`
             );
           }, 1000);
         } else {
@@ -251,7 +279,7 @@ const SubmissionUploadPage = () => {
           );
           setTimeout(() => {
             navigate(
-              `/app/submissions/${selectedAssessment}/review/${result.submissionId}`
+              `/app/submissions/${selectedAssessment}/${result.submissionId}`
             );
           }, 2000);
         }
@@ -391,6 +419,7 @@ const SubmissionUploadPage = () => {
                   classId={selectedClass}
                   selectedStudent={selectedStudent}
                   onStudentSelect={setSelectedStudent}
+                  assessmentId={selectedAssessment}
                 />
               )}
             </div>
@@ -399,6 +428,36 @@ const SubmissionUploadPage = () => {
           {/* STEP 2: Upload Images */}
           {currentStep === 2 && (
             <div>
+              {/* Upload Mode Selection */}
+              {assessmentDetails?.activityType !== "spm-exam" && (
+                <div className="mb-4">
+                  <h5 className="mb-3">Choose Upload Method</h5>
+                  <div className="d-flex gap-3">
+                    <Button
+                      variant={uploadMode === "individual" ? "primary" : "outline-primary"}
+                      onClick={() => setUploadMode("individual")}
+                      disabled={submitting}
+                    >
+                      Individual Questions
+                    </Button>
+                    <Button
+                      variant={uploadMode === "bulk" ? "primary" : "outline-primary"}
+                      onClick={() => setUploadMode("bulk")}
+                      disabled={submitting}
+                    >
+                      Bulk Upload (Images/PDF)
+                    </Button>
+                  </div>
+                  <Alert variant="info" className="mt-3 mb-0">
+                    <small>
+                      {uploadMode === "individual"
+                        ? "Upload one image per question. Best for structured answer sheets."
+                        : "Upload multiple images or PDF files at once. The system will process all pages/images together."}
+                    </small>
+                  </Alert>
+                </div>
+              )}
+
               {/* SPM Paper 1 - Single Answer Sheet Upload */}
               {assessmentDetails?.activityType === "spm-exam" ? (
                 <div>
@@ -429,15 +488,25 @@ const SubmissionUploadPage = () => {
                       // Navigate to review page after a short delay
                       setTimeout(() => {
                         navigate(
-                          `/app/submissions/${selectedAssessment}/review/${results.submissionId}`
+                          `/app/submissions/${selectedAssessment}/${results.submissionId}`
                         );
                       }, 1500);
                     }}
                     disabled={submitting}
                   />
                 </div>
+              ) : uploadMode === "bulk" ? (
+                /* Bulk Upload Mode */
+                <div>
+                  <h4 className="mb-4">Step 3: Bulk Upload Answer Files</h4>
+
+                  <BulkAnswerUploader
+                    onFilesChange={setBulkFiles}
+                    disabled={submitting}
+                  />
+                </div>
               ) : (
-                /* Regular Assessment - Multiple Question Upload */
+                /* Regular Assessment - Individual Question Upload */
                 <div>
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <h4 className="mb-0">Step 3: Upload Answer Images</h4>
@@ -524,7 +593,12 @@ const SubmissionUploadPage = () => {
                   <Button
                     variant="success"
                     onClick={handleSubmit}
-                    disabled={submitting || getUploadedCount() === 0}
+                    disabled={
+                      submitting ||
+                      (uploadMode === "bulk"
+                        ? bulkFiles.length === 0
+                        : getUploadedCount() === 0)
+                    }
                   >
                     {submitting ? (
                       <>

@@ -117,6 +117,35 @@ const studentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    // ===== PHASE 6: OFFLINE SYNC SUPPORT =====
+    version: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    syncStatus: {
+      type: String,
+      enum: ["synced", "pending", "conflict", "error"],
+      default: "synced",
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    offlineCreated: {
+      type: Boolean,
+      default: false,
+    },
+    lastModifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    conflictData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    // ===== END PHASE 6 =====
   },
   {
     timestamps: true,
@@ -190,6 +219,16 @@ studentSchema.statics.searchStudents = function (query, classId = null) {
     .populate("classId", "className grade")
     .sort({ name: 1 });
 };
+
+// PHASE 6: Pre-save middleware for version tracking
+studentSchema.pre("save", function (next) {
+  if (this.isModified() && !this.isNew) {
+    this.version = (this.version || 1) + 1;
+    this.syncStatus = "pending";
+    this.lastModifiedBy = this.addedBy;
+  }
+  next();
+});
 
 // Pre-remove hook to clean up related data
 studentSchema.pre("remove", async function (next) {

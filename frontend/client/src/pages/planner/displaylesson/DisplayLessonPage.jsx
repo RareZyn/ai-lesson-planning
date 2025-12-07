@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   getLessonPlanById,
   deleteLessonPlan,
-  updateLessonPlan,
 } from "../../../services/lessonService";
 import { exportToPdf, exportToDocx } from "../../../services/exportService";
+import offlineLessonService from "../../../services/offline/offlineLessonService";
+import lessonOfflineService from "../../../services/offline/lessonOfflineService";
 
 // Import Ant Design components
 import {
@@ -15,12 +16,13 @@ import {
   Descriptions,
   Space,
   Dropdown,
-  Menu,
   Alert,
   Row,
   Col,
   Typography,
   Divider,
+  Modal,
+  Menu,
 } from "antd";
 
 // Import Ant Design icons
@@ -38,8 +40,6 @@ import {
   BulbOutlined,
   ThunderboltOutlined,
   FileTextOutlined,
-  CalendarOutlined,
-  SchoolOutlined,
 } from "@ant-design/icons";
 
 import styles from "./DisplayLessonPage.module.css";
@@ -105,7 +105,14 @@ const DisplayLessonPage = () => {
       try {
         const data = await getLessonPlanById(id);
         setLessonPlan(data);
-        console.log("Lesson plan loaded:", data);
+
+        // Auto-save to offline cache for offline editing
+        try {
+          await lessonOfflineService.saveLessonOffline(data);
+        } catch (cacheErr) {
+          console.warn("Failed to save to offline cache:", cacheErr);
+          // Don't throw - this is just a convenience feature
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -347,11 +354,21 @@ const DisplayLessonPage = () => {
   const handleSaveEdit = async () => {
     setIsSaving(true);
     try {
-      const updatedData = await updateLessonPlan(id, editedPlan);
-      setLessonPlan(updatedData);
+      // Use offline-aware update service
+      const result = await offlineLessonService.updateLesson(id, { plan: editedPlan });
+
+      // Update local state with returned data
+      setLessonPlan({ ...lessonPlan, plan: result.data.plan || editedPlan });
       setIsEditing(false);
       setEditedPlan(null);
-      alert("Lesson plan updated successfully!");
+
+      // Show appropriate message based on whether action was queued
+      Modal.success({
+        title: 'Success',
+        content: result.queued
+          ? 'Lesson plan updated offline. Changes will sync when you\'re back online.'
+          : 'Lesson plan updated successfully!',
+      });
     } catch (err) {
       alert(`Error: ${err.message}`);
     } finally {
@@ -522,7 +539,7 @@ const DisplayLessonPage = () => {
                 ) : (
                   <Space>
                     <Dropdown
-                      overlay={exportMenu}
+                      menu={{ items: exportMenu }}
                       trigger={["click"]}
                       placement="bottomRight"
                     >

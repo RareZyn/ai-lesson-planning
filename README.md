@@ -148,9 +148,7 @@ JWT_COOKIE_EXPIRE=7
 # Encryption Secret (64 character hex string)
 ENCRYPTION_SECRET=your_64_character_hex_string_generated_above
 
-# AI Services
-GEMINI_API_KEY=your_gemini_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here_optional
+
 
 # Firebase Admin (Optional - for advanced features)
 FIREBASE_PROJECT_ID=your_firebase_project_id

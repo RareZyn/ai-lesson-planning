@@ -7,13 +7,11 @@ import {
   Avatar,
   Badge,
   Button,
-  Divider,
   Dropdown,
   Form,
   Input,
   Modal,
   message,
-  theme,
 } from "antd";
 import {
   BellOutlined,
@@ -27,7 +25,6 @@ import { useAuth } from "../../context/AuthContext";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { token } = theme.useToken();
 
   // Use your context providers instead of direct Firebase auth
   const { user: contextUser, logout: contextLogout } = useUser();
@@ -54,6 +51,9 @@ const Profile = () => {
       },
     ]);
   }, []);
+
+  // Calculate unread notifications count
+  var unreadCount = notifications.filter(n => !n.read).length;
 
   const handleSettingsOpen = async () => {
     // Fetch current API key from backend
@@ -168,7 +168,7 @@ const Profile = () => {
   };
 
   // const unreadCount = notifications.filter((n) => !n.read).length;
-  const unreadCount = 2;
+   unreadCount = 2;
 
   // Don't render if no user or if logging out
   if (!user || isLoggingOut) return null;

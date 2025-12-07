@@ -1,0 +1,124 @@
+/* Offline Badge Component Styles */
+
+.offline-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.offline-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Size variations */
+.offline-badge-small {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.offline-badge-default {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+.offline-badge-large {
+  font-size: 14px;
+  padding: 6px 16px;
+}
+
+/* Status-specific styles */
+.offline-badge-available {
+  background: #f6ffed !important;
+  color: #52c41a !important;
+  border-color: #b7eb8f !important;
+}
+
+.offline-badge-pending {
+  background: #fffbe6 !important;
+  color: #faad14 !important;
+  border-color: #ffe58f !important;
+  animation: pulse-pending 2s ease-in-out infinite;
+}
+
+.offline-badge-conflict {
+  background: #fff1f0 !important;
+  color: #ff4d4f !important;
+  border-color: #ffccc7 !important;
+  animation: pulse-conflict 1.5s ease-in-out infinite;
+}
+
+.offline-badge-syncing {
+  background: #e6f7ff !important;
+  color: #1890ff !important;
+  border-color: #91d5ff !important;
+}
+
+.offline-badge-online-only {
+  background: #fafafa !important;
+  color: #8c8c8c !important;
+  border-color: #d9d9d9 !important;
+}
+
+/* Compact badge */
+.offline-badge-compact {
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.offline-badge-compact:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: scale(1.1);
+}
+
+/* Animations */
+@keyframes pulse-pending {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-conflict {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .offline-badge-default {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+
+  .offline-badge-large {
+    font-size: 12px;
+    padding: 5px 14px;
+  }
+}
+
+/* Accessibility */
+.offline-badge:focus,
+.offline-badge-compact:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .offline-badge-online-only {
+    background: #141414 !important;
+    color: #8c8c8c !important;
+  }
+}

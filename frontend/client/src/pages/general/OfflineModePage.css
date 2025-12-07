@@ -1,0 +1,487 @@
+/* Offline Mode Page Styles */
+
+.offline-mode-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.offline-mode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Main tabs styling */
+.offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: 8px 8px 0 0;
+  background-color: #fafafa;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background-color: #fff;
+  border-bottom-color: #fff;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.offline-mode-page .ant-tabs-content {
+  padding: 24px;
+  background-color: #fff !important;
+  border: 1px solid #d9d9d9;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  min-height: 400px;
+}
+
+/* Fix for list items - ensure white background and visible text */
+.offline-mode-page .ant-list {
+  background-color: transparent !important;
+}
+
+.offline-mode-page .ant-list-item {
+  background-color: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 8px;
+  padding: 16px !important;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.offline-mode-page .ant-list-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #1890ff !important;
+  transform: translateY(-2px);
+}
+
+/* Ensure all text is visible */
+.offline-mode-page .ant-list-item-meta-title {
+  color: #262626 !important;
+  font-weight: 500;
+}
+
+.offline-mode-page .ant-list-item-meta-description {
+  color: #595959 !important;
+}
+
+.offline-mode-page .ant-typography {
+  color: #262626 !important;
+}
+
+/* Cards styling */
+.offline-mode-page .ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff !important;
+  margin-bottom: 16px;
+}
+
+.offline-mode-page .ant-card-body {
+  padding: 24px;
+  background-color: #ffffff !important;
+}
+
+/* Inner tabs (content manager tabs) */
+.offline-mode-page .ant-card .ant-tabs {
+  margin: -24px -24px 0 -24px;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-nav {
+  padding: 0 24px;
+  margin-bottom: 0;
+  background-color: #fafafa;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-content-holder {
+  padding: 24px;
+  background-color: #ffffff !important;
+}
+
+.offline-mode-page .ant-card .ant-tabs .ant-tabs-tabpane {
+  background-color: #ffffff !important;
+}
+
+/* Tag styling */
+.offline-mode-page .ant-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* Search bar */
+.offline-mode-page .ant-input-search {
+  max-width: 100%;
+}
+
+.offline-mode-page .ant-input-affix-wrapper {
+  border-radius: 8px;
+  background-color: #ffffff !important;
+}
+
+.offline-mode-page .ant-input {
+  background-color: #ffffff !important;
+  color: #262626 !important;
+}
+
+/* Empty state */
+.offline-mode-page .ant-empty {
+  padding: 40px 0;
+}
+
+.offline-mode-page .ant-empty-description {
+  color: #8c8c8c !important;
+}
+
+/* Button styling */
+.offline-mode-page .ant-btn {
+  border-radius: 6px;
+}
+
+.offline-mode-page .ant-btn-text.ant-btn-dangerous:hover {
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+/* Alert styling */
+.offline-mode-page .ant-alert {
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+/* List item actions */
+.offline-mode-page .ant-list-item-action {
+  margin-left: 16px;
+}
+
+.offline-mode-page .ant-list-item-action > li {
+  padding: 0;
+}
+
+/* Icons */
+.offline-mode-page .anticon {
+  vertical-align: middle;
+}
+
+.offline-mode-page ul {
+  line-height: 2;
+  color: #262626;
+}
+
+.offline-mode-page ol {
+  line-height: 2;
+  color: #262626;
+}
+
+.offline-mode-page li {
+  color: #262626;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .offline-mode-page {
+    padding: 12px;
+    padding-bottom: 80px; /* Extra padding for mobile navigation */
+  }
+
+  .offline-mode-header {
+    flex-direction: column;
+    margin-bottom: 16px;
+  }
+
+  .offline-mode-header h2 {
+    font-size: 20px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .offline-mode-header p {
+    font-size: 13px !important;
+  }
+
+  /* Horizontal scrolling for main tabs */
+  .offline-mode-page .ant-tabs-nav {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  .offline-mode-page .ant-tabs-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .offline-mode-page .ant-tabs-nav-list {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: max-content;
+  }
+
+  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-width: 120px;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-right: 4px;
+  }
+
+  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .offline-mode-page .ant-tabs-content {
+    padding: 12px;
+    border-radius: 8px;
+    min-height: 300px;
+  }
+
+  /* Statistics Card - Make it scrollable horizontally */
+  .offline-mode-page .ant-card:first-child .ant-space {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .offline-mode-page .ant-card:first-child .ant-space > div {
+    flex-shrink: 0;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  .offline-mode-page .ant-card:first-child .ant-space > div h3 {
+    font-size: 20px !important;
+  }
+
+  .offline-mode-page .ant-card:first-child .ant-space > div span {
+    font-size: 11px !important;
+  }
+
+  /* Inner tabs (content tabs) - horizontal scrolling */
+  .offline-mode-page .ant-card .ant-tabs-nav {
+    padding: 0 12px;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .offline-mode-page .ant-card .ant-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .offline-mode-page .ant-card .ant-tabs-nav-list {
+    flex-wrap: nowrap !important;
+    width: max-content;
+  }
+
+  .offline-mode-page .ant-card .ant-tabs-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-right: 4px;
+  }
+
+  .offline-mode-page .ant-card .ant-tabs-content-holder {
+    padding: 12px;
+  }
+
+  .offline-mode-page .ant-card-body {
+    padding: 12px;
+  }
+
+  /* List items - compact mobile view */
+  .offline-mode-page .ant-list-item {
+    padding: 12px !important;
+    margin-bottom: 10px;
+    border-radius: 6px;
+  }
+
+  .offline-mode-page .ant-list-item-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .offline-mode-page .ant-list-item-meta-avatar {
+    margin-right: 12px;
+  }
+
+  .offline-mode-page .ant-list-item-meta-avatar .anticon,
+  .offline-mode-page .ant-list-item-meta-avatar svg {
+    font-size: 20px !important;
+  }
+
+  .offline-mode-page .ant-list-item-meta-title {
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+    line-height: 1.4;
+  }
+
+  .offline-mode-page .ant-list-item-meta-title .ant-space {
+    flex-wrap: wrap;
+    gap: 4px !important;
+  }
+
+  .offline-mode-page .ant-list-item-meta-title span {
+    word-break: break-word;
+  }
+
+  .offline-mode-page .ant-list-item-meta-description {
+    font-size: 12px !important;
+  }
+
+  .offline-mode-page .ant-list-item-meta-description .ant-space {
+    gap: 4px !important;
+  }
+
+  .offline-mode-page .ant-list-item-meta-description .ant-typography {
+    font-size: 11px !important;
+  }
+
+  .offline-mode-page .ant-list-item-action {
+    margin-top: 8px;
+    margin-left: 0;
+  }
+
+  .offline-mode-page .ant-list-item-action .ant-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    height: auto;
+  }
+
+  /* Tags - compact for mobile */
+  .offline-mode-page .ant-tag {
+    font-size: 11px;
+    padding: 1px 6px;
+    margin: 2px;
+    line-height: 18px;
+  }
+
+  /* Search bar */
+  .offline-mode-page .ant-input-search {
+    font-size: 14px;
+  }
+
+  .offline-mode-page .ant-input-affix-wrapper {
+    padding: 8px 12px;
+  }
+
+  /* Alerts */
+  .offline-mode-page .ant-alert {
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  .offline-mode-page .ant-alert-message {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .offline-mode-page .ant-alert-description {
+    font-size: 12px;
+  }
+
+  /* Guide and storage management content */
+  .offline-mode-page ul {
+    padding-left: 16px;
+    line-height: 1.8;
+    font-size: 13px;
+  }
+
+  .offline-mode-page ol {
+    padding-left: 16px;
+    line-height: 1.8;
+    font-size: 13px;
+  }
+
+  .offline-mode-page h4 {
+    font-size: 16px !important;
+  }
+
+  .offline-mode-page h5 {
+    font-size: 14px !important;
+  }
+
+  .offline-mode-page p {
+    font-size: 13px !important;
+  }
+
+  /* Empty state */
+  .offline-mode-page .ant-empty {
+    padding: 30px 0;
+  }
+
+  .offline-mode-page .ant-empty-description {
+    font-size: 13px !important;
+  }
+
+  /* Scroll indicators for tabs */
+  .offline-mode-page .ant-tabs-nav::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9));
+    pointer-events: none;
+  }
+
+  /* Fix for card spacing */
+  .offline-mode-page .ant-card {
+    margin-bottom: 12px;
+  }
+
+  /* Compact spacing for Space component */
+  .offline-mode-page .ant-space-vertical {
+    gap: 12px !important;
+  }
+
+  /* Better touch targets for mobile */
+  .offline-mode-page .ant-btn-text {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .offline-mode-page {
+    padding: 8px;
+  }
+
+  .offline-mode-page .ant-tabs-content {
+    padding: 8px;
+  }
+
+  .offline-mode-page .ant-card-body {
+    padding: 10px;
+  }
+
+  .offline-mode-page .ant-list-item {
+    padding: 10px !important;
+  }
+
+  .offline-mode-page .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    min-width: 100px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .offline-mode-header h2 {
+    font-size: 18px !important;
+  }
+}

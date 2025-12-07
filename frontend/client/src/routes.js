@@ -19,7 +19,6 @@ const ActivityViewerPage = React.lazy(() => import("./pages/assesstment/Activity
 const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricViewerPage"));
 
 const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
-const FileDownloadPage = React.lazy(() => import("./pages/downloads/FileDownloadPage"));
 const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
 
 const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
@@ -34,6 +33,9 @@ const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
 const SubmissionListPage = React.lazy(() => import("./pages/answerChecker/SubmissionListPage"));
 const SubmissionReviewPage = React.lazy(() => import("./pages/answerChecker/SubmissionReviewPage"));
+
+// NEW IMPORTS - Offline Mode Module
+const OfflineModePage = React.lazy(() => import("./pages/general/OfflineModePage"));
 const router = createBrowserRouter(
   [
     {
@@ -60,17 +62,18 @@ const router = createBrowserRouter(
         { path: "submissions", element: <SubmissionListPage /> },
         { path: "submissions/upload", element: <SubmissionUploadPage /> },
         { path: "submissions/:assessmentId", element: <AssessmentSubmissionsPage /> },
-        { path: "submissions/:assessmentId/review/:submissionId", element: <SubmissionReviewPage /> },
+        { path: "submissions/:assessmentId/:submissionId", element: <SubmissionReviewPage /> },
 
         { path: "analytics", element: <AnalyticsDashboard /> },
         { path: "analytics/:id", element: <StudentProgressView /> },
         { path: "analytics/:id/:id", element: <ClassAnalyticsView /> },
 
-        { path: "downloads", element: <FileDownloadPage /> },
-
         { path: "community", element: <Community /> },
         { path: "lessons/:id", element: <DisplayLessonPage /> },
         { path: "classes/:classId", element: <ClassLessonsPage /> },
+
+        // Offline Mode
+        { path: "offline-mode", element: <OfflineModePage /> },
 
         //admin
         { path: "admin", element: <AdminLayout /> },

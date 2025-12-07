@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - AI Lesson Planning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .offline-container {
+            background: white;
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .features-list {
+            text-align: left;
+            background: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .features-list h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .features-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #555;
+        }
+
+        .features-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .retry-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .retry-btn:hover {
+            background: #5568d3;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .status.checking {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .offline-container {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>You're Offline</h1>
+        <p>It looks like you've lost your internet connection. Don't worry, you can still access your downloaded content!</p>
+
+        <div class="features-list">
+            <h3>What you can do offline:</h3>
+            <ul>
+                <li>View previously downloaded lesson plans</li>
+                <li>Access saved assessments and rubrics</li>
+                <li>Review your classes and student information</li>
+                <li>Browse offline-available content</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 1.5rem;">
+            <strong>Note:</strong> AI features like generating new lesson plans and assessments require an internet connection.
+        </p>
+
+        <button class="retry-btn" onclick="checkConnection()">
+            Check Connection
+        </button>
+
+        <div id="status" class="status hidden"></div>
+    </div>
+
+    <script>
+        // Check if we're back online
+        function checkConnection() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status checking';
+            statusEl.textContent = 'Checking connection...';
+            statusEl.classList.remove('hidden');
+
+            // Try to fetch a small resource
+            fetch('/favicon.ico', {
+                method: 'HEAD',
+                cache: 'no-cache'
+            })
+            .then(response => {
+                if (response.ok) {
+                    statusEl.className = 'status online';
+                    statusEl.textContent = 'You\'re back online! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    throw new Error('Still offline');
+                }
+            })
+            .catch(() => {
+                statusEl.className = 'status offline';
+                statusEl.textContent = 'Still offline. Please check your internet connection.';
+            });
+        }
+
+        // Auto-check connection every 5 seconds
+        setInterval(() => {
+            if (navigator.onLine) {
+                checkConnection();
+            }
+        }, 5000);
+
+        // Listen for online event
+        window.addEventListener('online', () => {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status online';
+            statusEl.textContent = 'Connection restored! Redirecting...';
+            statusEl.classList.remove('hidden');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        });
+
+        // Listen for offline event
+        window.addEventListener('offline', () => {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status offline';
+            statusEl.textContent = 'Connection lost again.';
+            statusEl.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
