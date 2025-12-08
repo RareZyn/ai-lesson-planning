@@ -1,8 +1,16 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fs = require("fs");
+const path = require("path");
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 // controllers/adminController.js
 const User = require("../model/User");
 const RegistrationToken = require("../model/RegistrationToken");
 const School = require("../model/School"); // Assuming you want to associate token with a school
 const Syllabus = require("../model/Syllabus");
+const LessonPlan = require("../model/Lesson");
+const Class = require("../model/Class");
 const crypto = require("crypto");
 const XLSX = require("xlsx");
 
@@ -92,11 +100,11 @@ exports.getTeachersBySchool = async (req, res) => {
 
 exports.uploadSyllabus = async (req, res) => {
   try {
-    const { subject, grade } = req.body;
+    const { subject, grade, syllabusData } = req.body;
     const createdBy = req.user._id;
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No Excel file uploaded" });
+    if (!syllabusData || !Array.isArray(syllabusData) || syllabusData.length === 0) {
+      return res.status(400).json({ success: false, message: "No syllabus data provided" });
     }
 
     if (!subject || !grade) {
@@ -111,52 +119,20 @@ exports.uploadSyllabus = async (req, res) => {
       return res.status(400).json({ success: false, message: "User not assigned to a school" });
     }
 
-    // Read Excel -> JSON rows
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
-
-    // Convert flat Excel keys into nested JSON objects dynamically
-    const syllabusArray = rows.map((row) => {
-      const obj = {};
-
-      Object.keys(row).forEach((key) => {
-        const value = row[key];
-
-        if (key.includes(".")) {
-          const parts = key.split(".");
-          let pointer = obj;
-
-          parts.forEach((p, index) => {
-            if (index === parts.length - 1) {
-              pointer[p] = value;
-            } else {
-              if (!pointer[p]) pointer[p] = {};
-              pointer = pointer[p];
-            }
-          });
-        } else {
-          obj[key] = value;
-        }
-      });
-
-      return obj;
-    });
-
     // Save as ONE syllabus doc
     const saved = await Syllabus.create({
       schoolId,
       subject,
       grade,
       createdBy,
-      syllabus: syllabusArray,
+      syllabus: syllabusData, // Use the JSON data directly
     });
 
     return res.status(201).json({
       success: true,
       message: "Syllabus uploaded successfully",
       syllabusId: saved._id,
-      totalItems: syllabusArray.length,
+      totalItems: syllabusData.length,
     });
 
   } catch (error) {
@@ -180,9 +156,9 @@ exports.getSyllabuses = async (req, res) => {
     const schoolId = user.schoolId;
 
     if (!schoolId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User not assigned to a school" 
+      return res.status(400).json({
+        success: false,
+        message: "User not assigned to a school"
       });
     }
 
@@ -230,15 +206,15 @@ exports.getSyllabusById = async (req, res) => {
     const schoolId = user.schoolId;
 
     if (!schoolId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User not assigned to a school" 
+      return res.status(400).json({
+        success: false,
+        message: "User not assigned to a school"
       });
     }
 
-    const syllabus = await Syllabus.findOne({ 
-      _id: id, 
-      schoolId 
+    const syllabus = await Syllabus.findOne({
+      _id: id,
+      schoolId
     })
       .populate('createdBy', 'name email')
       .lean();
@@ -287,16 +263,16 @@ exports.deleteSyllabus = async (req, res) => {
     const schoolId = user.schoolId;
 
     if (!schoolId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User not assigned to a school" 
+      return res.status(400).json({
+        success: false,
+        message: "User not assigned to a school"
       });
     }
 
     // Find and delete the syllabus, ensuring it belongs to the user's school
-    const syllabus = await Syllabus.findOneAndDelete({ 
-      _id: id, 
-      schoolId 
+    const syllabus = await Syllabus.findOneAndDelete({
+      _id: id,
+      schoolId
     });
 
     if (!syllabus) {
@@ -333,16 +309,16 @@ exports.updateSyllabus = async (req, res) => {
     const schoolId = user.schoolId;
 
     if (!schoolId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User not assigned to a school" 
+      return res.status(400).json({
+        success: false,
+        message: "User not assigned to a school"
       });
     }
 
     // Find the existing syllabus
-    const existingSyllabus = await Syllabus.findOne({ 
-      _id: id, 
-      schoolId 
+    const existingSyllabus = await Syllabus.findOne({
+      _id: id,
+      schoolId
     });
 
     if (!existingSyllabus) {
@@ -417,6 +393,187 @@ exports.updateSyllabus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error updating syllabus",
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get detailed analytics for a specific teacher
+// @route   GET /api/admin/teachers/:id/analytics
+// @access  Private (school_admin, super_admin, principals)
+exports.getTeacherAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requesterUser = await User.findById(req.user._id);
+
+    // 1. Verify access (must be same school)
+    const teacher = await User.findOne({ _id: id, schoolId: requesterUser.schoolId })
+      .select("-password -geminiApiKey -__v");
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found in your school" });
+    }
+
+    // 2. Fetch Lesson Stats
+    // Aggregation for Approval Status (Draft, Pending, Approved, Rejected)
+    const statusStats = await LessonPlan.aggregate([
+      { $match: { createdBy: teacher._id } },
+      { $group: { _id: "$approvalStatus", count: { $sum: 1 } } }
+    ]);
+
+    // Format for Chart: Ensure all statuses are present (default 0)
+    const defaultStatuses = ["draft", "pending", "approved", "rejected"];
+    const statusDistribution = defaultStatuses.map(status => ({
+      status: status.charAt(0).toUpperCase() + status.slice(1),
+      count: statusStats.find(s => s._id === status)?.count || 0
+    }));
+
+    // Aggregation for Subject Distribution
+    const subjectStats = await LessonPlan.aggregate([
+      { $match: { createdBy: teacher._id } },
+      {
+        $lookup: {
+          from: "classes",
+          localField: "classId",
+          foreignField: "_id",
+          as: "classInfo"
+        }
+      },
+      { $unwind: "$classInfo" },
+      { $group: { _id: "$classInfo.subject", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    const subjectsTaught = subjectStats.map(s => s._id);
+
+    // Total Lessons
+    const totalLessons = await LessonPlan.countDocuments({ createdBy: teacher._id });
+
+    // Total Classes (Created by this teacher)
+    const totalClasses = await Class.countDocuments({ createdBy: teacher._id });
+
+    // 3. Last Online / Activity (inferred from lastLogin or last lesson creation)
+    const lastLesson = await LessonPlan.findOne({ createdBy: teacher._id }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        teacher: {
+          ...teacher.toObject(),
+          subjectsTaught // Inferred from lessons
+        },
+        analytics: {
+          totalLessons,
+          totalClasses,
+          statusDistribution, // For Spider Chart
+          subjectDistribution: subjectStats.map(s => ({ subject: s._id, count: s.count })),
+          lastActivity: lastLesson ? lastLesson.createdAt : null
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching teacher analytics:", error);
+    res.status(500).json({ success: false, message: "Server error fetching analytics" });
+  }
+};
+
+// @desc    Extract syllabus structure from uploaded file (PDF/Image) using AI
+// @route   POST /api/admin/syllabuses/extract-structure
+// @access  Private
+exports.extractSyllabusStructure = async (req, res) => {
+  try {
+    console.log("extractSyllabusStructure called");
+    if (!req.file) {
+      console.error("No file uploaded in request");
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    console.log("File received:", req.file.originalname, req.file.mimetype, req.file.size);
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is missing in environment variables");
+      return res.status(500).json({ success: false, message: "Server misconfiguration: API Key missing" });
+    }
+
+    // Convert buffer to base64
+    const fileBase64 = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+
+    // Use Gemini 1.5 Flash (specific version 001) for multimodal capabilities
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const prompt = `
+      You are an expert curriculum developer. Analyze the uploaded syllabus document (image or PDF).
+      Extract the structured syllabus data into a JSON format.
+      
+      I need two things in the JSON response:
+      1. "schema": An array of field definitions describing the columns/structure.
+         Each field object should have:
+         - "id": number (1, 2, 3...)
+         - "name": string (Field Name, e.g., "Week", "Topic", "Learning Objectives")
+         - "type": string ("text", "list", or "object")
+         - "subFields": array (if type is "object", recursive structure)
+      
+      2. "data": An array of objects representing the rows of the syllabus, matching the schema.
+         Key names in "data" objects must match the "name" in "schema".
+      
+      Example Structure:
+      {
+        "schema": [
+          { "id": 1, "name": "Week", "type": "text", "subFields": [] },
+          { "id": 2, "name": "Topic", "type": "text", "subFields": [] },
+          { "id": 3, "name": "Activities", "type": "list", "subFields": [] }
+        ],
+        "data": [
+          { "Week": "1", "Topic": "Introduction", "Activities": ["Ice breaking", "Overview"] }
+        ]
+      }
+
+      Return ONLY the JSON object. Do not include markdown formatting like \`\`\`json.
+    `;
+
+    const imageParts = [
+      {
+        inlineData: {
+          data: fileBase64,
+          mimeType: mimeType,
+        },
+      },
+    ];
+
+    console.log("Sending request to Gemini...");
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    let text = response.text();
+
+    console.log("Gemini Response received (preview):", text.substring(0, 100));
+
+    // Clean up markdown code blocks if present
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    let jsonResponse;
+    try {
+      jsonResponse = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response:", text);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to parse AI response. The AI might have returned unstructured text.",
+        rawResponse: text
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      schema: jsonResponse.schema,
+      data: jsonResponse.data
+    });
+
+  } catch (error) {
+    console.error("Error extracting syllabus structure:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error extracting syllabus structure",
       error: error.message
     });
   }

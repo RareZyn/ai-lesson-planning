@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   getLessonPlanById,
   deleteLessonPlan,
@@ -46,43 +46,7 @@ import styles from "./DisplayLessonPage.module.css";
 
 const { Title, Text, Paragraph } = Typography;
 
-// A recursive component to display the parameters object cleanly.
-const renderParameters = (obj) => {
-  const formatKey = (key) => {
-    const result = key.replace(/([A-Z])/g, " $1");
-    return result.charAt(0).toUpperCase() + result.slice(1);
-  };
 
-  return (
-    <ul className={styles.paramSubList}>
-      {Object.entries(obj).map(([key, value]) => {
-        if (key === "_id" || key === "__v" || key === "activityConfiguration")
-          return null;
-
-        const formattedKey = formatKey(key);
-
-        if (
-          typeof value === "object" &&
-          value !== null &&
-          !Array.isArray(value)
-        ) {
-          return (
-            <li key={key} className={styles.paramNestedObject}>
-              <strong>{formattedKey}:</strong>
-              {renderParameters(value)}
-            </li>
-          );
-        }
-        return (
-          <li key={key}>
-            <strong>{formattedKey}:</strong>{" "}
-            {Array.isArray(value) ? value.join(", ") : String(value)}
-          </li>
-        );
-      })}
-    </ul>
-  );
-};
 
 const DisplayLessonPage = () => {
   const { id } = useParams();
@@ -96,7 +60,7 @@ const DisplayLessonPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPlan, setEditedPlan] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showExportOptions, setShowExportOptions] = useState(false);
+
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -153,29 +117,7 @@ const DisplayLessonPage = () => {
     return colors[type] || "default";
   };
 
-  const getConfigurationSummary = (activityConfiguration) => {
-    if (!activityConfiguration?.parameters)
-      return "No configuration details available";
 
-    const params = activityConfiguration.parameters;
-    const type = activityConfiguration.type;
-
-    switch (type) {
-      case "essay":
-        return `${params.essayType || "Standard"} essay, ${params.wordCount || "unspecified"
-          } words`;
-      case "assessment":
-        return `${params.assessmentType || "Standard"} assessment with ${params.numberOfQuestions || "unspecified"
-          } questions`;
-      case "activityInClass":
-        return `${params.activityType || "General"} activity with ${params.studentArrangement || "flexible"
-          } arrangement`;
-      case "textbook":
-        return "Textbook-based activity with standard requirements";
-      default:
-        return "Configured activity parameters";
-    }
-  };
 
   const renderActivityConfiguration = () => {
     const activityConfiguration =
@@ -453,7 +395,6 @@ const DisplayLessonPage = () => {
         icon={<FilePdfOutlined />}
         onClick={() => {
           exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId);
-          setShowExportOptions(false);
         }}
       >
         Export as PDF
@@ -463,7 +404,6 @@ const DisplayLessonPage = () => {
         icon={<FileWordOutlined />}
         onClick={() => {
           exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId);
-          setShowExportOptions(false);
         }}
       >
         Export as DOCX
@@ -504,10 +444,14 @@ const DisplayLessonPage = () => {
                   <Tag color="blue">
                     {parameters.sow?.focus || parameters.sow?.Focus || "General"}
                   </Tag>
-                  <Tag color="green">{parameters.proficiencyLevel}</Tag>
-                  <Tag color="purple">
-                    {parameters.hotsFocus?.toUpperCase()}
-                  </Tag>
+                  {parameters.proficiencyLevel && (
+                    <Tag color="green">{parameters.proficiencyLevel}</Tag>
+                  )}
+                  {parameters.hotsFocus && (
+                    <Tag color="purple">
+                      {parameters.hotsFocus?.toUpperCase()}
+                    </Tag>
+                  )}
                   {activityType && (
                     <Tag color={getActivityTypeColor(activityType)}>
                       {getActivityTypeLabel(activityType)}
@@ -792,14 +736,18 @@ const DisplayLessonPage = () => {
             {/* Learning Parameters */}
             <Card title="Learning Parameters" className="mb-4">
               <Descriptions column={1} size="small">
-                <Descriptions.Item label="Proficiency Level">
-                  <Tag color="green">{parameters.proficiencyLevel}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="HOTS Focus">
-                  <Tag color="purple">
-                    {parameters.hotsFocus?.toUpperCase()}
-                  </Tag>
-                </Descriptions.Item>
+                {parameters.proficiencyLevel && (
+                  <Descriptions.Item label="Proficiency Level">
+                    <Tag color="green">{parameters.proficiencyLevel}</Tag>
+                  </Descriptions.Item>
+                )}
+                {parameters.hotsFocus && (
+                  <Descriptions.Item label="HOTS Focus">
+                    <Tag color="purple">
+                      {parameters.hotsFocus?.toUpperCase()}
+                    </Tag>
+                  </Descriptions.Item>
+                )}
                 {activityType && (
                   <Descriptions.Item label="Activity Type">
                     <Tag color={getActivityTypeColor(activityType)}>

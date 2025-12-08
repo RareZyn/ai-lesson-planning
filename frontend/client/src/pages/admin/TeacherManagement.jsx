@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./TeacherManagement.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -22,6 +23,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
+  const navigate = useNavigate();
 
   // ===========================
   // FETCH TEACHERS
@@ -161,7 +163,12 @@ const TeacherManagement = ({ searchTerm = "" }) => {
           </div>
 
           {filteredTeachers.map((teacher) => (
-            <div key={teacher._id} className="listItem">
+            <div
+              key={teacher._id}
+              className="listItem"
+              onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
+              style={{ cursor: "pointer" }}
+            >
               <div className="listTitle">
                 <FontAwesomeIcon icon={faUserTie} className="listIcon" />{" "}
                 {teacher.name}

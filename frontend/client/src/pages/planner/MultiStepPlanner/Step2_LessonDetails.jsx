@@ -143,6 +143,10 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     }
   };
 
+  // Determine if the subject is English
+  // We check for "english" (case-insensitive) in the subject string
+  const isEnglish = data.subject && data.subject.toLowerCase().includes("english");
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -150,21 +154,31 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     // Updated logic: check for LessonNo or Title or whatever the dynamic key is
     const hasTopicSelected = data.sow?.lessonNo || data.sow?.Title || (data.sow && Object.keys(data.sow).length > 0);
 
-    if (
-      !hasTopicSelected &&
-      !data.specificTopic ||
-      !data.activityType ||
-      !data.proficiencyLevel ||
-      !data.hotsFocus
-    ) {
-      alert("Please fill in all required fields.");
+    // Basic requirements: Topic and Specific Topic are always required
+    if (!hasTopicSelected && !data.specificTopic) {
+      alert("Please select a topic or enter a specific topic/title.");
       return;
     }
 
-    // Check if activity has been configured
-    if (!hasConfiguredActivity) {
-      alert("Please configure your selected activity type before proceeding.");
-      return;
+    // Conditional requirements: English subjects strictly require these fields
+    if (isEnglish) {
+      if (!data.activityType || !data.proficiencyLevel || !data.hotsFocus) {
+        alert("For English subjects, please fill in all fields (Activity Format, Proficiency Level, HOTS Focus).");
+        return;
+      }
+
+      // Check if activity has been configured (only if activity type is selected)
+      if (data.activityType && !hasConfiguredActivity) {
+        alert("Please configure your selected activity type before proceeding.");
+        return;
+      }
+    } else {
+      // Non-English: These fields are optional
+      // However, if they DID select an activity type, they should configure it
+      if (data.activityType && !hasConfiguredActivity) {
+        alert("Since you selected an Activity Format, please configure it before proceeding.");
+        return;
+      }
     }
 
     onNext();
@@ -337,13 +351,15 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
         {/* UPDATED: Activity Format with SPM Exam option */}
         <div className={styles.formGroup}>
-          <label htmlFor="activityType">Primary Activity Format</label>
+          <label htmlFor="activityType">
+            Primary Activity Format {isEnglish ? <span style={{ color: 'red' }}>*</span> : <span style={{ color: '#999', fontWeight: 'normal' }}>(Optional)</span>}
+          </label>
           <select
             id="activityType"
             name="activityType"
             value={data.activityType || ""}
             onChange={(e) => handleActivityTypeChange(e.target.value)}
-            required
+            required={isEnglish}
           >
             <option value="" disabled>
               -- Select a format --
@@ -449,13 +465,15 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
         {/* Proficiency Level */}
         <div className={styles.formGroup}>
-          <label htmlFor="proficiencyLevel">Class Proficiency Level</label>
+          <label htmlFor="proficiencyLevel">
+            Class Proficiency Level {isEnglish ? <span style={{ color: 'red' }}>*</span> : <span style={{ color: '#999', fontWeight: 'normal' }}>(Optional)</span>}
+          </label>
           <select
             id="proficiencyLevel"
             name="proficiencyLevel"
             value={data.proficiencyLevel || ""}
             onChange={(e) => updateData("proficiencyLevel", e.target.value)}
-            required
+            required={isEnglish}
           >
             <option value="" disabled>
               -- Select Proficiency Level --
@@ -474,13 +492,15 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
         {/* HOTS Focus */}
         <div className={styles.formGroup}>
-          <label htmlFor="hotsFocus">HOTS Focus</label>
+          <label htmlFor="hotsFocus">
+            HOTS Focus {isEnglish ? <span style={{ color: 'red' }}>*</span> : <span style={{ color: '#999', fontWeight: 'normal' }}>(Optional)</span>}
+          </label>
           <select
             id="hotsFocus"
             name="hotsFocus"
             value={data.hotsFocus || ""}
             onChange={(e) => updateData("hotsFocus", e.target.value)}
-            required
+            required={isEnglish}
           >
             <option value="" disabled>
               -- Select HOTS Focus --

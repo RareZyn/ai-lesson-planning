@@ -23,9 +23,13 @@ body {
 .ant-col,
 .ant-divider,
 .ant-anchor,
-.ant-pagination a {
+.ant-pagination a,
+.ant-avatar,
+.ant-statistic-content,
+.ant-spin {
   font-family: 'Quicksand', "Segoe UI", sans-serif !important;
 }
+
 
 
 

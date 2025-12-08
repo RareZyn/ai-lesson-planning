@@ -5,9 +5,9 @@
 }
 
 .class-header h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #343a40;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #343a40;
 }
 
 /* --- Controls Section --- */
@@ -72,12 +72,14 @@
   font-size: 1rem;
   color: #333;
 }
+
 .search-bar input::placeholder {
   color: #adb5bd;
 }
 
 /* --- Loading and Empty States --- */
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -101,14 +103,16 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 
 /* --- Card Grid Layout --- */
 .class-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1.5rem;
 }
 
@@ -123,17 +127,18 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  
   border: 2px dashed #d1d5db;
   border-radius: 12px;
   background-color: #f9fafb;
-  min-height: 180px; /* Give it a consistent height */
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  /* Give it a consistent height */
   cursor: pointer;
-  
   color: #6b7280;
   font-weight: 600;
   font-size: 1rem;
-  
+  aspect-ratio: 1/1;
   transition: all 0.2s ease-in-out;
 }
 
@@ -162,7 +167,8 @@
 }
 
 .add-icon-wrapper svg {
-  font-size: 2.25rem; /* Make the plus icon larger */
+  font-size: 2.25rem;
+  /* Make the plus icon larger */
 }
 
 /* --- Mobile Responsive Styles --- */
@@ -182,38 +188,12 @@
     justify-content: center;
   }
 
-  /* Horizontal scroll for class cards on mobile */
+  /* Grid View on Mobile */
   .class-cards-container {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 1rem;
-    padding-bottom: 1rem;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .class-cards-container::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  .class-cards-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-  }
-
-  .class-cards-container::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 10px;
-  }
-
-  .class-cards-container::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
-
-  .class-cards-container > * {
-    flex: 0 0 280px;
-    scroll-snap-align: start;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+    padding-bottom: 0;
+    overflow: visible;
   }
 }

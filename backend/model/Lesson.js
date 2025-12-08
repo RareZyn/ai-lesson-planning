@@ -148,13 +148,11 @@ if (mongoose.models.LessonPlan) {
         },
         proficiencyLevel: {
           type: String,
-          required: true,
-          // Removed enum to allow any proficiency level
+          // required: true, <-- Validation moved to Controller to support optionality for non-English subjects
         },
         hotsFocus: {
           type: String,
-          required: true,
-          // Removed enum to allow any HOTS focus
+          // required: true, <-- Validation moved to Controller to support optionality for non-English subjects
         },
         specificTopic: {
           type: String,

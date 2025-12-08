@@ -9,7 +9,7 @@
   flex-direction: column;
   width: 100%;
   aspect-ratio: 1 / 1;
-  /* Make card square */
+  /* Enforce square */
 }
 
 .card:hover {
@@ -20,7 +20,7 @@
 /* --- Image Header Section --- */
 .cardHeader {
   height: 55%;
-  /* Percentage based for square layout */
+  /* Relative height */
   position: relative;
   display: flex;
   align-items: center;
@@ -88,8 +88,8 @@
 }
 
 .cardTitle {
-  font-size: 1.1rem;
-  /* Slightly larger for main title */
+  font-size: 1rem;
+  /* Reduced from 1.1rem */
   font-weight: 700;
   /* Bolder */
   color: #2c3e50;
@@ -98,6 +98,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   margin: 0 !important;
   flex-shrink: 0;
@@ -131,9 +132,7 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .cardHeader {
-    /* Height handled by percentage */
-  }
+
 
   .subjectBadge {
     font-size: 0.65rem;
@@ -146,9 +145,7 @@
 }
 
 @media (max-width: 480px) {
-  .card {
-    /* Aspect ratio handles sizing */
-  }
+
 
   .subjectBadge {
     font-size: 0.6rem;

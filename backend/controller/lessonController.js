@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
+const Class = require("../model/Class");
 const Assessment = require("../model/Assessment");
 const StudentAnswer = require("../model/StudentAnswer");
 const { lessonPlanValidationSchema } = require("../utils/validationSchema");
@@ -106,19 +107,31 @@ exports.createLesson = async (req, res, next) => {
       additionalNotes,
     } = req.body;
 
-    if (
-      !classId ||
-      !sow ||
-      !proficiencyLevel ||
-      !activityType ||
-      !hotsFocus ||
-      !specificTopic ||
-      !grade
-    ) {
+    // Fetch Class details to get the subject EARLY for validation
+    const classDetails = await Class.findById(classId);
+    if (!classDetails) {
+      return res.status(404).json({ success: false, message: "Class not found for the provided classId." });
+    }
+    const subject = classDetails.subject ? classDetails.subject.toLowerCase() : "";
+    const isEnglish = subject.includes("english");
+
+
+    // 1. Validate BASIC required fields (always required)
+    if (!classId || !sow || !specificTopic || !grade) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields for lesson plan generation.",
+        message: "Missing basic required fields (Class, Topic, specificTopic, Grade).",
       });
+    }
+
+    // 2. Validate CONDITIONAL fields (Only required for English)
+    if (isEnglish) {
+      if (!proficiencyLevel || !activityType || !hotsFocus) {
+        return res.status(400).json({
+          success: false,
+          message: "For English subjects, 'Activity Format', 'Proficiency Level', and 'HOTS Focus' are required.",
+        });
+      }
     }
 
     const user = await User.findById(req.user.id).select("+geminiApiKey");
@@ -126,6 +139,11 @@ exports.createLesson = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found." });
     }
+
+    // subject variable is already fetched above
+    // const classDetails = await Class.findById(classId); <-- Removed redundant fetch
+    // const subject = classDetails ? classDetails.subject : "the specified subject"; <-- Removed redundant fetch
+
 
     const geminiApiKey = user.getGeminiApiKey();
 
@@ -140,7 +158,7 @@ exports.createLesson = async (req, res, next) => {
 
     // --- The prompt remains the same ---
     const prompt = `
-      You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class.
+      You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class for the subject: ${subject}.
 
       Here is the official SoW data to base the plan on:
       ${JSON.stringify(sow, null, 2)}
@@ -170,25 +188,24 @@ exports.createLesson = async (req, res, next) => {
       The value for "preLesson", "duringLesson", and "postLesson" MUST be a simple array of STRINGS. Each string in the array should be a complete sentence describing one activity.
       **DO NOT use objects with keys like 'activityName' or 'description' inside these arrays.**
 
-      The ONLY acceptable format for the 'activities' object is shown in this example:
+      The ONLY acceptable format for the 'activities' object is shown in this example (Note: This example is for English, but you MUST adapt the content for the subject ${subject}):
       {
         "learningObjective": "By the end of the lesson, students will be able to...",
         "successCriteria": [
-          "I can identify the main idea of the text.",
-          "I can use context clues to understand new vocabulary."
+          "I can...",
+          "I can..."
         ],
         "activities": {
           "preLesson": [
-            "Teacher holds a 'Word Cloud' brainstorming session on the whiteboard to activate prior knowledge about the topic.",
-            "Students work in pairs to predict what the lesson text will be about based on the title and images."
+            "Teacher introduces the topic...",
+            "Students..."
           ],
           "duringLesson": [
-            "Students read the text silently for the first time to get the general idea.",
-            "Teacher leads a guided reading, pausing at key points to ask comprehension questions.",
-            "In small groups, students complete a 'vocabulary hunt' worksheet to find and define key terms from the text."
+            "Activity 1...",
+            "Activity 2..."
           ],
           "postLesson": [
-            "Students complete an 'Exit Ticket' by writing one sentence summarizing the main takeaway from the lesson."
+            "Closure activity..."
           ]
         }
       }
@@ -652,13 +669,17 @@ exports.enhanceLessonSection = async (req, res, next) => {
   }
 };
 
+const Notification = require("../model/Notification");
+
 exports.sendForApproval = async (req, res) => {
   try {
     const lesson = await LessonPlan.findById(req.params.id)
       .populate("classId", "subject")
-      .populate("createdBy", "school");
+      .populate("createdBy", "schoolId name");
 
     if (!lesson) return res.status(404).json({ success: false, message: "Lesson not found." });
+
+    // Check if user is the creator
     if (lesson.createdBy?._id?.toString() !== req.user.id && lesson.createdBy?.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: "Unauthorized." });
     }
@@ -666,7 +687,51 @@ exports.sendForApproval = async (req, res) => {
     lesson.approvalStatus = "pending";
     await lesson.save();
 
-    // Optional: notify the relevant subject head or principal
+    // --- NOTIFICATION LOGIC ---
+    try {
+      const subject = lesson.classId?.subject;
+      let roleToNotify = "school_admin"; // Default fallback
+
+      // Map Subject -> Role
+      if (subject) {
+        const normalizedSubject = subject.toLowerCase();
+        if (normalizedSubject.includes("english")) roleToNotify = "english_head";
+        else if (normalizedSubject.includes("math")) roleToNotify = "math_head";
+        else if (normalizedSubject.includes("science")) roleToNotify = "science_head";
+        else if (normalizedSubject.includes("history")) roleToNotify = "history_head";
+        else if (normalizedSubject.includes("geography")) roleToNotify = "geography_head";
+      }
+
+      // Find users with this role (and optionally same school if SchoolId exists)
+      const filter = { roles: roleToNotify };
+      // If lesson has a school associated, only notify admins of that school (optional refinement)
+      // if (req.user.schoolId) filter.schoolId = req.user.schoolId;
+
+      let recipients = await User.find(filter);
+
+      // Fallback: If no subject head found, notify school_admin or principal
+      if (recipients.length === 0) {
+        recipients = await User.find({ roles: { $in: ["school_admin", "principal"] } });
+      }
+
+      // Create Notifications
+      const notifications = recipients.map(recipient => ({
+        recipient: recipient._id,
+        sender: req.user.id,
+        type: "lesson_approval",
+        lessonId: lesson._id,
+        message: `${req.user.name} has submitted a ${subject || "lesson"} plan for approval.`,
+        isRead: false
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+
+    } catch (notifyErr) {
+      console.error("Failed to crate notifications:", notifyErr);
+      // Don't fail the request if notification fails, just log it
+    }
 
     res.status(200).json({ success: true, message: "Lesson sent for approval." });
   } catch (err) {
@@ -692,13 +757,27 @@ exports.getPendingLessons = async (req, res) => {
 
 exports.approveLesson = async (req, res) => {
   try {
-    const lesson = await LessonPlan.findById(req.params.id);
+    const lesson = await LessonPlan.findById(req.params.id).populate("classId", "subject className");
     if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
 
     lesson.approvalStatus = 'approved';
     lesson.approvedBy = req.user.id;
     lesson.approvalDate = new Date();
     await lesson.save();
+
+    // Create Notification for the creator
+    try {
+      await Notification.create({
+        recipient: lesson.createdBy,
+        sender: req.user.id,
+        type: "lesson_approved",
+        lessonId: lesson._id,
+        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been approved by ${req.user.name}.`,
+        isRead: false
+      });
+    } catch (notifyErr) {
+      console.error("Failed to create approval notification:", notifyErr);
+    }
 
     res.json({ success: true, message: 'Lesson approved successfully!' });
   } catch (error) {
@@ -708,7 +787,7 @@ exports.approveLesson = async (req, res) => {
 
 exports.rejectLesson = async (req, res) => {
   try {
-    const lesson = await LessonPlan.findById(req.params.id);
+    const lesson = await LessonPlan.findById(req.params.id).populate("classId", "subject className");
     if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
 
     lesson.approvalStatus = 'rejected';
@@ -716,6 +795,20 @@ exports.rejectLesson = async (req, res) => {
     lesson.approvalDate = new Date();
     lesson.rejectionReason = req.body.reason || 'No reason specified.';
     await lesson.save();
+
+    // Create Notification for the creator
+    try {
+      await Notification.create({
+        recipient: lesson.createdBy,
+        sender: req.user.id,
+        type: "lesson_rejected",
+        lessonId: lesson._id,
+        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been rejected. Reason: ${lesson.rejectionReason}`,
+        isRead: false
+      });
+    } catch (notifyErr) {
+      console.error("Failed to create rejection notification:", notifyErr);
+    }
 
     res.json({ success: true, message: 'Lesson rejected successfully!' });
   } catch (error) {

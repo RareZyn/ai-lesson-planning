@@ -51,11 +51,11 @@ const CalendarView = () => {
     }
     setCurrentDate(newDate);
   };
-  
+
   // --- Data Processing for Grids ---
   const getLessonsForDay = (day) => {
-    return lessons.filter(lesson => 
-        new Date(lesson.lessonDate).toDateString() === day.toDateString()
+    return lessons.filter(lesson =>
+      new Date(lesson.lessonDate).toDateString() === day.toDateString()
     );
   };
 
@@ -63,7 +63,6 @@ const CalendarView = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysArray = [];
     let dayCounter = 1 - firstDay;
 
@@ -122,10 +121,10 @@ const CalendarView = () => {
           </button>
         </div>
       </div>
-      
+
       {isLoading && <p>Loading lessons...</p>}
       {error && <p className="error-message">Error: {error}</p>}
-      
+
       {!isLoading && !error && selectedView === 'week' && (
         <div className="week-grid">
           {getWeekGridDays().map((d, index) => (
@@ -159,8 +158,8 @@ const CalendarView = () => {
           </div>
           <div className="month-grid">
             {getMonthGridDays().map((d, i) => (
-              <div 
-                className={`month-cell ${d.label ? 'active-day' : ''}`} 
+              <div
+                className={`month-cell ${d.label ? 'active-day' : ''}`}
                 key={i}
                 onClick={d.label ? () => handleCreateLesson(d.date) : undefined}
               >

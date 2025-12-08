@@ -1,11 +1,10 @@
 // src/components/general/Profile.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
   Avatar,
-  Badge,
   Button,
   Dropdown,
   Form,
@@ -14,7 +13,6 @@ import {
   message,
 } from "antd";
 import {
-  BellOutlined,
   LogoutOutlined,
   SettingOutlined,
   UserOutlined,
@@ -31,29 +29,13 @@ const Profile = () => {
   const { currentUser: firebaseUser } = useAuth();
 
   // Use whichever user data is available
+  // Use whichever user data is available
   const user = contextUser || firebaseUser;
 
-  const [notifications, setNotifications] = useState([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    // Mock notifications data
-    setNotifications([
-      { id: 1, text: "New lesson available", read: false, time: "2 hours ago" },
-      {
-        id: 2,
-        text: "Assignment due tomorrow",
-        read: false,
-        time: "1 day ago",
-      },
-    ]);
-  }, []);
-
-  // Calculate unread notifications count
-  var unreadCount = notifications.filter(n => !n.read).length;
 
   const handleSettingsOpen = async () => {
     // Fetch current API key from backend
@@ -167,8 +149,7 @@ const Profile = () => {
     }
   };
 
-  // const unreadCount = notifications.filter((n) => !n.read).length;
-   unreadCount = 2;
+
 
   // Don't render if no user or if logging out
   if (!user || isLoggingOut) return null;
@@ -177,35 +158,6 @@ const Profile = () => {
   const displayName = user.name || user.displayName || user.email || "User";
   const photoURL = user.avatar || user.photoURL;
   const email = user.email;
-
-  // Notification Menu Items
-  const notificationItems = [
-    {
-      key: "header",
-      label: <span style={{ fontWeight: "bold" }}>Notifications</span>,
-      disabled: true,
-    },
-    { type: "divider" },
-    ...(notifications.length > 0
-      ? notifications.map((notification) => ({
-        key: notification.id,
-        label: (
-          <div className={`notification-item ${notification.read ? "" : "unread"}`}>
-            <div className="notification-content">
-              <div className="notification-text">{notification.text}</div>
-              <div className="notification-time">{notification.time}</div>
-            </div>
-          </div>
-        ),
-      }))
-      : [
-        {
-          key: "empty",
-          label: <span className="empty-notifications">No new notifications</span>,
-          disabled: true,
-        },
-      ]),
-  ];
 
   // Profile Menu Items
   const profileItems = [
@@ -242,22 +194,7 @@ const Profile = () => {
 
   return (
     <div className="profile-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      {/* Notifications Dropdown */}
-      <Dropdown
-        menu={{ items: notificationItems }}
-        trigger={["click"]}
-        placement="bottomRight"
-        overlayStyle={{ width: 320 }}
-      >
-        <Badge count={unreadCount} size="small">
-          <Button
-            type="text"
-            icon={<BellOutlined style={{ fontSize: '20px' }} />}
-            className="notification-icon"
-            disabled={isLoggingOut}
-          />
-        </Badge>
-      </Dropdown>
+
 
       {/* Profile Dropdown */}
       <Dropdown

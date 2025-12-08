@@ -182,21 +182,17 @@ export const getSyllabusById = async (syllabusId) => {
 };
 
 // Upload new syllabus
-export const uploadSyllabus = async (syllabusData) => {
+// Upload new syllabus (JSON)
+export const uploadSyllabus = async ({ grade, subject, syllabusData }) => {
     try {
         const token = getAuthToken();
-        const formData = new FormData();
-        formData.append('grade', syllabusData.grade);
-        formData.append('subject', syllabusData.subject);
-        formData.append('file', syllabusData.file);
-
         const response = await fetch('/api/admin/syllabuses', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
-                // Don't set Content-Type for FormData - browser will set it with boundary
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
-            body: formData,
+            body: JSON.stringify({ grade, subject, syllabusData }),
         });
 
         if (!response.ok) {
@@ -240,7 +236,7 @@ export const updateSyllabus = async (syllabusId, syllabusData) => {
     try {
         const token = getAuthToken();
         const formData = new FormData();
-        
+
         if (syllabusData.grade) {
             formData.append('grade', syllabusData.grade);
         }
@@ -268,6 +264,45 @@ export const updateSyllabus = async (syllabusId, syllabusData) => {
         return await response.json();
     } catch (error) {
         console.error('Error in updateSyllabus:', error);
+        throw error;
+    }
+};
+
+// Get Teacher Analytics
+export const getTeacherAnalytics = async (teacherId) => {
+    try {
+        const response = await axios.get(
+            `/api/admin/teachers/${teacherId}/analytics`,
+            getAuthConfig()
+        );
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching teacher analytics:", error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || "Could not fetch teacher analytics.");
+    }
+};
+
+// Extract Syllabus Structure using AI
+// Extract Syllabus Structure using AI
+export const extractSyllabusStructure = async (file) => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await axios.post(
+            '/api/admin/syllabuses/extract-structure',
+            formData,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+                    // "Content-Type": "multipart/form-data" <-- REMOVED: Let browser set boundary
+                }
+            }
+        );
+
+        return { schema: response.data.schema, data: response.data.data };
+    } catch (error) {
+        console.error('Error in extractSyllabusStructure:', error);
         throw error;
     }
 };

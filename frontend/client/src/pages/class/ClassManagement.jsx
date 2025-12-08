@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getAllClasses } from '../../services/classService';
 import CreateClassModal from './CreateClassModal';
 import ClassCard from './ClassCard'; // The reusable card for displaying a class
-import { Add as AddIcon, Search as SearchIcon, Groups as GroupsIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Groups as GroupsIcon } from '@mui/icons-material';
 import { FaPlus } from 'react-icons/fa';
 import './ClassManagement.css';
 

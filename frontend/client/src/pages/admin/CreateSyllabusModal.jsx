@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import './SyllabusModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faUpload, faTimes, faPlusCircle, faMinusCircle, faCaretRight, faCaretDown, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faUpload, faTimes, faPlusCircle, faMinusCircle, faCaretRight, faCaretDown, faInfoCircle, faMagic } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx'; // Import the xlsx library
-import { uploadSyllabus } from '../../services/adminService';
+import { uploadSyllabus, extractSyllabusStructure } from '../../services/adminService';
 const SchemaFieldInput = ({ field, onFieldNameChange, onFieldTypeChange, onRemoveField, onAddSubField, onRemoveSubField, onSubFieldNameChange, onSubFieldTypeChange, isSubField = false, canRemoveField }) => {
     const [isExpanded, setIsExpanded] = useState(true); // For object fields
 
@@ -76,7 +76,46 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
         { id: 1, name: 'Title', type: 'text', subFields: [] }
     ]);
 
+    // AI Extraction State
+    const [aiFile, setAiFile] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
     // --- Helper Functions for Schema Management ---
+
+    const handleAIFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) setAiFile(file);
+    };
+
+    const handleAnalyzeStructure = async () => {
+        if (!aiFile) {
+            setUploadError("Please select a file to analyze.");
+            return;
+        }
+
+        try {
+            setIsAnalyzing(true);
+            setUploadError('');
+
+            const result = await extractSyllabusStructure(aiFile);
+
+            // Set the schema
+            if (result.schema && result.schema.length > 0) {
+                setSchemaFields(result.schema);
+            }
+
+            // Set the data if available (optional, but helpful preview)
+            if (result.data) {
+                setParsedData(result.data);
+            }
+
+        } catch (error) {
+            console.error("Analysis failed:", error);
+            setUploadError("Failed to analyze syllabus structure. " + error.message);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     const updateSchemaFields = (id, newValues, fieldsArray = schemaFields) => {
         return fieldsArray.map(field => {
@@ -171,19 +210,19 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
 
     // --- Excel Template Generation ---
 
-    const extractHeaders = (fields) => {
+    // --- Excel Template Generation ---
+
+    const extractHeaders = (fields, prefix = "") => {
         let headers = [];
 
         for (const field of fields) {
-            if (field.type === "object" && field.subFields?.length > 0) {
-                field.subFields.forEach((sub) => {
-                    headers.push(`${field.name}.${sub.name}`);
-                });
+            const currentName = prefix ? `${prefix}.${field.name}` : field.name;
+            if (field.type === "object" && field.subFields && field.subFields.length > 0) {
+                headers.push(...extractHeaders(field.subFields, currentName));
             } else {
-                headers.push(field.name);
+                headers.push(currentName);
             }
         }
-
         return headers;
     };
 
@@ -194,16 +233,12 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
             return;
         }
 
-        // Extract only the headers
-        const headers = extractHeaders(schemaFields); // flatten dot notation
-
+        const headers = extractHeaders(schemaFields);
         const worksheet = XLSX.utils.aoa_to_sheet([headers]);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-
         XLSX.writeFile(workbook, "syllabus_template.xlsx");
     };
-
 
 
     // --- Excel File Parsing ---
@@ -211,41 +246,37 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
     const parseExcelDataToStructuredObject = (excelData, schema) => {
         const structuredData = {};
 
-        schema.forEach(field => {
-            const excelValue = excelData[field.name]; // Try to get the exact column name
+        // Helper to recursively parse a single field
+        const parseField = (field, currentPrefix, dataMap) => {
+            const fullFieldName = currentPrefix ? `${currentPrefix}.${field.name}` : field.name;
 
             if (field.type === 'object' && field.subFields && field.subFields.length > 0) {
-                const nestedData = {};
-                field.subFields.forEach(subField => {
-                    const fullSubFieldName = `${field.name}.${subField.name}`; // e.g., "LessonActivities.PreLesson"
-                    const subExcelValue = excelData[fullSubFieldName]; // Get value from combined column
-
-                    if (subExcelValue !== undefined && subExcelValue !== null && subExcelValue !== '') {
-                        if (subField.type === 'list') {
-                            nestedData[subField.name] = String(subExcelValue).split('\n').map(item => item.trim()).filter(Boolean);
-                        } else if (subField.type === 'text') {
-                            nestedData[subField.name] = String(subExcelValue);
-                        } else {
-                            nestedData[subField.name] = subExcelValue; // Fallback for other types
-                        }
-                    } else {
-                        nestedData[subField.name] = null; // Or empty array/string based on type
-                    }
+                const nestedObj = {};
+                field.subFields.forEach(sub => {
+                    nestedObj[sub.name] = parseField(sub, fullFieldName, dataMap);
                 });
-                structuredData[field.name] = nestedData;
-
-            } else if (field.type === 'list') {
-                if (excelValue !== undefined && excelValue !== null && excelValue !== '') {
-                    structuredData[field.name] = String(excelValue).split('\n').map(item => item.trim()).filter(Boolean);
-                } else {
-                    structuredData[field.name] = [];
-                }
-            } else if (field.type === 'text') {
-                structuredData[field.name] = excelValue !== undefined && excelValue !== null ? String(excelValue) : '';
+                return nestedObj;
             } else {
-                structuredData[field.name] = excelValue; // Direct assignment for other types
+                // Leaf node - extract value using full dot notation name
+                let val = dataMap[fullFieldName];
+
+                if (val !== undefined && val !== null && val !== '') {
+                    if (field.type === 'list') {
+                        return String(val).split('\n').map(item => item.trim()).filter(Boolean);
+                    } else if (field.type === 'text') {
+                        return String(val);
+                    } else {
+                        return val;
+                    }
+                }
+                return null;
             }
+        };
+
+        schema.forEach(field => {
+            structuredData[field.name] = parseField(field, "", excelData);
         });
+
         return structuredData;
     };
 
@@ -269,32 +300,29 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
 
-                // Options: raw=false to get formatted values, defval='' for empty cells
                 const jsonFromExcel = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
 
                 if (!jsonFromExcel || jsonFromExcel.length < 1) {
-                    setUploadError('Uploaded Excel file is empty or too short. Expected at least headers.');
+                    setUploadError('Uploaded Excel file is empty or too short.');
                     setParsedData(null);
                     return;
                 }
 
-                // Assuming the first row is headers, and data starts from the 2nd row
                 const headers = jsonFromExcel[0];
-                const actualDataRows = jsonFromExcel.slice(1); // Skip header row
+                const actualDataRows = jsonFromExcel.slice(1);
 
                 if (actualDataRows.length === 0) {
-                    setUploadError('No data rows found in the uploaded Excel file. Please fill out the template.');
+                    setUploadError('No data rows found.');
                     setParsedData(null);
                     return;
                 }
 
-                // Check if schema is defined (has fields with names)
                 const hasDefinedSchema = schemaFields.some(f => f.name.trim() !== '');
 
                 let allParsedRows;
                 if (hasDefinedSchema) {
-                    // Process all data rows with schema
                     allParsedRows = actualDataRows.map(row => {
+                        // Create a flat map of Header -> Value for this row
                         const rawExcelData = {};
                         headers.forEach((header, index) => {
                             rawExcelData[header] = row[index];
@@ -302,17 +330,16 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                         return parseExcelDataToStructuredObject(rawExcelData, schemaFields);
                     });
 
-                    // Basic validation: Check if required fields from schema have data for each row
+                    // Validation
                     for (const rowData of allParsedRows) {
                         const validationResult = validateUploadedDataAgainstSchema(rowData, schemaFields);
                         if (!validationResult.isValid) {
-                            setUploadError(`Invalid syllabus data in one of the rows: ${validationResult.message}`);
+                            setUploadError(`Invalid data: ${validationResult.message}`);
                             setParsedData(null);
                             return;
                         }
                     }
                 } else {
-                    // No schema defined - parse Excel as-is with its headers
                     allParsedRows = actualDataRows.map(row => {
                         const rowData = {};
                         headers.forEach((header, index) => {
@@ -322,10 +349,10 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                     });
                 }
 
-                setParsedData(allParsedRows); // Store all parsed rows
+                setParsedData(allParsedRows);
 
             } catch (error) {
-                setUploadError('Failed to parse Excel file. Please ensure it is a valid XLSX format. ' + error.message);
+                setUploadError('Failed to parse Excel file. ' + error.message);
                 setParsedData(null);
             }
         };
@@ -346,17 +373,17 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
             setUploadError('Please define names for all schema fields and sub-fields.');
             return;
         }
-        if (!file) { // Changed from parsedData to file, as we send the raw file to backend
-            setUploadError('Please upload a valid syllabus file matching your defined schema.');
+        if (!parsedData) {
+            setUploadError('Please upload and parse a valid syllabus file first.');
             return;
         }
 
         try {
-            // Call the API to upload the syllabus
+            // Call the API to upload the syllabus (send parsed JSON)
             const response = await uploadSyllabus({
                 grade: selectedGrade,
                 subject: selectedSubject,
-                file: file,
+                syllabusData: parsedData,
             });
             console.log('Syllabus uploaded successfully:', response);
             onSave(); // Close modal and potentially refresh data
@@ -368,39 +395,33 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
     };
 
     // Re-use validation for data after parsing
+    // Re-use validation for data after parsing
     const validateUploadedDataAgainstSchema = (data, schema) => {
-        // Flatten schema for easier key comparison, handling nested objects
-        const flattenSchemaKeys = (fields, prefix = '') => {
-            let keys = [];
-            fields.forEach(field => {
-                const currentKey = prefix ? `${prefix}.${field.name}` : field.name;
-                if (field.type === 'object' && field.subFields && field.subFields.length > 0) {
-                    keys = keys.concat(flattenSchemaKeys(field.subFields, currentKey));
-                } else {
-                    keys.push({ name: currentKey, type: field.type });
-                }
-            });
-            return keys;
-        };
-
-        const flatSchema = flattenSchemaKeys(schemaFields);
-        const uploadedKeys = Object.keys(data);
-
-        for (const schemaField of flatSchema) {
-            const fieldName = schemaField.name;
-
-            // Check if the flattened schema field name exists in the uploaded data keys
-            if (!uploadedKeys.includes(fieldName)) {
-                // If it's a required field (e.g., 'Title'), return an error
-                if (fieldName.endsWith('.Title') || fieldName === 'Title') { // Assuming 'Title' or any nested 'Title' is required
-                    return { isValid: false, message: `Required field '${fieldName}' is missing in the uploaded file.` };
-                }
+        for (const field of schema) {
+            // Check if field exists in data
+            if (!data || !Object.prototype.hasOwnProperty.call(data, field.name)) {
+                // Determine if this is a "required" field. 
+                // For now, let's assume all schema-defined fields are expected to be present, 
+                // effectively treating them as required if they are in the schema.
+                // You can add distinct "required" logic if needed.
+                return { isValid: false, message: `Missing field: '${field.name}'` };
             }
 
-            // You might add more specific type validation here if needed
-            // e.g., if (fieldType === 'list' && !Array.isArray(data[fieldName])) { ... }
-        }
+            const value = data[field.name];
 
+            if (field.type === 'object' && field.subFields && field.subFields.length > 0) {
+                // If value is null/undefined but field is object, it's missing data
+                if (value === null || value === undefined) {
+                    return { isValid: false, message: `Missing data for object: '${field.name}'` };
+                }
+                // Recurse
+                const subValidation = validateUploadedDataAgainstSchema(value, field.subFields);
+                if (!subValidation.isValid) {
+                    return { isValid: false, message: `In '${field.name}': ${subValidation.message}` };
+                }
+            }
+            // Optional: Add type checks (e.g. array for 'list')
+        }
         return { isValid: true, message: '' };
     };
 
@@ -436,6 +457,32 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                         />
                     </div>
 
+                    {/* --- AI Extraction Section --- */}
+                    <div className="aiSection">
+                        <div className="aiHeader">
+                            <FontAwesomeIcon icon={faMagic} />
+                            <h4>AI Structure Extraction (Optional)</h4>
+                        </div>
+                        <p className="aiDescription">
+                            Upload a sample syllabus file (PDF or Image) and let AI suggest the structure.
+                        </p>
+                        <div className="aiControls">
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={handleAIFileChange}
+                            />
+                            <button
+                                type="button"
+                                className="aiButton"
+                                onClick={handleAnalyzeStructure}
+                                disabled={!aiFile || isAnalyzing}
+                            >
+                                {isAnalyzing ? 'Analyzing...' : 'Auto-Generate Structure'}
+                            </button>
+                        </div>
+                    </div>
+
                     <h4>Define Syllabus Structure (Schema): <FontAwesomeIcon icon={faInfoCircle} title="Define the column headers for your syllabus. 'Object' fields create nested columns (e.g., 'Activities.Pre-Lesson'). 'List' fields expect newlines for each item in a single cell." /></h4>
                     <p className="hint-text">Add the fields for this syllabus. For nested structures (e.g., Lesson Activities), use 'Object' type and define its sub-fields.</p>
                     <div className="schemaDefinition">
@@ -459,7 +506,9 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                         </button>
                     </div>
 
-                    <p className="hint-text">Once schema is defined, download the Excel template, fill it, and upload.</p>
+                    <p className="hint-text">
+                        Download the template. For <strong>List</strong> fields (arrays), separate multiple items in a single cell using <strong>Alt + Enter</strong> (newlines).
+                    </p>
                     <button
                         type="button"
                         className="modalActionButton downloadButton"

@@ -7,7 +7,9 @@ const {
   getSyllabuses,
   getSyllabusById,
   deleteSyllabus,
-  updateSyllabus
+  updateSyllabus,
+  getTeacherAnalytics,
+  extractSyllabusStructure
 } = require("../controller/adminController");
 const { protect, authorize } = require("../middleware/auth");
 const multer = require("multer");
@@ -24,14 +26,9 @@ router
     "principal",
     "math_head",
     "english_head",
-    "science_head"
+    "science_head",
+    "teacher"
   ));
-
-// Teacher token generation
-router.post(
-  "/generate-teacher-token",
-  generateTeacherRegistrationToken
-);
 
 // Teachers management
 router.get(
@@ -39,10 +36,25 @@ router.get(
   getTeachersBySchool
 );
 
+// Teacher token generation
+router.post(
+  "/generate-teacher-token",
+  generateTeacherRegistrationToken
+);
+
+router.get("/teachers/:id/analytics", getTeacherAnalytics);
+
+// AI Syllabus Extraction Route
+router.post(
+  "/syllabuses/extract-structure",
+  upload.single('file'),
+  extractSyllabusStructure
+);
+
 // Syllabus management routes
 router.route("/syllabuses")
-  .get(getSyllabuses)                          // GET all syllabuses
-  .post(upload.single('file'), uploadSyllabus); // POST new syllabus
+  .get(getSyllabuses)                        // GET all syllabuses
+  .post(uploadSyllabus);                       // POST new syllabus (JSON)
 
 router.route("/syllabuses/:id")
   .get(getSyllabusById)                         // GET single syllabus

@@ -288,7 +288,7 @@
 /* --- Grid View --- */
 .lessonsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 2rem;
 }
 
@@ -305,7 +305,9 @@
   background-color: #f9fafb;
   width: 100%;
   aspect-ratio: 1 / 1;
+  /* Enforce square */
   min-height: 0;
+  /* Remove fixed min-height */
   cursor: pointer;
   color: #6b7280;
   font-weight: 600;
@@ -340,6 +342,7 @@
 .createIconWrapper svg {
   font-size: 2.25rem;
   color: #6b7280;
+  transition: color 0.2s ease;
 }
 
 .createCard:hover .createIconWrapper svg {
@@ -350,6 +353,7 @@
   margin: 0;
   font-weight: 600;
   font-size: 1.1rem;
+  color: inherit;
 }
 
 .createCardText {
@@ -382,6 +386,11 @@
   .viewToggle {
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .lessonsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
   }
 }
 

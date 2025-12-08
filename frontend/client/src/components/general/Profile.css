@@ -5,10 +5,6 @@
     margin-left: auto;
 }
 
-.notification-icon {
-    color: #5f6368;
-}
-
 .profile-avatar {
     cursor: pointer;
     padding: 4px;
@@ -26,46 +22,6 @@
     color: #202124;
     background-color: transparent;
     cursor: default;
-}
-
-.notification-item {
-  padding: 12px 16px;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  border-left: 3px solid transparent;
-  align-items: flex-start !important; 
-  text-align: left !important;        
-}
-
-
-.notification-item.unread {
-    background-color: #f6f9fe;
-    border-left: 3px solid #1a73e8;
-}
-
-.notification-content {
-    display: flex;
-    flex-direction: column;
-}
-
-.notification-text {
-    font-size: 14px;
-    color: #202124;
-    margin-bottom: 4px;
-    text-align: left;
-}
-
-.notification-time {
-    font-size: 12px;
-    color: #5f6368;
-}
-
-.empty-notifications {
-    color: #5f6368;
-    font-style: italic;
-    justify-content: center;
-    padding: 24px;
 }
 
 /* Profile Menu Styles */

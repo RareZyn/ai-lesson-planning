@@ -47,12 +47,7 @@ const DisplaySyllabus = () => {
     // Refs for scrolling
     const itemRefs = useRef({});
 
-    useEffect(() => {
-        fetchSyllabusDetails();
-        setCurrentPage(1);
-    }, [id]);
-
-    const fetchSyllabusDetails = async () => {
+    const fetchSyllabusDetails = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await getSyllabusById(id);
@@ -64,7 +59,12 @@ const DisplaySyllabus = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchSyllabusDetails();
+        setCurrentPage(1);
+    }, [id, fetchSyllabusDetails]);
 
     const handleDelete = async () => {
         AntModal.confirm({

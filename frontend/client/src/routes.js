@@ -28,6 +28,7 @@ const Community = React.lazy(() => import("./pages/community/Community"));
 const DisplayLessonPage = React.lazy(() => import("./pages/planner/displaylesson/DisplayLessonPage"));
 const ClassLessonsPage = React.lazy(() => import("./pages/class/ClassLessonsPage"));
 const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
+const TeacherAnalyticsPage = React.lazy(() => import("./pages/admin/TeacherAnalyticsPage"));
 
 // NEW IMPORTS - Answer Checker Module
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
@@ -78,6 +79,7 @@ const router = createBrowserRouter(
         //admin
         { path: "admin", element: <AdminLayout /> },
         { path: "admin/syllabuses/:id", element: <DisplaySyllabus /> },
+        { path: "admin/teacher-analytics/:id", element: <TeacherAnalyticsPage /> },
       ],
     },
     { path: "/", element: <LoginPage /> },

@@ -53,7 +53,8 @@ const manualEditRoutes = require("./route/manualEditRoutes");
 const reviewRoutes = require("./route/reviewRoutes");
 const analyticsRoutes = require("./route/analyticsRoutes");
 const adminRoutes = require("./route/adminRoutes");
-const syncRoutes = require("./route/syncRoutes"); 
+const syncRoutes = require("./route/syncRoutes");
+const notificationRoutes = require("./route/notificationRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -73,6 +74,7 @@ app.use("/api/review", reviewRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/sync", syncRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 
@@ -112,9 +114,8 @@ app.use((err, req, res, next) => {
     const field = Object.keys(err.keyValue || {})[0];
     return res.status(400).json({
       success: false,
-      message: `${
-        field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
-      } already exists`,
+      message: `${field ? field.charAt(0).toUpperCase() + field.slice(1) : "Field"
+        } already exists`,
     });
   }
 

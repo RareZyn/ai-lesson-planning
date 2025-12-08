@@ -26,7 +26,7 @@ const CreateLessonCard = ({ showModal }) => (
     }}
   >
     <div className={styles.createIconWrapper}>
-      <FaPlus style={{ fontSize: '24px' }} />
+      <FaPlus />
     </div>
     <h3 className={styles.createCardTitle}>Create New Lesson</h3>
     <p className={styles.createCardText}>Click to schedule a date</p>
@@ -133,16 +133,7 @@ const PlannerPage = () => {
     }
   };
 
-  const handleSendForApproval = async (lessonId) => {
-    if (!window.confirm("Send this lesson plan for approval?")) return;
-    try {
-      await sendLessonForApproval(lessonId);
-      alert("Lesson plan sent for approval successfully!");
-      fetchLessons();
-    } catch (error) {
-      alert(error.message);
-    }
-  };
+
 
   const renderListView = () => {
     if (filteredLessons.length === 0 && (searchTerm || filterSubject)) {
