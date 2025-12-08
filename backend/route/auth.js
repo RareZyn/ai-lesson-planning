@@ -69,8 +69,9 @@ const updateProfileValidation = [
 
 const changePasswordValidation = [
   body("currentPassword")
+    .optional()
     .notEmpty()
-    .withMessage("Current password is required"),
+    .withMessage("Current password cannot be empty if provided"),
   body("newPassword")
     .isLength({ min: 6 })
     .withMessage("New password must be at least 6 characters long")

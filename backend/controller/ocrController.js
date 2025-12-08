@@ -309,8 +309,13 @@ const processSubmissionOCR = async (req, res) => {
         const mimeType = matches[1];
         const base64Data = matches[2];
 
-        // OCR prompt
-        const prompt = `Extract all handwritten text from this student answer for Question ${answer.questionNumber}. Return JSON with extractedText, confidence, and metadata.`;
+        // Check if it's a PDF or image and adjust prompt accordingly
+        const isPdf = mimeType === 'application/pdf';
+        const prompt = isPdf
+          ? `Extract all text from this PDF document for Question ${answer.questionNumber}. This is a student's answer. Return ONLY a JSON object with these fields: extractedText (the full text), confidence (0-1), metadata (object with language, textType, legibility fields). NO markdown, NO explanation, ONLY the JSON.`
+          : `Extract all handwritten text from this student answer image for Question ${answer.questionNumber}. Return ONLY a JSON object with these fields: extractedText (the full text), confidence (0-1), metadata (object with language, textType, legibility fields). NO markdown, NO explanation, ONLY the JSON.`;
+
+        console.log(`📄 Processing ${isPdf ? 'PDF' : 'image'} with mime type: ${mimeType}`);
 
         // Call Gemini
         const result = await model.generateContent([
@@ -326,6 +331,8 @@ const processSubmissionOCR = async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
+        console.log(`🔍 Raw OCR response (first 500 chars): ${text.substring(0, 500)}`);
+
         let ocrResult;
         try {
           const cleanedText = text
@@ -333,16 +340,29 @@ const processSubmissionOCR = async (req, res) => {
             .replace(/```/g, "")
             .trim();
           ocrResult = JSON.parse(cleanedText);
+          console.log(`✅ Successfully parsed OCR JSON`);
         } catch (parseError) {
+          console.warn(`⚠️ Failed to parse OCR JSON, using raw text. Error:`, parseError.message);
           ocrResult = {
             extractedText: text.trim(),
             confidence: 0.5,
             metadata: {
               language: "unknown",
-              textType: "handwritten",
+              textType: isPdf ? "pdf" : "handwritten",
               legibility: "medium",
-              notes: "Response parsing failed",
+              notes: "Response parsing failed - using raw text",
             },
+          };
+        }
+
+        // Validate extracted text
+        if (!ocrResult.extractedText || ocrResult.extractedText.trim().length === 0) {
+          console.warn(`⚠️ No text extracted for question ${answer.questionNumber}`);
+          ocrResult.extractedText = "";
+          ocrResult.confidence = 0;
+          ocrResult.metadata = {
+            ...ocrResult.metadata,
+            notes: "No text extracted from file",
           };
         }
 
@@ -386,7 +406,13 @@ const processSubmissionOCR = async (req, res) => {
           processedAt: new Date(),
         };
 
-        submission.addError("ocr", answer.questionNumber, error.message);
+        // Add error to array (don't call addError method which saves the doc)
+        submission.processingErrors.push({
+          stage: "ocr",
+          questionNumber: answer.questionNumber,
+          message: error.message,
+          timestamp: new Date(),
+        });
 
         results.push({
           questionNumber: answer.questionNumber,
@@ -441,7 +467,7 @@ const processSubmissionOCR = async (req, res) => {
         await StudentAnswer.findByIdAndUpdate(req.params.submissionId, {
           processingStatus: "error",
           $push: {
-            errors: {
+            processingErrors: {
               stage: "ocr",
               message: error.message,
               timestamp: new Date(),

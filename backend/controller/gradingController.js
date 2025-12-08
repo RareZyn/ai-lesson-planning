@@ -66,11 +66,14 @@ exports.scoreSubmission = async (req, res) => {
       });
     }
 
-    // Check if answer key exists
-    if (!assessment.generatedContent?.answerKeyContent?.answers) {
+    // Check if answer key exists (for MCQ/assessments) OR rubric (for essays)
+    const hasAnswerKey = !!assessment.generatedContent?.answerKeyContent?.answers;
+    const hasRubric = !!assessment.generatedContent?.rubricContent;
+
+    if (!hasAnswerKey && !hasRubric) {
       return res.status(400).json({
         success: false,
-        message: "Assessment does not have an answer key",
+        message: "Assessment does not have an answer key or rubric for grading",
       });
     }
 

@@ -162,6 +162,156 @@ Be fair, objective, and educational in your feedback.`;
 };
 
 /**
+ * Grade an essay using a rubric
+ */
+const gradeEssay = async ({ essayText, rubric, geminiApiKey }) => {
+  try {
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    // Build rubric description for the prompt
+    let rubricDescription = `Title: ${rubric.title || "Essay Grading"}\n`;
+    rubricDescription += `Description: ${rubric.description || ""}\n\n`;
+    rubricDescription += `Grading Criteria:\n`;
+
+    // Add each criterion
+    if (rubric.criteria && Array.isArray(rubric.criteria)) {
+      rubric.criteria.forEach((criterion, index) => {
+        rubricDescription += `${index + 1}. ${criterion.name || criterion.criterion}: ${criterion.description || ""} (${criterion.points || criterion.maxPoints || 0} points)\n`;
+      });
+    }
+
+    rubricDescription += `\nTotal Points: ${rubric.totalPoints || 0}`;
+
+    const prompt = `You are an expert English teacher grading a student essay according to Malaysian KSSM (Kurikulum Standard Sekolah Menengah) standards. You must be RIGOROUS and STRICT in your evaluation.
+
+**CRITICAL GRADING GUIDELINES (KSSM Standards):**
+You MUST deduct marks for ANY of the following issues:
+1. Grammar & Mechanics (BE STRICT):
+   - Deduct for subject-verb agreement errors
+   - Deduct for tense inconsistencies
+   - Deduct for spelling mistakes
+   - Deduct for punctuation errors
+   - Deduct for sentence fragments or run-ons
+   - Deduct for improper capitalization
+
+2. Vocabulary & Language Use (BE CRITICAL):
+   - Deduct for repetitive vocabulary
+   - Deduct for basic/simplistic word choices
+   - Deduct for inappropriate word usage
+   - Deduct for lack of varied sentence structures
+   - Award points only for sophisticated vocabulary appropriate to KSSM level
+
+3. Content & Ideas (BE THOROUGH):
+   - Deduct if ideas are underdeveloped or superficial
+   - Deduct if examples lack specific details
+   - Deduct if content is off-topic or irrelevant
+   - Deduct if required elements from rubric are missing
+   - Award full points only for well-developed, detailed content
+
+4. Organization & Coherence (BE PRECISE):
+   - Deduct for poor paragraph structure
+   - Deduct for lack of clear topic sentences
+   - Deduct for missing transitions between ideas
+   - Deduct for illogical flow of ideas
+   - Deduct for weak or missing introduction/conclusion
+
+5. KSSM-Specific Requirements:
+   - Essays must demonstrate critical thinking (HOTS - Higher Order Thinking Skills)
+   - Must show depth of understanding, not just surface-level description
+   - Must use appropriate register and tone for the essay type
+   - Must meet word count requirements (if specified)
+
+**SCORING RIGOR:**
+- 90-100%: EXCEPTIONAL work with minimal errors, sophisticated language, excellent organization
+- 80-89%: VERY GOOD work with few errors, good vocabulary, clear structure
+- 70-79%: GOOD work with some errors, adequate vocabulary, satisfactory structure
+- 60-69%: SATISFACTORY work with multiple errors, basic vocabulary, acceptable structure
+- 50-59%: WEAK work with many errors, limited vocabulary, poor structure
+- Below 50%: POOR work with serious deficiencies
+
+**Rubric:**
+${rubricDescription}
+
+**Student Essay:**
+${essayText}
+
+**MANDATORY EVALUATION PROCESS:**
+1. Count and identify ALL grammar and spelling errors
+2. Identify ALL instances of repetitive or basic vocabulary
+3. Check for proper paragraph structure (topic sentence, supporting details, conclusion)
+4. Verify all rubric criteria are addressed with sufficient depth
+5. Assess whether the essay demonstrates KSSM-appropriate critical thinking
+6. Calculate score based on actual performance against rubric criteria
+
+**DO NOT:**
+- Award high scores just because the essay is "readable"
+- Ignore grammar, spelling, or punctuation errors
+- Be lenient with basic or repetitive language
+- Give full marks unless the essay is truly exceptional
+- Assume meeting minimum requirements deserves high scores
+
+**RETURN YOUR GRADING IN THIS EXACT JSON FORMAT:**
+{
+  "score": <total points earned - BE STRICT AND REALISTIC>,
+  "maxScore": ${rubric.totalPoints || 100},
+  "criteriaScores": [
+    {
+      "criterion": "criterion name",
+      "pointsEarned": <points - deduct for every flaw>,
+      "maxPoints": <max points for this criterion>,
+      "feedback": "specific feedback explaining deductions and what was done well"
+    }
+  ],
+  "feedback": "Overall feedback that MUST mention specific errors found, strengths demonstrated, and concrete areas for improvement",
+  "reasoning": "Detailed explanation listing specific errors (e.g., 'Found 3 subject-verb agreement errors', 'Vocabulary repetition of basic words like X', 'Paragraph 2 lacks clear topic sentence', etc.)",
+  "semanticSimilarity": <number between 0 and 1 - be realistic, 0.7+ only for genuinely strong essays>,
+  "keyPointsMatched": ["specific strength 1 with example", "specific strength 2 with example"],
+  "keyPointsMissed": ["specific error/weakness 1 with example", "specific error/weakness 2 with example", "area for improvement with specific suggestion"]
+}
+
+**REMEMBER:** You are preparing Malaysian students for KSSM examinations. Be professionally rigorous. A score of 100% should be RARE and reserved for truly outstanding work. Most good essays should score in the 70-85% range. Only award higher scores when the work is genuinely exceptional according to KSSM standards.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse AI response
+    let gradingResult;
+    try {
+      const cleanedText = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      gradingResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse essay grading response:", parseError);
+      throw new Error("Invalid grading response format");
+    }
+
+    // Validate and format result
+    const maxScore = rubric.totalPoints || 100;
+    return {
+      score: Math.min(Math.max(0, gradingResult.score || 0), maxScore),
+      maxScore: maxScore,
+      percentage: ((gradingResult.score || 0) / maxScore) * 100,
+      feedback: gradingResult.feedback || "No feedback provided",
+      reasoning: gradingResult.reasoning || "",
+      criteriaScores: gradingResult.criteriaScores || [],
+      comparisonMetadata: {
+        semanticSimilarity: gradingResult.semanticSimilarity || 0,
+        keyPointsMatched: gradingResult.keyPointsMatched || [],
+        keyPointsMissed: gradingResult.keyPointsMissed || [],
+      },
+      scoredAt: new Date(),
+    };
+  } catch (error) {
+    console.error("Essay grading error:", error);
+    throw error;
+  }
+};
+
+/**
  * Grade multiple answers in a submission
  */
 const gradeSubmission = async (submission, assessment, geminiApiKey) => {
@@ -169,9 +319,10 @@ const gradeSubmission = async (submission, assessment, geminiApiKey) => {
   let totalScore = 0;
   let maxPossibleScore = 0;
 
-  // Get answer key from assessment
-  const answerKey =
-    assessment.generatedContent?.answerKeyContent?.answers || [];
+  // Determine if this is an essay (uses rubric) or assessment (uses answer key)
+  const isEssay = assessment.activityType === "essay" && assessment.generatedContent?.rubricContent;
+  const answerKey = assessment.generatedContent?.answerKeyContent?.answers || [];
+  const rubric = assessment.generatedContent?.rubricContent;
 
   for (const answer of submission.answers) {
     try {
@@ -185,7 +336,48 @@ const gradeSubmission = async (submission, assessment, geminiApiKey) => {
         continue;
       }
 
-      // Find corresponding answer key
+      // Handle essay grading (uses rubric instead of answer key)
+      if (isEssay) {
+        // For essays, we grade the entire essay using the rubric
+        const studentAnswerText =
+          answer.isEdited && answer.editedText
+            ? answer.editedText
+            : answer.ocrData.extractedText;
+
+        const gradingResult = await gradeEssay({
+          essayText: studentAnswerText,
+          rubric: rubric,
+          geminiApiKey,
+        });
+
+        // Update answer with grading results
+        answer.grading = {
+          rubricUsed: null,
+          aiScore: gradingResult,
+          finalScore: gradingResult.score,
+          isManuallyAdjusted: false,
+          comparisonMetadata: gradingResult.comparisonMetadata,
+        };
+
+        answer.status = "graded";
+
+        totalScore += gradingResult.score;
+        maxPossibleScore += gradingResult.maxScore;
+
+        results.push({
+          questionNumber: answer.questionNumber,
+          success: true,
+          score: gradingResult.score,
+          maxScore: gradingResult.maxScore,
+          feedback: gradingResult.feedback,
+        });
+
+        // Small delay to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        continue;
+      }
+
+      // Find corresponding answer key (for non-essay assessments)
       const keyAnswer = answerKey.find(
         (key) => key.questionNumber === answer.questionNumber
       );
@@ -518,6 +710,7 @@ const calculateGrade = (percentage) => {
 
 module.exports = {
   gradeAnswer,
+  gradeEssay,
   gradeSubmission,
   regradeAnswer,
   gradeObjectiveQuestion,

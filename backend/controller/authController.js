@@ -376,21 +376,34 @@ exports.logout = (req, res) => {
 };
 
 
-// @desc    Change password (only for non-Google users) (unchanged)
+// @desc    Change password or set initial password for Google-authenticated users
 // @route   PUT /api/auth/password
 // @access  Private
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: "Current password and new password are required" });
+    if (!newPassword) {
+      return res.status(400).json({ success: false, message: "New password is required" });
     }
 
     const user = await User.findById(req.user.id).select("+password");
 
+    // If user has no password (Google-authenticated), allow setting initial password
     if (!user.password) {
-      return res.status(400).json({ success: false, message: "Cannot change password for Google-authenticated accounts" });
+      // No current password required for Google users setting their first password
+      user.password = newPassword;
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Password set successfully. You can now login with email and password.",
+      });
+    }
+
+    // If user has a password, require current password for security
+    if (!currentPassword) {
+      return res.status(400).json({ success: false, message: "Current password is required" });
     }
 
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);

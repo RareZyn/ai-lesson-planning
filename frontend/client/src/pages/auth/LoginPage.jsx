@@ -15,6 +15,7 @@ import {
   googleProvider,
   setPersistence,
   browserLocalPersistence,
+  sendPasswordResetEmail,
 } from "../../firebase";
 import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
@@ -26,9 +27,12 @@ const LoginPage = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  const [forgotPasswordModalVisible, setForgotPasswordModalVisible] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
   const [hasNavigated, setHasNavigated] = useState(false);
   const [form] = Form.useForm();
+  const [forgotPasswordForm] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, loading: authLoading, isReady } = useUser();
@@ -191,7 +195,46 @@ const LoginPage = () => {
   };
 
   const handleForgotPassword = () => {
-    message.info("Forgot password functionality coming soon!");
+    setForgotPasswordModalVisible(true);
+  };
+
+  const handleForgotPasswordSubmit = async (values) => {
+    setResetPasswordLoading(true);
+    try {
+      // Send password reset email using Firebase
+      await sendPasswordResetEmail(auth, values.email);
+
+      message.success(
+        `Password reset email sent to ${values.email}. Please check your inbox and spam folder.`
+      );
+
+      // Close modal and reset form
+      setForgotPasswordModalVisible(false);
+      forgotPasswordForm.resetFields();
+    } catch (error) {
+      console.error("Password reset error:", error);
+
+      let errorMessage = "Failed to send password reset email.";
+
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email address.";
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address format.";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Too many requests. Please try again later.";
+          break;
+        default:
+          errorMessage = error.message || errorMessage;
+      }
+
+      message.error(errorMessage);
+    } finally {
+      setResetPasswordLoading(false);
+    }
   };
 
   // Show loading while checking authentication
@@ -409,6 +452,65 @@ const LoginPage = () => {
             >
               Complete Registration
             </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        title="Reset Your Password"
+        open={forgotPasswordModalVisible}
+        onCancel={() => {
+          setForgotPasswordModalVisible(false);
+          forgotPasswordForm.resetFields();
+        }}
+        footer={null}
+        width={500}
+        destroyOnClose
+      >
+        <p className="text-muted mb-4">
+          Enter your email address and we'll send you a link to reset your password.
+        </p>
+        <Form
+          form={forgotPasswordForm}
+          layout="vertical"
+          onFinish={handleForgotPasswordSubmit}
+        >
+          <Form.Item
+            name="email"
+            label="Email Address"
+            rules={[
+              { required: true, message: "Please enter your email address!" },
+              { type: "email", message: "Please enter a valid email address!" },
+            ]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="Enter your email"
+              size="large"
+              autoComplete="email"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <div className="d-flex justify-content-end gap-2">
+              <Button
+                onClick={() => {
+                  setForgotPasswordModalVisible(false);
+                  forgotPasswordForm.resetFields();
+                }}
+                disabled={resetPasswordLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={resetPasswordLoading}
+              >
+                Send Reset Link
+              </Button>
+            </div>
           </Form.Item>
         </Form>
       </Modal>

@@ -212,11 +212,18 @@ const SubmissionUploadPage = () => {
     try {
       let submissionData;
 
+      // Extract lessonPlanId - handle both populated and non-populated cases
+      const lessonPlanId = assessmentDetails.lessonPlanId
+        ? typeof assessmentDetails.lessonPlanId === 'string'
+          ? assessmentDetails.lessonPlanId
+          : assessmentDetails.lessonPlanId._id
+        : null;
+
       if (uploadMode === "bulk") {
         // Prepare bulk submission with files
         submissionData = {
           assessmentId: selectedAssessment,
-          lessonPlanId: assessmentDetails.lessonPlanId || null,
+          lessonPlanId,
           classId: selectedClass,
           studentId: selectedStudent,
           submissionMethod: "upload_bulk",
@@ -239,7 +246,7 @@ const SubmissionUploadPage = () => {
 
         submissionData = {
           assessmentId: selectedAssessment,
-          lessonPlanId: assessmentDetails.lessonPlanId || null,
+          lessonPlanId,
           classId: selectedClass,
           studentId: selectedStudent,
           submissionMethod: "upload_image",
@@ -284,11 +291,13 @@ const SubmissionUploadPage = () => {
           }, 2000);
         }
       } else {
-        throw new Error(result.message);
+        throw new Error(result.message || "Submission failed");
       }
     } catch (err) {
-      setError(err.message || "Failed to submit answers");
-      message.error("Submission failed");
+      console.error("Submission error:", err);
+      const errorMsg = err.message || "Failed to submit answers";
+      setError(errorMsg);
+      message.error(errorMsg);
     } finally {
       setSubmitting(false);
     }

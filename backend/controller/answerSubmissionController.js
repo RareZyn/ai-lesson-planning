@@ -153,6 +153,18 @@ exports.submitAnswer = async (req, res) => {
     });
   } catch (error) {
     console.error("Submit answer error:", error);
+    console.error("Error stack:", error.stack);
+
+    // Check if it's a Mongoose validation error
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation error: " + messages.join(', '),
+        errors: messages,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Error submitting answer",

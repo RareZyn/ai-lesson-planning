@@ -39,9 +39,12 @@ export const submissionService = {
         submissionId: response.data.submissionId,
       };
     } catch (error) {
+      console.error("Submission error:", error.response?.data || error.message);
+
       return {
         success: false,
         message: error.response?.data?.message || "Failed to submit",
+        errors: error.response?.data?.errors,
       };
     }
   },

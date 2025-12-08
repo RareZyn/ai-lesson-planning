@@ -11,7 +11,9 @@ import {
   updateProfile,
   sendPasswordResetEmail,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  EmailAuthProvider,
+  linkWithCredential
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -44,5 +46,7 @@ export {
   sendPasswordResetEmail,
   setPersistence,
   browserLocalPersistence,
+  EmailAuthProvider,
+  linkWithCredential,
   // browserSessionPersistence is no longer used - we always persist login
 };

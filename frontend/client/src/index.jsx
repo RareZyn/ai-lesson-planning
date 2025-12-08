@@ -49,8 +49,6 @@ if (shouldEnableSW) {
     window.addEventListener('load', registerServiceWorker);
   }
 } else {
-  console.log('🔧 Service Worker: Disabled (development mode)');
-  console.log('💡 To test PWA features, set REACT_APP_ENABLE_SW=true in .env');
 
   // Unregister any existing service workers in development
   // This prevents old service workers from interfering
