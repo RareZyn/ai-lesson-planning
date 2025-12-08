@@ -13,7 +13,7 @@ const studentAnswerSchema = new mongoose.Schema(
     lessonPlanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LessonPlan",
-      required: true,
+      required: false, // Not required for standalone assessments
       index: true,
     },
     classId: {
@@ -36,7 +36,7 @@ const studentAnswerSchema = new mongoose.Schema(
     },
     submissionMethod: {
       type: String,
-      enum: ["upload_image", "manual_text", "typed_answer"],
+      enum: ["upload_image", "manual_text", "typed_answer", "upload_bulk"],
       required: true,
     },
 

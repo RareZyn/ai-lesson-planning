@@ -255,6 +255,45 @@ export const ocrAPI = {
   },
 
   /**
+   * Process OCR for a student submission
+   * @param {string} submissionId - Submission ID to process
+   * @returns {Promise<Object>} OCR processing result
+   */
+  processSubmissionOCR: async (submissionId) => {
+    try {
+      console.log(`🔍 Starting OCR processing for submission: ${submissionId}`);
+
+      const response = await apiClient.post(
+        `/ocr/process-submission/${submissionId}`
+      );
+
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || "OCR processing completed",
+      };
+    } catch (error) {
+      console.error("Error processing submission OCR:", error);
+
+      let errorMessage = "Failed to process OCR";
+
+      if (error.response?.status === 404) {
+        errorMessage = "Submission not found";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+        error: error.response?.data || error,
+      };
+    }
+  },
+
+  /**
    * Validate image or PDF before upload
    * @param {File} file - Image or PDF file to validate
    * @returns {Object} Validation result

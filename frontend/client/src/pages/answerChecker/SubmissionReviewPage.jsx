@@ -284,11 +284,17 @@ const SubmissionReviewPage = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
+      pending: "secondary",
       pending_ocr: "secondary",
+      processing_ocr: "info",
       ocr_completed: "info",
       pending_grading: "info",
+      processing_grading: "warning",
       graded: "success",
+      completed: "success",
       reviewed: "success",
+      requires_review: "danger",
+      error: "danger",
     };
     return (
       <Badge bg={colors[status] || "secondary"}>
@@ -357,7 +363,7 @@ const SubmissionReviewPage = () => {
             </div>
 
             <div className="d-flex gap-2">
-              {submission.processingStatus === "ocr_completed" && (
+              {submission.processingStatus === "processing_grading" && (
                 <Button
                   variant="primary"
                   onClick={handleStartGrading}
@@ -557,6 +563,10 @@ const SubmissionReviewPage = () => {
         // Check if this is SPM Paper 1 (has answerSheetImage at submission level)
         const isSpmSheet = submission.answerSheetImage && !answer.originalImage;
 
+        // Check if this is an essay type assessment
+        const isEssay = submission.assessmentId?.activityType === "essay" ||
+                        submission.assessmentId?.assessmentType === "essay";
+
         // For regular assessments, show individual question images
         const imageToDisplay = answer.originalImage;
         const hasImage = imageToDisplay && imageToDisplay.length > 0;
@@ -568,21 +578,24 @@ const SubmissionReviewPage = () => {
         return (
           <Card key={index} className="mb-4">
             <Card.Body>
-              <div className="row">
-                {/* Question Image - Only show for non-SPM assessments */}
-                {!isSpmSheet && (
-                  <div className="col-md-4">
-                    <h6 className="mb-3">
-                      Question {answer.questionNumber}{" "}
-                      {getStatusBadge(answer.status)}
-                    </h6>
-                    {hasImage && isValidBase64 ? (
+              {/* Essay Layout: Image on top, then two columns below */}
+              {isEssay && !isSpmSheet ? (
+                <>
+                  {/* Question Header */}
+                  <h6 className="mb-3">
+                    Question {answer.questionNumber}{" "}
+                    {getStatusBadge(answer.status)}
+                  </h6>
+
+                  {/* Image on top for essays */}
+                  {hasImage && isValidBase64 && (
+                    <div className="mb-4">
                       <Image
                         src={imageToDisplay}
                         alt={`Question ${answer.questionNumber}`}
                         style={{
                           width: "100%",
-                          maxHeight: "300px",
+                          maxHeight: "500px",
                           objectFit: "contain",
                           borderRadius: "8px",
                           border: "1px solid #ddd",
@@ -592,230 +605,513 @@ const SubmissionReviewPage = () => {
                           mask: "Click to preview",
                         }}
                       />
-                    ) : (
-                      <div
-                        className="d-flex align-items-center justify-content-center text-muted"
-                        style={{
-                          width: "100%",
-                          height: "200px",
-                          borderRadius: "8px",
-                          border: "1px dashed #ddd",
-                          backgroundColor: "#f8f9fa",
-                        }}
-                      >
-                        <div className="text-center">
-                          <p className="mb-0">No image uploaded</p>
-                          <small>
-                            {hasImage && !isValidBase64
-                              ? "Invalid image format"
-                              : "Image not provided for this question"}
-                          </small>
-                        </div>
+                    </div>
+                  )}
+
+                  {/* Two columns: Extracted Text and Grading Results */}
+                  <div className="row">
+                    {/* Extracted Text - Left Column */}
+                    <div className="col-md-6">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <h6 className="mb-0">Extracted Text</h6>
+                        {answer.ocrData?.confidence !== undefined && (
+                          <span>{getConfidenceBadge(answer.ocrData.confidence)}</span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
 
-              {/* Extracted Text & Editing */}
-              <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <h6 className="mb-0">
-                    {isSpmSheet && (
-                      <span className="me-2">
-                        Q{answer.questionNumber}.
-                      </span>
-                    )}
-                    Extracted Text
-                  </h6>
-                  {answer.ocrData?.confidence !== undefined && (
-                    <span>{getConfidenceBadge(answer.ocrData.confidence)}</span>
-                  )}
-                </div>
-
-                {editingQuestion === answer.questionNumber ? (
-                  <div>
-                    <TextArea
-                      rows={6}
-                      value={editedText}
-                      onChange={(e) => setEditedText(e.target.value)}
-                      placeholder="Edit extracted text..."
-                    />
-                    <div className="d-flex gap-2 mt-2">
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={handleSaveText}
-                        disabled={savingEdit}
-                      >
-                        <SaveOutlined className="me-1" />
-                        Save & Regrade
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleCancelEdit}
-                        disabled={savingEdit}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div
-                      className="p-3"
-                      style={{
-                        background: "#f8f9fa",
-                        border: "1px solid #dee2e6",
-                        borderRadius: "6px",
-                        minHeight: "120px",
-                        maxHeight: "200px",
-                        overflowY: "auto",
-                      }}
-                    >
-                      <pre style={{ margin: 0, fontFamily: "inherit" }}>
-                        {answer.isEdited && answer.editedText
-                          ? answer.editedText
-                          : answer.ocrData?.extractedText ||
-                            "No text extracted"}
-                      </pre>
-                    </div>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => handleEditText(answer)}
-                    >
-                      <EditOutlined className="me-1" />
-                      Edit Text
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Grading Results */}
-              <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
-                <h6 className="mb-3">
-                  {isSpmSheet && (
-                    <span className="me-2">
-                      Q{answer.questionNumber}.
-                    </span>
-                  )}
-                  Grading Results
-                </h6>
-
-                {answer.grading && answer.grading.aiScore ? (
-                  <div>
-                    <div className="mb-3">
-                      <small className="text-muted">Score:</small>
-                      <h4>
-                        {answer.grading.finalScore !== undefined
-                          ? answer.grading.finalScore
-                          : answer.grading.aiScore.score}
-                        /{answer.grading.aiScore.maxScore}
-                        <Badge
-                          bg={gradingUtils.getScoreColor(
-                            answer.grading.aiScore.percentage
-                          )}
-                          className="ms-2"
-                        >
-                          {answer.grading.aiScore.percentage?.toFixed(0)}%
-                        </Badge>
-                      </h4>
-                      {answer.grading.isManuallyAdjusted && (
-                        <small className="text-warning">
-                          <EditOutlined className="me-1" />
-                          Manually adjusted
-                        </small>
+                      {editingQuestion === answer.questionNumber ? (
+                        <div>
+                          <TextArea
+                            rows={12}
+                            value={editedText}
+                            onChange={(e) => setEditedText(e.target.value)}
+                            placeholder="Edit extracted text..."
+                          />
+                          <div className="d-flex gap-2 mt-2">
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={handleSaveText}
+                              disabled={savingEdit}
+                            >
+                              <SaveOutlined className="me-1" />
+                              Save & Regrade
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={handleCancelEdit}
+                              disabled={savingEdit}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div
+                            className="p-3"
+                            style={{
+                              background: "#f8f9fa",
+                              border: "1px solid #dee2e6",
+                              borderRadius: "6px",
+                              minHeight: "300px",
+                              maxHeight: "500px",
+                              overflowY: "auto",
+                            }}
+                          >
+                            <pre style={{ margin: 0, fontFamily: "inherit", whiteSpace: "pre-wrap" }}>
+                              {answer.isEdited && answer.editedText
+                                ? answer.editedText
+                                : answer.ocrData?.extractedText ||
+                                  "No text extracted"}
+                            </pre>
+                          </div>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => handleEditText(answer)}
+                          >
+                            <EditOutlined className="me-1" />
+                            Edit Text
+                          </Button>
+                        </div>
                       )}
                     </div>
 
-                    {answer.grading.aiScore.feedback && (
-                      <div className="mb-3">
-                        <small className="text-muted">Feedback:</small>
-                        <p
-                          className="small"
-                          style={{
-                            background: "#e8f4fd",
-                            padding: "10px",
-                            borderRadius: "6px",
-                          }}
-                        >
-                          {answer.grading.aiScore.feedback}
-                        </p>
-                      </div>
-                    )}
+                    {/* Grading Results - Right Column */}
+                    <div className="col-md-6">
+                      <h6 className="mb-3">Grading Results</h6>
 
-                    {answer.grading.comparisonMetadata && (
-                      <div className="mb-3">
-                        <small className="text-muted">Analysis:</small>
-                        <div className="mt-1">
-                          {answer.grading.comparisonMetadata.keyPointsMatched
-                            ?.length > 0 && (
-                            <div className="mb-2">
-                              <small className="text-success">
-                                ✓ Key Points Matched:
+                      {answer.grading && answer.grading.aiScore ? (
+                        <div>
+                          <div className="mb-3">
+                            <small className="text-muted">Score:</small>
+                            <h4>
+                              {answer.grading.finalScore !== undefined
+                                ? answer.grading.finalScore
+                                : answer.grading.aiScore.score}
+                              /{answer.grading.aiScore.maxScore}
+                              <Badge
+                                bg={gradingUtils.getScoreColor(
+                                  ((answer.grading.finalScore !== undefined
+                                    ? answer.grading.finalScore
+                                    : answer.grading.aiScore.score) /
+                                    answer.grading.aiScore.maxScore) *
+                                    100
+                                )}
+                                className="ms-2"
+                              >
+                                {(
+                                  ((answer.grading.finalScore !== undefined
+                                    ? answer.grading.finalScore
+                                    : answer.grading.aiScore.score) /
+                                    answer.grading.aiScore.maxScore) *
+                                  100
+                                ).toFixed(0)}%
+                              </Badge>
+                            </h4>
+                            {answer.grading.isManuallyAdjusted && (
+                              <small className="text-warning">
+                                <EditOutlined className="me-1" />
+                                Manually adjusted
                               </small>
-                              <div className="d-flex flex-wrap gap-1 mt-1">
-                                {answer.grading.comparisonMetadata.keyPointsMatched.map(
-                                  (point, idx) => (
-                                    <Tag key={idx} color="success">
-                                      {point}
-                                    </Tag>
-                                  )
+                            )}
+                          </div>
+
+                          {answer.grading.aiScore.feedback && (
+                            <div className="mb-3">
+                              <small className="text-muted">Feedback:</small>
+                              <div
+                                className="small"
+                                style={{
+                                  background: "#e8f4fd",
+                                  padding: "10px",
+                                  borderRadius: "6px",
+                                  maxHeight: "200px",
+                                  overflowY: "auto",
+                                }}
+                              >
+                                {answer.grading.aiScore.feedback}
+                              </div>
+                            </div>
+                          )}
+
+                          {answer.grading.comparisonMetadata && (
+                            <div className="mb-3">
+                              <small className="text-muted">Analysis:</small>
+                              <div
+                                className="mt-1"
+                                style={{
+                                  maxHeight: "250px",
+                                  overflowY: "auto",
+                                }}
+                              >
+                                {answer.grading.comparisonMetadata.keyPointsMatched
+                                  ?.length > 0 && (
+                                  <div className="mb-2">
+                                    <small className="text-success">
+                                      ✓ Key Points Matched:
+                                    </small>
+                                    <div className="d-flex flex-wrap gap-1 mt-1">
+                                      {answer.grading.comparisonMetadata.keyPointsMatched.map(
+                                        (point, idx) => (
+                                          <Tag
+                                            key={idx}
+                                            color="success"
+                                            style={{
+                                              whiteSpace: "normal",
+                                              wordWrap: "break-word",
+                                              maxWidth: "100%",
+                                            }}
+                                          >
+                                            {point}
+                                          </Tag>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {answer.grading.comparisonMetadata.keyPointsMissed
+                                  ?.length > 0 && (
+                                  <div>
+                                    <small className="text-danger">
+                                      ✗ Key Points Missed:
+                                    </small>
+                                    <div className="d-flex flex-wrap gap-1 mt-1">
+                                      {answer.grading.comparisonMetadata.keyPointsMissed.map(
+                                        (point, idx) => (
+                                          <Tag
+                                            key={idx}
+                                            color="error"
+                                            style={{
+                                              whiteSpace: "normal",
+                                              wordWrap: "break-word",
+                                              maxWidth: "100%",
+                                            }}
+                                          >
+                                            {point}
+                                          </Tag>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </div>
                           )}
 
-                          {answer.grading.comparisonMetadata.keyPointsMissed
-                            ?.length > 0 && (
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            onClick={() => handleOpenScoreModal(answer)}
+                          >
+                            <EditOutlined className="me-1" />
+                            Adjust Score
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-muted text-center py-4">
+                          {answer.status === "pending_ocr" ? (
                             <div>
-                              <small className="text-danger">
-                                ✗ Key Points Missed:
-                              </small>
-                              <div className="d-flex flex-wrap gap-1 mt-1">
-                                {answer.grading.comparisonMetadata.keyPointsMissed.map(
-                                  (point, idx) => (
-                                    <Tag key={idx} color="error">
-                                      {point}
-                                    </Tag>
-                                  )
-                                )}
-                              </div>
+                              <Spin />
+                              <p className="mt-2">Processing OCR...</p>
                             </div>
+                          ) : answer.status === "ocr_completed" || answer.status === "pending_grading" ? (
+                            <p>Click "Start Grading" to grade this answer</p>
+                          ) : (
+                            <p>Not yet graded</p>
                           )}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Original 3-column layout for non-essay types */
+                <div className="row">
+                  {/* Question Image - Only show for non-SPM assessments */}
+                  {!isSpmSheet && (
+                    <div className="col-md-4">
+                      <h6 className="mb-3">
+                        Question {answer.questionNumber}{" "}
+                        {getStatusBadge(answer.status)}
+                      </h6>
+                      {hasImage && isValidBase64 ? (
+                        <Image
+                          src={imageToDisplay}
+                          alt={`Question ${answer.questionNumber}`}
+                          style={{
+                            width: "100%",
+                            maxHeight: "300px",
+                            objectFit: "contain",
+                            borderRadius: "8px",
+                            border: "1px solid #ddd",
+                          }}
+                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                          preview={{
+                            mask: "Click to preview",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className="d-flex align-items-center justify-content-center text-muted"
+                          style={{
+                            width: "100%",
+                            height: "200px",
+                            borderRadius: "8px",
+                            border: "1px dashed #ddd",
+                            backgroundColor: "#f8f9fa",
+                          }}
+                        >
+                          <div className="text-center">
+                            <p className="mb-0">No image uploaded</p>
+                            <small>
+                              {hasImage && !isValidBase64
+                                ? "Invalid image format"
+                                : "Image not provided for this question"}
+                            </small>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    <Button
-                      variant="outline-warning"
-                      size="sm"
-                      onClick={() => handleOpenScoreModal(answer)}
-                    >
-                      <EditOutlined className="me-1" />
-                      Adjust Score
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-muted text-center py-4">
-                    {answer.status === "pending_ocr" ? (
+                  {/* Extracted Text & Editing */}
+                  <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h6 className="mb-0">
+                        {isSpmSheet && (
+                          <span className="me-2">
+                            Q{answer.questionNumber}.
+                          </span>
+                        )}
+                        Extracted Text
+                      </h6>
+                      {answer.ocrData?.confidence !== undefined && (
+                        <span>{getConfidenceBadge(answer.ocrData.confidence)}</span>
+                      )}
+                    </div>
+
+                    {editingQuestion === answer.questionNumber ? (
                       <div>
-                        <Spin />
-                        <p className="mt-2">Processing OCR...</p>
+                        <TextArea
+                          rows={6}
+                          value={editedText}
+                          onChange={(e) => setEditedText(e.target.value)}
+                          placeholder="Edit extracted text..."
+                        />
+                        <div className="d-flex gap-2 mt-2">
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={handleSaveText}
+                            disabled={savingEdit}
+                          >
+                            <SaveOutlined className="me-1" />
+                            Save & Regrade
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                            disabled={savingEdit}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                    ) : answer.status === "ocr_completed" ? (
-                      <p>Click "Start Grading" to grade this answer</p>
                     ) : (
-                      <p>Not yet graded</p>
+                      <div>
+                        <div
+                          className="p-3"
+                          style={{
+                            background: "#f8f9fa",
+                            border: "1px solid #dee2e6",
+                            borderRadius: "6px",
+                            minHeight: "120px",
+                            maxHeight: "200px",
+                            overflowY: "auto",
+                          }}
+                        >
+                          <pre style={{ margin: 0, fontFamily: "inherit", whiteSpace: "pre-wrap" }}>
+                            {answer.isEdited && answer.editedText
+                              ? answer.editedText
+                              : answer.ocrData?.extractedText ||
+                                "No text extracted"}
+                          </pre>
+                        </div>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => handleEditText(answer)}
+                        >
+                          <EditOutlined className="me-1" />
+                          Edit Text
+                        </Button>
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
+
+                  {/* Grading Results */}
+                  <div className={isSpmSheet ? "col-md-6" : "col-md-4"}>
+                    <h6 className="mb-3">
+                      {isSpmSheet && (
+                        <span className="me-2">
+                          Q{answer.questionNumber}.
+                        </span>
+                      )}
+                      Grading Results
+                    </h6>
+
+                    {answer.grading && answer.grading.aiScore ? (
+                      <div>
+                        <div className="mb-3">
+                          <small className="text-muted">Score:</small>
+                          <h4>
+                            {answer.grading.finalScore !== undefined
+                              ? answer.grading.finalScore
+                              : answer.grading.aiScore.score}
+                            /{answer.grading.aiScore.maxScore}
+                            <Badge
+                              bg={gradingUtils.getScoreColor(
+                                ((answer.grading.finalScore !== undefined
+                                  ? answer.grading.finalScore
+                                  : answer.grading.aiScore.score) /
+                                  answer.grading.aiScore.maxScore) *
+                                  100
+                              )}
+                              className="ms-2"
+                            >
+                              {(
+                                ((answer.grading.finalScore !== undefined
+                                  ? answer.grading.finalScore
+                                  : answer.grading.aiScore.score) /
+                                  answer.grading.aiScore.maxScore) *
+                                100
+                              ).toFixed(0)}%
+                            </Badge>
+                          </h4>
+                          {answer.grading.isManuallyAdjusted && (
+                            <small className="text-warning">
+                              <EditOutlined className="me-1" />
+                              Manually adjusted
+                            </small>
+                          )}
+                        </div>
+
+                        {answer.grading.aiScore.feedback && (
+                          <div className="mb-3">
+                            <small className="text-muted">Feedback:</small>
+                            <p
+                              className="small"
+                              style={{
+                                background: "#e8f4fd",
+                                padding: "10px",
+                                borderRadius: "6px",
+                              }}
+                            >
+                              {answer.grading.aiScore.feedback}
+                            </p>
+                          </div>
+                        )}
+
+                        {answer.grading.comparisonMetadata && (
+                          <div className="mb-3">
+                            <small className="text-muted">Analysis:</small>
+                            <div
+                              className="mt-1"
+                              style={{
+                                maxHeight: "200px",
+                                overflowY: "auto",
+                              }}
+                            >
+                              {answer.grading.comparisonMetadata.keyPointsMatched
+                                ?.length > 0 && (
+                                <div className="mb-2">
+                                  <small className="text-success">
+                                    ✓ Key Points Matched:
+                                  </small>
+                                  <div className="d-flex flex-wrap gap-1 mt-1">
+                                    {answer.grading.comparisonMetadata.keyPointsMatched.map(
+                                      (point, idx) => (
+                                        <Tag
+                                          key={idx}
+                                          color="success"
+                                          style={{
+                                            whiteSpace: "normal",
+                                            wordWrap: "break-word",
+                                            maxWidth: "100%",
+                                          }}
+                                        >
+                                          {point}
+                                        </Tag>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {answer.grading.comparisonMetadata.keyPointsMissed
+                                ?.length > 0 && (
+                                <div>
+                                  <small className="text-danger">
+                                    ✗ Key Points Missed:
+                                  </small>
+                                  <div className="d-flex flex-wrap gap-1 mt-1">
+                                    {answer.grading.comparisonMetadata.keyPointsMissed.map(
+                                      (point, idx) => (
+                                        <Tag
+                                          key={idx}
+                                          color="error"
+                                          style={{
+                                            whiteSpace: "normal",
+                                            wordWrap: "break-word",
+                                            maxWidth: "100%",
+                                          }}
+                                        >
+                                          {point}
+                                        </Tag>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <Button
+                          variant="outline-warning"
+                          size="sm"
+                          onClick={() => handleOpenScoreModal(answer)}
+                        >
+                          <EditOutlined className="me-1" />
+                          Adjust Score
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-muted text-center py-4">
+                        {answer.status === "pending_ocr" ? (
+                          <div>
+                            <Spin />
+                            <p className="mt-2">Processing OCR...</p>
+                          </div>
+                        ) : answer.status === "ocr_completed" || answer.status === "pending_grading" ? (
+                          <p>Click "Start Grading" to grade this answer</p>
+                        ) : (
+                          <p>Not yet graded</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
         );
       })}
 
