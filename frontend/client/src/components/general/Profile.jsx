@@ -13,7 +13,6 @@ import {
   message,
 } from "antd";
 import {
-  BellOutlined,
   KeyOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -47,7 +46,7 @@ const Profile = () => {
   const [form] = Form.useForm();
 
   const [passwordForm] = Form.useForm();
-  
+
   const handleSettingsOpen = async () => {
     // Fetch current API key from backend
     try {

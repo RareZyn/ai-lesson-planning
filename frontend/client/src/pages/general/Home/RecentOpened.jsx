@@ -79,7 +79,7 @@ const RecentOpened = () => {
   }, []);
 
   const handleViewAll = () => {
-    navigate("/app/planner");
+    navigate("/app/lessons");
   };
 
   const handleCreateLessonClick = () => {
