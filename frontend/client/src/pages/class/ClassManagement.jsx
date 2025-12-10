@@ -11,8 +11,8 @@ const CreateClassCard = ({ onClick }) => (
     <div className="add-icon-wrapper">
       <FaPlus />
     </div>
-    <h3 className="add-class-card-title">Create New Class</h3>
-    <p className="add-class-card-text">Click to add class</p>
+    <h3 className="add-card-title">Create New Class</h3>
+    <p className="add-card-text">Click to add class</p>
   </div>
 );
 
