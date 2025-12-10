@@ -105,12 +105,15 @@
     border-radius: 12px !important;
     border: none !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    background: white;
 }
 
 .chart-container {
     width: 100%;
-    height: 350px;
+    min-width: 100%;
+    /* Prevent flex collapse */
     margin-top: 1rem;
+    height: 350px;
 }
 
 .chart-description {
@@ -119,4 +122,25 @@
     padding-bottom: 1rem;
     color: #8c8c8c;
     font-size: 0.85rem;
+}
+
+/* RESPONSIVE ADDITIONS */
+@media (max-width: 768px) {
+    .teacher-name-row {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .teacher-tags-row {
+        justify-content: center;
+    }
+
+    .hidden-mobile {
+        display: none;
+    }
+
+    /* Ensure chart containers have height on mobile */
+    /* .chart-container height is already set globally to 350px, removing override just to be safe */
 }

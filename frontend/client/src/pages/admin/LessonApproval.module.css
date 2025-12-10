@@ -284,6 +284,78 @@
     }
 }
 
+@media (max-width: 600px) {
+    .listHeader {
+        display: none;
+    }
+
+    .listItem {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 16px;
+    }
+
+    .listItem>div {
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    /* Make the Topic Larger */
+    .listItem>div:first-child {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 4px;
+    }
+
+    /* Force show hidden columns from 900px rule if desirable, or let them stack */
+    .listItem div:nth-child(3),
+    .listItem div:nth-child(5) {
+        display: block !important;
+    }
+
+    /* Add labels for context since header is gone */
+    .listItem>div:nth-child(2)::before {
+        content: "Class: ";
+        font-weight: 600;
+        color: #888;
+    }
+
+    .listItem>div:nth-child(3)::before {
+        content: "Grade: ";
+        font-weight: 600;
+        color: #888;
+    }
+
+    .listItem>div:nth-child(4)::before {
+        content: "Subject: ";
+        font-weight: 600;
+        color: #888;
+    }
+
+    .listItem>div:nth-child(5)::before {
+        content: "By: ";
+        font-weight: 600;
+        color: #888;
+    }
+
+    .listItem>div:nth-child(6)::before {
+        content: "Date: ";
+        font-weight: 600;
+        color: #888;
+    }
+
+    .listActions {
+        width: 100%;
+        justify-content: flex-end;
+        border-top: 1px solid #eee;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
+}
+
 /* --- ANIMATION --- */
 @keyframes fadeIn {
     from {

@@ -292,6 +292,7 @@
         opacity: 0;
         transform: scale(0.96);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -299,7 +300,58 @@
 }
 
 /* --- RESPONSIVE (MOBILE VIEW) --- */
-@media (max-width: 500px) {
+@media (max-width: 600px) {
+    .listHeader {
+        display: none;
+    }
+
+    .listItem {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 16px;
+        height: auto;
+    }
+
+    .listTitle {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        width: 100%;
+    }
+
+    .listDetail {
+        font-size: 0.9rem;
+        width: 100%;
+        display: flex;
+        /* Ensure icons align if present */
+        align-items: center;
+        color: #555;
+    }
+
+    /* Reveal hidden columns if they were hidden by the 900px rule and we want them back, 
+       OR keep them simple. Let's make sure Name/Email/Role are visible */
+
+    .listItem div:nth-child(3),
+    .listItem div:nth-child(4) {
+        display: flex !important;
+        /* Force show Access/Created if needed, or keep hidden? */
+        /* Let's show everything stacked for full info */
+    }
+
+    /* Adjust the specific child hiding from the 900px query if it conflicts. 
+       The 900px query uses specific nth-child. We need to override display if we want them shown.
+    */
+
+    .listActions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 10px;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+    }
+
     .emailRow {
         flex-direction: column;
         align-items: stretch;

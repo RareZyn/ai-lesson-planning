@@ -44,9 +44,11 @@ const Navbar = () => {
     }
 
     if (notification.type === "lesson_approval" && notification.lessonId) {
-      // Navigate to lesson display page (or specific approval page if it exists)
-      // Assuming standard display page for now with edit rights or approval buttons
-      navigate(`/app/lessons/display/${notification.lessonId._id || notification.lessonId}`);
+      // Admin: Navigate to new Admin Review Page
+      navigate(`/app/admin/lessons/${notification.lessonId._id || notification.lessonId}/review`);
+    } else if (["lesson_approved", "lesson_rejected"].includes(notification.type) && notification.lessonId) {
+      // Teacher: Navigate to My Lessons Display
+      navigate(`/app/lessons/${notification.lessonId._id || notification.lessonId}`);
     }
   };
 

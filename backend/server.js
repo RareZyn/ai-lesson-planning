@@ -75,6 +75,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/materials", require("./route/materialRoutes"));
 
 
 

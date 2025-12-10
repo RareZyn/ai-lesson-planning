@@ -14,8 +14,16 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
     "/app/answer-checker": "Answer Checker",
     "/app/downloads": "File Download",
     "/app/materials": "Materials",
+    "/app/materials": "Materials",
     "/app/graph": "Graph",
+    "/app/admin": "Admin Dashboard",
   };
+
+  // Paths that should not be clickable (not real pages)
+  const nonRoutablePaths = [
+    /^\/app\/admin\/lessons$/,
+    /^\/app\/admin\/lessons\/[^/]+$/,
+  ];
 
 
   // If custom breadcrumbs are provided, use them
@@ -65,9 +73,12 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
       breadcrumbNameMap[currentPath] ||
       pathname.charAt(0).toUpperCase() + pathname.slice(1);
 
+    const isNonRoutable = nonRoutablePaths.some((pattern) => pattern.test(currentPath));
+    const isLast = index === appPathnames.length - 1;
+
     breadcrumbs.push({
       label: breadcrumbName,
-      link: index === appPathnames.length - 1 ? null : currentPath,
+      link: isLast || isNonRoutable ? null : currentPath,
     });
   });
 

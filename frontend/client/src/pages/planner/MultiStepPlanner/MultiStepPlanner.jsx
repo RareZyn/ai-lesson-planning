@@ -32,7 +32,8 @@ const MultiStepPlanner = () => {
     hotsFocus: "",
     additionalNotes: "",
     grade: "",
-    subject: "", // NEW
+    subject: "",
+    materialId: null, // NEW: For material-based generation
   });
 
   const [generatedPlan, setGeneratedPlan] = useState(null);

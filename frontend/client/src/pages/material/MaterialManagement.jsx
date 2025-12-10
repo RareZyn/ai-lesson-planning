@@ -6,94 +6,132 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  Close as CloseIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
-import { Modal } from "antd";
+import { Modal, message, Progress } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
+import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialById } from "../../services/materialService";
+
 
 const MaterialManagement = () => {
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
-  const [currentMaterial, setCurrentMaterial] = useState(null);
   const [uploadType, setUploadType] = useState("file");
   const [selectedFile, setSelectedFile] = useState(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Mock data - replace with actual API calls
+  // Edit State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState(null);
+  const [editName, setEditName] = useState("");
+
+  const fetchMaterials = async () => {
+    setIsLoading(true);
+    try {
+      const response = await getMaterials();
+      if (response.success) {
+        setMaterials(response.data);
+        setFilteredMaterials(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch materials:", error);
+      message.error("Failed to load materials");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const mockMaterials = [
-      { 
-        id: 1, 
-        name: "English Grammar Guide", 
-        type: "pdf", 
-        date: "2025-05-15", 
-        size: "2.4 MB",
-        url: "https://example.com/sample.pdf" // Mock URL for PDF
-      },
-      { 
-        id: 2, 
-        name: "Vocabulary List", 
-        type: "docx", 
-        date: "2025-05-10", 
-        size: "1.2 MB",
-        url: "https://example.com/sample.docx" // Mock URL for DOCX
-      },
-      { 
-        id: 3, 
-        name: "Reading Comprehension Tips", 
-        type: "link", 
-        date: "2025-05-05", 
-        size: "N/A",
-        url: "https://example.com/reading-tips" // External link
-      },
-    ];
-    setMaterials(mockMaterials);
-    setFilteredMaterials(mockMaterials);
+    fetchMaterials();
   }, []);
 
   // Filter materials based on search and filter
   useEffect(() => {
     let results = materials;
-    
+
     if (searchTerm) {
-      results = results.filter(material => 
+      results = results.filter(material =>
         material.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (filterType !== "all") {
       results = results.filter(material => material.type === filterType);
     }
-    
+
     setFilteredMaterials(results);
   }, [searchTerm, filterType, materials]);
 
-  const handleMaterialClick = (material) => {
-    setCurrentMaterial(material);
-    if (material.type === "link") {
-      // Open link in new tab
-      window.open(material.url, '_blank');
-    } else {
-      // Open PDF/DOC in modal viewer
-      setIsViewerModalOpen(true);
+  const handleMaterialClick = async (material) => {
+    // Determine type from material object
+    const isLink = material.type === "link";
+
+    if (isLink) {
+      try {
+        const response = await getMaterialById(material._id);
+        if (response.success && response.data.originalFileUrl) {
+          window.open(response.data.originalFileUrl, '_blank');
+        } else {
+          message.error("Could not open link");
+        }
+      } catch (error) {
+        message.error("Failed to open link");
+      }
+      return;
+    }
+
+    // For Files (PDF/Doc)
+    setIsLoading(true);
+    try {
+      const response = await getMaterialById(material._id);
+      if (response.success && response.data.originalFileUrl) {
+        const dataUri = response.data.originalFileUrl;
+
+        // Check if it's a data URI
+        if (!dataUri.startsWith('data:')) {
+          message.error("Invalid file format");
+          return;
+        }
+
+        // Convert Base64 to Blob
+        const byteString = atob(dataUri.split(',')[1]);
+        const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Open in new tab
+        window.open(blobUrl, '_blank');
+      } else {
+        message.error("File content not found");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("Failed to load material");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
         Modal.warning({
           title: 'File Too Large',
-          content: 'File too large. Max size: 50 MB',
+          content: 'File too large. Max size: 10 MB',
         });
         return;
       }
@@ -107,12 +145,12 @@ const MaterialManagement = () => {
         });
         return;
       }
-      
+
       setSelectedFile(file);
     }
   };
 
-  const handleLinkSubmit = () => {
+  const handleLinkSubmit = async () => {
     // Basic URL validation
     try {
       new URL(linkUrl);
@@ -123,22 +161,25 @@ const MaterialManagement = () => {
       });
       return;
     }
-    
-    // Here you would normally make an API call to save the link
+
     setIsLoading(true);
-    setTimeout(() => {
-      const newMaterial = {
-        id: materials.length + 1,
+    try {
+      await uploadMaterial({
         name: linkUrl,
         type: "link",
-        date: new Date().toISOString().split('T')[0],
+        fileData: linkUrl,
         size: "N/A"
-      };
-      setMaterials([...materials, newMaterial]);
+      });
+      message.success("Link added successfully");
       setLinkUrl("");
       setIsUploadModalOpen(false);
+      fetchMaterials();
+    } catch (error) {
+      console.error("Upload error:", error);
+      message.error(error.message || "Failed to add link");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleFileSubmit = () => {
@@ -149,22 +190,69 @@ const MaterialManagement = () => {
       });
       return;
     }
-    
-    // Here you would normally upload the file to your backend
+
     setIsLoading(true);
-    setTimeout(() => {
-      const newMaterial = {
-        id: materials.length + 1,
-        name: selectedFile.name,
-        type: selectedFile.type.includes("pdf") ? "pdf" : "docx",
-        date: new Date().toISOString().split('T')[0],
-        size: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`
-      };
-      setMaterials([...materials, newMaterial]);
-      setSelectedFile(null);
-      setIsUploadModalOpen(false);
+
+    // Convert to Base64
+    const reader = new FileReader();
+    reader.readAsDataURL(selectedFile);
+    reader.onload = async () => {
+      try {
+        const base64Data = reader.result;
+
+        // Reset progress
+        setUploadProgress(0);
+
+        await uploadMaterial({
+          name: selectedFile.name,
+          type: selectedFile.type.includes("pdf") ? "pdf" : "docx",
+          fileData: base64Data,
+          size: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`
+        }, (percent) => {
+          setUploadProgress(percent);
+        });
+
+        message.success("Material uploaded successfully");
+        setSelectedFile(null);
+        setIsUploadModalOpen(false);
+        setUploadProgress(0);
+        fetchMaterials();
+      } catch (error) {
+        console.error("Upload error:", error);
+        message.error(error.message || "Failed to upload file");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    reader.onerror = () => {
       setIsLoading(false);
-    }, 1000);
+      message.error("Failed to read file");
+    };
+  };
+
+  const handleEditClick = (material, e) => {
+    e.stopPropagation();
+    setEditingMaterial(material);
+    setEditName(material.name);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editName.trim()) {
+      message.warning("Name cannot be empty");
+      return;
+    }
+
+    try {
+      const { updateMaterial } = require("../../services/materialService"); // Import dynamically or move to top if prefer
+      await updateMaterial(editingMaterial._id, { name: editName });
+      message.success("Material renamed successfully");
+      setIsEditModalOpen(false);
+      fetchMaterials();
+    } catch (error) {
+      console.error("Edit error", error);
+      message.error("Failed to rename material");
+    }
   };
 
   const handleDeleteMaterial = (id) => {
@@ -175,8 +263,14 @@ const MaterialManagement = () => {
       okText: 'Delete',
       okType: 'danger',
       cancelText: 'Cancel',
-      onOk: () => {
-        setMaterials(materials.filter(material => material.id !== id));
+      onOk: async () => {
+        try {
+          await deleteMaterial(id);
+          message.success("Material deleted");
+          fetchMaterials();
+        } catch (error) {
+          message.error("Failed to delete material");
+        }
       },
     });
   };
@@ -194,66 +288,12 @@ const MaterialManagement = () => {
     }
   };
 
-  const renderViewerModal = () => {
-    if (!currentMaterial) return null;
 
-    return (
-      <div className="modal-overlay">
-        <div className="viewer-modal">
-          <div className="modal-header">
-            <h3>{currentMaterial.name}</h3>
-            <button 
-              className="close-button"
-              onClick={() => setIsViewerModalOpen(false)}
-            >
-              <CloseIcon />
-            </button>
-          </div>
-
-          <div className="viewer-content">
-            {currentMaterial.type === "pdf" ? (
-              <iframe 
-                src={currentMaterial.url}
-                title={currentMaterial.name}
-                width="100%" 
-                height="100%"
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <div className="doc-viewer-placeholder">
-                <DescriptionIcon style={{ fontSize: 60, color: '#2c3e50' }} />
-                <p>Document Viewer Placeholder</p>
-                <a 
-                  href={currentMaterial.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="open-external"
-                >
-                  <OpenInNewIcon /> Open in new tab
-                </a>
-              </div>
-            )}
-          </div>
-
-          <div className="modal-footer">
-            <a 
-              href={currentMaterial.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="open-external"
-            >
-              <OpenInNewIcon /> Open in new tab
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Update the materials list row to make it clickable
   const renderMaterialRow = (material) => (
-    <tr 
-      key={material.id} 
+    <tr
+      key={material.id}
       className={material.type === "link" ? "link-row" : "file-row"}
       onClick={() => handleMaterialClick(material)}
     >
@@ -268,16 +308,27 @@ const MaterialManagement = () => {
       <td>{material.date}</td>
       <td>{material.size}</td>
       <td>
-        <button 
-          className="delete-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDeleteMaterial(material.id);
-          }}
-          title="Delete material"
-        >
-          <DeleteIcon />
-        </button>
+        <div className="action-buttons">
+          <button
+            className="edit-button"
+            onClick={(e) => handleEditClick(material, e)}
+            title="Edit name"
+            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2' }}
+          >
+            <EditIcon />
+          </button>
+          <button
+            className="delete-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteMaterial(material._id); // Ensure using _id
+            }}
+            title="Delete material"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f' }}
+          >
+            <DeleteIcon />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -286,7 +337,7 @@ const MaterialManagement = () => {
     <div className="material-management-container">
       <div className="material-header">
         <h2>Material Management</h2>
-        <button 
+        <button
           className="upload-button"
           onClick={() => setIsUploadModalOpen(true)}
         >
@@ -307,7 +358,7 @@ const MaterialManagement = () => {
 
         <div className="filter-dropdown">
           <FilterIcon />
-          <select 
+          <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
           >
@@ -319,7 +370,7 @@ const MaterialManagement = () => {
         </div>
       </div>
 
-       {/* Materials List Table */}
+      {/* Materials List Table */}
       <div className="materials-list">
         {filteredMaterials.length === 0 ? (
           <div className="empty-state">
@@ -349,7 +400,7 @@ const MaterialManagement = () => {
           <div className="upload-modal">
             <div className="modal-header">
               <h3>Upload Material</h3>
-              <button 
+              <button
                 className="close-button"
                 onClick={() => {
                   setIsUploadModalOpen(false);
@@ -385,8 +436,8 @@ const MaterialManagement = () => {
                     <p>Drag & drop files here or</p>
                     <label className="file-input-label">
                       Browse Files
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         onChange={handleFileChange}
                         accept=".pdf,.doc,.docx"
                         style={{ display: "none" }}
@@ -400,7 +451,7 @@ const MaterialManagement = () => {
                     )}
                   </div>
                   <p className="file-requirements">
-                    Supported formats: PDF, DOC, DOCX (Max 50MB)
+                    Supported formats: PDF, DOC, DOCX (Max 10MB)
                   </p>
                 </>
               ) : (
@@ -422,6 +473,12 @@ const MaterialManagement = () => {
             </div>
 
             <div className="modal-footer">
+              {isLoading && uploadType === 'file' && (
+                <div style={{ width: '100%', marginBottom: '10px' }}>
+                  <Progress percent={uploadProgress} status="active" />
+                  <p style={{ textAlign: 'center', fontSize: '12px', color: '#666' }}>Uploading and Processing...</p>
+                </div>
+              )}
               <button
                 className="cancel-button"
                 onClick={() => {
@@ -430,23 +487,47 @@ const MaterialManagement = () => {
                   setSelectedFile(null);
                   setLinkUrl("");
                 }}
+                disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 className="submit-button"
                 onClick={uploadType === "file" ? handleFileSubmit : handleLinkSubmit}
-                disabled={isLoading}
+                disabled={isLoading || (uploadType === "file" ? !selectedFile : !linkUrl)}
               >
-                {isLoading ? "Uploading..." : "Upload"}
+                {isLoading ? "Processing..." : "Upload"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Viewer Modal */}
-      {isViewerModalOpen && renderViewerModal()}
+      {/* Edit Modal */}
+      <Modal
+        title="Rename Material"
+        open={isEditModalOpen}
+        onOk={handleEditSubmit}
+        onCancel={() => setIsEditModalOpen(false)}
+        okText="Save"
+        cancelText="Cancel"
+      >
+        <div className="form-group">
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Material Name</label>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              border: '1px solid #d9d9d9',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 };

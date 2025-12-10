@@ -52,7 +52,7 @@
 /* --- Control Bar Wrapper --- */
 .controlBarWrapper {
   display: flex;
-  justify-content: space-between;
+  gap: 15px;
   align-items: center;
   margin-bottom: 25px;
   padding-top: 10px;
@@ -362,30 +362,58 @@
   color: #8c8c8c;
 }
 
+/* New Grouping for Filter + Toggle */
+.filterToggleGroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
 /* --- Responsive adjustment for layout --- */
 @media (max-width: 768px) {
   .controlBarWrapper {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .searchFilterGroup {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    margin-bottom: 15px;
     gap: 15px;
+    /* Add gap between the search row and the filter/toggle row */
   }
 
-  /* Mobile sizing for search/filter inputs */
+  /* Search bar becomes full width on its own row */
   .customSearchBar {
     width: 100%;
     max-width: none;
   }
 
+  .searchFilterGroup {
+    /* Legacy or if reused: make sure it doesn't break things, 
+       but we are likely removing it in JSX. 
+       If we keep it as a wrapper for just search, it's fine. 
+       If we replaced it, this might be unused. */
+    display: contents;
+  }
+
+  /* The new group takes full width and puts items side-by-side with a gap */
+  .filterToggleGroup {
+    display: flex;
+    gap: 15px;
+    /* Enforce flex container */
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Filter takes its natural width (or fixed desktop width) */
+  .customSelect {
+    /* Removed flex-grow: 1 to prevent filling the gap */
+    width: auto;
+  }
+
   .viewToggle {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 0;
+    /* Reset margins */
+    margin-right: 0;
+    flex-shrink: 0;
+    /* Don't shrink the toggle */
   }
 
   .lessonsGrid {

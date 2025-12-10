@@ -284,18 +284,20 @@ const PlannerPage = () => {
 
       {activeTab === 'lessons' && (
         <div className={styles.controlBarWrapper}>
-          <div className={styles.searchFilterGroup}>
-            <div className={styles.customSearchBar}>
-              <FaSearch className={styles.searchIcon} />
-              <input
-                type="text"
-                placeholder="Search lessons, subjects, or classes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
+          {/* 1. Search Bar (Standalone) */}
+          <div className={styles.customSearchBar}>
+            <FaSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search lessons, subjects, or classes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
 
+          {/* 2. Filter + Toggle Group */}
+          <div className={styles.filterToggleGroup}>
             <select
               value={filterSubject || ''}
               onChange={(e) => setFilterSubject(e.target.value || null)}
@@ -306,23 +308,23 @@ const PlannerPage = () => {
                 <option key={subject} value={subject}>{subject}</option>
               ))}
             </select>
-          </div>
 
-          <div className={styles.viewToggle}>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={viewMode === 'grid' ? styles.active : ''}
-              title="Grid View"
-            >
-              <FaTh />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? styles.active : ''}
-              title="List View"
-            >
-              <FaBars />
-            </button>
+            <div className={styles.viewToggle}>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={viewMode === 'grid' ? styles.active : ''}
+                title="Grid View"
+              >
+                <FaTh />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? styles.active : ''}
+                title="List View"
+              >
+                <FaBars />
+              </button>
+            </div>
           </div>
         </div>
       )}

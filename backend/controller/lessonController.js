@@ -156,25 +156,81 @@ exports.createLesson = async (req, res, next) => {
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    // --- The prompt remains the same ---
-    const prompt = `
-      You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class for the subject: ${subject}.
+    // Check for material usage
+    let materialPart = null;
+    let materialContent = "";
 
+    if (req.body.materialId) {
+      const Material = require("../model/Material");
+      // Explicitly select originalFileUrl because it might be set to select: false
+      const material = await Material.findById(req.body.materialId).select("+originalFileUrl");
+
+      if (material) {
+        if (material.type === "link") {
+          // For links, we might still reference the content field if you had scraper logic, 
+          // but assuming "link" type materials store URL in originalFileUrl or name.
+          materialContent = `Material Link: ${material.originalFileUrl || material.name}`;
+        } else if (material.originalFileUrl && material.originalFileUrl.startsWith("data:")) {
+          // It's a Base64 file
+          const matches = material.originalFileUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            materialPart = {
+              inlineData: {
+                mimeType: matches[1],
+                data: matches[2]
+              }
+            };
+          }
+        } else if (material.content) {
+          // Fallback to text content if available
+          materialContent = material.content;
+        }
+      }
+    }
+
+    // --- The prompt remains the same ---
+    // --- The prompt creation ---
+    let promptContext = `
+      You are a Malaysia Educator. Your task is to create a lesson plan tally to Scheme of Work (SoW), You may be creative, engaging 60-minute lesson plan for a ${grade} class for the subject: ${subject}.
+    `;
+
+    // 1. Material & SOW Logic
+    if (materialPart || materialContent) {
+      promptContext += `
+      IMPORTANT: Base your lesson plan primarily on the provided material (attached document or text context).
+      
+      ${materialContent ? `--- MATERIAL CONTEXT ---\n${materialContent}\n--- END MATERIAL CONTEXT ---` : ""}
+      
+      You should still align it with the SoW topic if provided below, but prioritize the material content.
+      SOW/Curriculum Context (for alignment only):
+      ${JSON.stringify(sow, null, 2)}
+      `;
+    } else {
+      promptContext += `
       Here is the official SoW data to base the plan on:
       ${JSON.stringify(sow, null, 2)}
+      `;
+    }
 
+    // 2. Dynamic Parameters
+    promptContext += `
       Use this specific context provided by the teacher:
-      - Class Proficiency Level: ${proficiencyLevel}
       - Specific Topic/Theme: "${specificTopic}"
-      - Higher Order Thinking Skill (HOTS) to focus on: ${hotsFocus}
-      - Additional Notes: ${additionalNotes || "None"}
       - Type of Activity: ${activityType}
+      - Additional Notes: ${additionalNotes || "None"}
+    `;
+
+    // Conditionally add optional fields
+    if (proficiencyLevel) promptContext += `\n      - proficiency Level: ${proficiencyLevel}`;
+    if (hotsFocus) promptContext += `\n      - Higher Order Thinking Skills (HOTS): ${hotsFocus}`;
+
+    promptContext += `
       ${activityConfiguration
         ? `- Activity Configuration: ${JSON.stringify(activityConfiguration, null, 2)}`
         : ""
       }
 
-      Generate a creative and practical lesson plan based on the SoW's learning outline.
+      Generate a creative and practical lesson plan based on the SoW's learning outline and the material provided (if any).
       Do not include any formal assessment, homework and specific materials or resources (Activities from textbook etc).
 
       The response MUST be a valid JSON object, without any surrounding text or markdown.
@@ -188,7 +244,7 @@ exports.createLesson = async (req, res, next) => {
       The value for "preLesson", "duringLesson", and "postLesson" MUST be a simple array of STRINGS. Each string in the array should be a complete sentence describing one activity.
       **DO NOT use objects with keys like 'activityName' or 'description' inside these arrays.**
 
-      The ONLY acceptable format for the 'activities' object is shown in this example (Note: This example is for English, but you MUST adapt the content for the subject ${subject}):
+      The ONLY acceptable format for the 'activities' object is shown in this example (Adapt content for ${subject}):
       {
         "learningObjective": "By the end of the lesson, students will be able to...",
         "successCriteria": [
@@ -211,9 +267,18 @@ exports.createLesson = async (req, res, next) => {
       }
     `;
 
+    const prompt = promptContext;
+
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent(prompt);
+
+      // Construct the generation request
+      const generateRequest = [prompt];
+      if (materialPart) {
+        generateRequest.push(materialPart);
+      }
+
+      const result = await model.generateContent(generateRequest);
       const response = await result.response;
       const text = response.text();
 
@@ -324,10 +389,10 @@ exports.saveLessonPlan = async (req, res, next) => {
  */
 exports.getLessonPlanById = async (req, res, next) => {
   try {
-    const lessonPlan = await LessonPlan.findById(req.params.id).populate(
-      "classId",
-      "className grade"
-    );
+    const lessonPlan = await LessonPlan.findById(req.params.id)
+      .populate("classId", "className grade subject")
+      .populate("approvedBy", "name email")
+      .populate("createdBy", "name email"); // Populate creator details
 
     if (!lessonPlan) {
       return res.status(404).json({
@@ -336,7 +401,14 @@ exports.getLessonPlanById = async (req, res, next) => {
       });
     }
 
-    if (lessonPlan.createdBy.toString() !== req.user.id) {
+    const canView =
+      lessonPlan.createdBy._id.toString() === req.user.id ||
+      lessonPlan.createdBy.toString() === req.user.id ||
+      req.user.roles.some((role) =>
+        ["school_admin", "super_admin", "math_head", "science_head", "english_head", "history_head", "geography_head"].includes(role)
+      );
+
+    if (!canView) {
       return res.status(401).json({
         success: false,
         message: "Not authorized to view this lesson plan",
@@ -793,7 +865,7 @@ exports.rejectLesson = async (req, res) => {
     lesson.approvalStatus = 'rejected';
     lesson.approvedBy = req.user.id;
     lesson.approvalDate = new Date();
-    lesson.rejectionReason = req.body.reason || 'No reason specified.';
+    lesson.remarks = req.body.reason || 'No reason specified.'; // Changed from rejectionReason to remarks
     await lesson.save();
 
     // Create Notification for the creator
@@ -803,7 +875,7 @@ exports.rejectLesson = async (req, res) => {
         sender: req.user.id,
         type: "lesson_rejected",
         lessonId: lesson._id,
-        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been rejected. Reason: ${lesson.rejectionReason}`,
+        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been rejected. Remarks: ${lesson.remarks}`,
         isRead: false
       });
     } catch (notifyErr) {

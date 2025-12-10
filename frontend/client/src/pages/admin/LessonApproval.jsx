@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getAllLessonsForApproval,
   approveLesson,
@@ -10,6 +11,7 @@ import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import LessonStatusIcon from "../../components/LessonStatusIcon";
 
 const LessonApproval = () => {
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -92,27 +94,24 @@ const LessonApproval = () => {
       {/* === TAB BAR === */}
       <div className={styles.tabBar}>
         <button
-          className={`${styles.tabButton} ${
-            activeTab === "All" ? styles.activeTab : ""
-          }`}
+          className={`${styles.tabButton} ${activeTab === "All" ? styles.activeTab : ""
+            }`}
           onClick={() => setActiveTab("All")}
         >
           All <span className={styles.badge}>{lessons.length}</span>
         </button>
 
         <button
-          className={`${styles.tabButton} ${
-            activeTab === "To Review" ? styles.activeTab : ""
-          }`}
+          className={`${styles.tabButton} ${activeTab === "To Review" ? styles.activeTab : ""
+            }`}
           onClick={() => setActiveTab("To Review")}
         >
           To Review <span className={styles.badge}>{pendingCount}</span>
         </button>
 
         <button
-          className={`${styles.tabButton} ${
-            activeTab === "Processed" ? styles.activeTab : ""
-          }`}
+          className={`${styles.tabButton} ${activeTab === "Processed" ? styles.activeTab : ""
+            }`}
           onClick={() => setActiveTab("Processed")}
         >
           Processed <span className={styles.badge}>{processedCount}</span>
@@ -136,7 +135,12 @@ const LessonApproval = () => {
 
           {filteredLessons.map((lesson) => (
             <div key={lesson._id} className={styles.listItem}>
-              <div>{lesson.parameters?.specificTopic || "Untitled"}</div>
+              <div
+                style={{ cursor: "pointer", color: "#1890ff", fontWeight: "bold" }}
+                onClick={() => navigate(`/app/admin/lessons/${lesson._id}/review`)}
+              >
+                {lesson.parameters?.specificTopic || "Untitled"}
+              </div>
               <div>{lesson.classInfo.className}</div>
               <div>{lesson.classInfo.grade}</div>
               <div>{lesson.classInfo.subject}</div>

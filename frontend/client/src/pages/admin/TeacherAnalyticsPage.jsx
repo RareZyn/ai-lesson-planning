@@ -36,7 +36,19 @@ import {
     YAxis,
     Tooltip,
     Cell,
+    LineChart,
+    Line,
+    PieChart,
+    Pie,
+    Legend,
+    CartesianGrid,
 } from "recharts";
+import {
+    FileTextOutlined,
+    FilePdfOutlined,
+    RocketOutlined
+} from "@ant-design/icons";
+import { Progress, Timeline } from "antd";
 import { getTeacherAnalytics } from "../../services/adminService";
 import "./TeacherAnalyticsPage.css";
 
@@ -96,10 +108,21 @@ const TeacherAnalyticsPage = () => {
     if (!data) return null;
 
     const { teacher, analytics } = data;
-    const { statusDistribution, subjectDistribution, totalLessons, totalClasses, lastActivity } = analytics;
+    const {
+        statusDistribution,
+        subjectDistribution,
+        totalLessons,
+        totalClasses,
+        lastActivity,
+        activityOverTime,
+        hotsDistribution,
+        materialUsage,
+        recentActivity
+    } = analytics;
 
     // Colors for charts
-    const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+    const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
+    const PIE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#a0d911", "#eb2f96"];
 
     return (
         <div className="analytics-page">
@@ -119,7 +142,7 @@ const TeacherAnalyticsPage = () => {
             <Card className="header-card">
                 <Row gutter={[24, 24]} align="middle">
                     {/* Picture */}
-                    <Col flex="120px" className="teacher-avatar-col">
+                    <Col xs={24} md="120px" className="teacher-avatar-col" style={{ display: 'flex', justifyContent: 'center' }}>
                         <Avatar
                             size={100}
                             icon={<UserOutlined />}
@@ -130,18 +153,18 @@ const TeacherAnalyticsPage = () => {
                     </Col>
 
                     {/* Details */}
-                    <Col flex="auto">
+                    <Col xs={24} md="auto" style={{ flex: 1 }}>
                         {/* Top Row: Name | Email | Created */}
                         <div className="teacher-name-row">
                             <Title level={2} className="teacher-name">
                                 {teacher.name}
                             </Title>
-                            <span className="divider-pipe">|</span>
+                            <span className="divider-pipe hidden-mobile">|</span>
                             <div className="teacher-meta-item">
                                 <MailOutlined style={{ color: "#1890ff" }} />
                                 <Text type="secondary">{teacher.email}</Text>
                             </div>
-                            <span className="divider-pipe">|</span>
+                            <span className="divider-pipe hidden-mobile">|</span>
                             <div className="teacher-meta-item">
                                 <CalendarOutlined style={{ color: "#1890ff" }} />
                                 <Text type="secondary">Created: {new Date(teacher.createdAt).toLocaleDateString()}</Text>
@@ -279,6 +302,147 @@ const TeacherAnalyticsPage = () => {
                             <div style={{ textAlign: "center", padding: "5rem 0" }}>
                                 <Text type="secondary">No detailed subject data available</Text>
                             </div>
+                        )}
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* NEW: Trends & Pedagogy Row */}
+            <Row gutter={[24, 24]} style={{ marginTop: "24px" }}>
+                {/* 1. Productivity Trend */}
+                <Col xs={24} lg={16}>
+                    <Card title={<><RocketOutlined /> Activity Trends (Last 6 Months)</>} className="chart-card">
+                        <div className="chart-container" style={{ height: "300px" }}>
+                            {activityOverTime && activityOverTime.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={activityOverTime} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" />
+                                        <YAxis allowDecimals={false} />
+                                        <Tooltip contentStyle={{ borderRadius: "8px" }} />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="lessons"
+                                            name="Lessons Created"
+                                            stroke="#1890ff"
+                                            activeDot={{ r: 8 }}
+                                            strokeWidth={3}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "5rem 0" }}>No trend data available</div>
+                            )}
+                        </div>
+                    </Card>
+                </Col>
+
+                {/* 2. Pedagogical Focus (HOTS) */}
+                <Col xs={24} lg={8}>
+                    <Card title="Pedagogical Focus (HOTS)" className="chart-card">
+                        <div className="chart-container" style={{ height: "300px" }}>
+                            {hotsDistribution && hotsDistribution.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={hotsDistribution}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {hotsDistribution.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend
+                                            layout="horizontal"
+                                            verticalAlign="bottom"
+                                            align="center"
+                                            wrapperStyle={{ fontSize: "12px" }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "5rem 0" }}>No HOTS data available</div>
+                            )}
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* NEW: Materials & Activity Log Row */}
+            <Row gutter={[24, 24]} style={{ marginTop: "24px", marginBottom: "40px" }}>
+                {/* 3. Material Utilization */}
+                <Col xs={24} md={10}>
+                    <Card title={<><FilePdfOutlined /> Material Utilization</>} className="chart-card" style={{ height: "100%" }}>
+                        <div style={{ padding: "10px 0" }}>
+                            <Row gutter={[16, 16]}>
+                                <Col span={12}>
+                                    <Statistic title="Total Uploads" value={materialUsage?.totalUploads || 0} prefix={<FileTextOutlined />} />
+                                </Col>
+                                <Col span={12}>
+                                    <Statistic title="Usage Ratio" value={`${materialUsage?.materialBased || 0}:${materialUsage?.syllabusBased || 0}`} suffix="(Mat:Syl)" />
+                                </Col>
+                            </Row>
+
+                            <div style={{ marginTop: "30px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                                    <Text strong>Lessons from Custom Material</Text>
+                                    <Text>{materialUsage?.materialBased || 0} Lessons</Text>
+                                </div>
+                                <Progress
+                                    percent={
+                                        totalLessons > 0
+                                            ? Math.round(((materialUsage?.materialBased || 0) / totalLessons) * 100)
+                                            : 0
+                                    }
+                                    status="active"
+                                    strokeColor="#1890ff"
+                                />
+
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", marginTop: "20px" }}>
+                                    <Text strong>Lessons from Syllabus</Text>
+                                    <Text>{materialUsage?.syllabusBased || 0} Lessons</Text>
+                                </div>
+                                <Progress
+                                    percent={
+                                        totalLessons > 0
+                                            ? Math.round(((materialUsage?.syllabusBased || 0) / totalLessons) * 100)
+                                            : 0
+                                    }
+                                    status="normal"
+                                    strokeColor="#52c41a"
+                                />
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+
+                {/* 4. Recent Activity Log */}
+                <Col xs={24} md={14}>
+                    <Card title={<><ClockCircleOutlined /> Recent Activity Log</>} className="chart-card" style={{ height: "100%" }}>
+                        {recentActivity && recentActivity.length > 0 ? (
+                            <Timeline mode="left" style={{ marginTop: "10px" }}>
+                                {recentActivity.map((item, idx) => (
+                                    <Timeline.Item
+                                        key={idx}
+                                        color={item.type === 'lesson_created' ? 'blue' : 'green'}
+                                        label={new Date(item.date).toLocaleDateString()}
+                                    >
+                                        <Text strong>{item.type === 'lesson_created' ? 'Created Lesson' : 'Uploaded Material'}</Text>
+                                        <br />
+                                        <Text type="secondary">{item.title}</Text>
+                                        {item.meta && <Tag style={{ marginLeft: "8px" }}>{item.meta.toUpperCase()}</Tag>}
+                                    </Timeline.Item>
+                                ))}
+                            </Timeline>
+                        ) : (
+                            <div style={{ textAlign: "center", padding: "2rem 0" }}>No recent activity</div>
                         )}
                     </Card>
                 </Col>

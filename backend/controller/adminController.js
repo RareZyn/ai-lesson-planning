@@ -11,6 +11,7 @@ const School = require("../model/School"); // Assuming you want to associate tok
 const Syllabus = require("../model/Syllabus");
 const LessonPlan = require("../model/Lesson");
 const Class = require("../model/Class");
+const Material = require("../model/Material"); // Added Material model import
 const crypto = require("crypto");
 const XLSX = require("xlsx");
 
@@ -414,6 +415,8 @@ exports.getTeacherAnalytics = async (req, res) => {
       return res.status(404).json({ success: false, message: "Teacher not found in your school" });
     }
 
+    const Material = require("../model/Material"); // Ensure this is imported at the top if not already
+
     // 2. Fetch Lesson Stats
     // Aggregation for Approval Status (Draft, Pending, Approved, Rejected)
     const statusStats = await LessonPlan.aggregate([
@@ -443,8 +446,116 @@ exports.getTeacherAnalytics = async (req, res) => {
       { $group: { _id: "$classInfo.subject", count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
-
     const subjectsTaught = subjectStats.map(s => s._id);
+
+    // --- PROPOSAL IMPLEMENTATION ---
+
+    // 1. Productivity Trend (Last 6 Months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // Go back 5 months + current
+    const activityStats = await LessonPlan.aggregate([
+      {
+        $match: {
+          createdBy: teacher._id,
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    // Fill missing months for charts
+    const activityOverTime = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (5 - i));
+      const mon = d.toLocaleString('default', { month: 'short' });
+      const yr = d.getFullYear();
+
+      const found = activityStats.find(s => s._id.month === d.getMonth() + 1 && s._id.year === yr);
+      activityOverTime.push({
+        name: `${mon}`,
+        fullName: `${mon} ${yr}`,
+        lessons: found ? found.count : 0
+      });
+    }
+
+
+    // 2. Pedagogical Focus (HOTS)
+    const hotsStats = await LessonPlan.aggregate([
+      { $match: { createdBy: teacher._id, "parameters.hotsFocus": { $exists: true, $ne: null } } },
+      { $group: { _id: "$parameters.hotsFocus", count: { $sum: 1 } } }
+    ]);
+
+    const hotsDistribution = hotsStats.map(h => ({
+      name: h._id ? (h._id.charAt(0).toUpperCase() + h._id.slice(1)) : "Unspecified",
+      value: h.count
+    }));
+
+
+    // 3. Material Utilization
+    const materialUploadCount = await Material.countDocuments({ user: teacher._id });
+
+    // Check lessons that used material vs syllabus
+    const materialUsageStats = await LessonPlan.aggregate([
+      { $match: { createdBy: teacher._id } },
+      {
+        $project: {
+          sourceType: {
+            $cond: { if: { $gt: ["$parameters.materialId", null] }, then: "Material", else: "Syllabus" } // Assuming we store materialId in parameters from Step 2
+          }
+        }
+      },
+      { $group: { _id: "$sourceType", count: { $sum: 1 } } }
+    ]);
+
+    const materialVsSyllabus = {
+      materialBased: materialUsageStats.find(s => s._id === "Material")?.count || 0,
+      syllabusBased: materialUsageStats.find(s => s._id === "Syllabus")?.count || 0,
+      totalUploads: materialUploadCount
+    };
+
+
+    // 4. Recent Activity Log (Combine Lessons & Materials)
+    const recentLessons = await LessonPlan.find({ createdBy: teacher._id })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("parameters.specificTopic createdAt approvedAt")
+      .lean();
+
+    const recentMaterials = await Material.find({ user: teacher._id })
+      .sort({ uploadDate: -1 }) // Material uses 'uploadDate'
+      .limit(5)
+      .select("name uploadDate type")
+      .lean();
+
+    // Combine and sort
+    let recentActivity = [
+      ...recentLessons.map(l => ({
+        type: "lesson_created",
+        title: l.parameters?.specificTopic || "Untitled Lesson",
+        date: l.createdAt
+      })),
+      ...recentMaterials.map(m => ({
+        type: "material_upload",
+        title: m.name,
+        meta: m.type,
+        date: m.uploadDate
+      }))
+    ];
+
+    // Sort combined list by date descending and take top 5
+    recentActivity.sort((a, b) => new Date(b.date) - new Date(a.date));
+    recentActivity = recentActivity.slice(0, 5);
+
 
     // Total Lessons
     const totalLessons = await LessonPlan.countDocuments({ createdBy: teacher._id });
@@ -467,7 +578,13 @@ exports.getTeacherAnalytics = async (req, res) => {
           totalClasses,
           statusDistribution, // For Spider Chart
           subjectDistribution: subjectStats.map(s => ({ subject: s._id, count: s.count })),
-          lastActivity: lastLesson ? lastLesson.createdAt : null
+          lastActivity: lastLesson ? lastLesson.createdAt : null,
+
+          // New Metrics
+          activityOverTime,
+          hotsDistribution,
+          materialUsage: materialVsSyllabus,
+          recentActivity
         }
       }
     });

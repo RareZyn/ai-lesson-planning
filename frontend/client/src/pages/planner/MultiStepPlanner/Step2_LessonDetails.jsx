@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./MultiStepPlanner.module.css";
 import { getSyllabuses, getSyllabusById } from "../../../services/adminService";
+import { getMaterials } from "../../../services/materialService"; // Import material service
 
 // Import all the modal components
 import ActivityInClassModal from "../../../components/Modal/LessonBasedAssessment/ActivityInClassLessonModal";
@@ -12,8 +13,11 @@ import SPMExamModal from "../../../components/Modal/LessonBasedAssessment/SPMExa
 
 const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
   const [syllabusItems, setSyllabusItems] = useState([]);
+  const [userMaterials, setUserMaterials] = useState([]); // State for materials
+  const [sourceType, setSourceType] = useState(data.materialId ? "material" : "syllabus"); // Track source type
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
 
   // State for modal management
   const [activeModal, setActiveModal] = useState(null);
@@ -33,25 +37,22 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         console.log(`Fetching Syllabuses for grade: "${data.grade}"`);
         const allSyllabuses = await getSyllabuses();
 
-        // Filter by grade
-        // NOTE: ideally we should also filter by subject if available in 'data'
         const matchingSyllabus = allSyllabuses.find(s => s.grade === data.grade);
 
         if (matchingSyllabus) {
-          // BUG FIX: Controller returns 'id', not '_id'
           const fullSyllabus = await getSyllabusById(matchingSyllabus.id);
-          const items = fullSyllabus.data || []; // Assuming 'data' contains the array of topics
+          const items = fullSyllabus.data || [];
 
           if (items.length > 0) {
             setSyllabusItems(items);
           } else {
             setSyllabusItems([]);
-            setError(`Syllabus found for ${data.grade} but it has no no items/topics.`);
+            if (sourceType === 'syllabus') setError(`Syllabus found for ${data.grade} but it has no no items/topics.`);
           }
 
         } else {
           setSyllabusItems([]);
-          setError(`No syllabus found for ${data.grade}. Please upload one in Admin.`);
+          if (sourceType === 'syllabus') setError(`No syllabus found for ${data.grade}. Please upload one in Admin.`);
         }
 
       } catch (err) {
@@ -62,8 +63,31 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       }
     };
 
-    fetchSyllabusData();
-  }, [data.grade]);
+    if (sourceType === 'syllabus') {
+      fetchSyllabusData();
+    }
+  }, [data.grade, sourceType]);
+
+  // Fetch materials if source is material
+  useEffect(() => {
+    if (sourceType === 'material') {
+      const fetchMaterials = async () => {
+        setIsLoading(true);
+        try {
+          const response = await getMaterials();
+          if (response.success) {
+            setUserMaterials(response.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch materials:", err);
+          setError("Failed to load materials.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchMaterials();
+    }
+  }, [sourceType]);
 
   // Check if activity has been configured when activity type or configuration changes
   useEffect(() => {
@@ -154,9 +178,15 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
     // Updated logic: check for LessonNo or Title or whatever the dynamic key is
     const hasTopicSelected = data.sow?.lessonNo || data.sow?.Title || (data.sow && Object.keys(data.sow).length > 0);
 
-    // Basic requirements: Topic and Specific Topic are always required
-    if (!hasTopicSelected && !data.specificTopic) {
-      alert("Please select a topic or enter a specific topic/title.");
+    // Basic requirements: Topic (OR Material) and Specific Topic are always required
+    if (sourceType === 'syllabus' && !hasTopicSelected && !data.specificTopic) {
+      alert("Please select a syllabus topic or enter a specific topic/title.");
+      return;
+    }
+
+    // STRICTER: If using material, you MUST select a file. Specific Topic alone is not enough context for AI if mode is Material.
+    if (sourceType === 'material' && !data.materialId) {
+      alert("Please select a material to base the lesson on.");
       return;
     }
 
@@ -244,54 +274,118 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
       <p>Fill in the core details based on the Syllabus.</p>
 
       <form onSubmit={handleSubmit}>
-        {/* Lesson from Syllabus */}
-        <div className={styles.formGroup}>
-          <label htmlFor="lessonNumber">Topic from Syllabus ({topicKey})</label>
-          <select
-            id="lessonNumber"
-            name="lessonNumber"
-            value={data.sow?.[topicKey] || ""}
-            onChange={(e) => {
-              const selectedValue = e.target.value;
-              const selectedItem = syllabusItems.find(
-                (item) => item[topicKey] === selectedValue
-              );
 
-              // We store the whole item in 'sow' to keep structure similar, or rename 'sow' to 'syllabusItem' in future
-              updateData("sow", selectedItem || {});
+        {/* Source Selection Toggle */}
+        <div className={styles.formGroup} style={{ marginBottom: "20px" }}>
+          <label>Lesson Source</label>
+          <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setSourceType("syllabus");
+                updateData("materialId", null); // Clear material if switching to syllabus
+              }}
+              className={sourceType === "syllabus" ? styles.primaryButton : styles.secondaryButton}
+              style={{ flex: 1 }}
+            >
+              Use Syllabus
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSourceType("material");
+                updateData("sow", {}); // Clear SOW if switching to material
+              }}
+              className={sourceType === "material" ? styles.primaryButton : styles.secondaryButton}
+              style={{ flex: 1 }}
+            >
+              Use Uploaded Material
+            </button>
+          </div>
+        </div>
 
-              if (selectedItem && selectedItem[topicKey]) {
-                // Auto-fill specific topic with the detected title key
-                updateData("specificTopic", selectedItem[topicKey]);
-              }
-            }}
-            disabled={isLoading}
-            required
-          >
-            <option value="" disabled>
-              -- Select Topic --
-            </option>
-            {isLoading && <option disabled>Loading syllabus...</option>}
-            {error && <option disabled>Error: {error}</option>}
-            {!isLoading && !error && syllabusItems.length === 0 && (
-              <option disabled>No topics available for {data.grade}</option>
-            )}
-            {!isLoading &&
-              !error &&
-              syllabusItems.map((item, index) => (
-                <option key={index} value={item[topicKey]}>
-                  {index + 1}. {item[topicKey]}
+        {/* Lesson from Syllabus OR Material */}
+        {sourceType === "syllabus" ? (
+          <div className={styles.formGroup}>
+            <label htmlFor="lessonNumber">Topic from Syllabus ({topicKey})</label>
+            <select
+              id="lessonNumber"
+              name="lessonNumber"
+              value={data.sow?.[topicKey] || ""}
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                const selectedItem = syllabusItems.find(
+                  (item) => item[topicKey] === selectedValue
+                );
+
+                // We store the whole item in 'sow' to keep structure similar, or rename 'sow' to 'syllabusItem' in future
+                updateData("sow", selectedItem || {});
+
+                if (selectedItem && selectedItem[topicKey]) {
+                  // Auto-fill specific topic with the detected title key
+                  updateData("specificTopic", selectedItem[topicKey]);
+                }
+              }}
+              disabled={isLoading}
+              required
+            >
+              <option value="" disabled>
+                -- Select Topic --
+              </option>
+              {isLoading && <option disabled>Loading syllabus...</option>}
+              {error && <option disabled>Error: {error}</option>}
+              {!isLoading && !error && syllabusItems.length === 0 && (
+                <option disabled>No topics available for {data.grade}</option>
+              )}
+              {!isLoading &&
+                !error &&
+                syllabusItems.map((item, index) => (
+                  <option key={index} value={item[topicKey]}>
+                    {index + 1}. {item[topicKey]}
+                  </option>
+                ))}
+            </select>
+
+            <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
+              {data.grade
+                ? `Looking for syllabus topics in ${data.grade}`
+                : "Please select a class first"}
+              {isLoading && " - Loading..."}
+            </small>
+          </div>
+        ) : (
+          <div className={styles.formGroup}>
+            <label htmlFor="materialSelect">Select Uploaded Material</label>
+            <select
+              id="materialSelect"
+              name="materialId"
+              value={data.materialId || ""}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                updateData("materialId", selectedId);
+
+                // Auto-fill specific topic from material name
+                const selectedMaterial = userMaterials.find(m => m._id === selectedId);
+                if (selectedMaterial) {
+                  updateData("specificTopic", selectedMaterial.name);
+                }
+              }}
+              disabled={isLoading}
+              required={sourceType === 'material'}
+            >
+              <option value="" disabled>-- Select Material --</option>
+              {userMaterials.length === 0 && <option disabled>No materials found</option>}
+              {userMaterials.map(material => (
+                <option key={material._id} value={material._id}>
+                  {material.name} ({material.type})
                 </option>
               ))}
-          </select>
-
-          <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
-            {data.grade
-              ? `Looking for syllabus topics in ${data.grade}`
-              : "Please select a class first"}
-            {isLoading && " - Loading..."}
-          </small>
-        </div>
+            </select>
+            <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
+              Don't see your material? <a href="/app/material" target="_blank">Upload it in Material Management</a> first.
+            </small>
+          </div>
+        )}
 
         {data.sow && Object.keys(data.sow).length > 0 && (
           <div style={{

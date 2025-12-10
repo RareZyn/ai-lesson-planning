@@ -372,3 +372,27 @@ export const enhanceLessonSection = async (payload) => {
     );
   }
 };
+
+/**
+ * Sends a lesson plan for approval.
+ * @param {string} id - The ID of the lesson plan to send for approval.
+ * @returns {Promise<object>} - The response from the server.
+ */
+export const sendForApproval = async (id) => {
+  try {
+    const response = await axios.post(
+      `/api/lessons/${id}/send-approval`,
+      {},
+      getAuthConfig()
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error sending lesson for approval:",
+      error.response?.data?.message || error.message
+    );
+    throw new Error(
+      error.response?.data?.message || "Failed to send lesson for approval."
+    );
+  }
+};

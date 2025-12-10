@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getLessonPlanById,
   deleteLessonPlan,
+  sendForApproval,
 } from "../../../services/lessonService";
 import { exportToPdf, exportToDocx } from "../../../services/exportService";
 import offlineLessonService from "../../../services/offline/offlineLessonService";
@@ -22,7 +23,7 @@ import {
   Typography,
   Divider,
   Modal,
-  Menu,
+
 } from "antd";
 
 // Import Ant Design icons
@@ -40,6 +41,10 @@ import {
   BulbOutlined,
   ThunderboltOutlined,
   FileTextOutlined,
+  CheckCircleOutlined,
+  SyncOutlined,
+  CloseCircleOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 
 import styles from "./DisplayLessonPage.module.css";
@@ -334,6 +339,114 @@ const DisplayLessonPage = () => {
     handlePlanChange("activities", updatedActivities);
   };
 
+  // Approval Handler
+  const handleSendForApproval = async () => {
+    if (window.confirm("Are you sure you want to send this lesson plan for approval? You won't be able to edit it while it's pending.")) {
+      try {
+        await sendForApproval(id);
+        alert("Lesson sent for approval successfully!");
+        // Refresh data
+        const updatedData = await getLessonPlanById(id);
+        setLessonPlan(updatedData);
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
+
+  const renderApprovalCard = () => {
+    if (!lessonPlan) return null;
+    const { approvalStatus, approvedBy, approvedAt, remarks, rejectionReason } = lessonPlan;
+    // Fallback for rejectionReason key if backend change hasn't propagated to all docs yet
+    const rejectionNote = remarks || rejectionReason;
+
+    if (!approvalStatus || approvalStatus === "draft") {
+      return (
+        <Card className="mb-4" style={{ borderColor: "#1890ff" }}>
+          <Row justify="space-between" align="middle">
+            <Col>
+              <Space>
+                <Title level={5} className="mb-0">Lesson Approval</Title>
+                <Tag color="default">Draft</Tag>
+              </Space>
+              <Paragraph className="mb-0 mt-2" type="secondary">
+                This lesson is currently a draft. Send it for approval when you are ready.
+              </Paragraph>
+            </Col>
+            <Col>
+              <Button type="primary" icon={<SendOutlined />} onClick={handleSendForApproval}>
+                Send for Approval
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+      );
+    }
+
+    if (approvalStatus === "pending") {
+      return (
+        <Alert
+          message="Waiting for Approval"
+          description="This lesson plan has been submitted and is pending review by the administrator."
+          type="info"
+          showIcon
+          icon={<SyncOutlined spin />}
+          className="mb-4"
+        />
+      );
+    }
+
+    if (approvalStatus === "approved") {
+      return (
+        <Alert
+          message="Lesson Approved"
+          description={
+            <div>
+              <Text>This lesson plan has been approved.</Text>
+              <br />
+              {approvedBy && (
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  Approved by {approvedBy.name} ({approvedBy.email}) on {new Date(approvedAt || lessonPlan.updatedAt).toLocaleDateString()}
+                </Text>
+              )}
+            </div>
+          }
+          type="success"
+          showIcon
+          icon={<CheckCircleOutlined />}
+          className="mb-4"
+        />
+      );
+    }
+
+    if (approvalStatus === "rejected") {
+      return (
+        <Alert
+          message="Lesson Rejected"
+          description={
+            <div>
+              <Text strong>Reason:</Text> <Text>{rejectionNote || "No reason specified."}</Text>
+              <br />
+              <br />
+              {approvedBy && (
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  Rejected by {approvedBy.name} on {new Date(approvedAt || lessonPlan.updatedAt).toLocaleDateString()}
+                </Text>
+              )}
+              {/* Note: Edit functionality requires changing state logic slightly, assuming draft reverts allows edits */}
+            </div>
+          }
+          type="error"
+          showIcon
+          icon={<CloseCircleOutlined />}
+          className="mb-4"
+        />
+      );
+    }
+
+    return null;
+  };
+
   // Render Logic
   if (isLoading)
     return (
@@ -388,415 +501,409 @@ const DisplayLessonPage = () => {
   const activityType = lessonPlan.activityType || parameters?.activityType;
 
   // Export menu for dropdown
-  const exportMenu = (
-    <Menu>
-      <Menu.Item
-        key="pdf"
-        icon={<FilePdfOutlined />}
-        onClick={() => {
-          exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId);
-        }}
-      >
-        Export as PDF
-      </Menu.Item>
-      <Menu.Item
-        key="docx"
-        icon={<FileWordOutlined />}
-        onClick={() => {
-          exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId);
-        }}
-      >
-        Export as DOCX
-      </Menu.Item>
-    </Menu>
-  );
+  const exportMenu = [
+    {
+      key: "pdf",
+      icon: <FilePdfOutlined />,
+      label: "Export as PDF",
+      onClick: () => {
+        exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId);
+      },
+    },
+    {
+      key: "docx",
+      icon: <FileWordOutlined />,
+      label: "Export as DOCX",
+      onClick: () => {
+        exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId);
+      },
+    },
+  ];
 
   return (
-    <div
-      className="container-fluid py-4"
-      style={{ minHeight: "100vh" }}
-    >
-      <div className="container">
-        {/* Back Button */}
-        <div className="mb-3">
-          <Button
-            type="link"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate("/app/lessons")}
-            className="p-0"
-          >
-            Back to All Lessons
-          </Button>
-        </div>
+    <div className="container">
+      {/* Back Button */}
+      <div className="mb-3">
+        <Button
+          type="link"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate("/app/lessons")}
+          className="p-0"
+        >
+          Back to All Lessons
+        </Button>
+      </div>
 
-        {/* Header */}
-        <Card className="mb-4" style={{ borderRadius: "12px" }}>
-          <Row justify="space-between" align="middle">
-            <Col xs={24} lg={16}>
-              <Title level={2} className="mb-1">
-                {parameters.specificTopic}
-              </Title>
-              <Text type="secondary" className="fs-5">
-                {lessonPlan.classId?.className || "N/A"}
-              </Text>
-              <div className="mt-2">
-                <Space wrap>
-                  <Tag color="blue">
-                    {parameters.sow?.focus || parameters.sow?.Focus || "General"}
-                  </Tag>
-                  {parameters.proficiencyLevel && (
-                    <Tag color="green">{parameters.proficiencyLevel}</Tag>
-                  )}
-                  {parameters.hotsFocus && (
-                    <Tag color="purple">
-                      {parameters.hotsFocus?.toUpperCase()}
-                    </Tag>
-                  )}
-                  {activityType && (
-                    <Tag color={getActivityTypeColor(activityType)}>
-                      {getActivityTypeLabel(activityType)}
-                    </Tag>
-                  )}
-                </Space>
-              </div>
-            </Col>
-            <Col xs={24} lg={8}>
-              <div className="d-flex justify-content-end gap-2 mt-3 mt-lg-0">
-                {isEditing ? (
-                  <Space>
-                    <Button
-                      icon={<CloseOutlined />}
-                      onClick={handleCancelEdit}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="primary"
-                      icon={<SaveOutlined />}
-                      onClick={handleSaveEdit}
-                      loading={isSaving}
-                    >
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </Space>
-                ) : (
-                  <Space>
-                    <Dropdown
-                      menu={{ items: exportMenu }}
-                      trigger={["click"]}
-                      placement="bottomRight"
-                    >
-                      <Button icon={<DownloadOutlined />}>Export</Button>
-                    </Dropdown>
-                    <Button icon={<EditOutlined />} onClick={handleEdit}>
-                      Edit
-                    </Button>
-                    <Button
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={handleDelete}
-                    >
-                      Delete
-                    </Button>
-                  </Space>
+      {/* Header */}
+      <Card className="mb-4" style={{ borderRadius: "12px" }}>
+        <Row justify="space-between" align="middle">
+          <Col xs={24} lg={16}>
+            <Title level={2} className="mb-1">
+              {parameters.specificTopic}
+            </Title>
+            <Text type="secondary" className="fs-5">
+              {lessonPlan.classId?.className || "N/A"}
+            </Text>
+            <div className="mt-2">
+              <Space wrap>
+                <Tag color="blue">
+                  {parameters.sow?.focus || parameters.sow?.Focus || "General"}
+                </Tag>
+                {parameters.proficiencyLevel && (
+                  <Tag color="green">{parameters.proficiencyLevel}</Tag>
                 )}
-              </div>
-            </Col>
-          </Row>
-        </Card>
-
-        <Row gutter={[24, 24]}>
-          <Col xs={24} xl={16}>
-            {/* Activity Configuration Section */}
-            {activityConfiguration && renderActivityConfiguration()}
-
-            {/* Learning Objective */}
-            <Card title="Learning Objective" className="mb-4">
+                {parameters.hotsFocus && (
+                  <Tag color="purple">
+                    {parameters.hotsFocus?.toUpperCase()}
+                  </Tag>
+                )}
+                {activityType && (
+                  <Tag color={getActivityTypeColor(activityType)}>
+                    {getActivityTypeLabel(activityType)}
+                  </Tag>
+                )}
+              </Space>
+            </div>
+          </Col>
+          <Col xs={24} lg={8}>
+            <div className="d-flex justify-content-end gap-2 mt-3 mt-lg-0">
               {isEditing ? (
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  value={displayPlan.learningObjective}
-                  onChange={(e) =>
-                    handlePlanChange("learningObjective", e.target.value)
-                  }
-                />
+                <Space>
+                  <Button
+                    icon={<CloseOutlined />}
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    onClick={handleSaveEdit}
+                    loading={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </Space>
               ) : (
-                <Paragraph className="mb-0">
-                  {displayPlan.learningObjective}
-                </Paragraph>
+                <Space>
+                  <Dropdown
+                    menu={{ items: exportMenu }}
+                    trigger={["click"]}
+                    placement="bottomRight"
+                  >
+                    <Button icon={<DownloadOutlined />}>Export</Button>
+                  </Dropdown>
+                  <Button icon={<EditOutlined />} onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </Button>
+                </Space>
               )}
-            </Card>
+            </div>
+          </Col>
+        </Row>
+      </Card>
 
-            {/* Success Criteria */}
-            <Card title="Success Criteria" className="mb-4">
+      <Row gutter={[24, 24]}>
+        <Col xs={24} xl={16}>
+          {/* Approval Status Card */}
+          {renderApprovalCard()}
+
+          {/* Activity Configuration Section */}
+          {activityConfiguration && renderActivityConfiguration()}
+
+          {/* Learning Objective */}
+          <Card title="Learning Objective" className="mb-4">
+            {isEditing ? (
+              <textarea
+                className="form-control"
+                rows="3"
+                value={displayPlan.learningObjective}
+                onChange={(e) =>
+                  handlePlanChange("learningObjective", e.target.value)
+                }
+              />
+            ) : (
+              <Paragraph className="mb-0">
+                {displayPlan.learningObjective}
+              </Paragraph>
+            )}
+          </Card>
+
+          {/* Success Criteria */}
+          <Card title="Success Criteria" className="mb-4">
+            {isEditing ? (
+              <textarea
+                className="form-control"
+                rows="5"
+                placeholder="One criterion per line..."
+                value={displayPlan.successCriteria.join("\n")}
+                onChange={(e) =>
+                  handleArrayChange("successCriteria", e.target.value)
+                }
+              />
+            ) : (
+              <ul className="mb-0">
+                {displayPlan.successCriteria.map((item, i) => (
+                  <li key={i} className="mb-1">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {/* Activities */}
+          <Card title="Lesson Activities" className="mb-4">
+            {/* Pre-Lesson */}
+            <div className="mb-4">
+              <Title level={5} className="text-primary mb-2">
+                <BulbOutlined className="me-2" />
+                Pre-Lesson / Set Induction
+              </Title>
               {isEditing ? (
                 <textarea
                   className="form-control"
-                  rows="5"
-                  placeholder="One criterion per line..."
-                  value={displayPlan.successCriteria.join("\n")}
+                  rows="4"
+                  placeholder="One activity per line..."
+                  value={displayPlan.activities.preLesson.join("\n")}
                   onChange={(e) =>
-                    handleArrayChange("successCriteria", e.target.value)
+                    handleActivityChange("preLesson", e.target.value)
                   }
                 />
               ) : (
                 <ul className="mb-0">
-                  {displayPlan.successCriteria.map((item, i) => (
+                  {displayPlan.activities.preLesson.map((item, i) => (
                     <li key={i} className="mb-1">
                       {item}
                     </li>
                   ))}
                 </ul>
               )}
-            </Card>
+            </div>
 
-            {/* Activities */}
-            <Card title="Lesson Activities" className="mb-4">
-              {/* Pre-Lesson */}
-              <div className="mb-4">
-                <Title level={5} className="text-primary mb-2">
-                  <BulbOutlined className="me-2" />
-                  Pre-Lesson / Set Induction
-                </Title>
-                {isEditing ? (
-                  <textarea
-                    className="form-control"
-                    rows="4"
-                    placeholder="One activity per line..."
-                    value={displayPlan.activities.preLesson.join("\n")}
-                    onChange={(e) =>
-                      handleActivityChange("preLesson", e.target.value)
-                    }
-                  />
-                ) : (
-                  <ul className="mb-0">
-                    {displayPlan.activities.preLesson.map((item, i) => (
-                      <li key={i} className="mb-1">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+            <Divider />
 
-              <Divider />
-
-              {/* During-Lesson */}
-              <div className="mb-4">
-                <Title level={5} className="text-success mb-2">
-                  <ThunderboltOutlined className="me-2" />
-                  During Lesson / Main Activities
-                </Title>
-                {isEditing ? (
-                  <textarea
-                    className="form-control"
-                    rows="8"
-                    placeholder="One activity per line..."
-                    value={displayPlan.activities.duringLesson.join("\n")}
-                    onChange={(e) =>
-                      handleActivityChange("duringLesson", e.target.value)
-                    }
-                  />
-                ) : (
-                  <ul className="mb-0">
-                    {displayPlan.activities.duringLesson.map((item, i) => (
-                      <li key={i} className="mb-1">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <Divider />
-
-              {/* Post-Lesson */}
-              <div>
-                <Title level={5} className="text-warning mb-2">
-                  <BookOutlined className="me-2" />
-                  Post-Lesson / Closure
-                </Title>
-                {isEditing ? (
-                  <textarea
-                    className="form-control"
-                    rows="4"
-                    placeholder="One activity per line..."
-                    value={displayPlan.activities.postLesson.join("\n")}
-                    onChange={(e) =>
-                      handleActivityChange("postLesson", e.target.value)
-                    }
-                  />
-                ) : (
-                  <ul className="mb-0">
-                    {displayPlan.activities.postLesson.map((item, i) => (
-                      <li key={i} className="mb-1">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} xl={8}>
-            {/* Lesson Details */}
-            <Card title="Lesson Details" className="mb-4">
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Class">
-                  <Text strong>{lessonPlan.classId?.className || "N/A"}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Date">
-                  <Text>
-                    {new Date(lessonDate).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Subject">
-                  <Text>
-                    {lessonPlan.classId?.subject || parameters.subject || "N/A"}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Grade">
-                  <Text>
-                    {lessonPlan.classId?.grade || parameters.grade || "N/A"}
-                  </Text>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-
-            {/* Syllabus Content */}
-            <Card title="Syllabus Content" className="mb-4">
-              {parameters.sow ? (
-                <div className={styles.syllabusContainer}>
-                  {Object.entries(parameters.sow).map(([key, value]) => {
-                    // Filter out internal keys
-                    if (["id", "_id", "key", "topicKey"].includes(key)) return null;
-
-                    // Formatter
-                    const label = key
-                      .replace(/([A-Z])/g, " $1")
-                      .replace(/^./, (str) => str.toUpperCase())
-                      .trim();
-
-                    // Recursive helper
-                    const renderSyllabusValue = (val) => {
-                      if (Array.isArray(val)) {
-                        return (
-                          <ul style={{ paddingLeft: "1.2rem", marginBottom: 0, wordBreak: "break-word" }}>
-                            {val.map((item, index) => (
-                              <li key={index}>{renderSyllabusValue(item)}</li>
-                            ))}
-                          </ul>
-                        );
-                      }
-                      if (typeof val === "object" && val !== null) {
-                        // eslint-disable-next-line
-                        return (
-                          <div style={{ paddingLeft: "0.5rem", wordBreak: "break-word" }}>
-                            {Object.entries(val).map(([subKey, subValue]) => (
-                              <div key={subKey}>
-                                <Text strong>{subKey}: </Text>
-                                {renderSyllabusValue(subValue)}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      return (
-                        <Paragraph
-                          ellipsis={{ rows: 3, expandable: true, symbol: "more" }}
-                          style={{ marginBottom: 0, wordBreak: "break-word", whiteSpace: "pre-wrap" }}
-                        >
-                          {String(val)}
-                        </Paragraph>
-                      );
-                    };
-
-                    return (
-                      <div key={key} className={styles.syllabusRow}>
-                        <div className={styles.syllabusLabel}>{label}</div>
-                        <div className={styles.syllabusValue}>
-                          {renderSyllabusValue(value)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Alert message="No syllabus data attached to this lesson." type="info" />
-              )}
-            </Card>
-
-            {/* Learning Parameters */}
-            <Card title="Learning Parameters" className="mb-4">
-              <Descriptions column={1} size="small">
-                {parameters.proficiencyLevel && (
-                  <Descriptions.Item label="Proficiency Level">
-                    <Tag color="green">{parameters.proficiencyLevel}</Tag>
-                  </Descriptions.Item>
-                )}
-                {parameters.hotsFocus && (
-                  <Descriptions.Item label="HOTS Focus">
-                    <Tag color="purple">
-                      {parameters.hotsFocus?.toUpperCase()}
-                    </Tag>
-                  </Descriptions.Item>
-                )}
-                {activityType && (
-                  <Descriptions.Item label="Activity Type">
-                    <Tag color={getActivityTypeColor(activityType)}>
-                      {getActivityTypeLabel(activityType)}
-                    </Tag>
-                  </Descriptions.Item>
-                )}
-                {parameters.additionalNotes && (
-                  <Descriptions.Item label="Additional Notes">
-                    <Text type="secondary" style={{ fontSize: "13px" }}>
-                      {parameters.additionalNotes}
-                    </Text>
-                  </Descriptions.Item>
-                )}
-              </Descriptions>
-            </Card>
-
-            {/* Activity Configuration Summary */}
-            {activityConfiguration && (
-              <Card
-                title={
-                  <Space>
-                    {getActivityTypeIcon(activityType)}
-                    <span>Quick Config Summary</span>
-                  </Space>
-                }
-                className="mb-4"
-                size="small"
-              >
-                <Alert
-                  message="Assessment Ready"
-                  description="Activity parameters are configured and ready for assessment creation."
-                  type="success"
-                  showIcon
-                  className="mb-3"
+            {/* During-Lesson */}
+            <div className="mb-4">
+              <Title level={5} className="text-success mb-2">
+                <ThunderboltOutlined className="me-2" />
+                During Lesson / Main Activities
+              </Title>
+              {isEditing ? (
+                <textarea
+                  className="form-control"
+                  rows="8"
+                  placeholder="One activity per line..."
+                  value={displayPlan.activities.duringLesson.join("\n")}
+                  onChange={(e) =>
+                    handleActivityChange("duringLesson", e.target.value)
+                  }
                 />
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  Configured:{" "}
-                  {activityConfiguration.configuredAt
-                    ? new Date(
-                      activityConfiguration.configuredAt
-                    ).toLocaleDateString()
-                    : "Unknown date"}
+              ) : (
+                <ul className="mb-0">
+                  {displayPlan.activities.duringLesson.map((item, i) => (
+                    <li key={i} className="mb-1">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <Divider />
+
+            {/* Post-Lesson */}
+            <div>
+              <Title level={5} className="text-warning mb-2">
+                <BookOutlined className="me-2" />
+                Post-Lesson / Closure
+              </Title>
+              {isEditing ? (
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  placeholder="One activity per line..."
+                  value={displayPlan.activities.postLesson.join("\n")}
+                  onChange={(e) =>
+                    handleActivityChange("postLesson", e.target.value)
+                  }
+                />
+              ) : (
+                <ul className="mb-0">
+                  {displayPlan.activities.postLesson.map((item, i) => (
+                    <li key={i} className="mb-1">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} xl={8}>
+          {/* Lesson Details */}
+          <Card title="Lesson Details" className="mb-4">
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="Class">
+                <Text strong>{lessonPlan.classId?.className || "N/A"}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Date">
+                <Text>
+                  {new Date(lessonDate).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </Text>
-              </Card>
+              </Descriptions.Item>
+              <Descriptions.Item label="Subject">
+                <Text>
+                  {lessonPlan.classId?.subject || parameters.subject || "N/A"}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Grade">
+                <Text>
+                  {lessonPlan.classId?.grade || parameters.grade || "N/A"}
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          {/* Syllabus Content */}
+          <Card title="Syllabus Content" className="mb-4">
+            {parameters.sow ? (
+              <div className={styles.syllabusContainer}>
+                {Object.entries(parameters.sow).map(([key, value]) => {
+                  // Filter out internal keys
+                  if (["id", "_id", "key", "topicKey"].includes(key)) return null;
+
+                  // Formatter
+                  const label = key
+                    .replace(/([A-Z])/g, " $1")
+                    .replace(/^./, (str) => str.toUpperCase())
+                    .trim();
+
+                  // Recursive helper
+                  const renderSyllabusValue = (val) => {
+                    if (Array.isArray(val)) {
+                      return (
+                        <ul style={{ paddingLeft: "1.2rem", marginBottom: 0, wordBreak: "break-word" }}>
+                          {val.map((item, index) => (
+                            <li key={index}>{renderSyllabusValue(item)}</li>
+                          ))}
+                        </ul>
+                      );
+                    }
+                    if (typeof val === "object" && val !== null) {
+                      // eslint-disable-next-line
+                      return (
+                        <div style={{ paddingLeft: "0.5rem", wordBreak: "break-word" }}>
+                          {Object.entries(val).map(([subKey, subValue]) => (
+                            <div key={subKey}>
+                              <Text strong>{subKey}: </Text>
+                              {renderSyllabusValue(subValue)}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return (
+                      <Paragraph
+                        ellipsis={{ rows: 3, expandable: true, symbol: "more" }}
+                        style={{ marginBottom: 0, wordBreak: "break-word", whiteSpace: "pre-wrap" }}
+                      >
+                        {String(val)}
+                      </Paragraph>
+                    );
+                  };
+
+                  return (
+                    <div key={key} className={styles.syllabusRow}>
+                      <div className={styles.syllabusLabel}>{label}</div>
+                      <div className={styles.syllabusValue}>
+                        {renderSyllabusValue(value)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert message="No syllabus data attached to this lesson." type="info" />
             )}
-          </Col>
-        </Row>
-      </div>
+          </Card>
+
+          {/* Learning Parameters */}
+          <Card title="Learning Parameters" className="mb-4">
+            <Descriptions column={1} size="small">
+              {parameters.proficiencyLevel && (
+                <Descriptions.Item label="Proficiency Level">
+                  <Tag color="green">{parameters.proficiencyLevel}</Tag>
+                </Descriptions.Item>
+              )}
+              {parameters.hotsFocus && (
+                <Descriptions.Item label="HOTS Focus">
+                  <Tag color="purple">
+                    {parameters.hotsFocus?.toUpperCase()}
+                  </Tag>
+                </Descriptions.Item>
+              )}
+              {activityType && (
+                <Descriptions.Item label="Activity Type">
+                  <Tag color={getActivityTypeColor(activityType)}>
+                    {getActivityTypeLabel(activityType)}
+                  </Tag>
+                </Descriptions.Item>
+              )}
+              {parameters.additionalNotes && (
+                <Descriptions.Item label="Additional Notes">
+                  <Text type="secondary" style={{ fontSize: "13px" }}>
+                    {parameters.additionalNotes}
+                  </Text>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </Card>
+
+          {/* Activity Configuration Summary */}
+          {activityConfiguration && (
+            <Card
+              title={
+                <Space>
+                  {getActivityTypeIcon(activityType)}
+                  <span>Quick Config Summary</span>
+                </Space>
+              }
+              className="mb-4"
+              size="small"
+            >
+              <Alert
+                message="Assessment Ready"
+                description="Activity parameters are configured and ready for assessment creation."
+                type="success"
+                showIcon
+                className="mb-3"
+              />
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Configured:{" "}
+                {activityConfiguration.configuredAt
+                  ? new Date(
+                    activityConfiguration.configuredAt
+                  ).toLocaleDateString()
+                  : "Unknown date"}
+              </Text>
+            </Card>
+          )}
+        </Col>
+      </Row>
     </div>
   );
 };

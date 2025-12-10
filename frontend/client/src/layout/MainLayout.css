@@ -24,8 +24,10 @@
   padding: 25px;
   overflow-y: auto;
   height: 100%;
-  width: 100%; /* Take full width of available space */
-  border-radius: 16px; /* Apply radius to all corners since it's 5px from edges */
+  width: 100%;
+  /* Take full width of available space */
+  border-radius: 16px;
+  /* Apply radius to all corners since it's 5px from edges */
 }
 
 .main-content::-webkit-scrollbar {
@@ -38,13 +40,15 @@
   }
 
   .content-area {
-    padding: 5px; /* Keep consistent 5px padding on mobile */
+    padding: 5px;
+    /* Keep consistent 5px padding on mobile */
   }
 
   .main-content {
-    padding: 15px 0 80px 0;
-    border-radius: 16px; /* Keep border radius on mobile */
+    padding: 15px 15px 80px 15px;
+    /* Add horizontal padding to accommodate negative margins of grids */
+    border-radius: 16px;
+    /* Keep border radius on mobile */
 
   }
 }
-
