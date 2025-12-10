@@ -57,10 +57,6 @@ const Step4_ConfirmPlan = ({
     const result = key.replace(/([A-Z])/g, " $1");
     return result.charAt(0).toUpperCase() + result.slice(1);
   };
-  
-  // Summary/Label functions (no changes here)
-  const getActivityTypeLabel = (type) => { /* ... */ };
-  const getConfigurationSummary = () => { /* ... */ };
 
   return (
     <div className={styles.stepContent}>

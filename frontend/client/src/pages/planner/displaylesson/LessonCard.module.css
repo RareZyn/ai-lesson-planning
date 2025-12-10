@@ -234,7 +234,11 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-
+  .card {
+    width: 220px;
+    min-width: 220px;
+    flex-shrink: 0;
+  }
 
   .previewContainer {
     /* Height is handled by percentages now */

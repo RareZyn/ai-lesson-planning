@@ -142,7 +142,36 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
     gap: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+  }
+
+  .recent-classes-grid::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  .recent-classes-grid > * {
+    flex: 0 0 220px;
+    scroll-snap-align: start;
+    min-width: 220px;
+    max-width: 220px;
   }
 }

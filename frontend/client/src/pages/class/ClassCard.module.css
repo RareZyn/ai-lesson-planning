@@ -132,8 +132,6 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-
-
   .subjectBadge {
     font-size: 0.65rem;
     padding: 0.25rem 0.6rem;
@@ -145,8 +143,6 @@
 }
 
 @media (max-width: 480px) {
-
-
   .subjectBadge {
     font-size: 0.6rem;
     padding: 0.2rem 0.5rem;

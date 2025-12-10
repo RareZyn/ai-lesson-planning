@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './PlannerPage.module.css';
 import CalendarView from './CalendarView';
-import LessonCard from '../displaylesson/LessonCard';
+import LessonCard from '../displaylesson/LessonCardv1';
 import MaterialManagement from '../../material/MaterialManagement';
 import {
   getAllLessonPlans,
