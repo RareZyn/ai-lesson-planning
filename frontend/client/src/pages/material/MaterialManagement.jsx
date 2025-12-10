@@ -244,7 +244,6 @@ const MaterialManagement = () => {
     }
 
     try {
-      const { updateMaterial } = require("../../services/materialService"); // Import dynamically or move to top if prefer
       await updateMaterial(editingMaterial._id, { name: editName });
       message.success("Material renamed successfully");
       setIsEditModalOpen(false);

@@ -31,8 +31,6 @@ import {
     ThunderboltOutlined,
     FileTextOutlined,
     SettingOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
 } from "@ant-design/icons";
 
 import styles from "../planner/displaylesson/DisplayLessonPage.module.css";

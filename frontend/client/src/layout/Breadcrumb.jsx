@@ -14,7 +14,6 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
     "/app/answer-checker": "Answer Checker",
     "/app/downloads": "File Download",
     "/app/materials": "Materials",
-    "/app/materials": "Materials",
     "/app/graph": "Graph",
     "/app/admin": "Admin Dashboard",
   };
