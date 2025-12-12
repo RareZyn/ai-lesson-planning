@@ -37,8 +37,10 @@ const AssessmentSubmissionsPage = () => {
 
     try {
       const token = localStorage.getItem("authToken");
+
+      // Fetch stats with submissions included
       const response = await axios.get(
-        `${API_BASE_URL}/answers/assessment/${assessmentId}/stats`,
+        `${API_BASE_URL}/answers/assessment/${assessmentId}/stats?includeSubmissions=true`,
         {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
@@ -48,7 +50,7 @@ const AssessmentSubmissionsPage = () => {
       if (response.data.success) {
         setAssessmentData(response.data.data.assessment);
         setStats(response.data.data.statistics);
-        setSubmissions(response.data.data.submissions);
+        setSubmissions(response.data.data.submissions || []);
       } else {
         setError(response.data.message);
       }

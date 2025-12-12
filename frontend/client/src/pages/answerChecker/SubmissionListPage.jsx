@@ -112,16 +112,29 @@ const SubmissionListPage = () => {
           }
         );
 
-        if (response.data.success) {
+        if (response.data.success && response.data.data.statistics) {
           stats[assessment._id] = response.data.data.statistics;
+        } else {
+          // If stats not available, use defaults
+          stats[assessment._id] = {
+            totalSubmissions: 0,
+            totalStudentsInClass: 0,
+            submissionRate: 0,
+            overallAverage: 0,
+            completedSubmissions: 0,
+            pendingSubmissions: 0,
+          };
         }
       } catch (err) {
-        // If stats not available, just skip
+        // If stats fetch fails, use defaults
+        console.warn(`Failed to fetch stats for assessment ${assessment._id}:`, err);
         stats[assessment._id] = {
           totalSubmissions: 0,
           totalStudentsInClass: 0,
           submissionRate: 0,
           overallAverage: 0,
+          completedSubmissions: 0,
+          pendingSubmissions: 0,
         };
       }
     }
