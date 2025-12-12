@@ -20,10 +20,17 @@ const markAllAsRead = async () => {
     return response.data;
 };
 
+// Delete all notifications
+const deleteAllNotifications = async () => {
+    const response = await axios.delete(`${API_URL}/clear-all`);
+    return response.data;
+};
+
 const notificationService = {
     getNotifications,
     markAsRead,
     markAllAsRead,
+    deleteAllNotifications,
 };
 
 export default notificationService;

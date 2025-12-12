@@ -36,7 +36,7 @@ const Step4_ConfirmPlan = ({
     const updatedActivities = { ...plan.activities, [stage]: value.split("\n") };
     updatePlan("activities", updatedActivities);
   };
-  
+
   // Handlers for the enhance feature
   const handleEnhanceClick = (sectionKey) => {
     setEnhancingSection(sectionKey);
@@ -58,6 +58,8 @@ const Step4_ConfirmPlan = ({
     return result.charAt(0).toUpperCase() + result.slice(1);
   };
 
+
+
   return (
     <div className={styles.stepContent}>
       <h2>Step 4: Confirm & Edit Your Lesson Plan</h2>
@@ -67,7 +69,7 @@ const Step4_ConfirmPlan = ({
       </p>
 
       {/* Activity Configuration Summary (no changes here) */}
-      
+
       <div className={styles.editablePlan}>
         <EditableSection
           label="Learning Objective"
@@ -123,7 +125,7 @@ const Step4_ConfirmPlan = ({
           Save Lesson Plan
         </button>
       </div>
-      
+
       <EnhanceModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

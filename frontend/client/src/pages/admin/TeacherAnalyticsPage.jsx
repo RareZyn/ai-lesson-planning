@@ -427,20 +427,23 @@ const TeacherAnalyticsPage = () => {
                 <Col xs={24} md={14}>
                     <Card title={<><ClockCircleOutlined /> Recent Activity Log</>} className="chart-card" style={{ height: "100%" }}>
                         {recentActivity && recentActivity.length > 0 ? (
-                            <Timeline mode="left" style={{ marginTop: "10px" }}>
-                                {recentActivity.map((item, idx) => (
-                                    <Timeline.Item
-                                        key={idx}
-                                        color={item.type === 'lesson_created' ? 'blue' : 'green'}
-                                        label={new Date(item.date).toLocaleDateString()}
-                                    >
-                                        <Text strong>{item.type === 'lesson_created' ? 'Created Lesson' : 'Uploaded Material'}</Text>
-                                        <br />
-                                        <Text type="secondary">{item.title}</Text>
-                                        {item.meta && <Tag style={{ marginLeft: "8px" }}>{item.meta.toUpperCase()}</Tag>}
-                                    </Timeline.Item>
-                                ))}
-                            </Timeline>
+                            <Timeline
+                                mode="left"
+                                style={{ marginTop: "10px" }}
+                                items={recentActivity.map((item, idx) => ({
+                                    key: idx,
+                                    color: item.type === 'lesson_created' ? 'blue' : 'green',
+                                    label: new Date(item.date).toLocaleDateString(),
+                                    children: (
+                                        <>
+                                            <Text strong>{item.type === 'lesson_created' ? 'Created Lesson' : 'Uploaded Material'}</Text>
+                                            <br />
+                                            <Text type="secondary">{item.title}</Text>
+                                            {item.meta && <Tag style={{ marginLeft: "8px" }}>{item.meta.toUpperCase()}</Tag>}
+                                        </>
+                                    ),
+                                }))}
+                            />
                         ) : (
                             <div style={{ textAlign: "center", padding: "2rem 0" }}>No recent activity</div>
                         )}

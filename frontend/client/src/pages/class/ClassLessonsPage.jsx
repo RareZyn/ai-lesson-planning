@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import dayjs from "dayjs";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getLessonPlansByClass } from "../../services/lessonService";
 import { getClassById, deleteClass } from "../../services/classService";
@@ -8,7 +9,34 @@ import StudentManagementSection from "./StudentManagementSection";
 import styles from "./ClassLessonsPage.module.css";
 
 // Icons for the UI
-import { ArrowBack, Edit, Delete, Add } from "@mui/icons-material";
+import { ArrowBack, Edit, Delete } from "@mui/icons-material";
+import { FaPlus } from "react-icons/fa";
+
+// Custom Modal Component (Same as PlannerPage)
+const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
+  if (!isVisible) return null;
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3>{title}</h3>
+          <button onClick={onClose} className={styles.modalCloseButton}>
+            &times;
+          </button>
+        </div>
+        <div className={styles.modalBody}>{children}</div>
+        <div className={styles.modalFooter}>
+          <button onClick={onClose} className={styles.modalButtonSecondary}>
+            Cancel
+          </button>
+          <button onClick={onOk} className={styles.modalButtonPrimary}>
+            Start Planning
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ClassLessonsPage = () => {
   const { classId } = useParams();
@@ -21,6 +49,10 @@ const ClassLessonsPage = () => {
 
   // State to control the edit modal visibility
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // State for Create Lesson Modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
 
   // Fetch both class info and its associated lessons
   const fetchData = useCallback(async () => {
@@ -76,10 +108,24 @@ const ClassLessonsPage = () => {
     fetchData(); // Re-fetch data to show the updated class info
   };
 
-  // Handler to navigate to the planner with the class pre-selected
-  const handleCreateLesson = () => {
-    // Pass classInfo to the planner so it can be pre-filled in Step 1
-    navigate("/app/planner", { state: { preselectedClass: classInfo } });
+  // Handler to open modal instead of redirecting
+  const handleCreateClick = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  // Confirm Create and Navigate with Date
+  const handleConfirmCreate = () => {
+    if (selectedDate && selectedDate.isValid()) {
+      navigate("/app/planner", {
+        state: {
+          preselectedClass: classInfo,
+          selectedDate: selectedDate.toISOString()
+        }
+      });
+      setIsCreateModalOpen(false);
+    } else {
+      alert("Please select a valid date.");
+    }
   };
 
   if (isLoading)
@@ -122,31 +168,30 @@ const ClassLessonsPage = () => {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2>Lesson Plans</h2>
-          {lessons.length > 0 && (
-            <button
-              className={styles.createButton}
-              onClick={handleCreateLesson}
-            >
-              <Add /> Create Lesson Plan
-            </button>
-          )}
         </div>
-        {lessons.length > 0 ? (
-          <div className={styles.lessonsGrid}>
-            {lessons.map((lesson) => (
-              <LessonCard key={lesson._id} lesson={lesson} />
-            ))}
+
+        <div className={styles.lessonsGrid}>
+          {/* Create Card is always first */}
+          <div
+            className={styles.createCard}
+            onClick={handleCreateClick}
+            role="button"
+            tabIndex={0}
+          >
+            <div className={styles.createIconWrapper}>
+              <FaPlus />
+            </div>
+            <h3 className={styles.createCardTitle}>Create New Lesson</h3>
+            <p className={styles.createCardText}>Click to schedule a date</p>
           </div>
-        ) : (
-          <div className={styles.empty}>
-            <h3>No Lessons Yet</h3>
-            <p>Get started by creating the first lesson plan for this class.</p>
-            <button
-              className={styles.createButton}
-              onClick={handleCreateLesson}
-            >
-              <Add /> Create Lesson Plan
-            </button>
+
+          {lessons.map((lesson) => (
+            <LessonCard key={lesson._id} lesson={lesson} />
+          ))}
+        </div>
+
+        {lessons.length === 0 && (
+          <div className={styles.empty} style={{ display: 'none' }}> {/* Hidden now as we have the card */}
           </div>
         )}
       </section>
@@ -163,6 +208,24 @@ const ClassLessonsPage = () => {
           currentClass={classInfo}
         />
       )}
+
+      {/* Date Selection Modal for New Lesson */}
+      <CustomModal
+        title="Schedule New Lesson"
+        isVisible={isCreateModalOpen}
+        onOk={handleConfirmCreate}
+        onClose={() => setIsCreateModalOpen(false)}
+      >
+        <p style={{ marginBottom: '15px', color: '#666' }}>
+          Choose the date for the lesson you wish to create:
+        </p>
+        <input
+          type="date"
+          value={selectedDate.format('YYYY-MM-DD')}
+          onChange={(e) => setSelectedDate(dayjs(e.target.value))}
+          className={styles.customDatePicker}
+        />
+      </CustomModal>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 .ai-tools-container {
-  width: 100%; /* Remove max-width and centering */
+  width: 100%;
+  /* Remove max-width and centering */
 }
 
 .topic {
@@ -61,11 +62,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(
-    circle at center,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(240, 242, 247, 0.6) 100%
-  );
+  background: radial-gradient(circle at center,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(240, 242, 247, 0.6) 100%);
   border-radius: 50%;
   z-index: 1;
 }
@@ -132,22 +131,33 @@
 }
 
 @media (max-width: 480px) {
+  .ai-tools-container {
+    padding: 0.5rem 0.25rem;
+  }
+
   .tools-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    padding: 0;
+  }
+
+  .tool-card {
+    padding: 0.25rem;
+    gap: 0.25rem;
   }
 
   .tool-icon {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
   }
 
   .tool-icon img {
-    width: 25px;
-    height: 25px;
+    width: 22px;
+    height: 22px;
   }
 
   .tool-title {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    line-height: 1.1;
   }
 }

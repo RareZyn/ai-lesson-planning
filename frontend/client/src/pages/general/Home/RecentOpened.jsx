@@ -127,9 +127,13 @@ const RecentOpened = () => {
 
     return (
       <div className="recent-opened-grid">
-        <CreateLessonCard onClick={handleCreateLessonClick} />
+        <div className="horizontal-scroll-item">
+          <CreateLessonCard onClick={handleCreateLessonClick} />
+        </div>
         {recentItems.map((item) => (
-          <LessonCard key={item._id} lesson={item} isRecent={true} />
+          <div key={item._id} className="horizontal-scroll-item">
+            <LessonCard lesson={item} isRecent={true} />
+          </div>
         ))}
       </div>
     );

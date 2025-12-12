@@ -274,12 +274,7 @@ const PlannerPage = () => {
           ))}
         </div>
 
-        {activeTab !== 'lessons' && (
-          <button onClick={showModal} className={styles.createLessonButton}>
-            <FaPlus style={{ marginRight: '8px' }} />
-            Create New Lesson
-          </button>
-        )}
+
       </header>
 
       {activeTab === 'lessons' && (

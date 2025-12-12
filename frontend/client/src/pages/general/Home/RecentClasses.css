@@ -144,34 +144,25 @@
   .recent-classes-grid {
     display: flex;
     overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    /* Space for scrollbar */
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    gap: 0.75rem;
-    padding-bottom: 0.5rem;
+    /* Smooth scrolling for iOS */
   }
 
-  .recent-classes-grid::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .recent-classes-grid::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-  }
-
-  .recent-classes-grid::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 10px;
-  }
-
-  .recent-classes-grid::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
-
-  .recent-classes-grid > * {
-    flex: 0 0 220px;
+  .recent-classes-grid>.horizontal-scroll-item {
+    flex: 0 0 auto;
+    width: 200px;
+    /* Fixed width for cards in scroll */
     scroll-snap-align: start;
-    min-width: 220px;
-    max-width: 220px;
+    height: 100%;
+  }
+
+  .recent-classes-grid>.horizontal-scroll-item>* {
+    width: 100% !important;
+    height: 100%;
+    margin: 0;
   }
 }

@@ -149,7 +149,7 @@
 /* --- Syllabus Card (Styled like LessonCard) --- */
 .card {
     background: white;
-    border-radius: 8px;
+    border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
     overflow: hidden;
     transition: all 0.3s ease;
@@ -166,8 +166,8 @@
 }
 
 .cardHeader {
-    height: 50%;
-    /* Reduced to match LessonCard */
+    height: 55%;
+    /* Matched to LessonCard */
     position: relative;
     display: flex;
     align-items: center;
@@ -319,12 +319,26 @@
         flex-wrap: wrap;
     }
 
-    .gradeGrid {
-        grid-template-columns: repeat(2, 1fr);
+    /* Use Grid Layout (like PlannerPage) instead of Horizontal Scroll */
+    .gradeGrid,
+    .subjectGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+        margin-top: 10px;
+        padding-bottom: 0;
+    }
+
+    .card {
+        flex: none;
+        /* Reset flex */
+        width: 100%;
+        /* Full width of grid cell */
+        margin: 0;
     }
 
     .cardHeader {
-        height: 80px;
+        height: 55%;
     }
 
     .subjectBadge {
@@ -342,44 +356,5 @@
 
     .cardMeta {
         font-size: 0.7rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .gradeGrid {
-        grid-template-columns: 1fr;
-    }
-
-    .headerActions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .card {
-        border-radius: 6px;
-    }
-
-    .cardHeader {
-        height: 70px;
-    }
-
-    .subjectBadge {
-        font-size: 0.6rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: 8px;
-    }
-
-    .cardContent {
-        padding: 0.75rem;
-    }
-
-    .cardTitle {
-        font-size: 0.85rem;
-        -webkit-line-clamp: 1;
-        line-clamp: 1;
-    }
-
-    .cardMeta {
-        font-size: 0.65rem;
     }
 }

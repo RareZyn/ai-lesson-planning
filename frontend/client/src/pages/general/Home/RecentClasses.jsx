@@ -68,7 +68,9 @@ const RecentClasses = () => {
       // Even if empty, show the create card
       return (
         <div className="recent-classes-grid">
-          <CreateClassCard onClick={handleCreateClassClick} />
+          <div className="horizontal-scroll-item">
+            <CreateClassCard onClick={handleCreateClassClick} />
+          </div>
           <p style={{ gridColumn: "1 / -1", marginTop: "1rem" }}>No recent classes found.</p>
         </div>
       );
@@ -76,9 +78,13 @@ const RecentClasses = () => {
 
     return (
       <div className="recent-classes-grid">
-        <CreateClassCard onClick={handleCreateClassClick} />
+        <div className="horizontal-scroll-item">
+          <CreateClassCard onClick={handleCreateClassClick} />
+        </div>
         {recentClasses.map((classItem) => (
-          <ClassCard key={classItem._id} classInfo={classItem} />
+          <div key={classItem._id} className="horizontal-scroll-item">
+            <ClassCard classInfo={classItem} />
+          </div>
         ))}
       </div>
     );

@@ -4,7 +4,7 @@ import Searchbar from "../components/general/Searchbar";
 import Profile from "../components/general/Profile";
 import notificationService from "../services/notificationService";
 import { Badge, Dropdown, List, Avatar, Typography, Button, Empty } from "antd";
-import { BellOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import { BellOutlined, InfoCircleOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 const { Text } = Typography;
@@ -61,10 +61,20 @@ const Navbar = () => {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error clearing notifications", error);
+    }
+  };
+
   const notificationMenu = (
     <div
+      className="notification-dropdown-content"
       style={{
-        width: 350,
         backgroundColor: "#fff",
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
         borderRadius: "8px",
@@ -73,9 +83,19 @@ const Navbar = () => {
     >
       <div className="d-flex justify-content-between align-items-center mb-2 px-2">
         <Text strong>Notifications</Text>
-        <Button type="link" size="small" onClick={handleMarkAllRead}>
-          Mark all as read
-        </Button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Button
+            type="text"
+            size="small"
+            onClick={handleClearAll}
+            icon={<DeleteOutlined />}
+            danger
+            title="Clear All"
+          />
+          <Button type="link" size="small" onClick={handleMarkAllRead}>
+            Mark all read
+          </Button>
+        </div>
       </div>
       <div style={{ maxHeight: "300px", overflowY: "auto" }}>
         <List

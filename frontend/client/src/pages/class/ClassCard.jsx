@@ -1,29 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ClassCard.module.css';
-
-// Function to get grade/form-specific images
-const getGradeImage = (grade) => {
-    if (!grade) return '/grade/form1.webp'; // Default fallback
-
-    // Extract form number from grade string (e.g., "Form 1" -> "1")
-    const formMatch = grade.match(/Form\s*(\d+)/i);
-    if (formMatch) {
-        const formNumber = formMatch[1];
-        return `/grade/form${formNumber}.webp`;
-    }
-
-    // For Standard grades, you can map them or use a default
-    // Standard 1-6 can map to form1-5 or have their own images
-    const standardMatch = grade.match(/Standard\s*(\d+)/i);
-    if (standardMatch) {
-        const standardNumber = standardMatch[1];
-        // Map Standard to forms (customize as needed)
-        const formMap = { '1': '1', '2': '1', '3': '2', '4': '3', '5': '4', '6': '5' };
-        return `/grade/form${formMap[standardNumber] || '1'}.webp`;
-    }
-
-    return '/grade/form1.webp'; // Default fallback
+// Function to get subject-specific images
+const getSubjectImage = (subject) => {
+    const subjectImages = {
+        'English': '/grade/form1.webp',
+        'Mathematics': '/grade/form2.webp',
+        'Science': '/grade/form3.webp',
+        'History': '/grade/form4.webp',
+        'Geography': '/grade/form5.webp',
+    };
+    return subjectImages[subject] || '/grade/form1.webp'; 
 };
 
 const ClassCard = ({ classInfo }) => {
@@ -33,7 +20,7 @@ const ClassCard = ({ classInfo }) => {
         navigate(`/app/classes/${classInfo._id}`);
     };
 
-    const backgroundImage = getGradeImage(classInfo.grade);
+    const backgroundImage = getSubjectImage(classInfo.subject);
 
     // Ensure grade is displayed, using year as a fallback detail
     const gradeDisplay = classInfo.grade ? `Grade: ${classInfo.grade}` : `Year: ${classInfo.year}`;
