@@ -332,4 +332,40 @@ studentAnswerSchema.pre("save", function (next) {
   next();
 });
 
+// Post-save middleware to update assessment submission stats
+studentAnswerSchema.post("save", async function (doc) {
+  try {
+    const Assessment = require("./Assessment");
+    if (doc.assessmentId) {
+      // Update stats asynchronously without blocking
+      Assessment.updateSubmissionStats(doc.assessmentId).catch((err) => {
+        console.error(
+          "Error updating submission stats after save:",
+          err
+        );
+      });
+    }
+  } catch (error) {
+    console.error("Error in post-save hook:", error);
+  }
+});
+
+// Post-remove middleware to update assessment submission stats
+studentAnswerSchema.post("deleteOne", { document: true, query: false }, async function (doc) {
+  try {
+    const Assessment = require("./Assessment");
+    if (doc.assessmentId) {
+      // Update stats asynchronously without blocking
+      Assessment.updateSubmissionStats(doc.assessmentId).catch((err) => {
+        console.error(
+          "Error updating submission stats after delete:",
+          err
+        );
+      });
+    }
+  } catch (error) {
+    console.error("Error in post-remove hook:", error);
+  }
+});
+
 module.exports = mongoose.model("StudentAnswer", studentAnswerSchema);

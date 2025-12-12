@@ -429,13 +429,15 @@ exports.getSubmissionsByClass = async (req, res) => {
 };
 
 /**
- * @desc    Get assessment statistics with class information
+ * @desc    Get assessment statistics with class information (optimized with caching)
  * @route   GET /api/answers/assessment/:assessmentId/stats
  * @access  Private
+ * @query   refresh=true to force recalculation of stats
  */
 exports.getAssessmentStats = async (req, res) => {
   try {
     const { assessmentId } = req.params;
+    const { refresh, includeSubmissions } = req.query;
 
     // Get assessment with class info
     const assessment = await Assessment.findById(assessmentId).populate(
@@ -450,61 +452,66 @@ exports.getAssessmentStats = async (req, res) => {
       });
     }
 
-    // Get all submissions for this assessment
-    const submissions = await StudentAnswer.find({ assessmentId })
-      .populate("studentId", "name studentId")
-      .populate("classId", "className grade");
+    // Check if stats need to be refreshed or if they don't exist
+    const needsRefresh =
+      refresh === "true" ||
+      !assessment.submissionStats ||
+      !assessment.submissionStats.lastUpdated;
 
-    // Calculate statistics
-    const totalStudentsInClass =
-      assessment.classId?.classStats?.totalStudents ||
-      assessment.classId?.students?.length ||
-      0;
+    let statistics;
 
-    const totalSubmissions = submissions.length;
+    if (needsRefresh) {
+      // Recalculate and update stats
+      statistics = await Assessment.updateSubmissionStats(assessmentId);
 
-    // Calculate average score (only from completed submissions)
-    const completedSubmissions = submissions.filter(
-      (s) => s.processingStatus === "completed"
-    );
+      if (!statistics) {
+        return res.status(500).json({
+          success: false,
+          message: "Error updating submission statistics",
+        });
+      }
+    } else {
+      // Use cached stats
+      statistics = assessment.submissionStats;
+    }
 
-    let overallAverage = 0;
-    if (completedSubmissions.length > 0) {
-      const totalPercentage = completedSubmissions.reduce(
-        (sum, sub) => sum + (sub.overallStats?.percentage || 0),
-        0
-      );
-      overallAverage = totalPercentage / completedSubmissions.length;
+    // Prepare response data
+    const responseData = {
+      assessment: {
+        _id: assessment._id,
+        title: assessment.title,
+        activityType: assessment.activityType,
+      },
+      class: {
+        _id: assessment.classId?._id,
+        className: assessment.classId?.className,
+        grade: assessment.classId?.grade,
+        subject: assessment.classId?.subject,
+        totalStudents: statistics.totalStudentsInClass,
+      },
+      statistics: {
+        totalStudentsInClass: statistics.totalStudentsInClass,
+        totalSubmissions: statistics.totalSubmissions,
+        submissionRate: statistics.submissionRate,
+        overallAverage: statistics.overallAverage,
+        completedSubmissions: statistics.completedSubmissions,
+        pendingSubmissions: statistics.pendingSubmissions,
+        lastUpdated: statistics.lastUpdated,
+      },
+    };
+
+    // Optionally include full submissions list if requested
+    if (includeSubmissions === "true") {
+      const submissions = await StudentAnswer.find({ assessmentId })
+        .populate("studentId", "name studentId avatar")
+        .populate("classId", "className grade")
+        .sort({ submittedAt: -1 });
+      responseData.submissions = submissions;
     }
 
     res.status(200).json({
       success: true,
-      data: {
-        assessment: {
-          _id: assessment._id,
-          title: assessment.title,
-          activityType: assessment.activityType,
-        },
-        class: {
-          _id: assessment.classId?._id,
-          className: assessment.classId?.className,
-          grade: assessment.classId?.grade,
-          subject: assessment.classId?.subject,
-          totalStudents: totalStudentsInClass,
-        },
-        statistics: {
-          totalStudentsInClass,
-          totalSubmissions,
-          submissionRate:
-            totalStudentsInClass > 0
-              ? ((totalSubmissions / totalStudentsInClass) * 100).toFixed(1)
-              : 0,
-          overallAverage: overallAverage.toFixed(1),
-          completedSubmissions: completedSubmissions.length,
-          pendingSubmissions: submissions.length - completedSubmissions.length,
-        },
-        submissions,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("Get assessment stats error:", error);
@@ -532,6 +539,10 @@ exports.deleteSubmission = async (req, res) => {
       });
     }
 
+    // Store assessmentId before deletion for stats update
+    const assessmentId = submission.assessmentId;
+
+    // Delete the submission (this will trigger the post-remove middleware)
     await submission.deleteOne();
 
     res.status(200).json({
@@ -544,6 +555,60 @@ exports.deleteSubmission = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error deleting submission",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Refresh/initialize submission stats for all assessments
+ * @route   POST /api/answers/refresh-all-stats
+ * @access  Private (Admin)
+ */
+exports.refreshAllStats = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    // Get all assessments for the user
+    let query = {};
+    if (userId) {
+      query.createdBy = userId;
+    }
+
+    const assessments = await Assessment.find(query);
+
+    const results = {
+      total: assessments.length,
+      successful: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    // Update stats for each assessment
+    for (const assessment of assessments) {
+      try {
+        await Assessment.updateSubmissionStats(assessment._id);
+        results.successful++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          assessmentId: assessment._id,
+          title: assessment.title,
+          error: error.message,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Stats refresh completed",
+      data: results,
+    });
+  } catch (error) {
+    console.error("Refresh all stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error refreshing statistics",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
