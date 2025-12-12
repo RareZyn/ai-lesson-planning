@@ -805,7 +805,12 @@ exports.sendForApproval = async (req, res) => {
       // Don't fail the request if notification fails, just log it
     }
 
+
     res.status(200).json({ success: true, message: "Lesson sent for approval." });
+
+    // CACHE FIX: Touch the user document to invalidate list caches
+    await User.findByIdAndUpdate(req.user.id, { $set: { updatedAt: new Date() } }).exec();
+
   } catch (err) {
     console.error("Send for approval error:", err);
     res.status(500).json({ success: false, message: "Failed to send for approval." });
@@ -852,6 +857,11 @@ exports.approveLesson = async (req, res) => {
     }
 
     res.json({ success: true, message: 'Lesson approved successfully!' });
+
+    // CACHE FIX: Touch the CREATOR'S user document to invalidate their list caches
+    // lesson.createdBy is an ID here (not populated)
+    await User.findByIdAndUpdate(lesson.createdBy, { $set: { updatedAt: new Date() } }).exec();
+
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -883,6 +893,11 @@ exports.rejectLesson = async (req, res) => {
     }
 
     res.json({ success: true, message: 'Lesson rejected successfully!' });
+
+    // CACHE FIX: Touch the CREATOR'S user document to invalidate their list caches
+    // lesson.createdBy is an ID here (not populated)
+    await User.findByIdAndUpdate(lesson.createdBy, { $set: { updatedAt: new Date() } }).exec();
+
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

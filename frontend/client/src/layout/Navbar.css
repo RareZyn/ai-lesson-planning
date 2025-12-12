@@ -166,3 +166,14 @@ body:has(.sidebar.pinned) .navbar-logo {
 .ant-typography {
   word-break: unset !important;
 }
+
+.notification-dropdown-content {
+  width: 350px;
+}
+
+@media (max-width: 480px) {
+  .notification-dropdown-content {
+    width: 290px !important;
+    /* Fit within view left of bell icon */
+  }
+}

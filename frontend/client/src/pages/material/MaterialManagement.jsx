@@ -296,17 +296,17 @@ const MaterialManagement = () => {
       className={material.type === "link" ? "link-row" : "file-row"}
       onClick={() => handleMaterialClick(material)}
     >
-      <td>
+      <td data-label="Name">
         <div className="material-name">
           {getFileIcon(material.type)}
           <span>{material.name}</span>
           {material.type === "link" && <OpenInNewIcon className="external-icon" />}
         </div>
       </td>
-      <td>{material.type.toUpperCase()}</td>
-      <td>{material.date}</td>
-      <td>{material.size}</td>
-      <td>
+      <td data-label="Type">{material.type.toUpperCase()}</td>
+      <td data-label="Date Added">{material.date}</td>
+      <td data-label="Size">{material.size}</td>
+      <td data-label="Actions">
         <div className="action-buttons">
           <button
             className="edit-button"
@@ -369,27 +369,81 @@ const MaterialManagement = () => {
         </div>
       </div>
 
-      {/* Materials List Table */}
-      <div className="materials-list">
+      {/* Materials List Container */}
+      <div className="materials-list-container">
         {filteredMaterials.length === 0 ? (
           <div className="empty-state">
             <p>No materials found. Upload your first material to get started!</p>
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Date Added</th>
-                <th>Size</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMaterials.map(renderMaterialRow)}
-            </tbody>
-          </table>
+          <>
+            {/* Desktop Table View */}
+            <div className="desktop-view">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Date Added</th>
+                    <th>Size</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMaterials.map(renderMaterialRow)}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card Grid View */}
+            <div className="mobile-view">
+              <div className="mobile-grid">
+                {filteredMaterials.map(material => (
+                  <div
+                    key={material._id}
+                    className="material-card"
+                    onClick={() => handleMaterialClick(material)}
+                  >
+                    <div className={`material-card-header ${material.type}`}>
+                      <div className="card-preview-icon">
+                        {getFileIcon(material.type)}
+                      </div>
+                      <div className="card-actions">
+                        <button
+                          className="edit-button-card"
+                          onClick={(e) => handleEditClick(material, e)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </button>
+                        <button
+                          className="delete-button-card"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMaterial(material._id);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="material-card-content">
+                      <h3 className="card-title" title={material.name}>{material.name}</h3>
+
+                      <div className="card-meta-row">
+                        <span className={`card-tag ${material.type}`}>{material.type.toUpperCase()}</span>
+                        {material.size && <span className="card-size">{material.size}</span>}
+                      </div>
+
+                      <div className="card-footer-b">
+                        <span className="card-date">{material.date}</span>
+                        {material.type === 'link' && <OpenInNewIcon className="card-link-icon" />}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
 

@@ -8,6 +8,7 @@
     font-size: 1.2rem;
     color: #6c757d;
 }
+
 .error {
     color: #e53e3e;
 }
@@ -26,6 +27,7 @@
     text-decoration: none;
     transition: color 0.2s ease;
 }
+
 .backButton:hover {
     color: #000;
 }
@@ -40,12 +42,14 @@
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #e9ecef;
 }
+
 .headerMain h1 {
     font-size: 2rem;
     font-weight: 700;
     color: #343a40;
     margin-bottom: 0.25rem;
 }
+
 .headerMain p {
     font-size: 1.1rem;
     color: #6c757d;
@@ -76,6 +80,7 @@
     color: #495057;
     border-color: #dee2e6;
 }
+
 .editButton:hover {
     background-color: #e9ecef;
 }
@@ -85,6 +90,7 @@
     color: #e5383b;
     border-color: #ffb3b3;
 }
+
 .deleteButton:hover {
     background-color: #ffe3e3;
 }
@@ -112,7 +118,7 @@
 
 .lessonsGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 2rem;
 }
 
@@ -123,11 +129,13 @@
     border-radius: 12px;
     border: 2px dashed #dee2e6;
 }
+
 .empty h3 {
     color: #495057;
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
+
 .empty p {
     color: #6c757d;
     margin-bottom: 1.5rem;
@@ -136,24 +144,78 @@
     margin-right: auto;
 }
 
-.createButton {
-    background-color: #3f51b5;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    display: inline-flex;
+/* Create Lesson Card Styles (Copied from PlannerPage for consistency) */
+.createCard {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-}
-.createButton:hover {
-    background-color: #36459b;
+    justify-content: center;
+    gap: 1rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background-color: #f9fafb;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* Enforce square like other cards */
+    cursor: pointer;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
 }
 
+.createCard:hover {
+    background-color: #f3f4f6;
+    border-color: #3f51b5;
+    color: #3f51b5;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.createIconWrapper {
+    background-color: #e5e7eb;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.createCard:hover .createIconWrapper {
+    background-color: #e6e9fa;
+    transform: scale(1.1);
+}
+
+.createIconWrapper svg {
+    font-size: 2.25rem;
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+.createCard:hover .createIconWrapper svg {
+    color: #3f51b5;
+}
+
+.createCardTitle {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: inherit;
+}
+
+.createCardText {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #8c8c8c;
+}
+
+.createButton {
+    display: none;
+}
+
+/* Responsive Design */
 /* Responsive Design */
 @media (max-width: 768px) {
     .header {
@@ -180,4 +242,127 @@
         width: 100%;
         justify-content: center;
     }
+
+    /* Horizontal Scroll for Mobile (like Recent Lessons) */
+    .lessonsGrid {
+        display: flex;
+        overflow-x: auto;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        /* Space for scrollbar if any */
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        margin-right: -15px;
+        /* Counteract parent padding if needed, or just let it scroll */
+    }
+
+    /* Wrap cards to ensure they don't shrink */
+    .lessonsGrid>* {
+        flex: 0 0 auto;
+        width: 200px;
+        /* Fixed width for cards */
+        scroll-snap-align: start;
+    }
+}
+
+/* --- Modal Styles (Matching PlannerPage) --- */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modalContent {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modalCloseButton {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #888;
+}
+
+.modalBody {
+    margin-bottom: 24px;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.modalButtonSecondary,
+.modalButtonPrimary {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #d9d9d9;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modalButtonSecondary {
+    background: #fff;
+    color: #333;
+}
+
+.modalButtonSecondary:hover {
+    border-color: #3f51b5;
+    color: #3f51b5;
+}
+
+.modalButtonPrimary {
+    background: #3f51b5;
+    color: #fff;
+    border-color: #3f51b5;
+}
+
+.modalButtonPrimary:hover {
+    background: #3645a0;
+}
+
+.customDatePicker {
+    width: 100%;
+    height: 40px;
+    padding: 0 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.customDatePicker:focus {
+    outline: none;
+    border-color: #3f51b5;
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
 }

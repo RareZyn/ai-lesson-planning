@@ -33,6 +33,44 @@ const CalendarView = () => {
     fetchAllLessons();
   }, [fetchAllLessons]);
 
+  // --- Mobile Detection ---
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // --- Modal State for Mobile ---
+  const [dayModalVisible, setDayModalVisible] = useState(false);
+  const [selectedDayLessons, setSelectedDayLessons] = useState([]);
+  const [selectedDayDate, setSelectedDayDate] = useState(null);
+
+  const handleDayClick = (date, dayLessons) => {
+    if (dayLessons.length > 0) {
+      // If there are lessons, show detail modal on mobile
+      if (isMobile) {
+        setSelectedDayDate(date);
+        setSelectedDayLessons(dayLessons);
+        setDayModalVisible(true);
+      } else {
+        // On desktop, clicking the empty space creates a lesson, pills are clickable separately
+        handleCreateLesson(date);
+      }
+    } else {
+      // No lessons, create new
+      handleCreateLesson(date);
+    }
+  };
+
+  const handleMobileCreateFromModal = () => {
+    if (selectedDayDate) {
+      handleCreateLesson(selectedDayDate);
+      setDayModalVisible(false);
+    }
+  };
+
   // --- Helper Functions ---
   const handleCreateLesson = (dateForLesson) => {
     navigate('/app/planner', { state: { selectedDate: dateForLesson.toISOString() } });
@@ -161,21 +199,73 @@ const CalendarView = () => {
               <div
                 className={`month-cell ${d.label ? 'active-day' : ''}`}
                 key={i}
-                onClick={d.label ? () => handleCreateLesson(d.date) : undefined}
+                onClick={d.label ? () => handleDayClick(d.date, d.lessons) : undefined}
               >
                 <div className={`month-date ${d.isToday ? 'today' : ''}`}>
                   {d.label}
                 </div>
-                <div className="month-lessons">
-                  {d.lessons.map((lesson) => (
-                    <div key={lesson._id} className="lesson-pill" onClick={(e) => { e.stopPropagation(); handleNavigateLesson(lesson._id); }}>
-                      {lesson.parameters.specificTopic}
-                    </div>
-                  ))}
-                </div>
-                {d.label && <span className="add-lesson-indicator">+</span>}
+
+                {/* Desktop View: Show Pills */}
+                {!isMobile && (
+                  <div className="month-lessons">
+                    {d.lessons.map((lesson) => (
+                      <div
+                        key={lesson._id}
+                        className="lesson-pill"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNavigateLesson(lesson._id);
+                        }}
+                      >
+                        {lesson.parameters.specificTopic}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mobile View: Show Count Badge */}
+                {isMobile && d.lessons.length > 0 && (
+                  <div className="mobile-lesson-count">
+                    {d.lessons.length}
+                  </div>
+                )}
+
+                {d.label && !isMobile && <span className="add-lesson-indicator">+</span>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Day Detail Modal */}
+      {dayModalVisible && (
+        <div className="day-modal-backdrop" onClick={() => setDayModalVisible(false)}>
+          <div className="day-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="day-modal-header">
+              <h3>{selectedDayDate?.toDateString()}</h3>
+              <button onClick={() => setDayModalVisible(false)} className="close-btn">&times;</button>
+            </div>
+            <div className="day-modal-body">
+              {selectedDayLessons.length > 0 ? (
+                selectedDayLessons.map(lesson => (
+                  <div
+                    key={lesson._id}
+                    className="modal-lesson-item"
+                    onClick={() => handleNavigateLesson(lesson._id)}
+                  >
+                    <span className="lesson-topic">{lesson.parameters.specificTopic}</span>
+                    <span className="lesson-subject">{lesson.classId?.subject || 'No Subject'}</span>
+                  </div>
+                ))
+              ) : (
+                <p>No lessons scheduled.</p>
+              )}
+            </div>
+            <div className="day-modal-footer">
+              <button className="create-btn-modal" onClick={handleMobileCreateFromModal}>
+                + Plan New Lesson
+              </button>
+            </div>
           </div>
         </div>
       )}

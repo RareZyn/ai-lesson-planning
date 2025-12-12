@@ -142,7 +142,27 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .recent-classes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.75rem;
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    /* Space for scrollbar */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling for iOS */
+  }
+
+  .recent-classes-grid>.horizontal-scroll-item {
+    flex: 0 0 auto;
+    width: 200px;
+    /* Fixed width for cards in scroll */
+    scroll-snap-align: start;
+    height: 100%;
+  }
+
+  .recent-classes-grid>.horizontal-scroll-item>* {
+    width: 100% !important;
+    height: 100%;
+    margin: 0;
   }
 }

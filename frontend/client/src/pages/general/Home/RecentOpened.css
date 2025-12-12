@@ -159,10 +159,32 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .recent-opened-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.75rem;
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    /* Space for scrollbar */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling for iOS */
+  }
+
+  .recent-opened-grid>.horizontal-scroll-item {
+    flex: 0 0 auto;
+    width: 200px;
+    /* Fixed width for cards in scroll */
+    min-width: 200px;
+    scroll-snap-align: start;
+    min-height: auto;
+    /* Allow height to adjust */
+  }
+
+  .recent-opened-grid>.horizontal-scroll-item>* {
+    width: 100% !important;
+    margin: 0;
   }
 }
+
 
 /* --- Modal Styles (Matching PlannerPage) --- */
 .modal-backdrop {

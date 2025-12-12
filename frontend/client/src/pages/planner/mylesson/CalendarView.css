@@ -159,7 +159,8 @@
   color: #fff;
 }
 
-.day-lessons, .month-lessons {
+.day-lessons,
+.month-lessons {
   flex-grow: 1;
   overflow-y: auto;
 }
@@ -177,8 +178,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
-  cursor: pointer; /* Make pills clickable */
+  cursor: pointer;
+  /* Make pills clickable */
 }
+
 .lesson-pill:hover {
   opacity: 0.85;
 }
@@ -213,4 +216,286 @@
   color: red;
   text-align: center;
   padding: 1rem;
+}
+
+/* --- Mobile Lesson Count Badge --- */
+.mobile-lesson-count {
+  background-color: #1565c0;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+  align-self: center;
+  box-shadow: 0 2px 5px rgba(109, 136, 247, 0.4);
+}
+
+/* --- Mobile Modal Styles --- */
+.day-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.day-modal-content {
+  background: white;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.day-modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+}
+
+.day-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.day-modal-header .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.day-modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.modal-lesson-item {
+  background: #f9f9f9;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-lesson-item:hover {
+  border-color: #6d88f7;
+  background: #f0f4ff;
+}
+
+.lesson-topic {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.lesson-subject {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.day-modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.create-btn-modal {
+  background-color: #6d88f7;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* --- Mobile Responsive Styles --- */
+@media (max-width: 768px) {
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .today-btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Center the nav with reduced gap */
+  .calendar-nav {
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .calendar-nav h2 {
+    font-size: 1.1rem;
+    /* Smaller title */
+  }
+
+  .view-toggle {
+    width: 100%;
+  }
+
+  .view-toggle button {
+    flex: 1;
+    /* Equal width toggles */
+  }
+
+  /* --- Month Grid for Mobile --- */
+  .month-grid {
+    grid-template-columns: repeat(7, 1fr);
+    /* Ensure padding doesn't overflow or create horiz scroll */
+    margin: 0;
+  }
+
+  .month-cell {
+    padding: 0.25rem;
+    /* Reduced padding */
+    min-height: 80px;
+    /* Reduced height */
+  }
+
+  .month-date {
+    font-size: 0.75rem;
+    /* Smaller date font */
+    padding: 2px 6px;
+    margin-bottom: 4px;
+  }
+
+  .month-day-label {
+    font-size: 0.75rem;
+    /* Smaller day headers */
+    padding: 0.25rem 0;
+  }
+
+  /* Use dots or simplified pills on mobile for month view */
+  .lesson-pill {
+    padding: 2px 4px;
+    font-size: 0.7rem;
+    height: 18px;
+    /* Fixed small height */
+    line-height: normal;
+    /* Reset line-height */
+    margin-bottom: 2px;
+  }
+
+  /* --- Week Grid for Mobile --- */
+  /* Re-orient week grid to vertical stack */
+  .week-grid {
+    display: flex;
+    flex-direction: column;
+    /* Stack vertically */
+    overflow-x: visible;
+    border-top: none;
+    padding-bottom: 0;
+    gap: 1rem;
+    height: auto;
+    /* Allow full height */
+  }
+
+  .day-column {
+    width: 100%;
+    /* Full width */
+    min-width: auto;
+    min-height: auto;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 0;
+    background: white;
+
+    /* Grid Layout for Side-by-Side */
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    /* Date width | Content width */
+    /* 
+      Rows logic: 
+      We want Header on left (row 1-2).
+      But the HTML order is: Header, Create, Lessons.
+      
+      We can use grid-area or implicit placement.
+      Let's use specific child selectors since I can't easily add classes here without context.
+      Wait, I have the classes: .day-header, .create-lesson, .day-lessons.
+    */
+    grid-template-areas:
+      "date content"
+      "date action";
+    gap: 0.5rem;
+    padding: 1rem 0;
+    flex-shrink: 1;
+  }
+
+  .day-header {
+    grid-area: date;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 5px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #555;
+    border-right: 2px solid #f0f0f0;
+    padding-right: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  /* Adjust 'Today' styling for this layout */
+  .day-header.today {
+    color: #6d88f7;
+    background-color: transparent;
+    border-radius: 0;
+    border-right-color: #6d88f7;
+  }
+
+  .day-lessons {
+    grid-area: content;
+    width: 100%;
+  }
+
+  .create-lesson {
+    grid-area: action;
+    justify-content: flex-start;
+    /* Align left within the column */
+    min-height: auto;
+    /* Reset min-height */
+    margin-top: 0.25rem;
+  }
+
+  .create-btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border-style: solid;
+    background-color: #f9f9f9;
+    color: #6d88f7;
+  }
 }

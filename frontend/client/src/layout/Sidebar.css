@@ -84,7 +84,8 @@
   transition:
     opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
     transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
-  pointer-events: none; /* Important for the transition */
+  pointer-events: none;
+  /* Important for the transition */
 }
 
 /* 
@@ -103,7 +104,8 @@
   transition:
     opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  visibility: hidden; /* Use visibility instead of a timed none */
+  visibility: hidden;
+  /* Use visibility instead of a timed none */
 }
 
 /* 
@@ -116,7 +118,8 @@
   transform: translateX(0);
   transition-delay: 0.1s;
   position: absolute;
-  left: 80px; /* Positioned outside the collapsed sidebar */
+  left: 80px;
+  /* Positioned outside the collapsed sidebar */
   background: #34495e;
   color: white;
   padding: 8px 12px;
@@ -124,7 +127,8 @@
   z-index: 100;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  pointer-events: none; /* The label itself shouldn't be clickable */
+  pointer-events: none;
+  /* The label itself shouldn't be clickable */
 }
 
 
@@ -316,8 +320,130 @@
   fill: currentColor;
 }
 
-/* Remove default NavLink active styles (Unchanged) */
-a {
+/* Glass Effect for Bottom Nav */
+.bottom-navigation.glass-effect {
+  background: rgba(255, 255, 255, 0.9);
+  /* Slightly more opaque for floating */
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+  /* Floating & Centering */
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 280px;
+  /* Ensure enough space */
+  max-width: 90%;
+  border-radius: 24px;
+  padding: 8px 12px;
+
+  /* Animation */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  z-index: 1000;
+}
+
+/* Visibility States */
+.bottom-navigation.nav-visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.bottom-navigation.nav-hidden {
+  transform: translateX(-50%) translateY(150%);
+  /* Slide down */
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Mobile Menu Backdrop */
+.mobile-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.2);
+  /* Lighter backdrop */
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Others Menu Popup */
+.mobile-others-menu {
+  position: fixed;
+  bottom: 90px;
+  /* Above floating nav (20px + height ~60px + gap) */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  z-index: 1001;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUpCentered 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.mobile-other-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
   text-decoration: none;
-  color: inherit;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-radius: 8px;
+  /* Rounded items */
+}
+
+.mobile-other-item:hover,
+.mobile-other-item.active {
+  background: rgba(88, 128, 241, 0.1);
+  color: #5880F1;
+}
+
+.mobile-other-icon {
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  color: #666;
+  width: 24px;
+  /* Slightly larger */
+  justify-content: center;
+}
+
+.mobile-other-item.active .mobile-other-icon {
+  color: #5880F1;
+}
+
+@keyframes slideUpCentered {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

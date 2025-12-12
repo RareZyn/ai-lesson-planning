@@ -77,3 +77,21 @@ exports.markAllAsRead = async (req, res) => {
         });
     }
 };
+
+// Delete all notifications for the current user
+exports.deleteAll = async (req, res) => {
+    try {
+        await Notification.deleteMany({ recipient: req.user.id });
+
+        res.status(200).json({
+            success: true,
+            message: "All notifications cleared",
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error: Unable to delete notifications",
+        });
+    }
+};
