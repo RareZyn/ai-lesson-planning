@@ -598,6 +598,8 @@ exports.getTeacherAnalytics = async (req, res) => {
 // @desc    Extract syllabus structure from uploaded file (PDF/Image) using AI
 // @route   POST /api/admin/syllabuses/extract-structure
 // @access  Private
+
+// TODO: Change to extract DSKP
 exports.extractSyllabusStructure = async (req, res) => {
   try {
     console.log("extractSyllabusStructure called");
@@ -618,7 +620,7 @@ exports.extractSyllabusStructure = async (req, res) => {
 
     // Use Gemini 1.5 Flash (specific version 001) for multimodal capabilities
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
+    //
     const prompt = `
       You are an expert curriculum developer. Analyze the uploaded syllabus document (image or PDF).
       Extract the structured syllabus data into a JSON format.

@@ -26,8 +26,8 @@
   height: 100%;
   width: 100%;
   /* Take full width of available space */
-  border-radius: 16px;
-  /* Apply radius to all corners since it's 5px from edges */
+  border-radius: 16px 16px 0 0;
+  /* Top corners only on desktop */
 }
 
 .main-content::-webkit-scrollbar {
@@ -40,15 +40,13 @@
   }
 
   .content-area {
-    padding: 5px;
-    /* Keep consistent 5px padding on mobile */
+    padding: 0;
+    /* Remove padding around content area on mobile */
   }
 
   .main-content {
     padding: 15px 15px 80px 15px;
-    /* Add horizontal padding to accommodate negative margins of grids */
-    border-radius: 16px;
-    /* Keep border radius on mobile */
-
+    border-radius: 0;
+    /* Remove border radius on mobile */
   }
 }

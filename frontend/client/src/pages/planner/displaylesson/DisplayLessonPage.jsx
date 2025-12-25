@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getLessonPlanById,
   deleteLessonPlan,
-  sendForApproval,
+  analyzeLessonPlan,
 } from "../../../services/lessonService";
 import { exportToPdf, exportToDocx } from "../../../services/exportService";
 import offlineLessonService from "../../../services/offline/offlineLessonService";
 import lessonOfflineService from "../../../services/offline/lessonOfflineService";
+import { sendLessonForApproval } from "../../../services/adminService";
 
 // Import Ant Design components
 import {
@@ -23,7 +24,8 @@ import {
   Typography,
   Divider,
   Modal,
-
+  Grid,
+  message,
 } from "antd";
 
 // Import Ant Design icons
@@ -45,7 +47,11 @@ import {
   SyncOutlined,
   CloseCircleOutlined,
   SendOutlined,
+  RobotOutlined,
+  MoreOutlined,
 } from "@ant-design/icons";
+
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 import styles from "./DisplayLessonPage.module.css";
 
@@ -56,6 +62,7 @@ const { Title, Text, Paragraph } = Typography;
 const DisplayLessonPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const screens = Grid.useBreakpoint();
 
   const [lessonPlan, setLessonPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +72,11 @@ const DisplayLessonPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPlan, setEditedPlan] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // State for AI Analysis
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -272,20 +284,23 @@ const DisplayLessonPage = () => {
   };
 
   // Action Handlers
-  const handleDelete = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to permanently delete this lesson plan?"
-      )
-    ) {
-      try {
-        await deleteLessonPlan(id);
-        alert("Lesson plan deleted successfully.");
-        navigate("/app/lessons");
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
-    }
+  const handleDelete = () => {
+    Modal.confirm({
+      title: "Are you sure you want to delete this lesson plan?",
+      content: "This action cannot be undone.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await deleteLessonPlan(id);
+          message.success("Lesson plan deleted successfully.");
+          navigate("/app/lessons");
+        } catch (err) {
+          message.error(`Error: ${err.message}`);
+        }
+      },
+    });
   };
 
   const handleEdit = () => {
@@ -317,7 +332,7 @@ const DisplayLessonPage = () => {
           : 'Lesson plan updated successfully!',
       });
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      message.error(`Error: ${err.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -339,19 +354,49 @@ const DisplayLessonPage = () => {
     handlePlanChange("activities", updatedActivities);
   };
 
-  // Approval Handler
-  const handleSendForApproval = async () => {
-    if (window.confirm("Are you sure you want to send this lesson plan for approval? You won't be able to edit it while it's pending.")) {
-      try {
-        await sendForApproval(id);
-        alert("Lesson sent for approval successfully!");
-        // Refresh data
-        const updatedData = await getLessonPlanById(id);
-        setLessonPlan(updatedData);
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
+  // AI Analysis Handler
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    try {
+      const payload = {
+        plan: lessonPlan.plan,
+        context: {
+          subject: lessonPlan.classId?.subject || parameters.subject,
+          grade: lessonPlan.classId?.grade || parameters.grade,
+          topic: parameters.specificTopic,
+        },
+      };
+
+      const result = await analyzeLessonPlan(payload);
+      setAnalysisResult(result);
+      setIsAnalysisModalOpen(true);
+    } catch (err) {
+      Modal.error({
+        title: "Analysis Failed",
+        content: err.message,
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
+  };
+
+  // Approval Handler
+  const handleSendForApproval = () => {
+    Modal.confirm({
+      title: "Send for Approval?",
+      content: "Are you sure you want to send this lesson plan for approval? You won't be able to edit it while it's pending.",
+      onOk: async () => {
+        try {
+          await sendLessonForApproval(id);
+          message.success("Lesson sent for approval successfully!");
+          // Refresh data
+          const updatedData = await getLessonPlanById(id);
+          setLessonPlan(updatedData);
+        } catch (err) {
+          message.error(`Error: ${err.message}`);
+        }
+      },
+    });
   };
 
   const renderApprovalCard = () => {
@@ -450,17 +495,7 @@ const DisplayLessonPage = () => {
   // Render Logic
   if (isLoading)
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "60vh" }}
-      >
-        <div className="text-center">
-          <div className="spinner-border text-primary mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <Text type="secondary">Loading lesson plan...</Text>
-        </div>
-      </div>
+      <LoadingSpinner tip="Loading lesson plan..." fullscreen={true} />
     );
 
   if (error)
@@ -521,7 +556,7 @@ const DisplayLessonPage = () => {
   ];
 
   return (
-    <div className="container">
+    <div className={`container ${styles.pageContainer}`}>
       {/* Back Button */}
       <div className="mb-3">
         <Button
@@ -586,25 +621,82 @@ const DisplayLessonPage = () => {
                   </Button>
                 </Space>
               ) : (
-                <Space>
-                  <Dropdown
-                    menu={{ items: exportMenu }}
-                    trigger={["click"]}
-                    placement="bottomRight"
-                  >
-                    <Button icon={<DownloadOutlined />}>Export</Button>
-                  </Dropdown>
-                  <Button icon={<EditOutlined />} onClick={handleEdit}>
-                    Edit
-                  </Button>
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleDelete}
-                  >
-                    Delete
-                  </Button>
-                </Space>
+                <>
+                  {screens.lg ? (
+                    <Space>
+                      <Dropdown
+                        menu={{ items: exportMenu }}
+                        trigger={["click"]}
+                        placement="bottomRight"
+                      >
+                        <Button icon={<DownloadOutlined />}>Export</Button>
+                      </Dropdown>
+                      <Button
+                        icon={<RobotOutlined />}
+                        onClick={handleAnalyze}
+                        loading={isAnalyzing}
+                        className="ai-analysis-btn"
+                      >
+                        Smart Review
+                      </Button>
+                      <Button icon={<EditOutlined />} onClick={handleEdit}>
+                        Edit
+                      </Button>
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleDelete}
+                      >
+                        Delete
+                      </Button>
+                    </Space>
+                  ) : (
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: "smart_review",
+                            label: "Smart Review",
+                            icon: <RobotOutlined />,
+                            onClick: handleAnalyze,
+                          },
+                          {
+                            key: "edit",
+                            label: "Edit",
+                            icon: <EditOutlined />,
+                            onClick: handleEdit,
+                          },
+                          {
+                            key: "delete",
+                            label: "Delete",
+                            icon: <DeleteOutlined />,
+                            danger: true,
+                            onClick: handleDelete,
+                          },
+                          {
+                            type: "divider",
+                          },
+                          {
+                            key: "export_pdf",
+                            label: "Export as PDF",
+                            icon: <FilePdfOutlined />,
+                            onClick: () => exportToPdf(displayPlan, parameters, lessonDate, lessonPlan.classId),
+                          },
+                          {
+                            key: "export_docx",
+                            label: "Export as DOCX",
+                            icon: <FileWordOutlined />,
+                            onClick: () => exportToDocx(displayPlan, parameters, lessonDate, lessonPlan.classId),
+                          },
+                        ],
+                      }}
+                      trigger={["click"]}
+                      placement="bottomRight"
+                    >
+                      <Button icon={<MoreOutlined />} />
+                    </Dropdown>
+                  )}
+                </>
               )}
             </div>
           </Col>
@@ -615,9 +707,6 @@ const DisplayLessonPage = () => {
         <Col xs={24} xl={16}>
           {/* Approval Status Card */}
           {renderApprovalCard()}
-
-          {/* Activity Configuration Section */}
-          {activityConfiguration && renderActivityConfiguration()}
 
           {/* Learning Objective */}
           <Card title="Learning Objective" className="mb-4">
@@ -873,6 +962,9 @@ const DisplayLessonPage = () => {
             </Descriptions>
           </Card>
 
+          {/* Activity Configuration Section (Moved to Sidebar) */}
+          {activityConfiguration && renderActivityConfiguration()}
+
           {/* Activity Configuration Summary */}
           {activityConfiguration && (
             <Card
@@ -904,6 +996,71 @@ const DisplayLessonPage = () => {
           )}
         </Col>
       </Row>
+
+      {/* AI Analysis Modal */}
+      <Modal
+        title={
+          <Space>
+            <RobotOutlined style={{ color: "#1890ff" }} />
+            <span>AI Pedagogical Coach</span>
+          </Space>
+        }
+        open={isAnalysisModalOpen}
+        onCancel={() => setIsAnalysisModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsAnalysisModalOpen(false)}>
+            Close
+          </Button>,
+        ]}
+        width={700}
+      >
+        {analysisResult && (
+          <div className="d-flex flex-column gap-4">
+            <Alert
+              message="Analysis Complete"
+              description="Here is the feedback on your lesson plan regarding alignment, engagement, and flow."
+              type="info"
+              showIcon
+            />
+
+            {/* Strengths */}
+            <div>
+              <Title level={5} style={{ color: "#52c41a", marginBottom: "8px" }}>
+                <CheckCircleOutlined /> Strengths
+              </Title>
+              <ul style={{ paddingLeft: "20px", marginBottom: 0 }}>
+                {analysisResult.strengths?.map((item, i) => (
+                  <li key={i} className="mb-1">{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Weaknesses / Gaps */}
+            <div>
+              <Title level={5} style={{ color: "#faad14", marginBottom: "8px" }}>
+                <ThunderboltOutlined /> Areas for Improvement
+              </Title>
+              <ul style={{ paddingLeft: "20px", marginBottom: 0 }}>
+                {analysisResult.weaknesses?.map((item, i) => (
+                  <li key={i} className="mb-1">{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Suggestions */}
+            <div>
+              <Title level={5} style={{ color: "#1890ff", marginBottom: "8px" }}>
+                <BulbOutlined /> Actionable Suggestions
+              </Title>
+              <ul style={{ paddingLeft: "20px", marginBottom: 0 }}>
+                {analysisResult.suggestions?.map((item, i) => (
+                  <li key={i} className="mb-1">{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

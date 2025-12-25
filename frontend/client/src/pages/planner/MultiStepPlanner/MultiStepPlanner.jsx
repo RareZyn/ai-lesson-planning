@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./MultiStepPlanner.module.css";
-import { Modal } from "antd";
+import { Modal, message } from "antd";
 
 import ProgressBar from "./ProgressBar";
 import Step1ChooseClass from "./Step1_ChooseClass";
@@ -154,7 +154,7 @@ const MultiStepPlanner = () => {
       setGeneratedPlan(updatedPlan);
     } catch (error) {
       console.error("Failed to enhance section:", error);
-      alert(`Enhancement Failed: ${error.message}`);
+      message.error(`Enhancement Failed: ${error.message}`);
     } finally {
       setIsEnhancing(false);
     }

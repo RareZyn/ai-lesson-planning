@@ -12,8 +12,9 @@ import LessonStatusIcon from '../../../components/LessonStatusIcon.jsx';
 
 import { FaPlus, FaSearch, FaTh, FaBars } from 'react-icons/fa';
 import dayjs from 'dayjs';
-import { Modal as AntModal, message } from 'antd';
+import { Modal as AntModal, message, Pagination } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const CreateLessonCard = ({ showModal }) => (
   <div
@@ -73,6 +74,15 @@ const PlannerPage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedNewDate, setSelectedNewDate] = useState(dayjs());
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const fetchLessons = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -116,6 +126,7 @@ const PlannerPage = () => {
       });
     }
     setFilteredLessons(results);
+    setCurrentPage(1); // Reset to first page on filter change
   }, [lessons, searchTerm, filterSubject]);
 
   const showModal = () => setIsModalVisible(true);
@@ -190,10 +201,38 @@ const PlannerPage = () => {
 
 
 
+    // Pagination Logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
       <div className={styles.lessonList}>
+        {/* Pagination */}
+        {filteredLessons.length > itemsPerPage && (
+          <div
+            className="d-flex justify-content-center mb-4"
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              padding: '10px 0',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}
+          >
+            <Pagination
+              current={currentPage}
+              total={filteredLessons.length}
+              pageSize={itemsPerPage}
+              onChange={handlePageChange}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
         {ListHeader()}
-        {filteredLessons.map((lesson) => (
+        {currentItems.map((lesson) => (
           <div
             key={lesson._id}
             className={styles.listItem}
@@ -232,15 +271,51 @@ const PlannerPage = () => {
 
 
   const renderAllLessonsContent = () => {
-    if (isLoading) return <div className={styles.statusMessage}>Loading your lessons...</div>;
+    if (isLoading) return <LoadingSpinner tip="Loading your lessons..." />;
     if (error) return <div className={styles.statusMessage_error}>{error}</div>;
     if (viewMode === 'list') return renderListView();
 
+    // Pagination Logic for Grid View (reusing calculated slices if moved up, or recalculating locally if cleaner scope-wise)
+    // Since renderListView is separate, let's keep logic here too or refactor currentItems calculation to outer scope.
+    // Refactoring to outer scope (renderAllLessonsContent) is better to sharing calculation.
+    // Let's verify where renderListView is called. It is called inside renderAllLessonsContent.
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
       <div className={styles.lessonsGrid}>
+        {/* Pagination Container */}
+        {filteredLessons.length > itemsPerPage && (
+          <div
+            style={{
+              gridColumn: '1 / -1', // Span full width of grid
+              display: 'flex',
+              justifyContent: 'center',
+              position: 'sticky',
+              top: '10px',
+              zIndex: 100,
+              background: 'rgba(255, 255, 255, 0.95)',
+              padding: '10px 0',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              marginBottom: '20px'
+            }}
+          >
+            <Pagination
+              current={currentPage}
+              total={filteredLessons.length}
+              pageSize={itemsPerPage}
+              onChange={handlePageChange}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
+
         <CreateLessonCard showModal={showModal} />
-        {filteredLessons.length > 0 ? (
-          filteredLessons.map((lesson) => (
+        {currentItems.length > 0 ? (
+          currentItems.map((lesson) => (
             <LessonCard key={lesson._id} lesson={lesson} />
           ))
         ) : (

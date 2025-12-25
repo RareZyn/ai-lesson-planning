@@ -55,6 +55,7 @@ const analyticsRoutes = require("./route/analyticsRoutes");
 const adminRoutes = require("./route/adminRoutes");
 const syncRoutes = require("./route/syncRoutes");
 const notificationRoutes = require("./route/notificationRoutes");
+const searchRoutes = require("./route/searchRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -76,6 +77,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/materials", require("./route/materialRoutes"));
+app.use("/api/search", searchRoutes);
 
 
 
@@ -151,9 +153,37 @@ if (process.env.MONGO_URI) {
     });
 }
 
+const http = require("http");
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: corsOptions
+});
+
+// Socket.io connection handler
+io.on("connection", (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+
+  // Join a personal room based on userId (sent from client)
+  socket.on("join", (userId) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+      console.log(`Socket ${socket.id} joined room user_${userId}`);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`Socket disconnected: ${socket.id}`);
+  });
+});
+
+// Store io instance in app to use in controllers
+app.set("io", io);
+
 // Only start server if not in serverless environment
 if (process.env.VERCEL !== '1' && require.main === module) {
-  const server = app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/`);

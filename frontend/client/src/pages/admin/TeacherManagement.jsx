@@ -14,8 +14,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getTeachers, getInvitationCode } from "../../services/adminService";
 import { authAPI } from "../../services/api";
-import { Modal as AntModal, message } from "antd";
+import { Modal as AntModal, message, Pagination } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const TeacherManagement = ({ searchTerm = "" }) => {
   const [teachers, setTeachers] = useState([]);
@@ -24,6 +25,20 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [email, setEmail] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const navigate = useNavigate();
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset pagination on search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // ===========================
   // FETCH TEACHERS
@@ -131,6 +146,11 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     message.success("Invitation code copied to clipboard!");
   };
 
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTeachers = filteredTeachers.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="teacherManagement">
       <div className="headerRow">
@@ -148,11 +168,35 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       </div>
 
       {loading ? (
-        <p>Loading teachers...</p>
+        <LoadingSpinner tip="Loading teachers..." />
       ) : filteredTeachers.length === 0 ? (
         <p>No teachers found.</p>
       ) : (
         <div className="listContainer">
+          {/* Pagination */}
+          {filteredTeachers.length > itemsPerPage && (
+            <div
+              className="d-flex justify-content-center mb-4"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                background: "rgba(255, 255, 255, 0.95)",
+                padding: "10px 0",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                marginBottom: "20px"
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                total={filteredTeachers.length}
+                pageSize={itemsPerPage}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
+
           <div className="listHeader listItem">
             <div className="listTitle">Name</div>
             <div className="listDetail">Email</div>
@@ -162,7 +206,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             <div className="listActions">Action</div>
           </div>
 
-          {filteredTeachers.map((teacher) => (
+          {currentTeachers.map((teacher) => (
             <div
               key={teacher._id}
               className="listItem"

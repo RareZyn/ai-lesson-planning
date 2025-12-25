@@ -6,6 +6,7 @@ import Breadcrumb from "./Breadcrumb";
 import { Outlet } from "react-router-dom";
 import NetworkStatus from "../components/NetworkStatus/NetworkStatus";
 import UpdateNotification from "../components/NetworkStatus/UpdateNotification";
+import NotificationListener from "../components/common/NotificationListener";
 import "./MainLayout.css";
 
 const MainLayout = () => {
@@ -13,6 +14,9 @@ const MainLayout = () => {
     <div className="app-container">
       {/* Service Worker Update Notification */}
       <UpdateNotification />
+
+      {/* Real-time Notification Listener */}
+      <NotificationListener />
 
       {/* Network Status Banner */}
       <NetworkStatus showOnlineStatus={false} />

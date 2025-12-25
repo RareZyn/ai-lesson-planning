@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalendarView.css'; // Using your original CSS file
 import { getAllLessonPlans } from '../../../services/lessonService';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
 
 const daysOfWeek = ['Su.', 'Mo.', 'Tu.', 'We.', 'Th.', 'Fr.', 'Sa.'];
 
@@ -160,7 +161,7 @@ const CalendarView = () => {
         </div>
       </div>
 
-      {isLoading && <p>Loading lessons...</p>}
+      {isLoading && <LoadingSpinner tip="Loading lessons..." />}
       {error && <p className="error-message">Error: {error}</p>}
 
       {!isLoading && !error && selectedView === 'week' && (

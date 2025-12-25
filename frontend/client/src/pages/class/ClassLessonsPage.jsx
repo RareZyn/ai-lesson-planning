@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
+import { Modal, message } from "antd";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getLessonPlansByClass } from "../../services/lessonService";
 import { getClassById, deleteClass } from "../../services/classService";
@@ -11,6 +12,7 @@ import styles from "./ClassLessonsPage.module.css";
 // Icons for the UI
 import { ArrowBack, Edit, Delete } from "@mui/icons-material";
 import { FaPlus } from "react-icons/fa";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 // Custom Modal Component (Same as PlannerPage)
 const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
@@ -84,22 +86,23 @@ const ClassLessonsPage = () => {
   };
 
   // Handler for deleting the class
-  const handleDelete = async () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete the class "${classInfo.className}" and all its lesson plans? This action cannot be undone.`
-      )
-    ) {
-      try {
-        await deleteClass(classId);
-        alert(
-          "Class and all associated lessons have been deleted successfully."
-        );
-        navigate("/app/classes"); // Navigate back to the main class list
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
-    }
+  const handleDelete = () => {
+    Modal.confirm({
+      title: `Delete Class "${classInfo.className}"?`,
+      content: "Are you sure you want to delete this class and all its lesson plans? This action cannot be undone.",
+      okText: "Delete Class",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await deleteClass(classId);
+          message.success("Class and all associated lessons have been deleted successfully.");
+          navigate("/app/classes"); // Navigate back to the main class list
+        } catch (err) {
+          message.error(`Error: ${err.message}`);
+        }
+      },
+    });
   };
 
   // Callback for when the modal saves an edit successfully
@@ -124,12 +127,12 @@ const ClassLessonsPage = () => {
       });
       setIsCreateModalOpen(false);
     } else {
-      alert("Please select a valid date.");
+      message.warning("Please select a valid date.");
     }
   };
 
   if (isLoading)
-    return <div className={styles.status}>Loading class details...</div>;
+    return <LoadingSpinner tip="Loading class details..." />;
   if (error)
     return (
       <div className={`${styles.status} ${styles.error}`}>Error: {error}</div>

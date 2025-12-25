@@ -13,6 +13,7 @@ import { Modal, message, Progress } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
 import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialById } from "../../services/materialService";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 
 const MaterialManagement = () => {
@@ -371,7 +372,9 @@ const MaterialManagement = () => {
 
       {/* Materials List Container */}
       <div className="materials-list-container">
-        {filteredMaterials.length === 0 ? (
+        {isLoading ? (
+          <LoadingSpinner tip="Loading materials..." />
+        ) : filteredMaterials.length === 0 ? (
           <div className="empty-state">
             <p>No materials found. Upload your first material to get started!</p>
           </div>

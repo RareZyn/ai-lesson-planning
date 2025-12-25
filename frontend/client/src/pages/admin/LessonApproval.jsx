@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { message, Pagination } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
   getAllLessonsForApproval,
@@ -9,6 +10,7 @@ import styles from "./LessonApproval.module.css";
 import dayjs from "dayjs";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import LessonStatusIcon from "../../components/LessonStatusIcon";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const LessonApproval = () => {
   const navigate = useNavigate();
@@ -20,6 +22,20 @@ const LessonApproval = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("All");
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset pagination when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   // === FETCH ALL LESSONS ===
   const fetchLessons = async () => {
@@ -54,15 +70,15 @@ const LessonApproval = () => {
     try {
       if (actionType === "approve") {
         await approveLesson(selectedLesson._id, { remark });
-        alert("Lesson approved successfully!");
+        message.success("Lesson approved successfully!");
       } else if (actionType === "reject") {
         await rejectLesson(selectedLesson._id, { remark });
-        alert("Lesson rejected successfully!");
+        message.success("Lesson rejected successfully!");
       }
       setIsModalOpen(false);
       fetchLessons();
     } catch (error) {
-      alert(error.message);
+      message.error(error.message);
     }
   };
 
@@ -86,7 +102,12 @@ const LessonApproval = () => {
     return true;
   });
 
-  if (isLoading) return <div className={styles.statusMessage}>Loading lessons...</div>;
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentLessons = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (isLoading) return <LoadingSpinner tip="Loading lessons..." />;
   if (error) return <div className={styles.statusMessage}>{error}</div>;
 
   return (
@@ -123,6 +144,30 @@ const LessonApproval = () => {
         <div className={styles.statusMessage}>No lessons found for this category.</div>
       ) : (
         <div className={styles.lessonList}>
+          {/* Pagination */}
+          {filteredLessons.length > itemsPerPage && (
+            <div
+              className="d-flex justify-content-center mb-4"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                background: "rgba(255, 255, 255, 0.95)",
+                padding: "10px 0",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                marginBottom: "20px"
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                total={filteredLessons.length}
+                pageSize={itemsPerPage}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
+
           <div className={`${styles.listItem} ${styles.listHeader}`}>
             <div>Lesson Topic</div>
             <div>Class</div>
@@ -133,7 +178,7 @@ const LessonApproval = () => {
             <div>Status</div>
           </div>
 
-          {filteredLessons.map((lesson) => (
+          {currentLessons.map((lesson) => (
             <div key={lesson._id} className={styles.listItem}>
               <div
                 style={{ cursor: "pointer", color: "#1890ff", fontWeight: "bold" }}

@@ -1,5 +1,6 @@
 // CreateSyllabusModal.jsx
 import React, { useState } from 'react';
+import { message } from "antd";
 import './SyllabusModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faUpload, faTimes, faPlusCircle, faMinusCircle, faCaretRight, faCaretDown, faInfoCircle, faMagic } from '@fortawesome/free-solid-svg-icons';
@@ -229,7 +230,7 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
 
     const handleDownloadTemplate = () => {
         if (schemaFields.length === 0) {
-            alert("Please add at least one schema field.");
+            message.warning("Please add at least one schema field.");
             return;
         }
 
