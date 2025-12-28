@@ -5,19 +5,31 @@ import { BellOutlined } from "@ant-design/icons";
 
 const NotificationListener = () => {
     const socket = useSocket();
+    const [api, contextHolder] = notification.useNotification();
 
     useEffect(() => {
         if (!socket) return;
 
+        console.log("🔔 NotificationListener: Socket connected, listening for events...");
+
         const handleNewNotification = (data) => {
+            console.log("🔔 Notification Received:", data);
+
             // Use Ant Design notification for better visibility than 'message'
-            notification.open({
+            api.open({
                 message: 'New Notification',
                 description: data.message || "You have a new update.",
                 icon: <BellOutlined style={{ color: '#108ee9' }} />,
                 placement: 'topRight',
                 duration: 4.5, // seconds
+                onClick: () => {
+                    console.log("Notification clicked");
+                },
             });
+
+            // Optional: Play a sound
+            // const audio = new Audio('/notification-sound.mp3');
+            // audio.play().catch(e => console.log('Audio play failed', e));
         };
 
         socket.on("new_notification", handleNewNotification);
@@ -25,9 +37,9 @@ const NotificationListener = () => {
         return () => {
             socket.off("new_notification", handleNewNotification);
         };
-    }, [socket]);
+    }, [socket, api]);
 
-    return null; // This component doesn't render anything visible directly
+    return <>{contextHolder}</>; // Render the context holder
 };
 
 export default NotificationListener;

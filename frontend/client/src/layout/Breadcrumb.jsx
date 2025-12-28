@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Breadcrumb.css";
 
 const Breadcrumb = ({ customBreadcrumbs = null }) => {
   const location = useLocation();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const breadcrumbNameMap = {
     "/app": "Home",
@@ -27,21 +28,45 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
 
   // If custom breadcrumbs are provided, use them
   if (customBreadcrumbs) {
+    const shouldCollapse = customBreadcrumbs.length > 2 && !isExpanded;
+
     return (
       <nav className="breadcrumb-container">
         <ol className="breadcrumb">
-          {customBreadcrumbs.map((crumb, index) => (
-            <li key={index} className="breadcrumb-item">
-              {crumb.link && index < customBreadcrumbs.length - 1 ? (
-                <Link to={crumb.link} className="breadcrumb-link">
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className="breadcrumb-current">{crumb.label}</span>
-              )}
-              {/* Remove separator from here - let CSS handle it */}
-            </li>
-          ))}
+          {shouldCollapse ? (
+            <>
+              <li className="breadcrumb-item">
+                <span
+                  className="breadcrumb-ellipsis"
+                  onClick={() => setIsExpanded(true)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" || e.key === " ") setIsExpanded(true);
+                  }}
+                >
+                  ...
+                </span>
+              </li>
+              <li className="breadcrumb-item">
+                <span className="breadcrumb-current">
+                  {customBreadcrumbs[customBreadcrumbs.length - 1].label}
+                </span>
+              </li>
+            </>
+          ) : (
+            customBreadcrumbs.map((crumb, index) => (
+              <li key={index} className="breadcrumb-item">
+                {crumb.link && index < customBreadcrumbs.length - 1 ? (
+                  <Link to={crumb.link} className="breadcrumb-link">
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="breadcrumb-current">{crumb.label}</span>
+                )}
+              </li>
+            ))
+          )}
         </ol>
       </nav>
     );
@@ -81,20 +106,46 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
     });
   });
 
+  // Collapse breadcrumbs if more than 2 items
+  const shouldCollapse = breadcrumbs.length > 2 && !isExpanded;
+
   return (
     <nav className="breadcrumb-container">
       <ol className="breadcrumb">
-        {breadcrumbs.map((crumb, index) => (
-          <li key={index} className="breadcrumb-item">
-            {crumb.link ? (
-              <Link to={crumb.link} className="breadcrumb-link">
-                {crumb.label}
-              </Link>
-            ) : (
-              <span className="breadcrumb-current">{crumb.label}</span>
-            )}
-          </li>
-        ))}
+        {shouldCollapse ? (
+          <>
+            <li className="breadcrumb-item">
+              <span
+                className="breadcrumb-ellipsis"
+                onClick={() => setIsExpanded(true)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" || e.key === " ") setIsExpanded(true);
+                }}
+              >
+                ...
+              </span>
+            </li>
+            <li className="breadcrumb-item">
+              <span className="breadcrumb-current">
+                {breadcrumbs[breadcrumbs.length - 1].label}
+              </span>
+            </li>
+          </>
+        ) : (
+          breadcrumbs.map((crumb, index) => (
+            <li key={index} className="breadcrumb-item">
+              {crumb.link ? (
+                <Link to={crumb.link} className="breadcrumb-link">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className="breadcrumb-current">{crumb.label}</span>
+              )}
+            </li>
+          ))
+        )}
       </ol>
     </nav>
   );

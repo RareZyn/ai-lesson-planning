@@ -1,24 +1,21 @@
 
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Badge, Dropdown, List, Avatar, Typography, Button, Empty, message } from "antd";
+import { Avatar } from "antd";
 import {
-  BellOutlined,
   UserOutlined,
   LogoutOutlined,
-  DeleteOutlined,
-  InfoCircleOutlined,
   HomeOutlined,
   BookOutlined,
   SolutionOutlined,
   BarChartOutlined,
   TeamOutlined,
   SafetyCertificateOutlined,
-  LeftOutlined,
-  RightOutlined
+  ArrowLeftOutlined,
+  ArrowRightOutlined
 } from "@ant-design/icons";
 
-import { authAPI } from "../services/api";
+
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { signOut } from "firebase/auth";
@@ -26,13 +23,10 @@ import { auth } from "../firebase";
 import Profile from "../components/general/Profile"; // For mobile view dropdown
 import "./Sidebar.css";
 
-const { Text } = Typography;
-
 const Sidebar = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isPinned, setIsPinned] = useState(true);
-  const [loading, setLoading] = useState(true);
 
   // User Context
   const { currentUser: contextUser, logout: contextLogout } = useUser();
@@ -214,8 +208,24 @@ const Sidebar = () => {
           className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
           title="Profile"
         >
-          <span className="menu-icon"><UserOutlined /></span>
-          <span className="menu-label">Profile</span>
+          {({ isActive }) => (
+            <>
+              <span className="menu-icon">
+                <Avatar
+                  src={user?.avatar || user?.photoURL}
+                  size={24}
+                  icon={<UserOutlined style={{ color: isActive ? '#5880F1' : 'rgba(0, 0, 0, 0.6)' }} />}
+                  style={{
+                    backgroundColor: (user?.avatar || user?.photoURL) ? 'transparent' : (isActive ? 'rgba(88, 128, 241, 0.1)' : '#e0e0e0'),
+                    color: isActive ? '#5880F1' : 'rgba(0, 0, 0, 0.6)'
+                  }}
+                >
+                  {!(user?.avatar || user?.photoURL) && (user?.name || user?.displayName || user?.email || "U").charAt(0).toUpperCase()}
+                </Avatar>
+              </span>
+              <span className="menu-label">Profile</span>
+            </>
+          )}
         </NavLink>
 
         {/* Logout */}
@@ -236,7 +246,7 @@ const Sidebar = () => {
           onClick={togglePin}
           title={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
         >
-          {isPinned ? <LeftOutlined /> : <RightOutlined />}
+          {isPinned ? <ArrowLeftOutlined /> : <ArrowRightOutlined />}
         </button>
       </div>
     </div>

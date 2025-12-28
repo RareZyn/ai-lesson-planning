@@ -6,6 +6,7 @@ import notificationService from "../services/notificationService";
 import { Badge, Dropdown, List, Avatar, Typography, Empty } from "antd";
 import { BellOutlined, InfoCircleOutlined, RightOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import Breadcrumb from "./Breadcrumb";
 
 const { Text } = Typography;
 
@@ -137,7 +138,7 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* Left group - logo and search */}
+        {/* Left group - logo, breadcrumb, and search */}
         <div className="navbar-left-group">
           {/* Logo */}
           <div className="navbar-logo">
@@ -147,6 +148,9 @@ const Navbar = () => {
               className="logo-img"
             />
           </div>
+
+          {/* Breadcrumb next to logo */}
+          <Breadcrumb />
 
           <Searchbar
             placeholder="Type to search materials, lesson etc..."

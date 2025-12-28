@@ -13,7 +13,7 @@ import { Modal, message, Progress } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
 import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialById } from "../../services/materialService";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import CommonTable from "../../components/common/CommonTable";
 
 
 const MaterialManagement = () => {
@@ -290,48 +290,7 @@ const MaterialManagement = () => {
 
 
 
-  // Update the materials list row to make it clickable
-  const renderMaterialRow = (material) => (
-    <tr
-      key={material.id}
-      className={material.type === "link" ? "link-row" : "file-row"}
-      onClick={() => handleMaterialClick(material)}
-    >
-      <td data-label="Name">
-        <div className="material-name">
-          {getFileIcon(material.type)}
-          <span>{material.name}</span>
-          {material.type === "link" && <OpenInNewIcon className="external-icon" />}
-        </div>
-      </td>
-      <td data-label="Type">{material.type.toUpperCase()}</td>
-      <td data-label="Date Added">{material.date}</td>
-      <td data-label="Size">{material.size}</td>
-      <td data-label="Actions">
-        <div className="action-buttons">
-          <button
-            className="edit-button"
-            onClick={(e) => handleEditClick(material, e)}
-            title="Edit name"
-            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2' }}
-          >
-            <EditIcon />
-          </button>
-          <button
-            className="delete-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteMaterial(material._id); // Ensure using _id
-            }}
-            title="Delete material"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f' }}
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
+
 
   return (
     <div className="material-management-container">
@@ -372,82 +331,116 @@ const MaterialManagement = () => {
 
       {/* Materials List Container */}
       <div className="materials-list-container">
-        {isLoading ? (
-          <LoadingSpinner tip="Loading materials..." />
-        ) : filteredMaterials.length === 0 ? (
-          <div className="empty-state">
-            <p>No materials found. Upload your first material to get started!</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <div className="desktop-view">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Date Added</th>
-                    <th>Size</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMaterials.map(renderMaterialRow)}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card Grid View */}
-            <div className="mobile-view">
-              <div className="mobile-grid">
-                {filteredMaterials.map(material => (
-                  <div
-                    key={material._id}
-                    className="material-card"
-                    onClick={() => handleMaterialClick(material)}
+        <CommonTable
+          loading={isLoading}
+          dataSource={filteredMaterials}
+          rowKey="_id"
+          pagination={false} // No pagination in original
+          columns={[
+            {
+              title: "Name",
+              dataIndex: "name",
+              key: "name",
+              render: (_, material) => (
+                <div className="material-name">
+                  {getFileIcon(material.type)}
+                  <span>{material.name}</span>
+                  {material.type === "link" && <OpenInNewIcon className="external-icon" />}
+                </div>
+              )
+            },
+            {
+              title: "Type",
+              dataIndex: "type",
+              key: "type",
+              render: (type) => type.toUpperCase()
+            },
+            {
+              title: "Date Added",
+              dataIndex: "date",
+              key: "date"
+            },
+            {
+              title: "Size",
+              dataIndex: "size",
+              key: "size"
+            },
+            {
+              title: "Actions",
+              key: "actions",
+              render: (_, material) => (
+                <div className="action-buttons">
+                  <button
+                    className="edit-button"
+                    onClick={(e) => handleEditClick(material, e)}
+                    title="Edit name"
+                    style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2' }}
                   >
-                    <div className={`material-card-header ${material.type}`}>
-                      <div className="card-preview-icon">
-                        {getFileIcon(material.type)}
-                      </div>
-                      <div className="card-actions">
-                        <button
-                          className="edit-button-card"
-                          onClick={(e) => handleEditClick(material, e)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </button>
-                        <button
-                          className="delete-button-card"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteMaterial(material._id);
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="material-card-content">
-                      <h3 className="card-title" title={material.name}>{material.name}</h3>
+                    <EditIcon />
+                  </button>
+                  <button
+                    className="delete-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMaterial(material._id);
+                    }}
+                    title="Delete material"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f' }}
+                  >
+                    <DeleteIcon />
+                  </button>
+                </div>
+              )
+            }
+          ]}
+          onRow={(record) => ({
+            onClick: () => handleMaterialClick(record),
+            className: record.type === "link" ? "link-row" : "file-row"
+          })}
+          renderCard={(material) => (
+            <div
+              className="material-card" // Reuse existing card style
+              onClick={() => handleMaterialClick(material)}
+              style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+            >
+              <div className={`material-card-header ${material.type}`}>
+                <div className="card-preview-icon">
+                  {getFileIcon(material.type)}
+                </div>
+                <div className="card-actions">
+                  <button
+                    className="edit-button-card"
+                    onClick={(e) => handleEditClick(material, e)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </button>
+                  <button
+                    className="delete-button-card"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMaterial(material._id);
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </button>
+                </div>
+              </div>
+              <div className="material-card-content">
+                <h3 className="card-title" title={material.name}>{material.name}</h3>
 
-                      <div className="card-meta-row">
-                        <span className={`card-tag ${material.type}`}>{material.type.toUpperCase()}</span>
-                        {material.size && <span className="card-size">{material.size}</span>}
-                      </div>
+                <div className="card-meta-row">
+                  <span className={`card-tag ${material.type}`}>{material.type.toUpperCase()}</span>
+                  {material.size && <span className="card-size">{material.size}</span>}
+                </div>
 
-                      <div className="card-footer-b">
-                        <span className="card-date">{material.date}</span>
-                        {material.type === 'link' && <OpenInNewIcon className="card-link-icon" />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div className="card-footer-b">
+                  <span className="card-date">{material.date}</span>
+                  {material.type === 'link' && <OpenInNewIcon className="card-link-icon" />}
+                </div>
               </div>
             </div>
-          </>
-        )}
+          )}
+        />
       </div>
 
       {/* Upload Modal */}

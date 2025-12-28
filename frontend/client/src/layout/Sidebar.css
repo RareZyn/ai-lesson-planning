@@ -165,7 +165,7 @@
 .pin-btn {
   background: none;
   border: none;
-  color: #000000;
+  color: rgba(0, 0, 0, 0.6);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -179,6 +179,7 @@
 .pin-btn:hover {
   transform: scale(1.1);
   background-color: rgba(0, 0, 0, 0.05);
+  color: #5880F1;
 }
 
 .pin-btn svg {

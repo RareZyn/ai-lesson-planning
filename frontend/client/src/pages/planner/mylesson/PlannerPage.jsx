@@ -15,6 +15,7 @@ import dayjs from 'dayjs';
 import { Modal as AntModal, message, Pagination } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import CommonTable from '../../../components/common/CommonTable';
 
 const CreateLessonCard = ({ showModal }) => (
   <div
@@ -69,6 +70,8 @@ const PlannerPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState(null);
+  const [filterClass, setFilterClass] = useState(null);
+  const [filterStatus, setFilterStatus] = useState(null);
   const [filteredLessons, setFilteredLessons] = useState([]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -107,10 +110,26 @@ const PlannerPage = () => {
     return [...new Set(subjects)];
   }, [lessons]);
 
+  const uniqueClasses = useMemo(() => {
+    const classes = lessons.map(l => l.classId?.className).filter(Boolean);
+    return [...new Set(classes)];
+  }, [lessons]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = lessons.map(l => l.approvalStatus).filter(Boolean);
+    return [...new Set(statuses)];
+  }, [lessons]);
+
   useEffect(() => {
     let results = lessons;
     if (filterSubject) {
       results = results.filter(l => l.classId?.subject === filterSubject);
+    }
+    if (filterClass) {
+      results = results.filter(l => l.classId?.className === filterClass);
+    }
+    if (filterStatus) {
+      results = results.filter(l => l.approvalStatus === filterStatus);
     }
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
@@ -127,7 +146,7 @@ const PlannerPage = () => {
     }
     setFilteredLessons(results);
     setCurrentPage(1); // Reset to first page on filter change
-  }, [lessons, searchTerm, filterSubject]);
+  }, [lessons, searchTerm, filterSubject, filterClass, filterStatus]);
 
   const showModal = () => setIsModalVisible(true);
   const handleCancel = () => setIsModalVisible(false);
@@ -155,18 +174,7 @@ const PlannerPage = () => {
       );
     }
 
-    const ListHeader = () => (
-      <div
-        className={`${styles.listItem} ${styles.listHeader}`}
-        style={{ fontWeight: 700, cursor: "default", background: "#f9f9f9" }}
-      >
-        <div className={styles.listTitle}>Lesson Topic</div>
-        <div className={styles.listDetail}>Class</div>
-        <div className={styles.listDetail}>Subject</div>
-        <div className={styles.listMeta}>Scheduled Date</div>
-        <div className={styles.listMeta}>Status</div>
-      </div>
-    );
+
 
     const handleSendForApprovalClick = async (lessonId, lessonTopic) => {
       console.log("Draft clicked for:", lessonId);
@@ -207,64 +215,96 @@ const PlannerPage = () => {
     const currentItems = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-      <div className={styles.lessonList}>
-        {/* Pagination */}
-        {filteredLessons.length > itemsPerPage && (
-          <div
-            className="d-flex justify-content-center mb-4"
-            style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              padding: '10px 0',
-              borderRadius: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              marginBottom: '20px',
-              display: 'flex',
-              justifyContent: 'center'
-            }}
-          >
-            <Pagination
-              current={currentPage}
-              total={filteredLessons.length}
-              pageSize={itemsPerPage}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
-        {ListHeader()}
-        {currentItems.map((lesson) => (
-          <div
-            key={lesson._id}
-            className={styles.listItem}
-            onClick={() => navigate(`/app/lessons/${lesson._id}`)}
-          >
-            <div className={styles.listTitle}>
-              {lesson.parameters?.specificTopic || "Untitled Lesson"}
-            </div>
-            <div className={styles.listDetail}>{lesson.classId?.className || "N/A"}</div>
-            <div className={styles.listDetail}>{lesson.classId?.subject || "N/A"}</div>
-            <div className={styles.listMeta}>
-              {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
-            </div>
+      <div className={styles.lessonList} style={{ display: 'block' }}> {/* Keep container for layout if needed, or remove if CommonTable handles it. CommonTable has its own container. */}
+        <CommonTable
+          loading={isLoading}
+          dataSource={currentItems}
+          rowKey="_id"
+
+          columns={[
+            {
+              title: "Lesson Topic",
+              dataIndex: "parameters",
+              key: "topic",
+              render: (params) => params?.specificTopic || "Untitled Lesson"
+            },
+            {
+              title: "Class",
+              key: "class",
+              render: (text, record) => record.classId?.className || "Unknown Class"
+            },
+            {
+              title: "Subject",
+              key: "subject",
+              render: (text, record) => record.classId?.subject || "General"
+            },
+            {
+              title: "Scheduled Date",
+              dataIndex: "lessonDate",
+              key: "date",
+              render: (date) => dayjs(date).format("MMM D, YYYY")
+            },
+            {
+              title: "Status",
+              dataIndex: "approvalStatus",
+              key: "status",
+              render: (status, lesson) => (
+                <div onClick={(e) => e.stopPropagation()}>
+                  {status === "draft" ? (
+                    <LessonStatusIcon
+                      status="draft"
+                      onClick={() => handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic)}
+                    />
+                  ) : (
+                    <LessonStatusIcon status={status} />
+                  )}
+                </div>
+              )
+            }
+          ]}
+          onRow={(record) => ({
+            onClick: () => navigate(`/app/lessons/${record._id}`)
+          })}
+          renderCard={(lesson) => (
             <div
-              className={styles.listMeta}
-              onClick={(e) => e.stopPropagation()} // Still good to stop propagation here
+              className={styles.listItem}
+              onClick={() => navigate(`/app/lessons/${lesson._id}`)}
+              style={{ flexWrap: 'wrap', height: 'auto', gap: '8px' }}
             >
-              {lesson.approvalStatus === "draft" ? (
-                // Directly render LessonStatusIcon and pass the handler to it
-                <LessonStatusIcon
-                  status="draft"
-                  onClick={() => handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic)} // Pass the handler
-                // Note: We pass null for the event because LessonStatusIcon's internal handler
-                // already calls stopPropagation. If you needed the event object here for something,
-                // you'd modify LessonStatusIcon to pass it up.
-                />
-              ) : (
-                <LessonStatusIcon status={lesson.approvalStatus} />
-              )}
+              <div className={styles.listTitle} style={{ width: '100%' }}>
+                {lesson.parameters?.specificTopic || "Untitled Lesson"}
+              </div>
+              <div className={styles.listDetail} style={{ minWidth: '45%' }}>{lesson.classId?.className || "N/A"}</div>
+              <div className={styles.listDetail} style={{ minWidth: '45%' }}>{lesson.classId?.subject || "N/A"}</div>
+              <div className={styles.listMeta} style={{ minWidth: '45%' }}>
+                {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
+              </div>
+              <div
+                className={styles.listMeta}
+                onClick={(e) => e.stopPropagation()}
+                style={{ marginLeft: 'auto' }}
+              >
+                {lesson.approvalStatus === "draft" ? (
+                  <LessonStatusIcon
+                    status="draft"
+                    onClick={() => handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic)}
+                  />
+                ) : (
+                  <LessonStatusIcon status={lesson.approvalStatus} />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )}
+        />
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+          <Pagination
+            current={currentPage}
+            pageSize={itemsPerPage}
+            total={filteredLessons.length}
+            onChange={handlePageChange}
+            showSizeChanger={false}
+          />
+        </div>
       </div>
     );
   };
@@ -286,32 +326,7 @@ const PlannerPage = () => {
 
     return (
       <div className={styles.lessonsGrid}>
-        {/* Pagination Container */}
-        {filteredLessons.length > itemsPerPage && (
-          <div
-            style={{
-              gridColumn: '1 / -1', // Span full width of grid
-              display: 'flex',
-              justifyContent: 'center',
-              position: 'sticky',
-              top: '10px',
-              zIndex: 100,
-              background: 'rgba(255, 255, 255, 0.95)',
-              padding: '10px 0',
-              borderRadius: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              marginBottom: '20px'
-            }}
-          >
-            <Pagination
-              current={currentPage}
-              total={filteredLessons.length}
-              pageSize={itemsPerPage}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
+
 
         <CreateLessonCard showModal={showModal} />
         {currentItems.length > 0 ? (
@@ -322,6 +337,24 @@ const PlannerPage = () => {
           <div className={styles.statusMessage_empty}>
             <h3>No Lesson Plans Found</h3>
             <p>Start by scheduling your first lesson above or adjust your search filters.</p>
+          </div>
+        )}
+
+        {filteredLessons.length > itemsPerPage && (
+          <div style={{
+            gridColumn: '1 / -1',
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: '20px',
+            width: '100%'
+          }}>
+            <Pagination
+              current={currentPage}
+              pageSize={itemsPerPage}
+              total={filteredLessons.length}
+              onChange={handlePageChange}
+              showSizeChanger={false}
+            />
           </div>
         )}
       </div>
@@ -368,16 +401,59 @@ const PlannerPage = () => {
 
           {/* 2. Filter + Toggle Group */}
           <div className={styles.filterToggleGroup}>
-            <select
-              value={filterSubject || ''}
-              onChange={(e) => setFilterSubject(e.target.value || null)}
-              className={`${styles.customSelect} ${styles.subjectFilter}`}
-            >
-              <option value="">Filter by Subject</option>
-              {uniqueSubjects.map(subject => (
-                <option key={subject} value={subject}>{subject}</option>
-              ))}
-            </select>
+            <div className={styles.activeFilters}>
+              {/* Subject Filter */}
+              <select
+                value={filterSubject || ''}
+                onChange={(e) => setFilterSubject(e.target.value || null)}
+                className={`${styles.customSelect} ${styles.filterSelect}`}
+              >
+                <option value="">Subject</option>
+                {uniqueSubjects.map(subject => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
+              </select>
+
+              {/* Class Filter */}
+              <select
+                value={filterClass || ''}
+                onChange={(e) => setFilterClass(e.target.value || null)}
+                className={`${styles.customSelect} ${styles.filterSelect}`}
+              >
+                <option value="">Class</option>
+                {uniqueClasses.map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={filterStatus || ''}
+                onChange={(e) => setFilterStatus(e.target.value || null)}
+                className={`${styles.customSelect} ${styles.filterSelect}`}
+              >
+                <option value="">Status</option>
+                {uniqueStatuses.map(st => (
+                  <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
+                ))}
+              </select>
+
+              {/* Reset Filters (Optional but good UX) */}
+              {(filterSubject || filterClass || filterStatus) && (
+                <button
+                  className={styles.resetButton}
+                  onClick={() => {
+                    setFilterSubject(null);
+                    setFilterClass(null);
+                    setFilterStatus(null);
+                    setSearchTerm('');
+                  }}
+                  title="Clear all filters"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
 
             <div className={styles.viewToggle}>
               <button

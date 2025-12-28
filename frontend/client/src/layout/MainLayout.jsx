@@ -2,7 +2,6 @@
 import React from "react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
-import Breadcrumb from "./Breadcrumb";
 import { Outlet } from "react-router-dom";
 import NetworkStatus from "../components/NetworkStatus/NetworkStatus";
 import UpdateNotification from "../components/NetworkStatus/UpdateNotification";
@@ -26,7 +25,6 @@ const MainLayout = () => {
         <Sidebar />
         <div className="content-area">
           <main className="main-content">
-            <Breadcrumb />
             <Outlet />
           </main>
         </div>
