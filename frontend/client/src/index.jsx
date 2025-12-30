@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { UserProvider } from "./context/UserContext";
+import { SocketProvider } from "./context/SocketContext";
 import router from "./routes";
 import "./index.css";
 
@@ -19,12 +20,14 @@ root.render(
   <React.StrictMode>
     <AuthProvider>
       <UserProvider>
-        <RouterProvider
-          router={router}
-          future={{
-            v7_startTransition: true,
-          }}
-        />
+        <SocketProvider>
+          <RouterProvider
+            router={router}
+            future={{
+              v7_startTransition: true,
+            }}
+          />
+        </SocketProvider>
       </UserProvider>
     </AuthProvider>
   </React.StrictMode>

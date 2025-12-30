@@ -11,22 +11,9 @@ body {
   -ms-overflow-style: none;
 }
 
-/* You might also need to target Ant Design components specifically */
-.ant-typography,
-.ant-btn,
-.ant-card,
-.ant-tag,
-.ant-alert,
-.ant-descriptions,
-.ant-space,
-.ant-row,
-.ant-col,
-.ant-divider,
-.ant-anchor,
-.ant-pagination a,
-.ant-avatar,
-.ant-statistic-content,
-.ant-spin {
+/* Apply Quicksand font to all Ant Design components using wildcard */
+[class*="ant-"],
+[class^="ant-"] {
   font-family: 'Quicksand', "Segoe UI", sans-serif !important;
 }
 

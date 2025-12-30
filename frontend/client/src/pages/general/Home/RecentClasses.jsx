@@ -5,6 +5,7 @@ import { getRecentClasses } from "../../../services/classService";
 import ClassCard from "../../class/ClassCard";
 import { FaPlus } from "react-icons/fa";
 import CreateClassModal from "../../class/CreateClassModal";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 const CreateClassCard = ({ onClick }) => {
   return (
@@ -56,12 +57,7 @@ const RecentClasses = () => {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="recent-classes-grid">
-          <div className="class-card-skeleton"></div>
-          <div className="class-card-skeleton"></div>
-        </div>
-      );
+      return <LoadingSpinner tip="Loading recent classes..." />;
     }
 
     if (recentClasses.length === 0) {

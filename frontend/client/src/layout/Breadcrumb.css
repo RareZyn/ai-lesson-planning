@@ -1,7 +1,9 @@
 .breadcrumb-container {
   background: transparent;
   padding: 0;
-  margin-bottom: 1.5rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .breadcrumb {
@@ -39,6 +41,19 @@
   font-weight: 500;
 }
 
+.breadcrumb-ellipsis {
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.breadcrumb-ellipsis:hover {
+  color: var(--blue, #1890ff);
+}
+
 .breadcrumb-separator {
   color: #ccc;
   font-size: 0.9rem;
@@ -48,17 +63,17 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .breadcrumb-container {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
   }
-  
+
   .breadcrumb {
     gap: 0.3rem;
   }
-  
+
   .breadcrumb-item {
     gap: 0.3rem;
   }
-  
+
   .breadcrumb-link,
   .breadcrumb-current,
   .breadcrumb-separator {
@@ -68,10 +83,9 @@
 
 @media (max-width: 480px) {
   .breadcrumb {
-    align-items: flex-start;
     gap: 0.2rem;
   }
-  
+
   .breadcrumb-item {
     gap: 0.2rem;
   }

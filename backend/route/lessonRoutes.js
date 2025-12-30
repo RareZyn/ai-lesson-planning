@@ -14,7 +14,8 @@ const {
   approveLesson,
   rejectLesson,
   getPendingLessons,
-  getAllLessonsForApproval
+  getAllLessonsForApproval,
+  analyzeLessonPlan
 } = require("../controller/lessonController");
 
 const { protect, authorize } = require("../middleware/auth");
@@ -31,24 +32,25 @@ router.post("/save", saveLessonPlan);
 router.get("/recent", getRecentLessonPlans);
 router.get("/by-class/:classId", getLessonPlansByClass);
 router.post("/enhance", enhanceLessonSection);
+router.post("/analyze", analyzeLessonPlan);
 router.put("/:id/send", sendForApproval);
 
 // 🟣 Admin / Head / Principal routes (order important)
 router.get(
   "/pending",
-  authorize("school_admin", "super_admin", "principal", "english_head"),
+  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
   getPendingLessons
 );
 
 router.patch(
   "/:id/approve",
-  authorize("school_admin", "super_admin", "principal", "english_head"),
+  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
   approveLesson
 );
 
 router.patch(
   "/:id/reject",
-  authorize("school_admin", "super_admin", "principal", "english_head"),
+  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
   rejectLesson
 );
 
@@ -57,7 +59,7 @@ router.get(
   authorize(
     "math_head",
     "english_head",
-    "science_head",
+    "math_head",
     "principal",
     "school_admin",
     "super_admin"

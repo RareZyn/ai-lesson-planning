@@ -741,7 +741,97 @@ exports.enhanceLessonSection = async (req, res, next) => {
   }
 };
 
-const Notification = require("../model/Notification");
+/**
+ * @desc    Analyze a lesson plan and provide AI feedback
+ * @route   POST /api/lessons/analyze
+ * @access  Private
+ */
+exports.analyzeLessonPlan = async (req, res, next) => {
+  try {
+    const { plan, context } = req.body;
+
+    if (!plan) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing lesson plan data for analysis.",
+      });
+    }
+
+    // Get User and Gemini API Key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    const geminiApiKey = user.getGeminiApiKey();
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message: "No Gemini API key found. Please add your API key in your profile settings.",
+      });
+    }
+
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+    const prompt = `
+      You are a senior pedagogical coach and curriculum expert. Your task is to review a lesson plan and provide constructive, actionable feedback to the teacher.
+
+      Lesson Context:
+      - Subject: ${context?.subject || "Not specified"}
+      - Grade: ${context?.grade || "Not specified"}
+      - Topic: ${context?.topic || "Not specified"}
+      
+      Lesson Plan Data:
+      ${JSON.stringify(plan, null, 2)}
+
+      Please analyze this lesson plan based on:
+      1. Alignment with the learning objective.
+      2. Student engagement and active learning.
+      3. Clarity of instructions and flow.
+      4. Assessment strategies (formative/summative).
+
+      Provide your feedback in the following valid JSON format ONLY:
+      {
+        "strengths": ["Strength 1", "Strength 2"],
+        "weaknesses": ["Weakness 1", "Weakness 2"],
+        "suggestions": ["Actionable Suggestion 1", "Actionable Suggestion 2"]
+      }
+      
+      Keep the points concise (under 20 words each). Do NOT result in markdown. Just the JSON object.
+    `;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    let analysisResult;
+    try {
+      const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      analysisResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini analysis response. Raw text:", text);
+      throw new Error("The AI analysis response was not in a valid format.");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: analysisResult,
+    });
+
+  } catch (error) {
+    console.error("Analysis controller error:", error.message);
+    // Handle Gemini specific errors if needed, or pass to global handler
+    if (handleGeminiApiError(res, error)) return;
+
+    res.status(500).json({
+      success: false,
+      message: error.message || "An error occurred during the analysis process.",
+    });
+  }
+};
+
+
+const { createNotification } = require("../utils/notificationHandler");
 
 exports.sendForApproval = async (req, res) => {
   try {
@@ -776,9 +866,6 @@ exports.sendForApproval = async (req, res) => {
 
       // Find users with this role (and optionally same school if SchoolId exists)
       const filter = { roles: roleToNotify };
-      // If lesson has a school associated, only notify admins of that school (optional refinement)
-      // if (req.user.schoolId) filter.schoolId = req.user.schoolId;
-
       let recipients = await User.find(filter);
 
       // Fallback: If no subject head found, notify school_admin or principal
@@ -786,18 +873,29 @@ exports.sendForApproval = async (req, res) => {
         recipients = await User.find({ roles: { $in: ["school_admin", "principal"] } });
       }
 
+      // FIX: Always include Super Admins in the notification loop
+      const superAdmins = await User.find({ roles: "super_admin" });
+
+      // Combine and deduplicate recipients
+      const allRecipients = [...recipients, ...superAdmins];
+      const uniqueIds = new Set(allRecipients.map(u => u._id.toString()));
+
       // Create Notifications
-      const notifications = recipients.map(recipient => ({
-        recipient: recipient._id,
-        sender: req.user.id,
-        type: "lesson_approval",
-        lessonId: lesson._id,
-        message: `${req.user.name} has submitted a ${subject || "lesson"} plan for approval.`,
-        isRead: false
-      }));
+      const notifications = [];
+      for (const recipientId of uniqueIds) {
+        notifications.push({
+          recipient: recipientId,
+          sender: req.user.id,
+          type: "lesson_approval",
+          lessonId: lesson._id,
+          message: `${req.user.name} has submitted a ${subject || "lesson"} plan for approval.`,
+          isRead: false
+        });
+      }
 
       if (notifications.length > 0) {
-        await Notification.insertMany(notifications);
+        // Use helper to save and emit
+        await createNotification(req.app.get("io"), notifications);
       }
 
     } catch (notifyErr) {
@@ -843,18 +941,14 @@ exports.approveLesson = async (req, res) => {
     await lesson.save();
 
     // Create Notification for the creator
-    try {
-      await Notification.create({
-        recipient: lesson.createdBy,
-        sender: req.user.id,
-        type: "lesson_approved",
-        lessonId: lesson._id,
-        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been approved by ${req.user.name}.`,
-        isRead: false
-      });
-    } catch (notifyErr) {
-      console.error("Failed to create approval notification:", notifyErr);
-    }
+    await createNotification(req.app.get("io"), {
+      recipient: lesson.createdBy,
+      sender: req.user.id,
+      type: "lesson_approved",
+      lessonId: lesson._id,
+      message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been approved by ${req.user.name}.`,
+      isRead: false
+    });
 
     res.json({ success: true, message: 'Lesson approved successfully!' });
 
@@ -879,18 +973,14 @@ exports.rejectLesson = async (req, res) => {
     await lesson.save();
 
     // Create Notification for the creator
-    try {
-      await Notification.create({
-        recipient: lesson.createdBy,
-        sender: req.user.id,
-        type: "lesson_rejected",
-        lessonId: lesson._id,
-        message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been rejected. Remarks: ${lesson.remarks}`,
-        isRead: false
-      });
-    } catch (notifyErr) {
-      console.error("Failed to create rejection notification:", notifyErr);
-    }
+    await createNotification(req.app.get("io"), {
+      recipient: lesson.createdBy,
+      sender: req.user.id,
+      type: "lesson_rejected",
+      lessonId: lesson._id,
+      message: `Your lesson plan "${lesson.classId?.subject || 'Lesson'}" has been rejected. Remarks: ${lesson.remarks}`,
+      isRead: false
+    });
 
     res.json({ success: true, message: 'Lesson rejected successfully!' });
 

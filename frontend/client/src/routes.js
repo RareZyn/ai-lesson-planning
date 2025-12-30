@@ -38,6 +38,8 @@ const SubmissionReviewPage = React.lazy(() => import("./pages/answerChecker/Subm
 
 // NEW IMPORTS - Offline Mode Module
 const OfflineModePage = React.lazy(() => import("./pages/general/OfflineModePage"));
+const ProfilePage = React.lazy(() => import("./pages/general/ProfilePage"));
+const NotificationPage = React.lazy(() => import("./pages/general/NotificationPage"));
 const router = createBrowserRouter(
   [
     {
@@ -75,7 +77,10 @@ const router = createBrowserRouter(
         { path: "classes/:classId", element: <ClassLessonsPage /> },
 
         // Offline Mode
+        // Offline Mode
         { path: "offline-mode", element: <OfflineModePage /> },
+        { path: "profile", element: <ProfilePage /> },
+        { path: "notifications", element: <NotificationPage /> },
 
         //admin
         { path: "admin", element: <AdminLayout /> },

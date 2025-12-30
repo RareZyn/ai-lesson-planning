@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { message } from "antd";
 import styles from "./MultiStepPlanner.module.css";
 import { getSyllabuses, getSyllabusById } from "../../../services/adminService";
 import { getMaterials } from "../../../services/materialService"; // Import material service
@@ -180,33 +181,33 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
 
     // Basic requirements: Topic (OR Material) and Specific Topic are always required
     if (sourceType === 'syllabus' && !hasTopicSelected && !data.specificTopic) {
-      alert("Please select a syllabus topic or enter a specific topic/title.");
+      message.warning("Please select a syllabus topic or enter a specific topic/title.");
       return;
     }
 
     // STRICTER: If using material, you MUST select a file. Specific Topic alone is not enough context for AI if mode is Material.
     if (sourceType === 'material' && !data.materialId) {
-      alert("Please select a material to base the lesson on.");
+      message.warning("Please select a material to base the lesson on.");
       return;
     }
 
     // Conditional requirements: English subjects strictly require these fields
     if (isEnglish) {
       if (!data.activityType || !data.proficiencyLevel || !data.hotsFocus) {
-        alert("For English subjects, please fill in all fields (Activity Format, Proficiency Level, HOTS Focus).");
+        message.warning("For English subjects, please fill in all fields (Activity Format, Proficiency Level, HOTS Focus).");
         return;
       }
 
       // Check if activity has been configured (only if activity type is selected)
       if (data.activityType && !hasConfiguredActivity) {
-        alert("Please configure your selected activity type before proceeding.");
+        message.warning("Please configure your selected activity type before proceeding.");
         return;
       }
     } else {
       // Non-English: These fields are optional
       // However, if they DID select an activity type, they should configure it
       if (data.activityType && !hasConfiguredActivity) {
-        alert("Since you selected an Activity Format, please configure it before proceeding.");
+        message.warning("Since you selected an Activity Format, please configure it before proceeding.");
         return;
       }
     }

@@ -230,11 +230,23 @@ const DisplaySyllabus = () => {
 
                 <Row gutter={[24, 24]}>
                     {/* Main Content - Syllabus Items */}
-                    <Col xs={24} xl={16}>
+                    <Col xs={{ span: 24, order: 2 }} xl={{ span: 16, order: 1 }}>
 
                         {/* Pagination */}
                         {syllabusItems.length > itemsPerPage && (
-                            <div className="d-flex justify-content-center mb-4">
+                            <div
+                                className="d-flex justify-content-center mb-4"
+                                style={{
+                                    position: 'sticky',
+                                    top: '10px',
+                                    zIndex: 100,
+                                    background: 'rgba(255, 255, 255, 0.95)',
+                                    padding: '10px 0',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                    marginBottom: '20px'
+                                }}
+                            >
                                 <Pagination
                                     current={currentPage}
                                     total={syllabusItems.length}
@@ -282,7 +294,7 @@ const DisplaySyllabus = () => {
                     </Col>
 
                     {/* Sidebar - Metadata & TOC */}
-                    <Col xs={24} xl={8}>
+                    <Col xs={{ span: 24, order: 1 }} xl={{ span: 8, order: 2 }}>
                         <Card title="Syllabus Information" className="mb-4">
                             <Descriptions column={1} size="small">
                                 <Descriptions.Item label={<Space><BookOutlined /> Subject</Space>}>

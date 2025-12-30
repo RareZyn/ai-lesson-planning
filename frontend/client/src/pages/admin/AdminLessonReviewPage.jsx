@@ -20,6 +20,7 @@ import {
     Divider,
     Modal,
     Input,
+    message,
 } from "antd";
 
 import {
@@ -32,6 +33,8 @@ import {
     FileTextOutlined,
     SettingOutlined,
 } from "@ant-design/icons";
+
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 import styles from "../planner/displaylesson/DisplayLessonPage.module.css";
 
@@ -182,19 +185,25 @@ const AdminLessonReviewPage = () => {
     };
 
     // Action Handlers
-    const handleApprove = async () => {
-        if (window.confirm("Are you sure you want to APPROVE this lesson plan?")) {
-            setIsProcessing(true);
-            try {
-                await approveLesson(id);
-                alert("Lesson approved successfully!");
-                navigate(-1); // Go back
-            } catch (err) {
-                alert(`Error: ${err.message}`);
-            } finally {
-                setIsProcessing(false);
-            }
-        }
+    const handleApprove = () => {
+        Modal.confirm({
+            title: "Approve Lesson Plan",
+            content: "Are you sure you want to APPROVE this lesson plan?",
+            okText: "Approve",
+            okButtonProps: { style: { backgroundColor: "#52c41a", borderColor: "#52c41a" } },
+            onOk: async () => {
+                setIsProcessing(true);
+                try {
+                    await approveLesson(id);
+                    message.success("Lesson approved successfully!");
+                    navigate(-1); // Go back
+                } catch (err) {
+                    message.error(`Error: ${err.message}`);
+                } finally {
+                    setIsProcessing(false);
+                }
+            },
+        });
     };
 
     const handleRejectClick = () => {
@@ -203,31 +212,24 @@ const AdminLessonReviewPage = () => {
 
     const submitRejection = async () => {
         if (!rejectionReason.trim()) {
-            alert("Please provide a reason for rejection.");
+            message.warning("Please provide a reason for rejection.");
             return;
         }
         setIsProcessing(true);
         try {
             await rejectLesson(id, rejectionReason);
-            alert("Lesson rejected successfully!");
+            message.success("Lesson rejected successfully!");
             setIsRejectModalVisible(false);
             navigate(-1); // Go back
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            message.error(`Error: ${err.message}`);
         } finally {
             setIsProcessing(false);
         }
     };
 
     if (isLoading)
-        return (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: "60vh" }}>
-                <div className="text-center">
-                    <div className="spinner-border text-primary mb-3" role="status" />
-                    <Text type="secondary">Loading lesson plan...</Text>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner tip="Loading lesson plan..." fullscreen={true} />;
 
     if (error)
         return (

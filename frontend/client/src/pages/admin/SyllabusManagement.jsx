@@ -6,10 +6,23 @@ import { faPlus, faArrowLeft, faGraduationCap } from '@fortawesome/free-solid-sv
 import CreateSyllabusModal from './CreateSyllabusModal';
 import { getSyllabuses } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 // Grade definitions
 const KSSM_GRADES = ["Form 1", "Form 2", "Form 3", "Form 4", "Form 5"];
 const KSSR_GRADES = ["Standard 1", "Standard 2", "Standard 3", "Standard 4", "Standard 5", "Standard 6"];
+
+// Reusable Create Card Component
+// Reusable Create Card Component
+const CreateSyllabusCard = ({ onClick }) => (
+    <div className={styles.addCard} onClick={onClick}>
+        <div className={styles.addIconWrapper}>
+            <FontAwesomeIcon icon={faPlus} />
+        </div>
+        <h3 className={styles.addCardTitle}>Create Syllabus</h3>
+        <p className={styles.addCardText}>Click to add curriculum</p>
+    </div>
+);
 
 const SyllabusManagement = ({ searchTerm }) => {
     const navigate = useNavigate();
@@ -85,29 +98,22 @@ const SyllabusManagement = ({ searchTerm }) => {
     const currentGrades = schoolType === 'KSSR' ? KSSR_GRADES : KSSM_GRADES;
 
     if (loading && !syllabuses.length) {
-        return (
-            <div className={styles.syllabusManagement}>
-                <div className={styles.loadingContainer}>
-                    <p>Loading syllabuses...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner tip="Loading syllabuses..." />;
     }
 
     return (
         <div className={styles.syllabusManagement}>
             <div className={styles.syllabusHeader}>
                 <h2>Syllabus Management</h2>
-                <div className={styles.headerActions}>
-                    <button className={styles.createButton} onClick={handleCreateSyllabus}>
-                        <FontAwesomeIcon icon={faPlus} /> Create Syllabus
-                    </button>
-                </div>
+                {/* Header Actions Removed */}
             </div>
 
             {/* LEVEL 1: GRADE SELECTION */}
             {!selectedGradeView ? (
                 <div className={styles.gradeGrid}>
+                    {/* Add Create Card First */}
+                    <CreateSyllabusCard onClick={handleCreateSyllabus} />
+
                     {currentGrades.map((grade) => {
                         // Map grade to image
                         let gradeImage = null;
@@ -171,15 +177,15 @@ const SyllabusManagement = ({ searchTerm }) => {
                             {filteredSyllabuses.map(syllabus => {
                                 // Determine image based on subject
                                 const subjectImages = {
-                                  English: "/Class/english.webp",
-                                  Mathematics: "/Class/mathematics.webp",
-                                  Science: "/Class/science.webp",
-                                  History: "/Class/history.webp",
-                                  Geography: "/Class/geography.webp",
-                                  Physics: "/Class/physics.webp",
-                                  Chemistry: "/Class/chemistry.webp",
-                                  Biology: "/Class/biology.webp",
-                                  default: "/Class/education.webp",
+                                    English: "/Class/english.webp",
+                                    Mathematics: "/Class/mathematics.webp",
+                                    Science: "/Class/science.webp",
+                                    History: "/Class/history.webp",
+                                    Geography: "/Class/geography.webp",
+                                    Physics: "/Class/physics.webp",
+                                    Chemistry: "/Class/chemistry.webp",
+                                    Biology: "/Class/biology.webp",
+                                    default: "/Class/education.webp",
                                 };
                                 const imageUrl = subjectImages[syllabus.subject] || subjectImages["default"];
 

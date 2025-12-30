@@ -1,0 +1,184 @@
+/* Notification Page Container */
+.notification-page-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Header */
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.notification-title {
+    margin: 0 !important;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Button hover effects */
+.mark-read-btn:hover {
+    opacity: 0.85;
+}
+
+.clear-all-btn:hover {
+    opacity: 0.85;
+}
+
+/* Card */
+.notification-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Fix card content padding */
+.notification-card .ant-card-body {
+    padding: 24px;
+}
+
+/* List Items - use MARGIN not padding */
+.notification-list-item {
+    cursor: pointer;
+    padding: 0 !important;
+    /* Remove default padding */
+    margin: 0 0 8px 0;
+    /* Use margin instead */
+    transition: all 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 4px;
+    background-color: transparent;
+}
+
+/* Add padding to the inner meta */
+.notification-list-item .ant-list-item-meta {
+    padding: 16px;
+}
+
+.notification-list-item.unread {
+    background-color: #f0f9ff;
+}
+
+.notification-list-item:hover {
+    background-color: #fafafa !important;
+    transform: translateX(2px);
+}
+
+.notification-list-item.unread:hover {
+    background-color: #e0f2fe !important;
+}
+
+/* Item Title & Time */
+.notification-item-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.notification-time {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .notification-page-container {
+        max-width: 100%;
+    }
+
+    .notification-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .notification-title {
+        font-size: 20px !important;
+    }
+
+    .notification-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .action-btn {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Hide button text on very small screens, show only icons */
+    .btn-text {
+        display: inline;
+    }
+
+    /* Respect main content padding on mobile */
+    .notification-card {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+    }
+
+    .notification-card .ant-card-body {
+        padding: 16px;
+    }
+
+    .notification-list-item {
+        margin: 0 0 6px 0;
+    }
+
+    .notification-list-item .ant-list-item-meta {
+        padding: 12px;
+        margin-bottom: 0;
+    }
+
+    .notification-item-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .notification-time {
+        font-size: 11px;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+    }
+
+    .notification-list-item .ant-list-item-meta-avatar {
+        margin-right: 12px;
+    }
+
+    .notification-list-item .ant-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    .notification-message {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-text {
+        display: none;
+    }
+
+    .action-btn {
+        padding: 4px 12px;
+    }
+
+    .notification-title {
+        font-size: 18px !important;
+    }
+}

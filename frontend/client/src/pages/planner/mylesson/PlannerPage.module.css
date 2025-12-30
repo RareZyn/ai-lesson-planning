@@ -52,18 +52,15 @@
 /* --- Control Bar Wrapper --- */
 .controlBarWrapper {
   display: flex;
-  gap: 15px;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
   padding-top: 10px;
+  gap: 15px;
   flex-wrap: wrap;
+  /* allow wrapping on small screens */
 }
 
-.searchFilterGroup {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
 
 /* 
   ==========================================
@@ -73,27 +70,25 @@
 .customSearchBar {
   display: flex;
   align-items: center;
-  width: 350px;
-  /* Default desktop width */
+  width: 320px;
+  /* adjusted desktop width */
   height: 40px;
   padding: 0 15px;
   background-color: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  /* Square rounded corners seen in screenshot */
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .customSearchBar:focus-within {
   border-color: #3f51b5;
-  /* Primary blue focus */
-  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
 }
 
 .searchIcon {
   color: #adb5bd;
-  /* Gray icon color */
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin-right: 10px;
 }
 
@@ -101,7 +96,7 @@
   flex-grow: 1;
   border: none;
   outline: none;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #343a40;
   background: transparent;
 }
@@ -110,53 +105,106 @@
   color: #adb5bd;
 }
 
+/* --- Filter + View Toggle Group --- */
+.filterToggleGroup {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.activeFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* --- Custom Select Styling --- */
 .customSelect {
-  width: 200px;
   height: 40px;
-  padding: 0 15px;
+  padding: 0 32px 0 12px;
+  /* Extra right padding for arrow */
   background-color: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 1rem;
-  color: #343a40;
+  font-size: 0.9rem;
+  color: #4a5568;
   transition: all 0.2s ease;
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  min-width: 140px;
 }
 
 .customSelect:focus,
 .customSelect:hover {
   border-color: #3f51b5 !important;
-  /* Primary blue focus */
-  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1) !important;
+}
+
+/* --- Reset Button --- */
+.resetButton {
+  background: #edf2f7;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.resetButton:hover {
+  background: #cbd5e0;
+  color: #2d3748;
 }
 
 /* --- Standard View Toggle Styles --- */
 .viewToggle {
   display: flex;
-  border: 1px solid #cfd8dc;
+  background: #f7fafc;
+  padding: 3px;
   border-radius: 8px;
-  overflow: hidden;
+  border: 1px solid #edf2f7;
 }
 
 .viewToggle button {
-  padding: 0.5rem 1rem;
-  background-color: white;
+  padding: 0.4rem 0.8rem;
+  background-color: transparent;
   border: none;
   cursor: pointer;
-  font-weight: 500;
-  color: #333;
+  color: #718096;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.viewToggle button svg {
+  font-size: 1rem;
 }
 
 .viewToggle .active {
-  background-color: #6d88f7;
-  color: white;
-  font-weight: 600;
+  background-color: white;
+  color: #3f51b5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .viewToggle button:hover:not(.active) {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #4a5568;
 }
 
 /* --- END View Toggle --- */

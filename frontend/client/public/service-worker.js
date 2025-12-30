@@ -89,8 +89,8 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME &&
-              cacheName !== RUNTIME_CACHE &&
-              cacheName !== API_CACHE) {
+            cacheName !== RUNTIME_CACHE &&
+            cacheName !== API_CACHE) {
             console.log('[Service Worker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -259,13 +259,13 @@ async function staleWhileRevalidate(request) {
 
 function isStaticAsset(pathname) {
   return pathname.startsWith('/static/') ||
-         pathname.endsWith('.css') ||
-         pathname.endsWith('.js') ||
-         pathname.endsWith('.png') ||
-         pathname.endsWith('.jpg') ||
-         pathname.endsWith('.ico') ||
-         pathname.endsWith('.woff') ||
-         pathname.endsWith('.woff2');
+    pathname.endsWith('.css') ||
+    pathname.endsWith('.js') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.ico') ||
+    pathname.endsWith('.woff') ||
+    pathname.endsWith('.woff2');
 }
 
 function isApiCall(pathname) {

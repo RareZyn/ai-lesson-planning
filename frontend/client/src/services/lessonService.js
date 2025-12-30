@@ -396,3 +396,27 @@ export const sendForApproval = async (id) => {
     );
   }
 };
+
+/**
+ * Sends a lesson plan for AI analysis/feedback.
+ * @param {object} payload - The lesson plan and context.
+ * @returns {Promise<object>} - The analysis result { strengths, weaknesses, suggestions }.
+ */
+export const analyzeLessonPlan = async (payload) => {
+  try {
+    const response = await axios.post(
+      "/api/lessons/analyze",
+      payload,
+      getAuthConfig()
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error analyzing lesson plan:",
+      error.response?.data?.message || error.message
+    );
+    throw new Error(
+      error.response?.data?.message || "Failed to analyze the lesson plan."
+    );
+  }
+};

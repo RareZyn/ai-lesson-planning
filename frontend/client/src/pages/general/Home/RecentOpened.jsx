@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import "./RecentOpened.css";
 import { getRecentLessonPlans } from "../../../services/lessonService";
 import LessonCard from "../../planner/displaylesson/LessonCard";
 import { FaPlus } from "react-icons/fa";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 const CreateLessonCard = ({ onClick }) => (
   <div
@@ -93,7 +95,7 @@ const RecentOpened = () => {
       });
       setIsModalVisible(false);
     } else {
-      alert("Please select a valid date.");
+      message.warning("Please select a valid date.");
     }
   };
 
@@ -102,12 +104,7 @@ const RecentOpened = () => {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="recent-opened-grid">
-          <div className="recent-card-skeleton"></div>
-          <div className="recent-card-skeleton"></div>
-          <div className="recent-card-skeleton"></div>
-          <div className="recent-card-skeleton"></div>
-        </div>
+        <LoadingSpinner tip="Loading recent lessons..." />
       );
     }
 

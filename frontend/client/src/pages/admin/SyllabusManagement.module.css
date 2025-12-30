@@ -160,6 +160,73 @@
     aspect-ratio: 1 / 1;
 }
 
+/* --- Add New Syllabus Card (Matches Add Class Card) --- */
+.addCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background-color: #f9fafb;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    cursor: pointer;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.addCard:hover {
+    background-color: #f3f4f6;
+    border-color: #3f51b5;
+    color: #3f51b5;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.addIconWrapper {
+    background-color: #e5e7eb;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.addCard:hover .addIconWrapper {
+    background-color: #e6e9fa;
+    transform: scale(1.1);
+}
+
+.addIconWrapper svg {
+    font-size: 2.25rem;
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+.addCard:hover .addIconWrapper svg {
+    color: #3f51b5;
+}
+
+.addCardTitle {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: inherit;
+}
+
+.addCardText {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #8c8c8c;
+}
+
 .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);

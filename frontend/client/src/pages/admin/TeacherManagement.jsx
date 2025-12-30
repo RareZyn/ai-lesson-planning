@@ -14,8 +14,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getTeachers, getInvitationCode } from "../../services/adminService";
 import { authAPI } from "../../services/api";
-import { Modal as AntModal, message } from "antd";
+import { Modal as AntModal, message, Pagination } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import CommonTable from "../../components/common/CommonTable";
 
 const TeacherManagement = ({ searchTerm = "" }) => {
   const [teachers, setTeachers] = useState([]);
@@ -24,6 +26,20 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [email, setEmail] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const navigate = useNavigate();
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset pagination on search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // ===========================
   // FETCH TEACHERS
@@ -131,6 +147,11 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     message.success("Invitation code copied to clipboard!");
   };
 
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTeachers = filteredTeachers.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="teacherManagement">
       <div className="headerRow">
@@ -148,56 +169,103 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       </div>
 
       {loading ? (
-        <p>Loading teachers...</p>
+        <LoadingSpinner tip="Loading teachers..." />
       ) : filteredTeachers.length === 0 ? (
         <p>No teachers found.</p>
       ) : (
-        <div className="listContainer">
-          <div className="listHeader listItem">
-            <div className="listTitle">Name</div>
-            <div className="listDetail">Email</div>
-            <div className="listDetail">Access</div>
-            <div className="listDetail">Created At</div>
-            <div className="listDetail">Last Updated</div>
-            <div className="listActions">Action</div>
+        <>
+          <CommonTable
+            loading={loading}
+            dataSource={currentTeachers}
+            rowKey="_id"
+            columns={[
+              {
+                title: "Name",
+                dataIndex: "name",
+                key: "name",
+                render: (text) => <span><FontAwesomeIcon icon={faUserTie} className="listIcon" /> {text}</span>
+              },
+              {
+                title: "Email",
+                dataIndex: "email",
+                key: "email",
+                render: (text) => <span><FontAwesomeIcon icon={faEnvelope} className="listIcon" /> {text}</span>
+              },
+              {
+                title: "Access",
+                dataIndex: "roles",
+                key: "roles",
+                render: (roles) => <span><FontAwesomeIcon icon={faUserShield} className="listIcon" /> {roles?.length ? roles.join(", ") : "—"}</span>
+              },
+              {
+                title: "Created At",
+                dataIndex: "createdAt",
+                key: "createdAt",
+                render: (date) => new Date(date).toLocaleDateString()
+              },
+              {
+                title: "Last Updated",
+                dataIndex: "updatedAt",
+                key: "updatedAt",
+                render: (date) => new Date(date).toLocaleDateString()
+              },
+              {
+                title: "Action",
+                key: "action",
+                render: (_, teacher) => (
+                  <div className="listActions">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher._id, teacher.name, teacher.email); }}
+                      className="actionButton delete"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </div>
+                )
+              }
+            ]}
+            onRow={(record) => ({
+              onClick: () => navigate(`/app/admin/teacher-analytics/${record._id}`)
+            })}
+            renderCard={(teacher) => (
+              <div
+                className="listItem" // Reuse existing styles
+                onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
+                style={{ cursor: "pointer", display: 'flex', flexDirection: 'column', height: 'auto', gap: '8px' }}
+              >
+                <div className="listTitle">
+                  <FontAwesomeIcon icon={faUserTie} className="listIcon" />{" "}
+                  {teacher.name}
+                </div>
+                <div className="listDetail">
+                  <FontAwesomeIcon icon={faEnvelope} className="listIcon" />{" "}
+                  {teacher.email}
+                </div>
+                <div className="listDetail">
+                  <FontAwesomeIcon icon={faUserShield} className="listIcon" />{" "}
+                  {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
+                </div>
+                <div className="listActions" style={{ alignSelf: 'flex-end', marginTop: '8px' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher._id, teacher.name, teacher.email); }}
+                    className="actionButton delete"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                </div>
+              </div>
+            )}
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+            <Pagination
+              current={currentPage}
+              pageSize={itemsPerPage}
+              total={filteredTeachers.length}
+              onChange={handlePageChange}
+              showSizeChanger={false}
+            />
           </div>
-
-          {filteredTeachers.map((teacher) => (
-            <div
-              key={teacher._id}
-              className="listItem"
-              onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
-              style={{ cursor: "pointer" }}
-            >
-              <div className="listTitle">
-                <FontAwesomeIcon icon={faUserTie} className="listIcon" />{" "}
-                {teacher.name}
-              </div>
-              <div className="listDetail">
-                <FontAwesomeIcon icon={faEnvelope} className="listIcon" />{" "}
-                {teacher.email}
-              </div>
-              <div className="listDetail">
-                <FontAwesomeIcon icon={faUserShield} className="listIcon" />{" "}
-                {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
-              </div>
-              <div className="listDetail">
-                {new Date(teacher.createdAt).toLocaleDateString()}
-              </div>
-              <div className="listDetail">
-                {new Date(teacher.updatedAt).toLocaleDateString()}
-              </div>
-              <div className="listActions">
-                <button
-                  onClick={() => handleDeleteTeacher(teacher._id, teacher.name, teacher.email)}
-                  className="actionButton delete"
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        </>
       )}
 
       {/* =============== ADD TEACHER MODAL =============== */}
