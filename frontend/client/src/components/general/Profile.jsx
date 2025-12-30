@@ -42,9 +42,6 @@ const Profile = ({ avatarSize = 36 }) => {
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState(false);
-  const [form] = Form.useForm();
-
-
   const [passwordForm] = Form.useForm();
 
   const handlePasswordModalOpen = async () => {
