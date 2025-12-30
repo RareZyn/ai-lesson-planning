@@ -4,13 +4,12 @@ import {
   Card,
   Button,
   Badge,
-  Table,
   Alert,
   Form,
   Row,
   Col,
 } from "react-bootstrap";
-import { Tooltip, Empty, Spin, Progress } from "antd";
+import { Tooltip, Empty, Spin, Progress, Table } from "antd";
 import {
   EyeOutlined,
   ReloadOutlined,
@@ -166,6 +165,143 @@ const SubmissionListPage = () => {
     );
   };
 
+  // Filter assessments based on search term
+  const filteredAssessments = assessments.filter((assessment) =>
+    assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Table columns configuration
+  const columns = [
+    {
+      title: "Assessment",
+      dataIndex: "title",
+      key: "title",
+      render: (text) => <strong>{text}</strong>,
+      width: 200,
+    },
+    {
+      title: "Type",
+      dataIndex: "activityType",
+      key: "activityType",
+      render: (type) => getActivityTypeBadge(type),
+      width: 150,
+    },
+    {
+      title: "Class",
+      dataIndex: "classId",
+      key: "classId",
+      render: (classId) => (
+        <>
+          {classId?.className || "N/A"}
+          <br />
+          <small className="text-muted">{classId?.grade}</small>
+        </>
+      ),
+      width: 150,
+    },
+    {
+      title: "Students",
+      key: "students",
+      align: "center",
+      render: (_, record) => {
+        const stats = assessmentStats[record._id] || {};
+        return (
+          <>
+            <TeamOutlined className="me-1" />
+            {stats.totalStudentsInClass || 0}
+          </>
+        );
+      },
+      width: 100,
+    },
+    {
+      title: "Submissions",
+      key: "submissions",
+      align: "center",
+      render: (_, record) => {
+        const stats = assessmentStats[record._id] || {};
+        return (
+          <>
+            <FileTextOutlined className="me-1" />
+            {stats.totalSubmissions || 0}
+          </>
+        );
+      },
+      width: 120,
+    },
+    {
+      title: "Progress",
+      key: "progress",
+      render: (_, record) => {
+        const stats = assessmentStats[record._id] || {};
+        return (
+          <Progress
+            percent={parseFloat(stats.submissionRate || 0)}
+            size="small"
+            status={
+              stats.submissionRate >= 80
+                ? "success"
+                : stats.submissionRate >= 50
+                ? "normal"
+                : "exception"
+            }
+          />
+        );
+      },
+      width: 150,
+    },
+    {
+      title: "Average Score",
+      key: "averageScore",
+      render: (_, record) => {
+        const stats = assessmentStats[record._id] || {};
+        return stats.completedSubmissions > 0 ? (
+          <Badge
+            bg={
+              stats.overallAverage >= 80
+                ? "success"
+                : stats.overallAverage >= 60
+                ? "warning"
+                : "danger"
+            }
+          >
+            {stats.overallAverage}%
+          </Badge>
+        ) : (
+          <span className="text-muted">-</span>
+        );
+      },
+      width: 120,
+    },
+    {
+      title: "Created",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => <small>{formatDate(date)}</small>,
+      width: 120,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <Tooltip title="View Submissions">
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/app/submissions/${record._id}`);
+            }}
+          >
+            <EyeOutlined />
+          </Button>
+        </Tooltip>
+      ),
+      width: 100,
+      align: "center",
+    },
+  ];
+
   return (
     <div className="container-fluid">
       {/* Header */}
@@ -266,9 +402,7 @@ const SubmissionListPage = () => {
                 Create Assessment
               </Button>
             </Empty>
-          ) : assessments.filter((assessment) =>
-              assessment.title.toLowerCase().includes(searchTerm.toLowerCase())
-            ).length === 0 ? (
+          ) : filteredAssessments.length === 0 ? (
             <Empty
               description={`No assessments match "${searchTerm}"`}
               image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -281,113 +415,25 @@ const SubmissionListPage = () => {
               </Button>
             </Empty>
           ) : (
-            <Table responsive hover>
-              <thead>
-                <tr>
-                  <th>Assessment</th>
-                  <th>Type</th>
-                  <th>Class</th>
-                  <th>Students</th>
-                  <th>Submissions</th>
-                  <th>Progress</th>
-                  <th>Average Score</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assessments
-                  .filter((assessment) =>
-                    assessment.title
-                      .toLowerCase()
-                      .includes(searchTerm.toLowerCase())
-                  )
-                  .map((assessment) => {
-                  const stats = assessmentStats[assessment._id] || {
-                    totalSubmissions: 0,
-                    totalStudentsInClass: 0,
-                    submissionRate: 0,
-                    overallAverage: 0,
-                  };
-
-                  return (
-                    <tr
-                      key={assessment._id}
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        navigate(`/app/submissions/${assessment._id}`)
-                      }
-                    >
-                      <td>
-                        <strong>{assessment.title}</strong>
-                      </td>
-                      <td>{getActivityTypeBadge(assessment.activityType)}</td>
-                      <td>
-                        {assessment.classId?.className || "N/A"}
-                        <br />
-                        <small className="text-muted">
-                          {assessment.classId?.grade}
-                        </small>
-                      </td>
-                      <td className="text-center">
-                        <TeamOutlined className="me-1" />
-                        {stats.totalStudentsInClass || 0}
-                      </td>
-                      <td className="text-center">
-                        <FileTextOutlined className="me-1" />
-                        {stats.totalSubmissions || 0}
-                      </td>
-                      <td style={{ minWidth: "150px" }}>
-                        <Progress
-                          percent={parseFloat(stats.submissionRate || 0)}
-                          size="small"
-                          status={
-                            stats.submissionRate >= 80
-                              ? "success"
-                              : stats.submissionRate >= 50
-                              ? "normal"
-                              : "exception"
-                          }
-                        />
-                      </td>
-                      <td>
-                        {stats.completedSubmissions > 0 ? (
-                          <Badge
-                            bg={
-                              stats.overallAverage >= 80
-                                ? "success"
-                                : stats.overallAverage >= 60
-                                ? "warning"
-                                : "danger"
-                            }
-                          >
-                            {stats.overallAverage}%
-                          </Badge>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                      <td>
-                        <small>{formatDate(assessment.createdAt)}</small>
-                      </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title="View Submissions">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() =>
-                              navigate(`/app/submissions/${assessment._id}`)
-                            }
-                          >
-                            <EyeOutlined />
-                          </Button>
-                        </Tooltip>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
+            <Table
+              columns={columns}
+              dataSource={filteredAssessments}
+              rowKey="_id"
+              loading={loading}
+              pagination={{
+                defaultPageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ["5", "10", "20", "50"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} assessments`,
+                position: ["bottomCenter"],
+              }}
+              onRow={(record) => ({
+                onClick: () => navigate(`/app/submissions/${record._id}`),
+                style: { cursor: "pointer" },
+              })}
+              scroll={{ x: 1200 }}
+            />
           )}
         </Card.Body>
       </Card>
