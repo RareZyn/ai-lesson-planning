@@ -8,6 +8,7 @@ import {
     HomeOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../common/LoadingSpinner';
 import './Searchbar.css';
 
 // Searchable pages directory
@@ -255,7 +256,7 @@ const Searchbar = ({ placeholder = "Search pages & content...", onSearch }) => {
                 )}
                 {isLoading && (
                     <div className="search-loading-indicator">
-                        <div className="search-spinner"></div>
+                        <LoadingSpinner size="small" tip="" />
                     </div>
                 )}
             </form>

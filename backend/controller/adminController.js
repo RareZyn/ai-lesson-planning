@@ -600,99 +600,95 @@ exports.getTeacherAnalytics = async (req, res) => {
 // @access  Private
 
 // TODO: Change to extract DSKP
-exports.extractSyllabusStructure = async (req, res) => {
+// Extract Data from Syllabus document based on Schema
+
+// @desc    Extract syllabus structure from uploaded file (PDF/Image) using Gemini Vision (Direct)
+// @route   POST /api/admin/syllabuses/extract-structure
+// @access  Private
+exports.extractSyllabusData = async (req, res) => {
   try {
-    console.log("extractSyllabusStructure called");
+    console.log("extractSyllabusData (Gemini Direct) called");
     if (!req.file) {
-      console.error("No file uploaded in request");
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
+
+    // Parse the schema
+    let schemaStr = req.body.schema;
+    if (!schemaStr) {
+      return res.status(400).json({ success: false, message: "No schema provided" });
+    }
+    let schema;
+    try {
+      schema = JSON.parse(schemaStr);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: "Invalid schema format" });
+    }
+
     console.log("File received:", req.file.originalname, req.file.mimetype, req.file.size);
 
     if (!process.env.GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY is missing in environment variables");
       return res.status(500).json({ success: false, message: "Server misconfiguration: API Key missing" });
     }
 
-    // Convert buffer to base64
-    const fileBase64 = req.file.buffer.toString('base64');
-    const mimeType = req.file.mimetype;
-
-    // Use Gemini 1.5 Flash (specific version 001) for multimodal capabilities
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    //
-    const prompt = `
-      You are an expert curriculum developer. Analyze the uploaded syllabus document (image or PDF).
-      Extract the structured syllabus data into a JSON format.
-      
-      I need two things in the JSON response:
-      1. "schema": An array of field definitions describing the columns/structure.
-         Each field object should have:
-         - "id": number (1, 2, 3...)
-         - "name": string (Field Name, e.g., "Week", "Topic", "Learning Objectives")
-         - "type": string ("text", "list", or "object")
-         - "subFields": array (if type is "object", recursive structure)
-      
-      2. "data": An array of objects representing the rows of the syllabus, matching the schema.
-         Key names in "data" objects must match the "name" in "schema".
-      
-      Example Structure:
-      {
-        "schema": [
-          { "id": 1, "name": "Week", "type": "text", "subFields": [] },
-          { "id": 2, "name": "Topic", "type": "text", "subFields": [] },
-          { "id": 3, "name": "Activities", "type": "list", "subFields": [] }
-        ],
-        "data": [
-          { "Week": "1", "Topic": "Introduction", "Activities": ["Ice breaking", "Overview"] }
-        ]
-      }
 
-      Return ONLY the JSON object. Do not include markdown formatting like \`\`\`json.
+    const prompt = `
+      Analyze this uploaded syllabus document (PDF/Image).
+      
+      TASK: Extract the syllabus data into a JSON array, strictly following the provided schema.
+      The document contains tables or lists with columns such as "Content Standard", "Learning Standard", "Notes", etc.
+
+      MAPPING SCHEMA (Target Keys):
+      ${JSON.stringify(schema, null, 2)}
+
+      RULES:
+      1. Return a JSON object with a single key "data".
+      2. "data" must be an ARRAY of OBJECTS.
+      3. Each object represents ONE ROW of the syllabus content.
+      4. Flatten structure: If multiple "Learning Standards" belong to one "Content Standard", repeat the "Content Standard" for each row.
+      5. Extract ALL content found in the document. Do not summarize.
+      6. Return ONLY valid JSON.
     `;
 
-    const imageParts = [
-      {
-        inlineData: {
-          data: fileBase64,
-          mimeType: mimeType,
-        },
-      },
-    ];
+    const filePart = {
+      inlineData: {
+        data: req.file.buffer.toString('base64'),
+        mimeType: req.file.mimetype
+      }
+    };
 
-    console.log("Sending request to Gemini...");
-    const result = await model.generateContent([prompt, ...imageParts]);
+    console.log("Sending file to Gemini...");
+    const result = await model.generateContent([prompt, filePart]);
     const response = await result.response;
-    let text = response.text();
+    let responseText = response.text();
 
-    console.log("Gemini Response received (preview):", text.substring(0, 100));
+    console.log("Gemini Response received.");
 
-    // Clean up markdown code blocks if present
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Clean JSON
+    responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
 
     let jsonResponse;
     try {
-      jsonResponse = JSON.parse(text);
+      jsonResponse = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse Gemini response:", text);
+      console.error("Failed to parse Gemini response:", responseText);
       return res.status(500).json({
         success: false,
-        message: "Failed to parse AI response. The AI might have returned unstructured text.",
-        rawResponse: text
+        message: "Failed to parse AI response.",
+        rawResponse: responseText
       });
     }
 
     return res.status(200).json({
       success: true,
-      schema: jsonResponse.schema,
       data: jsonResponse.data
     });
 
   } catch (error) {
-    console.error("Error extracting syllabus structure:", error);
+    console.error("Error extracting syllabus data:", error);
     return res.status(500).json({
       success: false,
-      message: "Error extracting syllabus structure",
+      message: "Error extracting syllabus data",
       error: error.message
     });
   }

@@ -969,7 +969,7 @@ exports.rejectLesson = async (req, res) => {
     lesson.approvalStatus = 'rejected';
     lesson.approvedBy = req.user.id;
     lesson.approvalDate = new Date();
-    lesson.remarks = req.body.reason || 'No reason specified.'; // Changed from rejectionReason to remarks
+    lesson.remarks = req.body.remarks || req.body.reason || 'No reason specified.'; // Changed from rejectionReason to remarks
     await lesson.save();
 
     // Create Notification for the creator

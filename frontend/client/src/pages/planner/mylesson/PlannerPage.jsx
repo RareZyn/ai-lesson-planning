@@ -12,8 +12,8 @@ import LessonStatusIcon from '../../../components/LessonStatusIcon.jsx';
 
 import { FaPlus, FaSearch, FaTh, FaBars } from 'react-icons/fa';
 import dayjs from 'dayjs';
-import { Modal as AntModal, message, Pagination } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Modal as AntModal, message, Pagination, Dropdown, Menu } from 'antd';
+import { ExclamationCircleOutlined, MoreOutlined, BookOutlined, CalendarOutlined, FileTextOutlined } from '@ant-design/icons';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import CommonTable from '../../../components/common/CommonTable';
 
@@ -265,36 +265,90 @@ const PlannerPage = () => {
           onRow={(record) => ({
             onClick: () => navigate(`/app/lessons/${record._id}`)
           })}
-          renderCard={(lesson) => (
-            <div
-              className={styles.listItem}
-              onClick={() => navigate(`/app/lessons/${lesson._id}`)}
-              style={{ flexWrap: 'wrap', height: 'auto', gap: '8px' }}
-            >
-              <div className={styles.listTitle} style={{ width: '100%' }}>
-                {lesson.parameters?.specificTopic || "Untitled Lesson"}
-              </div>
-              <div className={styles.listDetail} style={{ minWidth: '45%' }}>{lesson.classId?.className || "N/A"}</div>
-              <div className={styles.listDetail} style={{ minWidth: '45%' }}>{lesson.classId?.subject || "N/A"}</div>
-              <div className={styles.listMeta} style={{ minWidth: '45%' }}>
-                {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
-              </div>
-              <div
-                className={styles.listMeta}
-                onClick={(e) => e.stopPropagation()}
-                style={{ marginLeft: 'auto' }}
-              >
-                {lesson.approvalStatus === "draft" ? (
-                  <LessonStatusIcon
-                    status="draft"
-                    onClick={() => handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic)}
-                  />
-                ) : (
-                  <LessonStatusIcon status={lesson.approvalStatus} />
+          renderCard={(lesson) => {
+            const menu = (
+              <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                {lesson.approvalStatus === "draft" && (
+                  <Menu.Item
+                    key="approve"
+                    onClick={(e) => {
+                      e.domEvent.stopPropagation();
+                      handleSendForApprovalClick(lesson._id, lesson.parameters?.specificTopic);
+                    }}
+                  >
+                    Send for Approval
+                  </Menu.Item>
                 )}
+                <Menu.Item
+                  key="view"
+                  onClick={(e) => {
+                    e.domEvent.stopPropagation();
+                    navigate(`/app/lessons/${lesson._id}`);
+                  }}
+                >
+                  View Details
+                </Menu.Item>
+              </Menu>
+            );
+
+            return (
+              <div
+                className={styles.mobileCard}
+                onClick={() => navigate(`/app/lessons/${lesson._id}`)}
+              >
+                {/* Header: Date --- Actions */}
+                <div className={styles.mobileCardHeader}>
+                  <span className={styles.headerLeft}>
+                    {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
+                  </span>
+                  <div onClick={(e) => e.stopPropagation()} className={styles.headerAction}>
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <MoreOutlined style={{ fontSize: '20px' }} />
+                    </Dropdown>
+                  </div>
+                </div>
+
+                <div className={styles.mobileCardBody}>
+                  {/* Top Row: Icon + Title --- Status */}
+                  <div className={styles.topRow}>
+                    <div className={styles.infoSection}>
+                      <div className={styles.iconCircle}>
+                        {/* Use first letter of Subject (or 'L') */}
+                        {lesson.classId?.subject ? lesson.classId.subject.charAt(0).toUpperCase() : <BookOutlined />}
+                      </div>
+                      <div className={styles.textBlock}>
+                        <div className={styles.cardTitle}>
+                          {lesson.parameters?.specificTopic || "Untitled Lesson"}
+                        </div>
+                        <div className={styles.cardSubtitle}>
+                          {lesson.classId?.subject || "General"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.statusSection}>
+                      <LessonStatusIcon status={lesson.approvalStatus} />
+                    </div>
+                  </div>
+
+                  {/* Details List */}
+                  <div className={styles.detailsList}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Class</span>
+                      <span className={styles.detailValue}>
+                        {lesson.classId?.className || "—"}
+                      </span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Created By</span>
+                      <span className={styles.detailValue}>
+                        {lesson.createdBy?.name || "Me"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          }}
         />
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
           <Pagination
@@ -361,10 +415,11 @@ const PlannerPage = () => {
     );
   };
 
+  /* Updated Tabs with Icons */
   const tabs = [
-    { id: 'lessons', label: 'My Lessons' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'materials', label: 'Materials' },
+    { id: 'lessons', label: 'My Lessons', icon: <BookOutlined style={{ fontSize: '1.1rem' }} /> },
+    { id: 'calendar', label: 'Calendar', icon: <CalendarOutlined style={{ fontSize: '1.1rem' }} /> },
+    { id: 'materials', label: 'Materials', icon: <FileTextOutlined style={{ fontSize: '1.1rem' }} /> },
   ];
 
   return (
@@ -377,6 +432,7 @@ const PlannerPage = () => {
               className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
+              {tab.icon}
               {tab.label}
             </button>
           ))}

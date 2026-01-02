@@ -9,7 +9,7 @@ const {
   deleteSyllabus,
   updateSyllabus,
   getTeacherAnalytics,
-  extractSyllabusStructure
+  extractSyllabusData
 } = require("../controller/adminController");
 const { protect, authorize } = require("../middleware/auth");
 const multer = require("multer");
@@ -46,9 +46,9 @@ router.get("/teachers/:id/analytics", getTeacherAnalytics);
 
 // AI Syllabus Extraction Route
 router.post(
-  "/syllabuses/extract-structure",
+  "/syllabuses/extract-data",
   upload.single('file'),
-  extractSyllabusStructure
+  extractSyllabusData
 );
 
 // Syllabus management routes

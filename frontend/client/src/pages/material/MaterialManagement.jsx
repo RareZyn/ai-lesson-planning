@@ -9,8 +9,8 @@ import {
   OpenInNew as OpenInNewIcon,
   Edit as EditIcon,
 } from "@mui/icons-material";
-import { Modal, message, Progress } from "antd";
-import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { Modal, message, Progress, Dropdown, Menu, Button } from "antd";
+import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
 import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialById } from "../../services/materialService";
 import CommonTable from "../../components/common/CommonTable";
@@ -366,80 +366,143 @@ const MaterialManagement = () => {
               key: "size"
             },
             {
-              title: "Actions",
+              title: "",
               key: "actions",
-              render: (_, material) => (
-                <div className="action-buttons">
-                  <button
-                    className="edit-button"
-                    onClick={(e) => handleEditClick(material, e)}
-                    title="Edit name"
-                    style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#1976d2' }}
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteMaterial(material._id);
-                    }}
-                    title="Delete material"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f' }}
-                  >
-                    <DeleteIcon />
-                  </button>
-                </div>
-              )
+              width: 60,
+              render: (_, material) => {
+                const menu = (
+                  <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                    <Menu.Item
+                      key="edit"
+                      icon={<EditIcon style={{ color: "#1976d2" }} />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        // We need to re-implement handleEditClick logic here or call it
+                        // handleEditClick expects (material, e), but we can just simplify:
+                        setEditingMaterial(material);
+                        setEditName(material.name);
+                        setIsEditModalOpen(true);
+                      }}
+                    >
+                      Rename
+                    </Menu.Item>
+                    <Menu.Item
+                      key="delete"
+                      icon={<DeleteIcon style={{ color: '#d32f2f' }} />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleDeleteMaterial(material._id);
+                      }}
+                    >
+                      Delete
+                    </Menu.Item>
+                  </Menu>
+                );
+
+                return (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <Button icon={<MoreOutlined />} type="text" />
+                    </Dropdown>
+                  </div>
+                );
+              }
             }
           ]}
           onRow={(record) => ({
             onClick: () => handleMaterialClick(record),
             className: record.type === "link" ? "link-row" : "file-row"
           })}
-          renderCard={(material) => (
-            <div
-              className="material-card" // Reuse existing card style
-              onClick={() => handleMaterialClick(material)}
-              style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
-            >
-              <div className={`material-card-header ${material.type}`}>
-                <div className="card-preview-icon">
-                  {getFileIcon(material.type)}
+          renderCard={(material) => {
+            const menu = (
+              <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                <Menu.Item
+                  key="edit"
+                  icon={<EditIcon style={{ color: "#1976d2" }} />}
+                  onClick={(e) => {
+                    e.domEvent.stopPropagation();
+                    setEditingMaterial(material);
+                    setEditName(material.name);
+                    setIsEditModalOpen(true);
+                  }}
+                >
+                  Rename
+                </Menu.Item>
+                <Menu.Item
+                  key="delete"
+                  icon={<DeleteIcon style={{ color: '#d32f2f' }} />}
+                  onClick={(e) => {
+                    e.domEvent.stopPropagation();
+                    handleDeleteMaterial(material._id);
+                  }}
+                >
+                  Delete
+                </Menu.Item>
+              </Menu>
+            );
+
+            // Helper for icon circle class
+            const getIconClass = (type) => {
+              if (type === 'pdf') return 'pdf';
+              if (type === 'docx') return 'docx';
+              return 'link';
+            };
+
+            return (
+              <div
+                className="mobileCard" // Reuse existing card style
+                onClick={() => handleMaterialClick(material)}
+              >
+                {/* Header: Date --- Actions */}
+                <div className="mobileCardHeader">
+                  <span className="headerLeft">
+                    {material.date}
+                  </span>
+                  <div onClick={(e) => e.stopPropagation()} className="headerAction">
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <MoreOutlined style={{ fontSize: '20px' }} />
+                    </Dropdown>
+                  </div>
                 </div>
-                <div className="card-actions">
-                  <button
-                    className="edit-button-card"
-                    onClick={(e) => handleEditClick(material, e)}
-                  >
-                    <EditIcon fontSize="small" />
-                  </button>
-                  <button
-                    className="delete-button-card"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteMaterial(material._id);
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </button>
+
+                <div className="mobileCardBody">
+                  {/* Top Row: Icon + Name + Size */}
+                  <div className="topRow">
+                    <div className="infoSection">
+                      <div className={`iconCircle ${getIconClass(material.type)}`}>
+                        {getFileIcon(material.type)}
+                      </div>
+                      <div className="textBlock">
+                        <div className="cardTitle">
+                          {material.name}
+                        </div>
+                        <div className="cardSubtitle">
+                          {material.size || "Unknown Size"}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Optional Status/Type Badge if needed */}
+                  </div>
+
+                  {/* Details List */}
+                  <div className="detailsList">
+                    <div className="detailRow">
+                      <span className="detailLabel">Type</span>
+                      <span className="detailValue">
+                        {material.type.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="detailRow">
+                      <span className="detailLabel">Status</span>
+                      <span className="detailValue">
+                        Active
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="material-card-content">
-                <h3 className="card-title" title={material.name}>{material.name}</h3>
-
-                <div className="card-meta-row">
-                  <span className={`card-tag ${material.type}`}>{material.type.toUpperCase()}</span>
-                  {material.size && <span className="card-size">{material.size}</span>}
-                </div>
-
-                <div className="card-footer-b">
-                  <span className="card-date">{material.date}</span>
-                  {material.type === 'link' && <OpenInNewIcon className="card-link-icon" />}
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          }}
         />
       </div>
 

@@ -56,6 +56,7 @@ const adminRoutes = require("./route/adminRoutes");
 const syncRoutes = require("./route/syncRoutes");
 const notificationRoutes = require("./route/notificationRoutes");
 const searchRoutes = require("./route/searchRoutes");
+const suggestionsRoutes = require("./route/suggestionsRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -78,7 +79,7 @@ app.use("/api/sync", syncRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/materials", require("./route/materialRoutes"));
 app.use("/api/search", searchRoutes);
-
+app.use("/api/suggestions", suggestionsRoutes);
 
 
 // Health check route
@@ -201,3 +202,4 @@ if (process.env.VERCEL !== '1' && require.main === module) {
 
 // Export for Vercel serverless
 module.exports = app;
+// Trigger restart for AI suggestions routes

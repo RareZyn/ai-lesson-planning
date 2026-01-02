@@ -20,6 +20,7 @@ import {
 import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./LoginPage.css";
 
 const LoginPage = () => {
@@ -238,41 +239,15 @@ const LoginPage = () => {
   };
 
   // Show loading while checking authentication
+  // Show loading while checking authentication
   if (authLoading || !isReady) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p>Checking your session...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Checking your session..." />;
   }
 
   // Don't render login form if already authenticated (prevents flash)
+  // Don't render login form if already authenticated (prevents flash)
   if (isAuthenticated && !modalVisible) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div className="spinner-border text-success" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p>Redirecting to dashboard...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Redirecting to dashboard..." />;
   }
 
   return (

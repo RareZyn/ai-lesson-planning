@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styles from "./MultiStepPlanner.module.css";
 
 // Import the new components (you'll create these files next)
-import EnhanceModal from "./EnhanceModal";
+// EnhanceModal import removed
 import EditableSection from "./EditableSection";
 
 const Step4_ConfirmPlan = ({
@@ -11,12 +11,18 @@ const Step4_ConfirmPlan = ({
   onSave,
   onPrev,
   formData,
-  onEnhanceSection, // New prop from parent
-  isEnhancing,      // New prop from parent
+  onEnhanceSection,
+  isEnhancing,
 }) => {
-  // State to manage the enhancement modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [enhancingSection, setEnhancingSection] = useState(null); // e.g., 'learningObjective'
+  // Track which section is currently being enhanced to show specific loader
+  const [activeEnchancingId, setActiveEnhancingId] = useState(null);
+
+  // Reset active ID when enhancing stops
+  React.useEffect(() => {
+    if (!isEnhancing) {
+      setActiveEnhancingId(null);
+    }
+  }, [isEnhancing]);
 
   if (!plan) {
     return (
@@ -37,38 +43,21 @@ const Step4_ConfirmPlan = ({
     updatePlan("activities", updatedActivities);
   };
 
-  // Handlers for the enhance feature
-  const handleEnhanceClick = (sectionKey) => {
-    setEnhancingSection(sectionKey);
-    setIsModalOpen(true);
-  };
-
-  const handleEnhanceSubmit = (prompt) => {
-    if (enhancingSection && onEnhanceSection) {
-      onEnhanceSection(enhancingSection, prompt);
+  // Handler for inline enhancement submission
+  const handleEnhance = (sectionKey, prompt) => {
+    setActiveEnhancingId(sectionKey);
+    if (onEnhanceSection) {
+      onEnhanceSection(sectionKey, prompt);
     }
-    setIsModalOpen(false);
-    setEnhancingSection(null);
   };
-
-  // Helper to make section keys user-friendly for the modal title
-  const formatSectionTitle = (key) => {
-    if (!key) return "";
-    const result = key.replace(/([A-Z])/g, " $1");
-    return result.charAt(0).toUpperCase() + result.slice(1);
-  };
-
-
 
   return (
     <div className={styles.stepContent}>
       <h2>Step 4: Confirm & Edit Your Lesson Plan</h2>
       <p>
-        Review the AI-generated plan below. You can edit any section or use the
-        ✨ button to ask the AI for improvements.
+        Review the AI-generated plan below. content. You can edit any section or use the
+        AI Enhance button to improve specific parts.
       </p>
-
-      {/* Activity Configuration Summary (no changes here) */}
 
       <div className={styles.editablePlan}>
         <EditableSection
@@ -76,7 +65,8 @@ const Step4_ConfirmPlan = ({
           id="learningObjective"
           value={plan.learningObjective || ""}
           onChange={(e) => updatePlan("learningObjective", e.target.value)}
-          onEnhance={() => handleEnhanceClick("learningObjective")}
+          onEnhance={(prompt) => handleEnhance("learningObjective", prompt)}
+          isLoading={isEnhancing && activeEnchancingId === "learningObjective"}
           rows={3}
         />
 
@@ -85,7 +75,8 @@ const Step4_ConfirmPlan = ({
           id="successCriteria"
           value={(plan.successCriteria || []).join("\n")}
           onChange={(e) => handleArrayChange("successCriteria", e.target.value)}
-          onEnhance={() => handleEnhanceClick("successCriteria")}
+          onEnhance={(prompt) => handleEnhance("successCriteria", prompt)}
+          isLoading={isEnhancing && activeEnchancingId === "successCriteria"}
           rows={5}
         />
 
@@ -94,7 +85,8 @@ const Step4_ConfirmPlan = ({
           id="preLesson"
           value={(plan.activities?.preLesson || []).join("\n")}
           onChange={(e) => handleActivityChange("preLesson", e.target.value)}
-          onEnhance={() => handleEnhanceClick("activities.preLesson")}
+          onEnhance={(prompt) => handleEnhance("activities.preLesson", prompt)}
+          isLoading={isEnhancing && activeEnchancingId === "activities.preLesson"}
           rows={4}
         />
 
@@ -103,7 +95,8 @@ const Step4_ConfirmPlan = ({
           id="duringLesson"
           value={(plan.activities?.duringLesson || []).join("\n")}
           onChange={(e) => handleActivityChange("duringLesson", e.target.value)}
-          onEnhance={() => handleEnhanceClick("activities.duringLesson")}
+          onEnhance={(prompt) => handleEnhance("activities.duringLesson", prompt)}
+          isLoading={isEnhancing && activeEnchancingId === "activities.duringLesson"}
           rows={8}
         />
 
@@ -112,7 +105,8 @@ const Step4_ConfirmPlan = ({
           id="postLesson"
           value={(plan.activities?.postLesson || []).join("\n")}
           onChange={(e) => handleActivityChange("postLesson", e.target.value)}
-          onEnhance={() => handleEnhanceClick("activities.postLesson")}
+          onEnhance={(prompt) => handleEnhance("activities.postLesson", prompt)}
+          isLoading={isEnhancing && activeEnchancingId === "activities.postLesson"}
           rows={4}
         />
       </div>
@@ -125,14 +119,6 @@ const Step4_ConfirmPlan = ({
           Save Lesson Plan
         </button>
       </div>
-
-      <EnhanceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleEnhanceSubmit}
-        sectionTitle={formatSectionTitle(enhancingSection?.split('.').pop())}
-        isEnhancing={isEnhancing}
-      />
     </div>
   );
 };

@@ -279,15 +279,14 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         {/* Source Selection Toggle */}
         <div className={styles.formGroup} style={{ marginBottom: "20px" }}>
           <label>Lesson Source</label>
-          <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+          <div className={styles.toggleGroup}>
             <button
               type="button"
               onClick={() => {
                 setSourceType("syllabus");
-                updateData("materialId", null); // Clear material if switching to syllabus
+                updateData("materialId", null);
               }}
-              className={sourceType === "syllabus" ? styles.primaryButton : styles.secondaryButton}
-              style={{ flex: 1 }}
+              className={`${styles.toggleButton} ${sourceType === "syllabus" ? styles.toggleButtonActive : styles.toggleButtonInactive}`}
             >
               Use Syllabus
             </button>
@@ -295,10 +294,9 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
               type="button"
               onClick={() => {
                 setSourceType("material");
-                updateData("sow", {}); // Clear SOW if switching to material
+                updateData("sow", {});
               }}
-              className={sourceType === "material" ? styles.primaryButton : styles.secondaryButton}
-              style={{ flex: 1 }}
+              className={`${styles.toggleButton} ${sourceType === "material" ? styles.toggleButtonActive : styles.toggleButtonInactive}`}
             >
               Use Uploaded Material
             </button>
@@ -389,15 +387,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         )}
 
         {data.sow && Object.keys(data.sow).length > 0 && (
-          <div style={{
-            marginTop: "-10px",
-            marginBottom: "20px",
-            padding: "12px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "6px",
-            border: "1px solid #e0e0e0",
-            fontSize: "14px"
-          }}>
+          <div className={`${styles.infoBox} ${styles.infoBoxNeutral}`}>
             <strong style={{ display: "block", marginBottom: "8px", color: "#333" }}>Syllabus Content:</strong>
             <div style={{ display: "grid", gap: "8px" }}>
               {Object.entries(data.sow)
@@ -475,31 +465,16 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
           {data.activityType && (
             <div style={{ marginTop: "12px" }}>
               {hasConfiguredActivity ? (
-                <div
-                  style={{
-                    padding: "12px",
-                    backgroundColor: "#f6ffed",
-                    border: "1px solid #b7eb8f",
-                    borderRadius: "6px",
-                  }}
-                >
+                <div className={`${styles.infoBox} ${styles.infoBoxSuccess}`}>
                   <div
                     style={{
-                      color: "#52c41a",
-                      fontSize: "14px",
                       fontWeight: "600",
                       marginBottom: "4px",
                     }}
                   >
                     ✓ {getActivityTypeLabel(data.activityType)} Configured
                   </div>
-                  <div
-                    style={{
-                      color: "#666",
-                      fontSize: "12px",
-                      marginBottom: "8px",
-                    }}
-                  >
+                  <div style={{ marginBottom: "8px", opacity: 0.9 }}>
                     {getConfigurationSummary()}
                   </div>
                   <button
@@ -507,12 +482,12 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                     onClick={handleReconfigureActivity}
                     style={{
                       background: "none",
-                      border: "1px solid #d9d9d9",
+                      border: "1px solid currentColor",
                       borderRadius: "4px",
                       padding: "4px 12px",
                       fontSize: "12px",
                       cursor: "pointer",
-                      color: "#666",
+                      color: "inherit",
                     }}
                   >
                     Reconfigure Settings
@@ -520,35 +495,13 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                 </div>
               ) : (
                 <div
-                  style={{
-                    padding: "12px",
-                    backgroundColor:
-                      data.activityType === "spm-exam"
-                        ? "#fff0f6" // Special background for SPM exam
-                        : "#fff7e6",
-                    border:
-                      data.activityType === "spm-exam"
-                        ? "1px solid #ffadd2" // Pink border for SPM exam
-                        : "1px solid #ffd591",
-                    borderRadius: "6px",
-                    color:
-                      data.activityType === "spm-exam"
-                        ? "#eb2f96" // Pink text for SPM exam
-                        : "#fa8c16",
-                    fontSize: "14px",
-                  }}
+                  className={`${styles.infoBox} ${data.activityType === "spm-exam" ? styles.infoBoxSpm : styles.infoBoxWarning}`}
                 >
-                  {data.activityType === "spm-exam" ? "📊" : "⚠"} Please
-                  configure your {getActivityTypeLabel(data.activityType)}{" "}
-                  settings
+                  <div style={{ fontWeight: '600' }}>
+                    {data.activityType === "spm-exam" ? "📊" : "⚠"} Please configure your {getActivityTypeLabel(data.activityType)} settings
+                  </div>
                   {data.activityType === "spm-exam" && (
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        marginTop: "4px",
-                        opacity: 0.8,
-                      }}
-                    >
+                    <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.8 }}>
                       Choose between Paper 1 (Reading) or Paper 2 (Writing)
                     </div>
                   )}

@@ -14,8 +14,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getTeachers, getInvitationCode } from "../../services/adminService";
 import { authAPI } from "../../services/api";
-import { Modal as AntModal, message, Pagination } from "antd";
-import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button } from "antd";
+import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import CommonTable from "../../components/common/CommonTable";
 
@@ -210,51 +210,107 @@ const TeacherManagement = ({ searchTerm = "" }) => {
                 render: (date) => new Date(date).toLocaleDateString()
               },
               {
-                title: "Action",
+                title: "",
                 key: "action",
-                render: (_, teacher) => (
-                  <div className="listActions">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher._id, teacher.name, teacher.email); }}
-                      className="actionButton delete"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                )
+                width: 60,
+                render: (_, teacher) => {
+                  const menu = (
+                    <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                      <Menu.Item
+                        key="delete"
+                        icon={<FontAwesomeIcon icon={faTrash} style={{ color: "#dc3545" }} />}
+                        onClick={(e) => {
+                          e.domEvent.stopPropagation();
+                          handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
+                        }}
+                      >
+                        Delete Teacher
+                      </Menu.Item>
+                    </Menu>
+                  );
+                  return (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Dropdown overlay={menu} trigger={['click']}>
+                        <Button icon={<MoreOutlined />} type="text" />
+                      </Dropdown>
+                    </div>
+                  );
+                }
               }
             ]}
             onRow={(record) => ({
               onClick: () => navigate(`/app/admin/teacher-analytics/${record._id}`)
             })}
-            renderCard={(teacher) => (
-              <div
-                className="listItem" // Reuse existing styles
-                onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
-                style={{ cursor: "pointer", display: 'flex', flexDirection: 'column', height: 'auto', gap: '8px' }}
-              >
-                <div className="listTitle">
-                  <FontAwesomeIcon icon={faUserTie} className="listIcon" />{" "}
-                  {teacher.name}
-                </div>
-                <div className="listDetail">
-                  <FontAwesomeIcon icon={faEnvelope} className="listIcon" />{" "}
-                  {teacher.email}
-                </div>
-                <div className="listDetail">
-                  <FontAwesomeIcon icon={faUserShield} className="listIcon" />{" "}
-                  {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
-                </div>
-                <div className="listActions" style={{ alignSelf: 'flex-end', marginTop: '8px' }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteTeacher(teacher._id, teacher.name, teacher.email); }}
-                    className="actionButton delete"
+            renderCard={(teacher) => {
+              const menu = (
+                <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                  <Menu.Item
+                    key="delete"
+                    icon={<FontAwesomeIcon icon={faTrash} style={{ color: "#dc3545" }} />}
+                    onClick={(e) => {
+                      e.domEvent.stopPropagation();
+                      handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
+                    }}
                   >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
+                    Delete Teacher
+                  </Menu.Item>
+                </Menu>
+              );
+
+              return (
+                <div
+                  className="mobileCard"
+                  onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
+                >
+                  {/* Header: Joined Date --- Actions */}
+                  <div className="mobileCardHeader">
+                    <span className="headerLeft">
+                      Joined {new Date(teacher.createdAt).toLocaleDateString()}
+                    </span>
+                    <div onClick={(e) => e.stopPropagation()} className="headerAction">
+                      <Dropdown overlay={menu} trigger={['click']}>
+                        <MoreOutlined style={{ fontSize: '20px' }} />
+                      </Dropdown>
+                    </div>
+                  </div>
+
+                  <div className="mobileCardBody">
+                    {/* Top Row: Icon + Name + Email */}
+                    <div className="topRow">
+                      <div className="infoSection">
+                        <div className="iconCircle">
+                          <FontAwesomeIcon icon={faUserTie} />
+                        </div>
+                        <div className="textBlock">
+                          <div className="cardTitle">
+                            {teacher.name}
+                          </div>
+                          <div className="cardSubtitle">
+                            {teacher.email}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Details List */}
+                    <div className="detailsList">
+                      <div className="detailRow">
+                        <span className="detailLabel">Access Level</span>
+                        <span className="detailValue">
+                          {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
+                        </span>
+                      </div>
+                      <div className="detailRow">
+                        <span className="detailLabel">Last Updated</span>
+                        <span className="detailValue">
+                          {new Date(teacher.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            }}
           />
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
             <Pagination

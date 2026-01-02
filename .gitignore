@@ -55,3 +55,7 @@ SPM_ANSWER_SHEET_RECOGNITION.md
 backend\scripts\encryptKey.js
 FYP1 Report.txt
 
+
+# Documentation to ignore
+IMPROVEMENT_PLAN.md
+PROJECT_ACCOMPLISHMENTS.md

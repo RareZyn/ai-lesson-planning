@@ -15,14 +15,28 @@
 }
 
 /* --- Modern Tab Design --- */
+/* --- Modern Tab Design --- */
 .tabsContainer {
   display: flex;
   gap: 0.25rem;
   /* Small gap between tabs */
   border-bottom: 1px solid #dee2e6;
+
+  /* Enable horizontal scroll by default for responsiveness */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.tabsContainer::-webkit-scrollbar {
+  display: none;
 }
 
 .tabButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Space between icon and text */
   padding: 12px 20px;
   font-size: 1rem;
   font-weight: 500;
@@ -35,16 +49,21 @@
   border-bottom: 3px solid transparent;
   margin-bottom: -1px;
   border-radius: 8px 8px 0 0;
+
+  white-space: nowrap;
+  /* Prevent line breaks */
+  flex: 0 0 auto;
+  /* Prevent shrinking */
 }
 
 .tabButton:hover {
   color: #343a40;
-  background-color: #e9ecef;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .tabButton.active {
   color: #3f51b5;
-  background-color: #fff;
+  background-color: transparent;
   font-weight: 600;
   border-bottom-color: #3f51b5;
 }
@@ -419,54 +438,80 @@
 }
 
 /* --- Responsive adjustment for layout --- */
+/* --- Responsive adjustment for layout --- */
 @media (max-width: 768px) {
   .controlBarWrapper {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
-    /* Add gap between the search row and the filter/toggle row */
+    align-items: stretch;
+    /* Stretch children */
+    gap: 16px;
+    margin-bottom: 20px;
   }
 
-  /* Search bar becomes full width on its own row */
+  /* Search bar full width */
   .customSearchBar {
     width: 100%;
     max-width: none;
+    height: 44px;
+    /* Slightly taller for touch */
   }
 
-  .searchFilterGroup {
-    /* Legacy or if reused: make sure it doesn't break things, 
-       but we are likely removing it in JSX. 
-       If we keep it as a wrapper for just search, it's fine. 
-       If we replaced it, this might be unused. */
-    display: contents;
-  }
-
-  /* The new group takes full width and puts items side-by-side with a gap */
+  /* Stack filter group */
   .filterToggleGroup {
-    display: flex;
-    gap: 15px;
-    /* Enforce flex container */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
     width: 100%;
-    box-sizing: border-box;
   }
 
-  /* Filter takes its natural width (or fixed desktop width) */
+  /* Filters in a grid for density */
+  .activeFilters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 2 columns */
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Make selects full width of their grid cell */
   .customSelect {
-    /* Removed flex-grow: 1 to prevent filling the gap */
-    width: auto;
+    width: 100%;
+    min-width: 0;
+    /* Allow shrinking if needed */
+    height: 44px;
+    /* Taller touch target */
   }
 
+  /* Make Status filter span full width if it's the odd one out? 
+     Or let them flow naturally. 3 items = 2 rows. */
+
+  /* Reset button centered or next to last item */
+  .resetButton {
+    width: 44px;
+    height: 44px;
+    background: #edf2f7;
+    /* Ensure visible background */
+  }
+
+  /* View toggle full width or just easier to tap */
   .viewToggle {
-    margin-left: 0;
-    /* Reset margins */
-    margin-right: 0;
-    flex-shrink: 0;
-    /* Don't shrink the toggle */
+    display: flex;
+    justify-content: center;
+    /* Center buttons */
+    width: 100%;
+    margin: 0;
+    height: 44px;
+  }
+
+  .viewToggle button {
+    flex: 1;
+    /* Equal width buttons */
+    justify-content: center;
   }
 
   .lessonsGrid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.75rem;
+    gap: 12px;
   }
 }
 
@@ -623,4 +668,136 @@
   border: none;
   cursor: pointer;
   padding: 0;
+}
+
+/* --- MOBILE CARD LAYOUT (Matches Admin Reference) --- */
+@media (max-width: 768px) {
+
+  /* Hide default table/list styles on mobile if they interfere */
+  .listItem {
+    display: none !important;
+  }
+}
+
+.mobileCard {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff;
+}
+
+.headerLeft {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.headerAction {
+  color: #888;
+  cursor: pointer;
+}
+
+.mobileCardBody {
+  padding: 16px;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.infoSection {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.iconCircle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardSubtitle {
+  font-size: 0.85rem;
+  color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusSection {
+  flex-shrink: 0;
+}
+
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  border-bottom: 1px dashed #f0f0f0;
+  padding-bottom: 4px;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailLabel {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.detailValue {
+  color: #2c3e50;
+  font-weight: 600;
+  text-align: right;
 }

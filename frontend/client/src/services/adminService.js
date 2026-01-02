@@ -284,13 +284,15 @@ export const getTeacherAnalytics = async (teacherId) => {
 
 // Extract Syllabus Structure using AI
 // Extract Syllabus Structure using AI
-export const extractSyllabusStructure = async (file) => {
+// Extract Syllabus Data using AI (based on provided schema)
+export const extractSyllabusData = async (file, schema) => {
     try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('schema', JSON.stringify(schema));
 
         const response = await axios.post(
-            '/api/admin/syllabuses/extract-structure',
+            '/api/admin/syllabuses/extract-data',
             formData,
             {
                 headers: {
@@ -300,9 +302,9 @@ export const extractSyllabusStructure = async (file) => {
             }
         );
 
-        return { schema: response.data.schema, data: response.data.data };
+        return { data: response.data.data };
     } catch (error) {
-        console.error('Error in extractSyllabusStructure:', error);
+        console.error('Error in extractSyllabusData:', error);
         throw error;
     }
 };

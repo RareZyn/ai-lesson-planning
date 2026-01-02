@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import styles from './SyllabusManagement.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faArrowLeft, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
-import CreateSyllabusModal from './CreateSyllabusModal';
 import { getSyllabuses } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -33,7 +32,6 @@ const SyllabusManagement = ({ searchTerm }) => {
     // State for view management
     const [schoolType, setSchoolType] = useState('KSSM'); // Default fallback
     const [selectedGradeView, setSelectedGradeView] = useState(null);
-    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         fetchSyllabuses();
@@ -71,13 +69,10 @@ const SyllabusManagement = ({ searchTerm }) => {
     };
 
     const handleCreateSyllabus = () => {
-        setShowCreateModal(true);
+        navigate('/app/admin/syllabuses/create');
     };
 
-    const handleSaveNewSyllabus = async () => {
-        await fetchSyllabuses();
-        setShowCreateModal(false);
-    };
+
 
     // Filter syllabuses for the selected grade
     const filteredSyllabuses = syllabuses.filter(syllabus => {
@@ -104,8 +99,20 @@ const SyllabusManagement = ({ searchTerm }) => {
     return (
         <div className={styles.syllabusManagement}>
             <div className={styles.syllabusHeader}>
-                <h2>Syllabus Management</h2>
-                {/* Header Actions Removed */}
+                <div className={styles.filterGroup}>
+                    <select
+                        className={styles.filterSelect}
+                        value={selectedGradeView || ''}
+                        onChange={(e) => setSelectedGradeView(e.target.value || null)}
+                    >
+                        <option value="">All Grades</option>
+                        {currentGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+
+                    <select className={styles.filterSelect} disabled>
+                        <option>All Subjects</option>
+                    </select>
+                </div>
             </div>
 
             {/* LEVEL 1: GRADE SELECTION */}
@@ -224,14 +231,7 @@ const SyllabusManagement = ({ searchTerm }) => {
                 </div>
             )}
 
-            {showCreateModal && (
-                <CreateSyllabusModal
-                    onClose={() => setShowCreateModal(false)}
-                    onSave={handleSaveNewSyllabus}
-                    allGrades={currentGrades} // Pass relevant grades
-                    initialGrade={selectedGradeView} // Pre-select if in view
-                />
-            )}
+
         </div>
     );
 };

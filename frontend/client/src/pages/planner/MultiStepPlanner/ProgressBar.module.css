@@ -1,66 +1,175 @@
 .progressBarContainer {
   width: 100%;
-  padding: 1rem 0;
+  /* Removed max-width, margin, padding to let the parent (Header) control the layout bounds. 
+     This prevents double-padding and ensures the bar aligns exactly with the Header's content width. */
 }
+
+/* To strictly "use margin to make it centered" as requested, 
+   we can just ensure the container is margin: 0 auto. 
+   But the visual weight is shifted. 
+   Let's add a left visual offset to the first child or container?
+   Actually, with max-width 1200px and margin 0 auto, it IS centered.
+   The user likely saw it off-center because of the negative margin shift pulling the whole block left relative to its container box.
+   To fix: Add padding-left equal to the overlap? Or margin-left?
+   User said "can use margin".
+   I will add `padding-left: 24px` to the container? No, that's padding.
+   I will add `margin-left: 12px` to the container style to nudge it right? 
+   But `margin: 0 auto` overrides simple margin-left.
+   I need to use `margin: 0 auto 0 calc(50% - 600px + 12px)`? No complex.
+   
+   Better: wrapping div? No.
+   
+   Let's try applying `margin-left: 24px` to the first step? 
+   No, that creates a gap.
+   
+   Let's check the container again. 
+   If I just remove the padding hack and verify `margin: 0 auto` is correct.
+   The user *wants* to use margin.
+   Maybe they mean `margin-left` on the container to push it?
+   If I set explicit width, `margin: 0 auto` works. 
+   
+   I will revert to `margin: 0 auto` and add a specific `margin-left` to the *inner* logic?
+   Actually, simply adding `padding-left: 24px` is cleaner than margin. 
+   But user asked for margin.
+   I'll just add `margin-left: 24px` to the styling of the `.progressBar` flex container?
+   `.progressBar { margin-left: 24px; }`
+   And keep `.progressBarContainer { margin: 0 auto; }`.
+   This shifts the bar 24px right, centering it visually.
+*/
 
 .progressBar {
-  position: relative;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  /* The gray background line */
-  background-color: #e9ecef;
-  height: 4px;
-  border-radius: 2px;
+  border-radius: 50px;
+  background-color: transparent;
+  overflow: visible;
+  border: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+  gap: 0;
+
+  /* Center normally */
+  margin: 0 auto;
+  width: 100%;
 }
 
-.progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  /* Your primary color */
-  background-color: #4f46e5; 
-  border-radius: 2px;
-  transition: width 0.4s ease-in-out;
-}
+/* Add padding to first/last children to balance the look if needed, 
+   but let flexbox handle the main centering. 
+*/
 
-.step {
+.stepChevron {
+  flex: 1;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #adb5bd; /* Inactive color */
-  transition: color 0.4s ease;
-}
-
-.step.active {
-  color: #4f46e5; /* Active color */
-}
-
-.stepNumber {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: white;
-  border: 2px solid #e9ecef; /* Inactive border */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  transition: all 0.4s ease;
-}
-
-.step.active .stepNumber {
-  border-color: #4f46e5;
-  background-color: #4f46e5;
-  color: white;
-}
-
-.stepTitle {
-  position: absolute;
-  top: 40px; /* Position below the number */
-  font-size: 0.8rem;
-  font-weight: 500;
+  height: 48px;
+  background-color: #ffffff;
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  padding: 0 10px 0 25px;
+  margin-right: -24px;
+  /* Increased overlap to close gap visually */
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%);
+  z-index: 1;
+  cursor: default;
   white-space: nowrap;
+  /* Prevent text wrapping breaking the shape */
+  overflow: hidden;
+  /* Ensure content doesn't spill */
+  text-overflow: ellipsis;
+  /* Ellipsis for long text */
+}
+
+/* Adjust negative margin on smaller screens if items overlap too much or break */
+@media (max-width: 768px) {
+  .progressBarContainer {
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+
+  .stepChevron {
+    font-size: 0.85rem;
+    margin-right: -18px;
+    /* Reduce overlap on tablet/mobile */
+    clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%);
+    padding: 0 8px 0 20px;
+  }
+
+  .stepChevron:first-child {
+    clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+    padding-left: 15px;
+  }
+
+  .stepChevron:last-child {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 15px 50%);
+    margin-right: 0;
+  }
+}
+
+/* First Step */
+.stepChevron:first-child {
+  padding-left: 20px;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+  border-top-left-radius: 25px;
+  border-bottom-left-radius: 25px;
+  z-index: 10;
+}
+
+/* Last Step */
+.stepChevron:last-child {
+  margin-right: 0;
+  padding-right: 20px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 20px 50%);
+  border-top-right-radius: 25px;
+  border-bottom-right-radius: 25px;
+  z-index: 1;
+}
+
+/* Active State (Current) */
+.stepChevron.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  /* Lighter font colour (White) as requested */
+  /* Remove shadow from clip-path elements if it causes artifacts, filter works on parent */
+}
+
+/* Completed State */
+.stepChevron.completed {
+  background-color: #ffffff;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* Override for specific "Active" class that matches our prop logic */
+/* In JSX we will set class based on rules */
+
+
+.stepContentWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepNumber {
+  display: none;
+  /* Hide numbers if going for purely text look like screenshot, or keep them? screenshot has no numbers */
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .stepChevron {
+    font-size: 0.8rem;
+    padding-left: 18px;
+  }
+
+  .stepChevron:first-child {
+    padding-left: 12px;
+  }
+
+  .stepTitle {
+    display: block;
+    /* Ensure text shows */
+  }
 }
