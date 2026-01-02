@@ -231,12 +231,7 @@ const MaterialManagement = () => {
     };
   };
 
-  const handleEditClick = (material, e) => {
-    e.stopPropagation();
-    setEditingMaterial(material);
-    setEditName(material.name);
-    setIsEditModalOpen(true);
-  };
+
 
   const handleEditSubmit = async () => {
     if (!editName.trim()) {

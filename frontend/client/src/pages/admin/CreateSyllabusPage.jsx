@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Steps, Form, Input, Select, Button,
-    Upload, Table, Typography, Space, Divider, message, Alert, Row, Col, Card
+    Upload, Table, Space, Divider, message, Alert, Row, Col, Card
 } from 'antd';
 import {
     InboxOutlined, PlusOutlined, DeleteOutlined,

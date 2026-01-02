@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spin } from 'antd';
+import LoadingSpinner from './LoadingSpinner';
 import './CommonTable.css';
 
 /**
@@ -41,8 +41,8 @@ const CommonTable = ({
 
     if (loading) {
         return (
-            <div className="common-loading-container" style={{ padding: '40px', textAlign: 'center' }}>
-                <Spin size="large" tip="Loading data..." />
+            <div className="common-loading-container" style={{ padding: '40px', display: 'flex', justifyContent: 'center' }}>
+                <LoadingSpinner tip="Loading data..." />
             </div>
         );
     }
