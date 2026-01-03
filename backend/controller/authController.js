@@ -596,3 +596,146 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
     });
   }
 };
+
+// @desc    Register a new school (first user becomes admin)
+// @route   POST /api/auth/register-school
+// @access  Public
+exports.registerSchool = async (req, res) => {
+  try {
+    const { name, email, password, schoolName, schoolType, firebaseUid, geminiApiKey } = req.body;
+
+    // Validation
+    if (!schoolName || !email || !name) {
+      return res.status(400).json({
+        success: false,
+        message: "School name, email, and name are required.",
+      });
+    }
+
+    // Check if school already exists
+    const existingSchool = await School.findOne({ name: schoolName.trim() });
+    if (existingSchool) {
+      return res.status(400).json({
+        success: false,
+        message: "A school with this name already exists. Use an invitation code to join.",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email.",
+      });
+    }
+
+    // 1. Create the school
+    const school = await School.create({
+      name: schoolName.trim(),
+      schoolType: schoolType || "KSSM",
+    });
+
+    // 2. Create the admin user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      schoolId: school._id,
+      roles: ["admin"], // First user becomes admin
+      firebaseUid,
+      geminiApiKey: geminiApiKey || "",
+    });
+
+    sendTokenResponse(user, 201, res, "School registered successfully! You are now the admin.");
+  } catch (error) {
+    console.error("School registration error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during school registration.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// @desc    Google OAuth register a new school (first user becomes admin)
+// @route   POST /api/auth/google-register-school
+// @access  Public
+exports.googleRegisterSchool = async (req, res) => {
+  try {
+    const { googleId, email, name, avatar, schoolName, schoolType, geminiApiKey } = req.body;
+
+    // Validation
+    if (!googleId || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Google ID and email are required.",
+      });
+    }
+    if (!schoolName || !name) {
+      return res.status(400).json({
+        success: false,
+        message: "School name and your name are required.",
+      });
+    }
+
+    // Check if school already exists
+    const existingSchool = await School.findOne({ name: schoolName.trim() });
+    if (existingSchool) {
+      return res.status(400).json({
+        success: false,
+        message: "A school with this name already exists. Use an invitation code to join.",
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ googleId });
+    if (!user) {
+      user = await User.findOne({ email: email.toLowerCase() });
+    }
+    if (user && user.schoolId) {
+      return res.status(400).json({
+        success: false,
+        message: "You are already associated with a school.",
+      });
+    }
+
+    // 1. Create the school
+    const school = await School.create({
+      name: schoolName.trim(),
+      schoolType: schoolType || "KSSM",
+    });
+
+    // 2. Create or update the admin user
+    if (user) {
+      // Update existing user
+      user.schoolId = school._id;
+      user.roles = ["admin"];
+      user.googleId = googleId;
+      if (avatar) user.avatar = avatar;
+      if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+      user.lastLogin = new Date();
+      await user.save();
+    } else {
+      // Create new user
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        avatar: avatar || "",
+        schoolId: school._id,
+        roles: ["admin"],
+        geminiApiKey: geminiApiKey || "",
+      });
+    }
+
+    sendTokenResponse(user, 201, res, "School registered with Google! You are now the admin.");
+  } catch (error) {
+    console.error("Google school registration error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during Google school registration.",
+      error: error.message, // Always show error for debugging
+    });
+  }
+};

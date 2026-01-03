@@ -19,6 +19,7 @@ const ActivityViewerPage = React.lazy(() => import("./pages/assesstment/Activity
 const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricViewerPage"));
 
 const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
+const AccountDeactivatedPage = React.lazy(() => import("./pages/auth/AccountDeactivatedPage"));
 const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
 
 const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
@@ -95,6 +96,7 @@ const router = createBrowserRouter(
     { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
     { path: "/unauthorized", element: <UnauthorizedPage /> },
+    { path: "/account-deactivated", element: <AccountDeactivatedPage /> },
   ],
   {
     future: {

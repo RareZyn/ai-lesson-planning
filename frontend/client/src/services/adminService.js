@@ -308,3 +308,105 @@ export const extractSyllabusData = async (file, schema) => {
         throw error;
     }
 };
+
+// Invite Teacher via Email
+export const inviteTeacher = async (email) => {
+    try {
+        const response = await axios.post(
+            `/api/admin/invite`,
+            { email },
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error inviting teacher:", error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || "Could not send invitation.");
+    }
+};
+
+// Get Active Tokens for Pending Invites
+export const getActiveTokens = async () => {
+    try {
+        const response = await axios.get(
+            `/api/admin/tokens/active`,
+            getAuthConfig()
+        );
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching active tokens:", error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || "Could not fetch active tokens.");
+    }
+};
+
+// Delete Teacher
+export const deleteTeacher = async (teacherId) => {
+    try {
+        const response = await axios.delete(
+            `/api/admin/teachers/${teacherId}`,
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting teacher:', error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Could not delete teacher.');
+    }
+};
+
+// Toggle Teacher Status (Activate/Deactivate)
+export const toggleTeacherStatus = async (teacherId) => {
+    try {
+        const response = await axios.put(
+            `/api/admin/teachers/${teacherId}/status`,
+            {},
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error toggling teacher status:', error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Could not toggle teacher status.');
+    }
+};
+
+// Revoke a registration token
+export const revokeToken = async (tokenId) => {
+    try {
+        const response = await axios.delete(
+            `/api/admin/tokens/${tokenId}`,
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error revoking token:', error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Could not revoke token.');
+    }
+};
+
+// Resend invitation email
+export const resendInvite = async (tokenId, email) => {
+    try {
+        const response = await axios.post(
+            `/api/admin/tokens/${tokenId}/resend`,
+            { email },
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error resending invite:', error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Could not resend invite.');
+    }
+};
+
+// Update teacher's role
+export const updateTeacherRole = async (teacherId, roles) => {
+    try {
+        const response = await axios.put(
+            `/api/admin/teachers/${teacherId}/role`,
+            { roles },
+            getAuthConfig()
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error updating teacher role:', error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Could not update teacher role.');
+    }
+};

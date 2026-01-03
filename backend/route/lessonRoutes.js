@@ -38,19 +38,19 @@ router.put("/:id/send", sendForApproval);
 // 🟣 Admin / Head / Principal routes (order important)
 router.get(
   "/pending",
-  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
+  authorize("admin", "super_admin", "english_head", "math_head"),
   getPendingLessons
 );
 
 router.patch(
   "/:id/approve",
-  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
+  authorize("admin", "super_admin", "english_head", "math_head"),
   approveLesson
 );
 
 router.patch(
   "/:id/reject",
-  authorize("school_admin", "super_admin", "principal", "english_head", "math_head"),
+  authorize("admin", "super_admin", "english_head", "math_head"),
   rejectLesson
 );
 
@@ -59,9 +59,7 @@ router.get(
   authorize(
     "math_head",
     "english_head",
-    "math_head",
-    "principal",
-    "school_admin",
+    "admin",
     "super_admin"
   ),
   getAllLessonsForApproval

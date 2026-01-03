@@ -7,13 +7,26 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // controllers/adminController.js
 const User = require("../model/User");
 const RegistrationToken = require("../model/RegistrationToken");
-const School = require("../model/School"); // Assuming you want to associate token with a school
+const { admin, firebaseApp } = require("../config/firebaseAdmin");
+const { sendEmail } = require("../services/emailService");
+const School = require("../model/School");
 const Syllabus = require("../model/Syllabus");
 const LessonPlan = require("../model/Lesson");
 const Class = require("../model/Class");
-const Material = require("../model/Material"); // Added Material model import
+const Material = require("../model/Material");
+const AuditLog = require("../model/AuditLog");
 const crypto = require("crypto");
 const XLSX = require("xlsx");
+
+// Helper to log audit events
+const logAuditEvent = async ({ action, performedBy, schoolId, targetUser = null, details = null, ipAddress = null }) => {
+  try {
+    await AuditLog.create({ action, performedBy, schoolId, targetUser, details, ipAddress });
+  } catch (error) {
+    console.error("Failed to log audit event:", error.message);
+    // Don't throw - audit logging should not break main operations
+  }
+};
 
 // Helper to generate a secure random token string
 const generateSecureToken = () => {
@@ -691,5 +704,435 @@ exports.extractSyllabusData = async (req, res) => {
       message: "Error extracting syllabus data",
       error: error.message
     });
+  }
+};
+
+// @desc    Get all active registration tokens for the school
+// @route   GET /api/admin/tokens/active
+// @access  Private (school_admin, super_admin)
+exports.getActiveTokens = async (req, res) => {
+  try {
+    const schoolId = req.user.schoolId;
+
+    if (!schoolId) {
+      return res.status(400).json({ success: false, message: "Admin account is not associated with a school." });
+    }
+
+    const tokens = await RegistrationToken.find({
+      schoolId: schoolId,
+      isActive: true
+    })
+      .select('token createdAt expiresAt usageCount maxUsage isMultiUse purpose')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: tokens
+    });
+  } catch (error) {
+    console.error("Error fetching active tokens:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching active tokens.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// @desc    Delete a teacher
+// @route   DELETE /api/admin/teachers/:id
+// @access  Private (school_admin, super_admin)
+exports.deleteTeacher = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requesterUser = await User.findById(req.user._id);
+
+    // 1. Verify access (must be same school)
+    const teacher = await User.findOne({ _id: id, schoolId: requesterUser.schoolId });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found in your school" });
+    }
+
+    // 2. Delete from Firebase (if applicable)
+    if (teacher.firebaseUid && firebaseApp) {
+      try {
+        await admin.auth().deleteUser(teacher.firebaseUid);
+      } catch (firebaseError) {
+        console.error(`[DeleteTeacher] Failed to delete from Firebase:`, firebaseError.message);
+        // We continue to delete from MongoDB even if Firebase fails, 
+        // to avoid "zombie" accounts in our DB.
+      }
+    } else if (teacher.firebaseUid && !firebaseApp) {
+      console.warn(`[DeleteTeacher] Skipping Firebase deletion - Admin SDK not initialized.`);
+    }
+
+    // 3. Delete teacher from MongoDB
+    const deleteResult = await User.deleteOne({ _id: teacher._id });
+
+    if (deleteResult.deletedCount === 0) {
+      return res.status(500).json({ success: false, message: "Failed to delete teacher from database" });
+    }
+
+    // Log audit event
+    await logAuditEvent({
+      action: "DELETE_TEACHER",
+      performedBy: req.user._id,
+      schoolId: requesterUser.schoolId,
+      targetUser: teacher._id,
+      details: { teacherName: teacher.name, teacherEmail: teacher.email }
+    });
+
+    res.status(200).json({ success: true, message: "Teacher deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting teacher:", error);
+    res.status(500).json({ success: false, message: "Server error deleting teacher" });
+  }
+};
+
+// @desc    Invite a teacher via email (Magic Link)
+// @route   POST /api/admin/invite
+// @access  Private (school_admin)
+exports.inviteTeacher = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // 1. Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "User with this email is already registered." });
+    }
+
+    const requesterUser = await User.findById(req.user._id);
+
+    // 2. Generate a single-use token
+    const token = crypto.randomBytes(20).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const registrationToken = await RegistrationToken.create({
+      token,
+      schoolId: requesterUser.schoolId,
+      createdBy: req.user._id,
+      expiresAt,
+      isMultiUse: false,
+      maxUsage: 1,
+    });
+
+    // 3. Construct Magic Link
+    // Use an environment variable for the frontend URL, fallback to localhost
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    const inviteLink = `${clientUrl}/register?token=${token}`;
+
+    // 4. Send Email - Modern HTML Template
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">✨ You're Invited!</h1>
+                  </td>
+                </tr>
+                <!-- Body -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 22px; font-weight: 600;">Join Lesson Planner</h2>
+                    <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                      <strong>${requesterUser.name}</strong> has invited you to join their school organization on <strong>Lesson Planner</strong>.
+                    </p>
+                    <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                      Click the button below to create your teacher account and start planning amazing lessons with AI assistance.
+                    </p>
+                    <!-- CTA Button -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" style="padding: 10px 0 30px 0;">
+                          <a href="${inviteLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">Accept Invitation</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Divider -->
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <!-- Link fallback -->
+                    <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px;">Or copy and paste this link:</p>
+                    <p style="margin: 0; padding: 12px; background-color: #f7fafc; border-radius: 8px; word-break: break-all; font-size: 13px; color: #667eea;">${inviteLink}</p>
+                  </td>
+                </tr>
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f7fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 8px 0; color: #a0aec0; font-size: 13px;">This invitation expires in <strong>24 hours</strong>.</p>
+                    <p style="margin: 0; color: #a0aec0; font-size: 12px;">© ${new Date().getFullYear()} Lesson Planner. All rights reserved.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: "Invitation to Join Lesson Planner",
+      html: emailHtml,
+      fromName: requesterUser.name, // Display admin's name in the email "From" field
+    });
+
+    // Log audit event
+    await logAuditEvent({
+      action: "INVITE_TEACHER",
+      performedBy: req.user._id,
+      schoolId: requesterUser.schoolId,
+      details: { email, token }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Invitation sent successfully!",
+      token: token, // Return token for debug/manual copy
+      link: inviteLink
+    });
+
+  } catch (error) {
+    console.error("Invite teacher error:", error);
+    res.status(500).json({ success: false, message: "Failed to send invitation." });
+  }
+};
+
+// @desc    Toggle teacher active status (Activate/Deactivate)
+// @route   PUT /api/admin/teachers/:id/status
+// @access  Private (school_admin, super_admin)
+exports.toggleTeacherStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requesterUser = await User.findById(req.user._id);
+
+    // 1. Find teacher in same school
+    const teacher = await User.findOne({ _id: id, schoolId: requesterUser.schoolId });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found in your school" });
+    }
+
+    // 2. Toggle the isActive status
+    teacher.isActive = !teacher.isActive;
+    await teacher.save();
+
+    const statusText = teacher.isActive ? "activated" : "deactivated";
+
+    res.status(200).json({
+      success: true,
+      message: `Teacher ${statusText} successfully`,
+      isActive: teacher.isActive
+    });
+  } catch (error) {
+    console.error("Error toggling teacher status:", error);
+    res.status(500).json({ success: false, message: "Server error toggling teacher status" });
+  }
+};
+
+// @desc    Revoke/Delete a registration token
+// @route   DELETE /api/admin/tokens/:id
+// @access  Private (school_admin, super_admin)
+exports.revokeToken = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requesterUser = await User.findById(req.user._id);
+
+    const token = await RegistrationToken.findOne({ _id: id, schoolId: requesterUser.schoolId });
+
+    if (!token) {
+      return res.status(404).json({ success: false, message: "Token not found" });
+    }
+
+    await RegistrationToken.deleteOne({ _id: id });
+
+    res.status(200).json({ success: true, message: "Token revoked successfully" });
+  } catch (error) {
+    console.error("Error revoking token:", error);
+    res.status(500).json({ success: false, message: "Server error revoking token" });
+  }
+};
+
+// @desc    Resend invitation email for a token
+// @route   POST /api/admin/tokens/:id/resend
+// @access  Private (school_admin, super_admin)
+exports.resendInvite = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const requesterUser = await User.findById(req.user._id);
+    const tokenDoc = await RegistrationToken.findOne({ _id: id, schoolId: requesterUser.schoolId });
+
+    if (!tokenDoc) {
+      return res.status(404).json({ success: false, message: "Token not found" });
+    }
+
+    // Check if token is expired
+    if (new Date() > tokenDoc.expiresAt) {
+      return res.status(400).json({ success: false, message: "Token has expired. Please generate a new invite." });
+    }
+
+    // Construct Magic Link
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    const inviteLink = `${clientUrl}/register?token=${tokenDoc.token}`;
+
+    // Send Email (reuse the template from inviteTeacher)
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">📧 Reminder: You're Invited!</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 22px; font-weight: 600;">Join Lesson Planner</h2>
+                    <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                      <strong>${requesterUser.name}</strong> is reminding you about your invitation to join <strong>Lesson Planner</strong>.
+                    </p>
+                    <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                      Click the button below to create your account.
+                    </p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" style="padding: 10px 0 30px 0;">
+                          <a href="${inviteLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">Accept Invitation</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px;">Or copy and paste this link:</p>
+                    <p style="margin: 0; padding: 12px; background-color: #f7fafc; border-radius: 8px; word-break: break-all; font-size: 13px; color: #667eea;">${inviteLink}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f7fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0; color: #a0aec0; font-size: 12px;">© ${new Date().getFullYear()} Lesson Planner. All rights reserved.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: "Reminder: Invitation to Join Lesson Planner",
+      html: emailHtml,
+      fromName: requesterUser.name,
+    });
+
+    res.status(200).json({ success: true, message: "Invitation resent successfully!" });
+  } catch (error) {
+    console.error("Error resending invite:", error);
+    res.status(500).json({ success: false, message: "Server error resending invite" });
+  }
+};
+
+// @desc    Update teacher's role
+// @route   PUT /api/admin/teachers/:id/role
+// @access  Private (school_admin, super_admin)
+exports.updateTeacherRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roles } = req.body; // Expecting an array of roles
+
+    if (!roles || !Array.isArray(roles) || roles.length === 0) {
+      return res.status(400).json({ success: false, message: "Roles must be a non-empty array" });
+    }
+
+    // Validate roles
+    const validRoles = ['teacher', 'admin', 'math_head', 'science_head', 'english_head', 'history_head', 'geography_head'];
+    const invalidRoles = roles.filter(r => !validRoles.includes(r));
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({ success: false, message: `Invalid roles: ${invalidRoles.join(', ')}` });
+    }
+
+    const requesterUser = await User.findById(req.user._id);
+    const teacher = await User.findOne({ _id: id, schoolId: requesterUser.schoolId });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found in your school" });
+    }
+
+    teacher.roles = roles;
+    await teacher.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Teacher roles updated successfully",
+      roles: teacher.roles
+    });
+  } catch (error) {
+    console.error("Error updating teacher role:", error);
+    res.status(500).json({ success: false, message: "Server error updating teacher role" });
+  }
+};
+
+// @desc    Get audit logs for the school
+// @route   GET /api/admin/audit-logs
+// @access  Private (school_admin, super_admin)
+exports.getAuditLogs = async (req, res) => {
+  try {
+    const requesterUser = await User.findById(req.user._id);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      AuditLog.find({ schoolId: requesterUser.schoolId })
+        .populate("performedBy", "name email")
+        .populate("targetUser", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      AuditLog.countDocuments({ schoolId: requesterUser.schoolId })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    res.status(500).json({ success: false, message: "Server error fetching audit logs" });
   }
 };

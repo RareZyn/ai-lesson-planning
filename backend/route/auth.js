@@ -3,6 +3,8 @@ const express = require("express");
 const { body } = require("express-validator");
 const {
   registerTeacherWithToken,
+  registerSchool,
+  googleRegisterSchool,
   login,
   googleAuthWithToken,
   findOrCreateFirebaseUser,
@@ -89,6 +91,18 @@ const updateApiKeyValidation = [
     .withMessage("Invalid API key format"),
 ];
 
+// School registration (first user becomes admin)
+router.post(
+  "/register-school",
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('schoolName').notEmpty().withMessage('School name is required'),
+  ],
+  registerSchool
+);
+
 // Teacher registration with token (for email/password users)
 router.post(
   "/register-teacher",
@@ -115,6 +129,17 @@ router.post(
     body('registrationToken').notEmpty().withMessage('Registration token is required'),
   ],
   googleAuthWithToken
+);
+
+// Google sign-in for registering a new school (first user = admin)
+router.post(
+  "/google-register-school",
+  [
+    body('googleId').notEmpty().withMessage('Google ID is required'),
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    body('schoolName').notEmpty().withMessage('School name is required'),
+  ],
+  googleRegisterSchool
 );
 
 router.post("/firebase-user", findOrCreateFirebaseUser);

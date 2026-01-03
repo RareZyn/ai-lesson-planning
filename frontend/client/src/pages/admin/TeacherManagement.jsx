@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeacherManagement.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faTrash,
-  faUserTie,
-  faEnvelope,
-  faUserShield,
-  faPlus,
-  faCopy,
-  faPaperPlane,
-  faTimes,
-} from "@fortawesome/free-solid-svg-icons";
-import { getTeachers, getInvitationCode } from "../../services/adminService";
-import { authAPI } from "../../services/api";
+import { getTeachers, getInvitationCode, deleteTeacher, inviteTeacher, toggleTeacherStatus, revokeToken, resendInvite, updateTeacherRole } from "../../services/adminService";
 import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button } from "antd";
-import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons";
+import {
+  ExclamationCircleOutlined,
+  MoreOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  MailOutlined,
+  PlusOutlined,
+  CopyOutlined,
+  SendOutlined,
+  CloseOutlined,
+  TeamOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  UserSwitchOutlined
+} from "@ant-design/icons";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import CommonTable from "../../components/common/CommonTable";
 
@@ -31,6 +33,15 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState("teachers");
+  const [activeTokens, setActiveTokens] = useState([]);
+
+  // Role Modal State
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [selectedRoles, setSelectedRoles] = useState([]);
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -41,9 +52,6 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // ===========================
-  // FETCH TEACHERS
-  // ===========================
   const fetchTeachers = async () => {
     setLoading(true);
     try {
@@ -57,13 +65,29 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     }
   };
 
-  useEffect(() => {
-    fetchTeachers();
-  }, []);
+  // Fetch pending tokens
+  const fetchActiveTokens = async () => {
+    setLoading(true); // Show spinner while fetching tokens
+    try {
+      const { getActiveTokens } = require("../../services/adminService");
+      const tokens = await getActiveTokens();
+      setActiveTokens(tokens);
+    } catch (error) {
+      console.error("Error fetching active tokens:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // ===========================
-  // DELETE TEACHER
-  // ===========================
+  // Initial Fetch based on active tab
+  useEffect(() => {
+    if (activeTab === "teachers") {
+      fetchTeachers();
+    } else if (activeTab === "pending") {
+      fetchActiveTokens();
+    }
+  }, [activeTab]);
+
   const handleDeleteTeacher = async (id, name, email) => {
     AntModal.confirm({
       title: 'Delete Teacher',
@@ -88,8 +112,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       onOk: async () => {
         try {
           setLoading(true);
-          const token = localStorage.getItem("authToken");
-          const res = await authAPI.deleteTeacher(id, token);
+          const res = await deleteTeacher(id);
           if (res.success) {
             setTeachers((prev) => prev.filter((t) => t._id !== id));
             message.success('Teacher deleted successfully');
@@ -106,32 +129,56 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     });
   };
 
-  // ===========================
-  // INVITE TEACHER (FAKE EXAMPLE)
-  // ===========================
-  const handleSendInvitation = async () => {
+  const handleSendEmail = async () => {
     if (!email) {
-      message.warning("Please enter an email.");
+      message.error("Please enter an email address.");
       return;
     }
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Use the already generated invitationCode
-      message.success(`Invitation sent to ${email}! Code: ${invitationCode}`);
-      setEmail(""); // optionally reset email input
-    } catch (err) {
-      console.error("Error sending invite:", err);
-      message.error("Failed to send invitation.");
+      const result = await inviteTeacher(email);
+      if (result.success) {
+        message.success("Invitation sent successfully!");
+        setEmail("");
+        fetchActiveTokens(); // Refresh list to show new token
+      }
+    } catch (error) {
+      message.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleToggleStatus = async (teacher) => {
+    // Treat undefined as active (same as render logic)
+    const isCurrentlyActive = teacher.isActive !== false;
+    const action = isCurrentlyActive ? "deactivate" : "activate";
+    AntModal.confirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} Teacher`,
+      icon: <ExclamationCircleOutlined />,
+      content: `Are you sure you want to ${action} ${teacher.name}?`,
+      okText: action.charAt(0).toUpperCase() + action.slice(1),
+      okType: isCurrentlyActive ? 'danger' : 'primary',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const res = await toggleTeacherStatus(teacher._id);
+          if (res.success) {
+            setTeachers((prev) =>
+              prev.map((t) =>
+                t._id === teacher._id ? { ...t, isActive: res.isActive } : t
+              )
+            );
+            message.success(res.message);
+          }
+        } catch (err) {
+          console.error(err);
+          message.error("Error toggling teacher status.");
+        }
+      },
+    });
+  };
 
-  // ===========================
-  // FILTER LOGIC
-  // ===========================
   const filteredTeachers = teachers.filter((teacher) =>
     [teacher.name, teacher.email, teacher.roles?.join(", ")]
       .join(" ")
@@ -139,237 +186,511 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       .includes(searchTerm.toLowerCase())
   );
 
-  // ===========================
-  // COPY INVITE CODE
-  // ===========================
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(invitationCode);
-    message.success("Invitation code copied to clipboard!");
+  const getMagicLink = (code) => {
+    return `${window.location.origin}/register?token=${code}`;
   };
+
+  const handleCopyMagicLink = (code) => {
+    const link = getMagicLink(code);
+    navigator.clipboard.writeText(link);
+    message.success("Magic Link copied!");
+  };
+
+  const handleRevokeToken = (tokenId) => {
+    AntModal.confirm({
+      title: 'Revoke Invitation',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to revoke this invitation? The link will no longer work.',
+      okText: 'Revoke',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const res = await revokeToken(tokenId);
+          if (res.success) {
+            setActiveTokens((prev) => prev.filter((t) => t._id !== tokenId));
+            message.success('Invitation revoked');
+          }
+        } catch (err) {
+          console.error(err);
+          message.error("Error revoking invitation.");
+        }
+      },
+    });
+  };
+
+  const handleResendInvite = async (tokenId) => {
+    const emailToResend = window.prompt("Enter the email address to resend the invitation:");
+    if (!emailToResend) return;
+
+    try {
+      const res = await resendInvite(tokenId, emailToResend);
+      if (res.success) {
+        message.success('Invitation resent!');
+      }
+    } catch (err) {
+      console.error(err);
+      message.error(err.message || "Error resending invitation.");
+    }
+  };
+
+  const handleOpenRoleModal = (teacher) => {
+    setSelectedTeacher(teacher);
+    setSelectedRoles(teacher.roles || ['teacher']);
+    setRoleModalVisible(true);
+  };
+
+  const handleSaveRoles = async () => {
+    if (!selectedTeacher || selectedRoles.length === 0) {
+      message.error("Please select at least one role");
+      return;
+    }
+    try {
+      const res = await updateTeacherRole(selectedTeacher._id, selectedRoles);
+      if (res.success) {
+        setTeachers((prev) =>
+          prev.map((t) =>
+            t._id === selectedTeacher._id ? { ...t, roles: res.roles } : t
+          )
+        );
+        message.success("Roles updated successfully");
+        setRoleModalVisible(false);
+      }
+    } catch (err) {
+      console.error(err);
+      message.error(err.message || "Error updating roles");
+    }
+  };
+
+  const availableRoles = [
+    { key: 'teacher', label: 'Teacher' },
+    { key: 'admin', label: 'Admin' },
+    { key: 'math_head', label: 'Math Head' },
+    { key: 'science_head', label: 'Science Head' },
+    { key: 'english_head', label: 'English Head' },
+    { key: 'history_head', label: 'History Head' },
+    { key: 'geography_head', label: 'Geography Head' },
+  ];
 
   // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentTeachers = filteredTeachers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentTokens = activeTokens.slice(indexOfFirstItem, indexOfLastItem);
 
-  return (
-    <div className="teacherManagement">
-      <div className="headerRow">
-        <button
-          className="addButton"
-          onClick={async () => {
-            const code = await getInvitationCode()
-            setInvitationCode(code); // generate code immediately
-            setShowModal(true);
-          }}
-          disabled={loading}
-        >
-          <FontAwesomeIcon icon={faPlus} /> Add Teacher
-        </button>
-      </div>
+  // RENDER PENDING INVITES
+  const renderPendingInvites = () => {
+    if (activeTokens.length === 0) return <p className="tm-empty" style={{ textAlign: 'center', padding: 20 }}>No pending invitations found.</p>;
 
-      {loading ? (
-        <LoadingSpinner tip="Loading teachers..." />
-      ) : filteredTeachers.length === 0 ? (
-        <p>No teachers found.</p>
-      ) : (
-        <>
-          <CommonTable
-            loading={loading}
-            dataSource={currentTeachers}
-            rowKey="_id"
-            columns={[
-              {
-                title: "Name",
-                dataIndex: "name",
-                key: "name",
-                render: (text) => <span><FontAwesomeIcon icon={faUserTie} className="listIcon" /> {text}</span>
-              },
-              {
-                title: "Email",
-                dataIndex: "email",
-                key: "email",
-                render: (text) => <span><FontAwesomeIcon icon={faEnvelope} className="listIcon" /> {text}</span>
-              },
-              {
-                title: "Access",
-                dataIndex: "roles",
-                key: "roles",
-                render: (roles) => <span><FontAwesomeIcon icon={faUserShield} className="listIcon" /> {roles?.length ? roles.join(", ") : "—"}</span>
-              },
-              {
-                title: "Created At",
-                dataIndex: "createdAt",
-                key: "createdAt",
-                render: (date) => new Date(date).toLocaleDateString()
-              },
-              {
-                title: "Last Updated",
-                dataIndex: "updatedAt",
-                key: "updatedAt",
-                render: (date) => new Date(date).toLocaleDateString()
-              },
-              {
-                title: "",
-                key: "action",
-                width: 60,
-                render: (_, teacher) => {
-                  const menu = (
-                    <Menu onClick={(e) => e.domEvent.stopPropagation()}>
-                      <Menu.Item
-                        key="delete"
-                        icon={<FontAwesomeIcon icon={faTrash} style={{ color: "#dc3545" }} />}
-                        onClick={(e) => {
-                          e.domEvent.stopPropagation();
-                          handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
-                        }}
-                      >
-                        Delete Teacher
-                      </Menu.Item>
-                    </Menu>
-                  );
-                  return (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Dropdown overlay={menu} trigger={['click']}>
-                        <Button icon={<MoreOutlined />} type="text" />
-                      </Dropdown>
-                    </div>
-                  );
-                }
-              }
-            ]}
-            onRow={(record) => ({
-              onClick: () => navigate(`/app/admin/teacher-analytics/${record._id}`)
-            })}
-            renderCard={(teacher) => {
-              const menu = (
-                <Menu onClick={(e) => e.domEvent.stopPropagation()}>
-                  <Menu.Item
-                    key="delete"
-                    icon={<FontAwesomeIcon icon={faTrash} style={{ color: "#dc3545" }} />}
-                    onClick={(e) => {
-                      e.domEvent.stopPropagation();
-                      handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
-                    }}
+    return (
+      <>
+        <CommonTable
+          dataSource={currentTokens}
+          rowKey="token"
+          columns={[
+            {
+              title: "Token Code",
+              dataIndex: "token",
+              key: "token",
+              render: (text) => <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#3f51b5' }}>{text}</span>
+            },
+            {
+              title: "Created By",
+              dataIndex: ["createdBy", "name"],
+              key: "createdBy",
+              render: (text) => text || "Admin"
+            },
+            {
+              title: "Created At",
+              dataIndex: "createdAt",
+              key: "createdAt",
+              render: (date) => new Date(date).toLocaleDateString()
+            },
+            {
+              title: "Usage",
+              key: "usage",
+              render: (_, record) => (
+                <span>
+                  {record.usageCount} / <span style={{ color: '#888' }}>{record.isMultiUse ? (record.maxUsage || "∞") : "1"}</span>
+                </span>
+              )
+            },
+            {
+              title: "",
+              key: "action",
+              width: 200,
+              render: (_, record) => (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={() => handleCopyMagicLink(record.token)}
                   >
-                    Delete Teacher
-                  </Menu.Item>
-                </Menu>
-              );
-
-              return (
-                <div
-                  className="mobileCard"
-                  onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
-                >
-                  {/* Header: Joined Date --- Actions */}
-                  <div className="mobileCardHeader">
-                    <span className="headerLeft">
-                      Joined {new Date(teacher.createdAt).toLocaleDateString()}
-                    </span>
-                    <div onClick={(e) => e.stopPropagation()} className="headerAction">
-                      <Dropdown overlay={menu} trigger={['click']}>
-                        <MoreOutlined style={{ fontSize: '20px' }} />
-                      </Dropdown>
-                    </div>
+                    Copy
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<SendOutlined />}
+                    onClick={() => handleResendInvite(record._id)}
+                  >
+                    Resend
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleRevokeToken(record._id)}
+                  />
+                </div>
+              )
+            }
+          ]}
+          renderCard={(token) => (
+            <div className="tm-mobileCard">
+              <div className="tm-mobileCardHeader">
+                <span className="tm-headerLeft">
+                  Created {new Date(token.createdAt).toLocaleDateString()}
+                </span>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Button type="text" icon={<CopyOutlined />} onClick={() => handleCopyMagicLink(token.token)} />
+                </div>
+              </div>
+              <div className="tm-mobileCardBody">
+                <div className="tm-topRow">
+                  <div className="tm-iconCircle">
+                    <UserOutlined />
                   </div>
-
-                  <div className="mobileCardBody">
-                    {/* Top Row: Icon + Name + Email */}
-                    <div className="topRow">
-                      <div className="infoSection">
-                        <div className="iconCircle">
-                          <FontAwesomeIcon icon={faUserTie} />
-                        </div>
-                        <div className="textBlock">
-                          <div className="cardTitle">
-                            {teacher.name}
-                          </div>
-                          <div className="cardSubtitle">
-                            {teacher.email}
-                          </div>
-                        </div>
-                      </div>
+                  <div className="tm-textBlock">
+                    <div className="tm-cardTitle" style={{ fontFamily: 'monospace' }}>
+                      {token.token}
                     </div>
-
-                    {/* Details List */}
-                    <div className="detailsList">
-                      <div className="detailRow">
-                        <span className="detailLabel">Access Level</span>
-                        <span className="detailValue">
-                          {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
-                        </span>
-                      </div>
-                      <div className="detailRow">
-                        <span className="detailLabel">Last Updated</span>
-                        <span className="detailValue">
-                          {new Date(teacher.updatedAt).toLocaleDateString()}
-                        </span>
-                      </div>
+                    <div className="tm-cardSubtitle">
+                      By: {token.createdBy?.name || "Admin"}
                     </div>
                   </div>
                 </div>
-              );
-            }}
-          />
+                <div className="tm-detailsList">
+                  <div className="tm-detailRow">
+                    <span className="tm-detailLabel">Usage</span>
+                    <span className="tm-detailValue">{token.usageCount} / {token.isMultiUse ? (token.maxUsage || "∞") : "1"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        />
+        {activeTokens.length > 10 && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
             <Pagination
               current={currentPage}
               pageSize={itemsPerPage}
-              total={filteredTeachers.length}
+              total={activeTokens.length}
               onChange={handlePageChange}
               showSizeChanger={false}
             />
           </div>
-        </>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <div className="tm-container">
+      {/* HEADER WITH TABS & BUTTON */}
+      <div className="tm-headerRow" style={{ justifyContent: 'space-between', alignItems: 'start' }}>
+        {/* TABS */}
+        <div className="tm-tabBar">
+          <button
+            className={`tm-tabButton ${activeTab === 'teachers' ? 'tm-activeTab' : ''}`}
+            onClick={() => setActiveTab('teachers')}
+          >
+            <TeamOutlined /> Teachers
+            <span className="tm-badge">{teachers.length}</span>
+          </button>
+          <button
+            className={`tm-tabButton ${activeTab === 'pending' ? 'tm-activeTab' : ''}`}
+            onClick={() => setActiveTab('pending')}
+          >
+            <MailOutlined /> Pending Invites
+          </button>
+        </div>
+
+        {/* INVITE BUTTON */}
+        <button
+          className="tm-addButton"
+          onClick={async () => {
+            const code = await getInvitationCode();
+            setInvitationCode(code);
+            setShowModal(true);
+          }}
+          disabled={loading}
+        >
+          <PlusOutlined /> Invite Teacher
+        </button>
+      </div>
+
+      {loading ? (
+        <LoadingSpinner tip="Loading data..." />
+      ) : activeTab === 'teachers' ? (
+        filteredTeachers.length === 0 ? (
+          <p className="tm-empty" style={{ textAlign: 'center', padding: 20 }}>No teachers found.</p>
+        ) : (
+          <>
+            <CommonTable
+              loading={loading}
+              dataSource={currentTeachers}
+              rowKey="_id"
+              columns={[
+                {
+                  title: "Name",
+                  dataIndex: "name",
+                  key: "name",
+                  render: (text) => <span style={{ fontWeight: 600, color: '#2c3e50' }}><UserOutlined className="tm-listIcon" /> {text}</span>
+                },
+                {
+                  title: "Email",
+                  dataIndex: "email",
+                  key: "email",
+                  render: (text) => <span style={{ color: '#64748b' }}>{text}</span>
+                },
+                {
+                  title: "Status",
+                  dataIndex: "isActive",
+                  key: "isActive",
+                  render: (isActive) => (
+                    <span style={{
+                      background: isActive !== false ? '#dcfce7' : '#fee2e2',
+                      color: isActive !== false ? '#166534' : '#991b1b',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600
+                    }}>
+                      {isActive !== false ? 'Active' : 'Inactive'}
+                    </span>
+                  )
+                },
+                {
+                  title: "Access",
+                  dataIndex: "roles",
+                  key: "roles",
+                  render: (roles) => (
+                    <span style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>
+                      {roles?.length ? roles.join(", ") : "Start"}
+                    </span>
+                  )
+                },
+                {
+                  title: "Joined",
+                  dataIndex: "createdAt",
+                  key: "createdAt",
+                  render: (date) => new Date(date).toLocaleDateString()
+                },
+                {
+                  title: "",
+                  key: "action",
+                  width: 60,
+                  render: (_, teacher) => {
+                    const menu = (
+                      <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                        <Menu.Item
+                          key="toggle"
+                          icon={teacher.isActive !== false ? <LockOutlined /> : <UnlockOutlined />}
+                          onClick={(e) => {
+                            e.domEvent.stopPropagation();
+                            handleToggleStatus(teacher);
+                          }}
+                        >
+                          {teacher.isActive !== false ? 'Deactivate' : 'Reactivate'}
+                        </Menu.Item>
+                        <Menu.Item
+                          key="role"
+                          icon={<UserSwitchOutlined />}
+                          onClick={(e) => {
+                            e.domEvent.stopPropagation();
+                            handleOpenRoleModal(teacher);
+                          }}
+                        >
+                          Change Role
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          key="delete"
+                          icon={<DeleteOutlined style={{ color: "#dc3545" }} />}
+                          onClick={(e) => {
+                            e.domEvent.stopPropagation();
+                            handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
+                          }}
+                        >
+                          Delete Teacher
+                        </Menu.Item>
+                      </Menu>
+                    );
+                    return (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Dropdown overlay={menu} trigger={['click']}>
+                          <Button icon={<MoreOutlined />} type="text" />
+                        </Dropdown>
+                      </div>
+                    );
+                  }
+                }
+              ]}
+              onRow={(record) => ({
+                onClick: () => navigate(`/app/admin/teacher-analytics/${record._id}`)
+              })}
+              renderCard={(teacher) => {
+                const menu = (
+                  <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                    <Menu.Item
+                      key="toggle"
+                      icon={teacher.isActive !== false ? <LockOutlined /> : <UnlockOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleToggleStatus(teacher);
+                      }}
+                    >
+                      {teacher.isActive !== false ? 'Deactivate' : 'Reactivate'}
+                    </Menu.Item>
+                    <Menu.Item
+                      key="role"
+                      icon={<UserSwitchOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleOpenRoleModal(teacher);
+                      }}
+                    >
+                      Change Role
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      key="delete"
+                      icon={<DeleteOutlined style={{ color: "#dc3545" }} />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleDeleteTeacher(teacher._id, teacher.name, teacher.email);
+                      }}
+                    >
+                      Delete
+                    </Menu.Item>
+                  </Menu>
+                );
+
+                return (
+                  <div
+                    className="tm-mobileCard"
+                    onClick={() => navigate(`/app/admin/teacher-analytics/${teacher._id}`)}
+                  >
+                    <div className="tm-mobileCardHeader">
+                      <span className="tm-headerLeft">
+                        Joined {new Date(teacher.createdAt).toLocaleDateString()}
+                      </span>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Dropdown overlay={menu} trigger={['click']}>
+                          <MoreOutlined style={{ fontSize: '20px', color: '#94a3b8' }} />
+                        </Dropdown>
+                      </div>
+                    </div>
+
+                    <div className="tm-mobileCardBody">
+                      <div className="tm-topRow">
+                        <div className="tm-iconCircle">
+                          <UserOutlined />
+                        </div>
+                        <div className="tm-textBlock">
+                          <div className="tm-cardTitle">
+                            {teacher.name}
+                          </div>
+                          <div className="tm-cardSubtitle">
+                            {teacher.email}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="tm-detailsList">
+                        <div className="tm-detailRow">
+                          <span className="tm-detailLabel">Access Level</span>
+                          <span className="tm-detailValue">
+                            {teacher.roles?.length ? teacher.roles.join(", ") : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            {filteredTeachers.length > itemsPerPage && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                <Pagination
+                  current={currentPage}
+                  pageSize={itemsPerPage}
+                  total={filteredTeachers.length}
+                  onChange={handlePageChange}
+                  showSizeChanger={false}
+                />
+              </div>
+            )}
+          </>
+        )
+      ) : (
+        renderPendingInvites()
       )}
 
       {/* =============== ADD TEACHER MODAL =============== */}
       {showModal && (
-        <div className="modalOverlay">
-          <div className="modalBox">
-            <div className="modalHeader">
-              <h3>Invite New Teacher</h3>
+        <div className="tm-modalOverlay">
+          <div className="tm-modalBox">
+            <div className="tm-modalHeader">
+              <h3><SendOutlined style={{ marginRight: 10, color: '#3f51b5' }} />Invite Teacher</h3>
               <button
-                className="closeButton"
+                className="tm-closeButton"
                 onClick={() => {
                   setShowModal(false);
                   setEmail("");
                   setInvitationCode("");
                 }}
               >
-                <FontAwesomeIcon icon={faTimes} />
+                <CloseOutlined />
               </button>
             </div>
 
-            <div className="modalBody">
-              <label>Email address:</label>
-              <div className="emailRow">
+            <div className="tm-modalBody">
+              <label>Send Invitation via Email</label>
+              <div className="tm-emailRow">
                 <input
                   type="email"
-                  placeholder="Enter teacher's email"
+                  placeholder="teacher@school.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <button
-                  className="sendButton"
-                  onClick={handleSendInvitation}
+                  className="tm-sendButton"
+                  onClick={handleSendEmail}
                   disabled={loading}
                 >
-                  <FontAwesomeIcon icon={faPaperPlane} /> Send
+                  <SendOutlined /> Send
                 </button>
               </div>
 
               {invitationCode && (
                 <>
-                  <div className="modalSeparator">OR</div>
-                  <div className="inviteCodeSection">
-                    <p>
-                      Invitation Code: <strong>{invitationCode}</strong>
-                    </p>
-                    <button onClick={handleCopyCode} className="copyButton">
-                      <FontAwesomeIcon icon={faCopy} /> Copy Code
-                    </button>
+                  <div className="tm-modalSeparator">OR SHARE MANUALLY</div>
+                  <div className="tm-inviteCodeSection">
+                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5 }}>Invitation Code</div>
+                    <div className="tm-inviteCodeDisplay">{invitationCode}</div>
+
+                    <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5, marginTop: 15 }}>Magic Link</div>
+                    <div className="tm-magicLinkSection">
+                      <input
+                        className="tm-magicLinkInput"
+                        readOnly
+                        value={getMagicLink(invitationCode)}
+                      />
+                      <button onClick={() => handleCopyMagicLink(invitationCode)} className="tm-copyButton">
+                        <CopyOutlined /> Copy
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -377,6 +698,36 @@ const TeacherManagement = ({ searchTerm = "" }) => {
           </div>
         </div>
       )}
+
+      {/* =============== ROLE MODAL =============== */}
+      <AntModal
+        title={`Change Role - ${selectedTeacher?.name || ''}`}
+        open={roleModalVisible}
+        onCancel={() => setRoleModalVisible(false)}
+        onOk={handleSaveRoles}
+        okText="Save Roles"
+      >
+        <p style={{ marginBottom: 16, color: '#64748b' }}>Select one or more roles for this teacher:</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {availableRoles.map((role) => (
+            <label key={role.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={selectedRoles.includes(role.key)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedRoles([...selectedRoles, role.key]);
+                  } else {
+                    setSelectedRoles(selectedRoles.filter(r => r !== role.key));
+                  }
+                }}
+                style={{ width: 18, height: 18 }}
+              />
+              <span style={{ fontSize: '0.95rem' }}>{role.label}</span>
+            </label>
+          ))}
+        </div>
+      </AntModal>
     </div>
   );
 };

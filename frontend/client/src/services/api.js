@@ -43,7 +43,16 @@ api.interceptors.response.use(
 export const authAPI = {
   // Modified: Register new teacher with token (replace old register for teachers)
   registerTeacherWithToken: async (teacherData) => {
-    const response = await api.post("/auth/register-teacher", teacherData); // Make sure this matches your backend route
+    const response = await api.post("/auth/register-teacher", teacherData);
+    if (response.data.token) {
+      localStorage.setItem("authToken", response.data.token);
+    }
+    return response.data;
+  },
+
+  // Register a new school (first user becomes admin)
+  registerSchool: async (schoolData) => {
+    const response = await api.post("/auth/register-school", schoolData);
     if (response.data.token) {
       localStorage.setItem("authToken", response.data.token);
     }
@@ -70,7 +79,16 @@ export const authAPI = {
 
   // Google OAuth for new teachers (now accepts token)
   googleAuthWithToken: async (googleDataWithToken) => {
-    const response = await api.post("/auth/google-register-teacher", googleDataWithToken); // Make sure this matches your backend route
+    const response = await api.post("/auth/google-register-teacher", googleDataWithToken);
+    if (response.data.token) {
+      localStorage.setItem("authToken", response.data.token);
+    }
+    return response.data;
+  },
+
+  // Google OAuth for registering a new school (first user = admin)
+  googleRegisterSchool: async (googleSchoolData) => {
+    const response = await api.post("/auth/google-register-school", googleSchoolData);
     if (response.data.token) {
       localStorage.setItem("authToken", response.data.token);
     }
