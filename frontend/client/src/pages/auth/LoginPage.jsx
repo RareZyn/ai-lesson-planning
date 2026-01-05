@@ -1,11 +1,12 @@
 // src/pages/auth/LoginPage.jsx
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, message, Modal } from "antd";
+import { Form, Input, Button, message, Modal, Select } from "antd";
 import {
   UserOutlined,
   LockOutlined,
   GoogleOutlined,
-  BarcodeOutlined, // Changed from BankOutlined for token
+  BarcodeOutlined,
+  BankOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -20,6 +21,7 @@ import {
 import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./LoginPage.css";
 
 const LoginPage = () => {
@@ -30,6 +32,7 @@ const LoginPage = () => {
   const [forgotPasswordModalVisible, setForgotPasswordModalVisible] = useState(false);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+  const [modalRegistrationMode, setModalRegistrationMode] = useState("teacher");
   const [hasNavigated, setHasNavigated] = useState(false);
   const [form] = Form.useForm();
   const [forgotPasswordForm] = Form.useForm();
@@ -55,36 +58,53 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, authLoading, isReady, navigate, location.state?.from?.pathname, hasNavigated]);
 
-  // Handle modal submit for Google sign-in (now includes token)
+  // Handle modal submit for Google sign-in (supports both teacher and school modes)
   const handleModalSubmit = async (values) => {
     if (!pendingGoogleUser) return;
 
     setModalLoading(true);
     try {
-      // Register user in MongoDB backend via Google OAuth with registrationToken
-      // IMPORTANT: The backend /auth/google endpoint will need to be updated
-      // to accept 'registrationToken' and assign the schoolId based on it.
-      const response = await authAPI.googleAuthWithToken({ // Renamed or update existing googleAuth
-        googleId: pendingGoogleUser.uid,
-        email: pendingGoogleUser.email,
-        name: values.name,
-        registrationToken: values.registrationToken, // Pass the token here
-        avatar: pendingGoogleUser.photoURL || "",
-        geminiApiKey: values.geminiApiKey || "",
-      });
+      let response;
+
+      if (modalRegistrationMode === "school") {
+        // Register new school with Google (first user = admin)
+        response = await authAPI.googleRegisterSchool({
+          googleId: pendingGoogleUser.uid,
+          email: pendingGoogleUser.email,
+          name: values.name,
+          schoolName: values.schoolName,
+          schoolType: values.schoolType || "KSSM",
+          avatar: pendingGoogleUser.photoURL || "",
+          geminiApiKey: values.geminiApiKey || "",
+        });
+      } else {
+        // Register as teacher with token
+        response = await authAPI.googleAuthWithToken({
+          googleId: pendingGoogleUser.uid,
+          email: pendingGoogleUser.email,
+          name: values.name,
+          registrationToken: values.registrationToken,
+          avatar: pendingGoogleUser.photoURL || "",
+          geminiApiKey: values.geminiApiKey || "",
+        });
+      }
 
       if (response.success) {
-        message.success("Google login successful!");
+        const successMsg = modalRegistrationMode === "school"
+          ? "School registered with Google! You are now the admin."
+          : "Google login successful!";
+        message.success(successMsg);
         navigate(location.state?.from?.pathname || "/app/", {
           replace: true,
         });
         setModalVisible(false);
+        setModalRegistrationMode("teacher");
       } else {
         throw new Error(response.message || "Registration failed");
       }
     } catch (error) {
       console.error("Error completing Google registration:", error);
-      message.error("Failed to complete registration");
+      message.error(error.response?.data?.message || "Failed to complete registration");
     } finally {
       setModalLoading(false);
     }
@@ -187,13 +207,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleTabChange = (tab) => {
-    if (tab === "signup") {
-      navigate("/register");
-    }
-    // No need to navigate if already on login
-  };
-
   const handleForgotPassword = () => {
     setForgotPasswordModalVisible(true);
   };
@@ -238,41 +251,15 @@ const LoginPage = () => {
   };
 
   // Show loading while checking authentication
+  // Show loading while checking authentication
   if (authLoading || !isReady) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p>Checking your session...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Checking your session..." />;
   }
 
   // Don't render login form if already authenticated (prevents flash)
+  // Don't render login form if already authenticated (prevents flash)
   if (isAuthenticated && !modalVisible) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div className="spinner-border text-success" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p>Redirecting to dashboard...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Redirecting to dashboard..." />;
   }
 
   return (
@@ -289,27 +276,6 @@ const LoginPage = () => {
           <p className="text-muted">
             Welcome back! Sign in to continue planning your lessons.
           </p>
-        </div>
-
-        <div className="tabs-container mb-4">
-          <ul className="nav nav-tabs">
-            <li className="nav-item">
-              <button
-                className="nav-link active"
-                onClick={() => handleTabChange("login")}
-              >
-                Login
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className="nav-link"
-                onClick={() => handleTabChange("signup")}
-              >
-                Sign Up
-              </button>
-            </li>
-          </ul>
         </div>
 
         <Form
@@ -378,26 +344,63 @@ const LoginPage = () => {
             >
               Sign in with Google
             </Button>
+
+            <div className="text-center mt-4">
+              <span className="text-muted">Don't have an account? </span>
+              <button
+                type="button"
+                className="btn btn-link p-0"
+                onClick={() => navigate("/register")}
+                style={{ textDecoration: "none", color: "#3b82f6", fontWeight: 600 }}
+              >
+                Sign Up
+              </button>
+            </div>
           </Form.Item>
         </Form>
       </div>
 
-      {/* Modal for Google Sign-in Additional Info (now requires token for new teachers) */}
+      {/* Modal for Google Sign-in Additional Info */}
       <Modal
-        title="Complete Your Teacher Profile"
+        title={modalRegistrationMode === "school" ? "Register Your School" : "Complete Your Profile"}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           setPendingGoogleUser(null);
+          setModalRegistrationMode("teacher");
         }}
         footer={null}
         width={600}
         destroyOnClose
       >
-        <p className="text-muted mb-4">
-          Please provide some additional information and your school's
-          registration token to complete your teacher registration.
+        <p className="text-muted mb-3">
+          {modalRegistrationMode === "school"
+            ? "Register your school and become the admin."
+            : "Complete your profile using a registration token from your school admin."}
         </p>
+
+        {/* Toggle between teacher/school modes - Tab Style */}
+        <div className="tabs-container mb-4">
+          <ul className="nav nav-tabs">
+            <li className="nav-item">
+              <button
+                className={`nav-link ${modalRegistrationMode === "teacher" ? "active" : ""}`}
+                onClick={() => setModalRegistrationMode("teacher")}
+              >
+                Join Existing School
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                className={`nav-link ${modalRegistrationMode === "school" ? "active" : ""}`}
+                onClick={() => setModalRegistrationMode("school")}
+              >
+                Register New School
+              </button>
+            </li>
+          </ul>
+        </div>
+
         <Form form={form} layout="vertical" onFinish={handleModalSubmit}>
           <Form.Item
             name="name"
@@ -413,24 +416,55 @@ const LoginPage = () => {
             />
           </Form.Item>
 
-          {/* NEW: Registration Token Input in Modal */}
-          <Form.Item
-            name="registrationToken"
-            label="School Registration Token"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the registration token from your admin!",
-              },
-            ]}
-            tooltip="Your school administrator will provide this token."
-          >
-            <Input
-              prefix={<BarcodeOutlined className="site-form-item-icon" />}
-              placeholder="Enter Registration Token"
-              size="large"
-            />
-          </Form.Item>
+          {/* Conditional: Token OR School Name */}
+          {modalRegistrationMode === "teacher" ? (
+            <Form.Item
+              name="registrationToken"
+              label="School Registration Token"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the registration token from your admin!",
+                },
+              ]}
+              tooltip="Your school administrator will provide this token."
+            >
+              <Input
+                prefix={<BarcodeOutlined className="site-form-item-icon" />}
+                placeholder="Enter Registration Token"
+                size="large"
+              />
+            </Form.Item>
+          ) : (
+            <>
+              <Form.Item
+                name="schoolName"
+                label="School Name"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter your school name!",
+                  },
+                ]}
+              >
+                <Input
+                  prefix={<BankOutlined className="site-form-item-icon" />}
+                  placeholder="Enter School Name"
+                  size="large"
+                />
+              </Form.Item>
+              <Form.Item
+                name="schoolType"
+                label="School Type"
+                initialValue="KSSM"
+              >
+                <Select size="large">
+                  <Select.Option value="KSSM">KSSM (Secondary)</Select.Option>
+                  <Select.Option value="KSSR">KSSR (Primary)</Select.Option>
+                </Select>
+              </Form.Item>
+            </>
+          )}
 
           {/* Gemini API Key Input */}
           <GeminiApiKeyInput
@@ -450,7 +484,7 @@ const LoginPage = () => {
               size="large"
               loading={modalLoading}
             >
-              Complete Registration
+              {modalRegistrationMode === "school" ? "Register School" : "Complete Registration"}
             </Button>
           </Form.Item>
         </Form>

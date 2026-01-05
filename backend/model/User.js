@@ -82,8 +82,7 @@ const userSchema = new mongoose.Schema(
         "math_head",
         "english_head",
         "science_head",
-        "principal",
-        "school_admin",
+        "admin", // Combined principal + school_admin
         "super_admin",
       ],
     },

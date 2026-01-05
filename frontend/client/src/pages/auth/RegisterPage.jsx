@@ -1,11 +1,12 @@
 // src/pages/auth/RegisterPage.jsx
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, message } from "antd";
+import { Form, Input, Button, message, Select } from "antd";
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
-  BarcodeOutlined, // Changed from BankOutlined for token
+  BarcodeOutlined,
+  BankOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,12 +18,15 @@ import { authAPI } from "../../services/api";
 import { useUser } from "../../context/UserContext";
 import GeminiApiKeyInput from "../../components/Modal/RegisterAPIKey/GeminiApiKeyInput";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./LoginPage.css"; // Assuming shared styling
+import "./LoginPage.css";
 
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
+  const [registrationMode, setRegistrationMode] = useState("teacher"); // "teacher" or "school"
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useUser();
+
+  const [form] = Form.useForm();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -30,6 +34,17 @@ const RegisterPage = () => {
       navigate("/app", { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  // Prefill token from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      form.setFieldsValue({ registrationToken: token });
+      setRegistrationMode("teacher");
+      message.info("Registration token applied from link!");
+    }
+  }, [form]);
 
   const onFinish = async (values) => {
     if (values.password !== values.confirmPassword) {
@@ -51,29 +66,44 @@ const RegisterPage = () => {
         displayName: values.name,
       });
 
-      // 3. Register user in MongoDB backend with registrationToken
+      // 3. Register in MongoDB based on mode
       try {
-        // IMPORTANT: The backend API /auth/register will need to be updated
-        // to accept 'registrationToken' instead of 'schoolName'.
-        // It will then validate the token and assign the schoolId.
-        const response = await authAPI.registerTeacherWithToken({ // Renamed for clarity, or update existing authAPI.register
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          registrationToken: values.registrationToken, // Pass the token here
-          firebaseUid: userCredential.user.uid,
-          geminiApiKey: values.geminiApiKey || "",
-        });
+        let response;
+
+        if (registrationMode === "school") {
+          // Register new school (first user = admin)
+          response = await authAPI.registerSchool({
+            name: values.name,
+            email: values.email,
+            password: values.password,
+            schoolName: values.schoolName,
+            schoolType: values.schoolType || "KSSM",
+            firebaseUid: userCredential.user.uid,
+            geminiApiKey: values.geminiApiKey || "",
+          });
+        } else {
+          // Register as teacher with token
+          response = await authAPI.registerTeacherWithToken({
+            name: values.name,
+            email: values.email,
+            password: values.password,
+            registrationToken: values.registrationToken,
+            firebaseUid: userCredential.user.uid,
+            geminiApiKey: values.geminiApiKey || "",
+          });
+        }
 
         if (response.success) {
-          console.log("✅ Teacher registered successfully via token");
-          message.success("Registration successful! Welcome to your school.");
+          const successMsg = registrationMode === "school"
+            ? "School registered! You are now the admin."
+            : "Registration successful! Welcome to your school.";
+          message.success(successMsg);
           navigate("/app/", { replace: true });
         } else {
           throw new Error(response.message || "Registration failed");
         }
       } catch (backendError) {
-        console.error("❌ Backend registration failed:", backendError);
+        console.error("Backend registration failed:", backendError);
         // Delete Firebase user if MongoDB registration fails
         try {
           await userCredential.user.delete();
@@ -84,22 +114,15 @@ const RegisterPage = () => {
       }
     } catch (error) {
       console.error("Registration error:", error);
-      message.error(error.message || "Registration failed!");
+      message.error(error.response?.data?.message || error.message || "Registration failed!");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTabChange = (tab) => {
-    if (tab === "login") {
-      navigate("/");
-    }
-    // No need to navigate if already on register
-  };
-
   return (
     <div className="login-container">
-      <div className="login-box" style={{ maxWidth: 500 }}>
+      <div className="login-box" style={{ maxWidth: 520 }}>
         <div className="text-center mb-4">
           <div className="header">
             <div className="app-icon">
@@ -109,27 +132,36 @@ const RegisterPage = () => {
           </div>
 
           <p className="text-muted">
-            Create your teacher account using a token from your school admin.
+            {registrationMode === "school"
+              ? "Register your school and become the admin."
+              : "Create your teacher account using a token from your school admin."}
           </p>
         </div>
 
+        {/* Registration Mode Toggle - Tab Style */}
         <div className="tabs-container mb-4">
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
-                className="nav-link"
-                onClick={() => handleTabChange("login")}
+                className={`nav-link ${registrationMode === "teacher" ? "active" : ""}`}
+                onClick={() => setRegistrationMode("teacher")}
               >
-                Login
+                Join Existing School
               </button>
             </li>
             <li className="nav-item">
-              <button className="nav-link active">Sign Up</button>
+              <button
+                className={`nav-link ${registrationMode === "school" ? "active" : ""}`}
+                onClick={() => setRegistrationMode("school")}
+              >
+                Register New School
+              </button>
             </li>
           </ul>
         </div>
 
         <Form
+          form={form}
           name="register_form"
           className="login-form"
           onFinish={onFinish}
@@ -162,24 +194,55 @@ const RegisterPage = () => {
             />
           </Form.Item>
 
-          {/* NEW: Registration Token Input */}
-          <Form.Item
-            name="registrationToken"
-            label="School Registration Token"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the registration token from your admin!",
-              },
-            ]}
-            tooltip="Your school administrator will provide this token."
-          >
-            <Input
-              prefix={<BarcodeOutlined className="site-form-item-icon" />}
-              placeholder="Enter Registration Token"
-              size="large"
-            />
-          </Form.Item>
+          {/* Conditional: Token OR School Name */}
+          {registrationMode === "teacher" ? (
+            <Form.Item
+              name="registrationToken"
+              label="School Registration Token"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the registration token from your admin!",
+                },
+              ]}
+              tooltip="Your school administrator will provide this token."
+            >
+              <Input
+                prefix={<BarcodeOutlined className="site-form-item-icon" />}
+                placeholder="Enter Registration Token"
+                size="large"
+              />
+            </Form.Item>
+          ) : (
+            <>
+              <Form.Item
+                name="schoolName"
+                label="School Name"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter your school name!",
+                  },
+                ]}
+              >
+                <Input
+                  prefix={<BankOutlined className="site-form-item-icon" />}
+                  placeholder="Enter School Name"
+                  size="large"
+                />
+              </Form.Item>
+              <Form.Item
+                name="schoolType"
+                label="School Type"
+                initialValue="KSSM"
+              >
+                <Select size="large">
+                  <Select.Option value="KSSM">KSSM (Secondary)</Select.Option>
+                  <Select.Option value="KSSR">KSSR (Primary)</Select.Option>
+                </Select>
+              </Form.Item>
+            </>
+          )}
 
           <Form.Item
             name="password"
@@ -228,7 +291,7 @@ const RegisterPage = () => {
               size="large"
               loading={loading}
             >
-              Sign Up
+              {registrationMode === "school" ? "Register School" : "Sign Up"}
             </Button>
 
             <div className="text-center">
@@ -237,7 +300,7 @@ const RegisterPage = () => {
                 type="button"
                 className="btn btn-link p-0"
                 onClick={() => navigate("/")}
-                style={{ textDecoration: "none", color: "#1890ff" }}
+                style={{ textDecoration: "none", color: "#3b82f6", fontWeight: 600 }}
               >
                 Sign In
               </button>

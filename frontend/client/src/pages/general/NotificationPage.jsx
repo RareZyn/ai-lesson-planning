@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import notificationService from "../../services/notificationService";
 import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./NotificationPage.css";
 
 const { Title, Text, Paragraph } = Typography;
@@ -79,6 +80,10 @@ const NotificationPage = () => {
     const filteredNotifications = activeTab === "unread"
         ? notifications.filter(n => !n.isRead)
         : notifications;
+
+    if (loading) {
+        return <LoadingSpinner tip="Loading notifications..." />;
+    }
 
     return (
         <div className="notification-page-container">

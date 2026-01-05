@@ -1,10 +1,20 @@
-/* --- TAB BAR (Pill/Circle Style) --- */
+/* --- TAB BAR (Scrollable Pill Style) --- */
 .tabBar {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    /* Enable horizontal scroll by default for responsiveness */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    border-bottom: none;
+    /* No underline for container */
+    padding-bottom: 4px;
+}
+
+.tabBar::-webkit-scrollbar {
+    display: none;
 }
 
 .tabButton {
@@ -13,47 +23,60 @@
     gap: 8px;
     padding: 10px 18px;
     font-size: 0.95rem;
-    font-weight: 500;
-    color: #5a5a5a;
-    background-color: #f1f3f9;
+    font-weight: 600;
+    color: #64748b;
+    background-color: #f1f5f9;
+    /* Light gray inactive */
     border: none;
-    border-radius: 9999px;
-    /* full pill */
+    border-radius: 999px;
+    /* Pill shape */
     cursor: pointer;
-    transition: all 0.25s ease;
-    box-shadow: inset 0 0 0 1px #e0e6ed;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    /* Prevent shrinking */
+    margin-bottom: 0;
+    box-shadow: none;
 }
 
 .tabButton:hover {
-    background-color: #e4e7fb;
-    color: #3f51b5;
-    box-shadow: inset 0 0 0 1px #3f51b5;
+    background-color: #e2e8f0;
+    color: #334155;
     transform: translateY(-1px);
 }
 
 .activeTab {
     background-color: #3f51b5;
     color: #ffffff;
-    box-shadow: 0 2px 10px rgba(63, 81, 181, 0.2);
-    transform: translateY(-1px);
+    box-shadow: none;
+    /* Add shadow depth */
+    font-weight: 600;
+
+    /* Remove underline style properties if inherited or present */
+    border-bottom: none;
+}
+
+.activeTab:hover {
+    background-color: #3f51b5;
+    color: #ffffff;
 }
 
 .badge {
     background: #ffffff;
     color: #3f51b5;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border-radius: 100%;
-    min-width: 20px;
-    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 2px 8px;
+    min-width: unset;
+    margin-left: 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 0 1px #3f51b5;
 }
 
 .activeTab .badge {
-    background: #fff;
+    background: #ffffff;
     color: #3f51b5;
     box-shadow: none;
 }
@@ -261,99 +284,136 @@
 }
 
 /* --- RESPONSIVE --- */
+/* --- MOBILE CARD LAYOUT (Matches Reference Image) --- */
 @media (max-width: 900px) {
-
-    .listItem,
-    .listHeader {
-        grid-template-columns: 1.6fr 1fr 1fr 0.8fr 1fr;
-    }
-
-    .listHeader div:nth-child(3),
-    .listHeader div:nth-child(5),
-    .listItem div:nth-child(3),
-    .listItem div:nth-child(5) {
-        display: none;
-    }
-
-    .container h2 {
-        font-size: 1.5rem;
-    }
-
-    .modalContent {
-        width: 90%;
-    }
-}
-
-@media (max-width: 600px) {
     .listHeader {
         display: none;
     }
 
     .listItem {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 16px;
+        display: none;
+        /* Hide default list item */
     }
 
-    .listItem>div {
-        width: 100%;
-        font-size: 0.9rem;
-    }
+    /* We will use a new container class in the JSX for the card, 
+       but if CommonTable wraps it in .listItem, we might need to override.
+       Actually, CommonTable renders the result of renderCard directly. 
+       So we will define a new class .mobileCard for the renderCard return.
+    */
+}
 
-    /* Make the Topic Larger */
-    .listItem>div:first-child {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 4px;
-    }
+.mobileCard {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
 
-    /* Force show hidden columns from 900px rule if desirable, or let them stack */
-    .listItem div:nth-child(3),
-    .listItem div:nth-child(5) {
-        display: block !important;
-    }
+.mobileCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #fff;
+}
 
-    /* Add labels for context since header is gone */
-    .listItem>div:nth-child(2)::before {
-        content: "Class: ";
-        font-weight: 600;
-        color: #888;
-    }
+.headerLeft {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-    .listItem>div:nth-child(3)::before {
-        content: "Grade: ";
-        font-weight: 600;
-        color: #888;
-    }
+.headerAction {
+    /* The three dots button will go here */
+    color: #888;
+    cursor: pointer;
+}
 
-    .listItem>div:nth-child(4)::before {
-        content: "Subject: ";
-        font-weight: 600;
-        color: #888;
-    }
+.mobileCardBody {
+    padding: 16px;
+}
 
-    .listItem>div:nth-child(5)::before {
-        content: "By: ";
-        font-weight: 600;
-        color: #888;
-    }
+.topRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 12px;
+}
 
-    .listItem>div:nth-child(6)::before {
-        content: "Date: ";
-        font-weight: 600;
-        color: #888;
-    }
+.infoSection {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
 
-    .listActions {
-        width: 100%;
-        justify-content: flex-end;
-        border-top: 1px solid #eee;
-        padding-top: 12px;
-        margin-top: 8px;
-    }
+.iconCircle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #f0f4ff;
+    color: #3f51b5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.textBlock {
+    display: flex;
+    flex-direction: column;
+}
+
+.cardTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.cardSubtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.statusSection {
+    flex-shrink: 0;
+}
+
+.detailsList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detailRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #f0f0f0;
+    padding-bottom: 4px;
+}
+
+.detailRow:last-child {
+    border-bottom: none;
+}
+
+.detailLabel {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.detailValue {
+    color: #2c3e50;
+    font-weight: 600;
 }
 
 /* --- ANIMATION --- */

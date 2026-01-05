@@ -9,7 +9,15 @@ const {
   deleteSyllabus,
   updateSyllabus,
   getTeacherAnalytics,
-  extractSyllabusStructure
+  extractSyllabusData,
+  getActiveTokens,
+  deleteTeacher,
+  inviteTeacher,
+  toggleTeacherStatus,
+  revokeToken,
+  resendInvite,
+  updateTeacherRole,
+  getAuditLogs
 } = require("../controller/adminController");
 const { protect, authorize } = require("../middleware/auth");
 const multer = require("multer");
@@ -21,9 +29,8 @@ const router = express.Router();
 router
   .use(protect)
   .use(authorize(
-    "school_admin",
+    "admin",
     "super_admin",
-    "principal",
     "math_head",
     "english_head",
     "science_head",
@@ -36,19 +43,44 @@ router.get(
   getTeachersBySchool
 );
 
+router.delete(
+  "/teachers/:id",
+  deleteTeacher
+);
+
+router.put(
+  "/teachers/:id/status",
+  toggleTeacherStatus
+);
+
+router.put(
+  "/teachers/:id/role",
+  updateTeacherRole
+);
+
 // Teacher token generation
 router.post(
   "/generate-teacher-token",
   generateTeacherRegistrationToken
 );
 
+router.get("/tokens/active", getActiveTokens);
+
+router.delete("/tokens/:id", revokeToken);
+
+router.post("/tokens/:id/resend", resendInvite);
+
+router.post("/invite", inviteTeacher);
+
+router.get("/audit-logs", getAuditLogs);
+
 router.get("/teachers/:id/analytics", getTeacherAnalytics);
 
 // AI Syllabus Extraction Route
 router.post(
-  "/syllabuses/extract-structure",
+  "/syllabuses/extract-data",
   upload.single('file'),
-  extractSyllabusStructure
+  extractSyllabusData
 );
 
 // Syllabus management routes

@@ -1,11 +1,50 @@
 // CreateSyllabusModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { message } from "antd";
 import './SyllabusModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faUpload, faTimes, faPlusCircle, faMinusCircle, faCaretRight, faCaretDown, faInfoCircle, faMagic } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx'; // Import the xlsx library
-import { uploadSyllabus, extractSyllabusStructure } from '../../services/adminService';
+import { uploadSyllabus, extractSyllabusData } from '../../services/adminService';
+
+// --- DEFINED SCHEMAS ---
+const SUBJECT_OPTIONS = ["Bahasa Melayu", "English", "Mathematics", "Science", "History", "Geography"];
+
+const ENGLISH_SCHEMA = [
+    { id: 1, name: 'Title', type: 'text', subFields: [] },
+    {
+        id: 2, name: 'Content Standard', type: 'object', subFields: [
+            { id: 21, name: 'main', type: 'text', subFields: [] },
+            { id: 22, name: 'comp', type: 'text', subFields: [] }
+        ]
+    },
+    {
+        id: 3, name: 'Learning Standard', type: 'object', subFields: [
+            { id: 31, name: 'main', type: 'text', subFields: [] },
+            { id: 32, name: 'comp', type: 'text', subFields: [] }
+        ]
+    },
+    {
+        id: 4, name: 'Learning Outline', type: 'object', subFields: [
+            { id: 41, name: 'pre', type: 'text', subFields: [] },
+            { id: 42, name: 'during', type: 'text', subFields: [] },
+            { id: 43, name: 'post', type: 'text', subFields: [] }
+        ]
+    },
+    { id: 5, name: 'Lesson No', type: 'text', subFields: [] },
+    { id: 6, name: 'Theme', type: 'text', subFields: [] },
+    { id: 7, name: 'Differentiation Strategy', type: 'text', subFields: [] },
+    { id: 8, name: 'cce', type: 'list', subFields: [] },
+];
+
+const DEFAULT_SCHEMA = [
+    { id: 1, name: 'Title', type: 'text', subFields: [] },
+    { id: 2, name: 'Content Standard', type: 'list', subFields: [] },
+    { id: 3, name: 'Learning Standard', type: 'list', subFields: [] },
+    { id: 4, name: 'Notes', type: 'list', subFields: [] },
+    { id: 5, name: 'Performance Value', type: 'list', subFields: [] },
+];
+
 const SchemaFieldInput = ({ field, onFieldNameChange, onFieldTypeChange, onRemoveField, onAddSubField, onRemoveSubField, onSubFieldNameChange, onSubFieldTypeChange, isSubField = false, canRemoveField }) => {
     const [isExpanded, setIsExpanded] = useState(true); // For object fields
 
@@ -73,13 +112,23 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
     const [file, setFile] = useState(null);
     const [parsedData, setParsedData] = useState(null);
     const [uploadError, setUploadError] = useState('');
-    const [schemaFields, setSchemaFields] = useState([
-        { id: 1, name: 'Title', type: 'text', subFields: [] }
-    ]);
+    const [schemaFields, setSchemaFields] = useState(DEFAULT_SCHEMA);
 
     // AI Extraction State
     const [aiFile, setAiFile] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Handle Subject Change & Auto-Fill Schema
+    const handleSubjectChange = (e) => {
+        const subject = e.target.value;
+        setSelectedSubject(subject);
+
+        if (subject.toLowerCase() === 'english') {
+            setSchemaFields(JSON.parse(JSON.stringify(ENGLISH_SCHEMA))); // Deep copy to avoid ref issues
+        } else {
+            setSchemaFields(JSON.parse(JSON.stringify(DEFAULT_SCHEMA)));
+        }
+    };
 
     // --- Helper Functions for Schema Management ---
 
@@ -98,21 +147,18 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
             setIsAnalyzing(true);
             setUploadError('');
 
-            const result = await extractSyllabusStructure(aiFile);
+            // Pass the schema to the API so AI knows what to extract
+            const result = await extractSyllabusData(aiFile, schemaFields);
 
-            // Set the schema
-            if (result.schema && result.schema.length > 0) {
-                setSchemaFields(result.schema);
-            }
-
-            // Set the data if available (optional, but helpful preview)
+            // Set the data if available
             if (result.data) {
                 setParsedData(result.data);
+                message.success("Data extracted successfully!");
             }
 
         } catch (error) {
             console.error("Analysis failed:", error);
-            setUploadError("Failed to analyze syllabus structure. " + error.message);
+            setUploadError("Failed to extract syllabus data. " + error.message);
         } finally {
             setIsAnalyzing(false);
         }
@@ -208,8 +254,6 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
         );
     };
 
-
-    // --- Excel Template Generation ---
 
     // --- Excel Template Generation ---
 
@@ -396,7 +440,6 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
     };
 
     // Re-use validation for data after parsing
-    // Re-use validation for data after parsing
     const validateUploadedDataAgainstSchema = (data, schema) => {
         for (const field of schema) {
             // Check if field exists in data
@@ -450,22 +493,25 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                     </div>
                     <div className="formGroup">
                         <label>Subject:</label>
-                        <input
-                            type="text"
+                        <select
                             value={selectedSubject}
-                            onChange={(e) => setSelectedSubject(e.target.value)}
-                            placeholder="e.g., Mathematics, English"
-                        />
+                            onChange={handleSubjectChange}
+                        >
+                            <option value="">Select Subject</option>
+                            {SUBJECT_OPTIONS.map((subj) => (
+                                <option key={subj} value={subj}>{subj}</option>
+                            ))}
+                        </select>
                     </div>
 
-                    {/* --- AI Extraction Section --- */}
+                    {/* --- AI Data Extraction Section --- */}
                     <div className="aiSection">
                         <div className="aiHeader">
                             <FontAwesomeIcon icon={faMagic} />
-                            <h4>AI Structure Extraction (Optional)</h4>
+                            <h4>AI Data Extraction (Optional)</h4>
                         </div>
                         <p className="aiDescription">
-                            Upload a sample syllabus file (PDF or Image) and let AI suggest the structure.
+                            Upload a syllabus file (PDF or Image) and let AI extract data matching the schema below.
                         </p>
                         <div className="aiControls">
                             <input
@@ -479,13 +525,13 @@ const CreateSyllabusModal = ({ onClose, onSave, allGrades }) => {
                                 onClick={handleAnalyzeStructure}
                                 disabled={!aiFile || isAnalyzing}
                             >
-                                {isAnalyzing ? 'Analyzing...' : 'Auto-Generate Structure'}
+                                {isAnalyzing ? 'Extracting Data...' : 'Extract Data'}
                             </button>
                         </div>
                     </div>
 
                     <h4>Define Syllabus Structure (Schema): <FontAwesomeIcon icon={faInfoCircle} title="Define the column headers for your syllabus. 'Object' fields create nested columns (e.g., 'Activities.Pre-Lesson'). 'List' fields expect newlines for each item in a single cell." /></h4>
-                    <p className="hint-text">Add the fields for this syllabus. For nested structures (e.g., Lesson Activities), use 'Object' type and define its sub-fields.</p>
+                    <p className="hint-text">Add or edit the fields for this syllabus. For nested structures (e.g., Lesson Activities), use 'Object' type and define its sub-fields.</p>
                     <div className="schemaDefinition">
                         {schemaFields.map(field => (
                             <SchemaFieldInput

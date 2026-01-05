@@ -1,24 +1,316 @@
-/* --- Main Page & Header --- */
+/* --- Variables & Reset --- */
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --secondary-bg: #f9fafb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --radius-md: 12px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
 .pageContainer {
   min-height: 100vh;
+  background-color: #f8fafc;
+  padding-bottom: 4rem;
 }
 
 .plannerHeader {
-  margin: 0 1rem 2rem 1rem;
+  padding: 0 1rem 0;
   text-align: center;
+  background: transparent;
+  border-bottom: none;
+  margin: 0 auto 1rem;
+  /* Exactly match stepContainer styling for alignment */
+  max-width: 1200px;
+  width: 100%;
 }
 
 .plannerHeader h1 {
-  font-size: 28px;
-  color: #333;
-  margin: 0 0 4px 0;
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
 }
 
-.plannerHeader p {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
+.plannerHeader>span {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
+
+/* --- Progress Bar --- */
+.progressBar {
+  display: flex;
+  align-items: center;
+  max-width: 600px;
+  margin: 2rem auto 0;
+  justify-content: center;
+}
+
+/* --- Main Step Container --- */
+.stepContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.stepContent {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stepContent h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 0.75rem;
+}
+
+.stepContent p {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* --- Form Elements --- */
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.textInput,
+.selectInput,
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: var(--shadow-sm);
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus,
+.textInput:focus,
+.selectInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+.formGroup small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* --- Utility Classes for Step 2 --- */
+.toggleGroup {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.toggleButton {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggleButtonActive {
+  background-color: white;
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggleButtonInactive {
+  background-color: transparent;
+  color: var(--text-muted);
+}
+
+.toggleButtonInactive:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: var(--text-main);
+}
+
+.infoBox {
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.infoBoxNeutral {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.infoBoxSuccess {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.infoBoxWarning {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+}
+
+.infoBoxSpm {
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+/* --- Dividers --- */
+.orDivider {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin: 2rem 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.orDivider span {
+  padding: 0 1rem;
+}
+
+/* --- Buttons --- */
+.navigation {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.secondaryButtonFullWidth {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryButton {
+  background-color: var(--primary-color);
+  color: white;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.primaryButton:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.secondaryButton {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.secondaryButton:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.secondaryButtonFullWidth {
+  width: 100%;
+  background-color: white;
+  color: var(--primary-color);
+  border: 1px dashed var(--primary-color);
+}
+
+.secondaryButtonFullWidth:hover {
+  background-color: #eef2ff;
+  border-style: solid;
+}
+
+.textareaWrapper {
+  position: relative;
+}
+
+.enhanceButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: white;
+  color: var(--primary-color);
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.enhanceButton:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+/* Removed duplicate plannerHeader styles that were conflicting */
 
 /* --- Progress Bar --- */
 .progressBar {

@@ -1,293 +1,331 @@
-/* --- HEADER ROW --- */
-.listHeader {
-    display: grid;
-    grid-template-columns: 1.3fr 1.5fr 1fr 0.9fr 0.9fr 0.6fr;
-    background: #f0f4f8;
-    padding: 14px 20px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #4a5568;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
+/* --- CONTAINER (Scoped-like) --- */
+.tm-container {
+    padding: 0;
 }
 
-/* --- LIST ITEM --- */
-.listItem {
-    display: grid;
-    grid-template-columns: 1.3fr 1.5fr 1fr 0.9fr 0.9fr 0.6fr;
+/* --- TAB BAR (Matches LessonApproval.module.css) --- */
+.tm-tabBar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    border-bottom: none;
+    padding-bottom: 4px;
+}
+
+.tm-tabBar::-webkit-scrollbar {
+    display: none;
+}
+
+.tm-tabButton {
+    display: flex;
     align-items: center;
-    padding: 16px 20px;
-    background-color: #fff;
-    border: 1px solid #e0e6ed;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    transition: all 0.25s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+    background-color: #f1f5f9;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    box-shadow: none;
 }
 
-.listItem:hover {
-    border-color: #a7b7ed;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px);
-    background-color: #fcfdfe;
+.tm-tabButton:hover {
+    background-color: #e2e8f0;
+    color: #334155;
+    transform: translateY(-1px);
 }
 
-/* --- ICONS --- */
-.listIcon {
+.tm-activeTab {
+    background-color: #3f51b5;
+    color: #ffffff;
+    box-shadow: none;
+    font-weight: 600;
+}
+
+.tm-activeTab:hover {
+    background-color: #3f51b5;
+    color: #ffffff;
+}
+
+.tm-badge {
+    background: #ffffff;
+    color: #3f51b5;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 2px 8px;
+    min-width: unset;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tm-activeTab .tm-badge {
+    background: #ffffff;
+    color: #3f51b5;
+    box-shadow: none;
+}
+
+/* --- HEADER ACTIONS --- */
+.tm-headerRow {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tm-addButton {
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: start;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.tm-addButton:hover {
+    background-color: #3645a0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.2);
+}
+
+/* --- LIST ITEMS & TABLE (Inherits CommonTable styles usually, but specific tweaks here) --- */
+.tm-listIcon {
     margin-right: 8px;
     color: #3f51b5;
 }
 
-/* --- ACTION BUTTON --- */
-.listActions {
-    display: flex;
-    justify-content: center;
-}
-
-.actionButton {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 1.1rem;
-    padding: 6px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.actionButton.delete {
-    color: #dc3545;
-}
-
-.actionButton.delete:hover {
-    background: rgba(220, 53, 69, 0.1);
-}
-
-/* --- EMPTY STATE --- */
-.teacherManagement p {
-    text-align: center;
-    background: #fff;
-    padding: 30px;
-    border-radius: 10px;
-    color: #666;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 900px) {
-
-    .listHeader,
-    .listItem {
-        grid-template-columns: 1.2fr 1.3fr 1fr 0.9fr;
-    }
-
-    .listHeader div:nth-child(3),
-    .listHeader div:nth-child(4),
-    .listItem div:nth-child(3),
-    .listItem div:nth-child(4) {
-        display: none;
-    }
-
-    .teacherHeader h2 {
-        font-size: 1.4rem;
-    }
-}
-
-.headerRow {
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
-    margin-bottom: 16px;
-}
-
-.addButton {
-    background-color: #5669d8;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: 0.3s;
-}
-
-.addButton:hover {
-    background-color: #1532d8;
-}
-
-/* --- MODAL OVERLAY --- */
-.modalOverlay {
+/* --- MODAL (Matches LessonApproval styles) --- */
+.tm-modalOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
 }
 
-/* --- MODAL BOX --- */
-.modalBox {
+.tm-modalBox {
     background: white;
-    border-radius: 12px;
-    padding: 20px 24px;
-    width: 420px;
-    max-width: 90%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.25s ease;
+    padding: 24px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    animation: tm-fadeIn 0.3s ease;
+    border: 1px solid #e0e6ed;
 }
 
-/* --- MODAL HEADER --- */
-.modalHeader {
+.tm-modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.modalHeader h3 {
+.tm-modalHeader h3 {
     margin: 0;
-    font-size: 1.2rem;
-    color: #2a2f45;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
 }
 
-.closeButton {
-    background: none;
+.tm-closeButton {
+    background: #f1f5f9;
     border: none;
     cursor: pointer;
-    font-size: 1.2rem;
-    color: #666;
-    transition: color 0.2s;
+    font-size: 1rem;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
 }
 
-.closeButton:hover {
-    color: #000;
+.tm-closeButton:hover {
+    background: #e2e8f0;
+    color: #1e293b;
 }
 
-/* --- MODAL BODY --- */
-.modalBody {
+.tm-modalBody {
     display: flex;
     flex-direction: column;
 }
 
-.modalBody label {
+.tm-modalBody label {
     display: block;
-    margin-bottom: 6px;
-    font-weight: 500;
-    color: #444;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.95rem;
 }
 
-/* EMAIL INPUT + SEND BUTTON SIDE BY SIDE */
-.emailRow {
+/* EMAIL INPUT ROW */
+.tm-emailRow {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 24px;
 }
 
-.emailRow input {
+.tm-emailRow input {
     flex: 1;
-    padding: 9px 10px;
-    border: 1px solid #d6dae3;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
     border-radius: 8px;
     font-size: 0.95rem;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
+    color: #1e293b;
 }
 
-.emailRow input:focus {
+.tm-emailRow input:focus {
     outline: none;
-    border-color: #5669d8;
+    border-color: #3f51b5;
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
 }
 
-/* SEND BUTTON */
-.sendButton {
-    background-color: #5669d8;
+.tm-sendButton {
+    background-color: #3f51b5;
     color: white;
     border: none;
-    padding: 9px 14px;
+    padding: 10px 16px;
     border-radius: 8px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
-    transition: background 0.3s ease;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.sendButton:hover {
-    background-color: #3b4fd6;
+.tm-sendButton:hover {
+    background-color: #3645a0;
+    transform: translateY(-1px);
 }
 
-/* --- OR SEPARATOR --- */
-.modalSeparator {
+.tm-sendButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* OR SEPARATOR */
+.tm-modalSeparator {
     text-align: center;
-    font-weight: 500;
-    color: #999;
-    margin: 20px 0;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 10px 0 20px;
     position: relative;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.modalSeparator::before,
-.modalSeparator::after {
+.tm-modalSeparator::before,
+.tm-modalSeparator::after {
     content: "";
     position: absolute;
     top: 50%;
-    width: 38%;
+    width: 42%;
     height: 1px;
-    background-color: #ddd;
+    background-color: #e2e8f0;
 }
 
-.modalSeparator::before {
+.tm-modalSeparator::before {
     left: 0;
 }
 
-.modalSeparator::after {
+.tm-modalSeparator::after {
     right: 0;
 }
 
-/* --- INVITE CODE SECTION --- */
-.inviteCodeSection {
-    background-color: #f8faff;
-    border: 1px dashed #c8d0f4;
-    padding: 12px;
-    border-radius: 8px;
+/* INVITE CODE BOX */
+.tm-inviteCodeSection {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    padding: 16px;
+    border-radius: 12px;
     text-align: center;
-    font-size: 0.95rem;
-    color: #444;
-    word-break: break-word;
 }
 
-.inviteCodeSection strong {
-    display: inline-block;
-    max-width: 150px;
+.tm-inviteCodeDisplay {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3f51b5;
+    margin: 0 0 12px 0;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+}
+
+.tm-magicLinkSection {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.tm-magicLinkInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: #64748b;
+    padding: 6px 10px;
+    outline: none;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    vertical-align: middle;
 }
 
-/* COPY BUTTON */
-.copyButton {
-    background-color: #007bff;
-    color: white;
+.tm-copyButton {
+    background-color: #f1f5f9;
+    color: #475569;
     border: none;
-    padding: 6px 10px;
-    border-radius: 5px;
+    padding: 6px 12px;
+    border-radius: 6px;
     cursor: pointer;
-    margin-top: 8px;
-    font-weight: 500;
-    transition: background 0.2s ease;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    white-space: nowrap;
 }
 
-.copyButton:hover {
-    background-color: #0056b3;
+.tm-copyButton:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
 }
 
-/* --- ANIMATION --- */
-@keyframes fadeIn {
+/* ANIMATION */
+@keyframes tm-fadeIn {
     from {
         opacity: 0;
         transform: scale(0.96);
@@ -299,69 +337,127 @@
     }
 }
 
-/* --- RESPONSIVE (MOBILE VIEW) --- */
-@media (max-width: 600px) {
-    .listHeader {
-        display: none;
-    }
+/* --- MOBILE CARD (Refined) --- */
+.tm-mobileCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+}
 
-    .listItem {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 16px;
-        height: auto;
-    }
+.tm-mobileCard:active {
+    transform: scale(0.98);
+}
 
-    .listTitle {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 4px;
-        width: 100%;
-    }
+.tm-mobileCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    background-color: #fcfcfc;
+}
 
-    .listDetail {
-        font-size: 0.9rem;
-        width: 100%;
-        display: flex;
-        /* Ensure icons align if present */
-        align-items: center;
-        color: #555;
-    }
+.tm-headerLeft {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-    /* Reveal hidden columns if they were hidden by the 900px rule and we want them back, 
-       OR keep them simple. Let's make sure Name/Email/Role are visible */
+.tm-mobileCardBody {
+    padding: 18px;
+}
 
-    .listItem div:nth-child(3),
-    .listItem div:nth-child(4) {
-        display: flex !important;
-        /* Force show Access/Created if needed, or keep hidden? */
-        /* Let's show everything stacked for full info */
-    }
+.tm-topRow {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
 
-    /* Adjust the specific child hiding from the 900px query if it conflicts. 
-       The 900px query uses specific nth-child. We need to override display if we want them shown.
-    */
+.tm-iconCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
 
-    .listActions {
-        width: 100%;
-        justify-content: flex-end;
-        margin-top: 10px;
-        border-top: 1px solid #eee;
-        padding-top: 10px;
-    }
+.tm-textBlock {
+    flex: 1;
+    overflow: hidden;
+}
 
-    .emailRow {
-        flex-direction: column;
+.tm-cardTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tm-cardSubtitle {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.tm-detailsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.tm-detailRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.tm-detailLabel {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.tm-detailValue {
+    color: #2c3e50;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* --- MOBILE HEADER ADJUSTMENT --- */
+@media (max-width: 900px) {
+    .tm-headerRow {
+        flex-direction: column-reverse;
         align-items: stretch;
+        gap: 16px;
     }
 
-    .sendButton {
+    .tm-addButton {
         width: 100%;
+        justify-content: center;
+        padding: 12px;
     }
 
-    .inviteCodeSection strong {
-        max-width: 100px;
+    .tm-tabBar {
+        width: 100%;
+        margin-bottom: 0;
     }
 }

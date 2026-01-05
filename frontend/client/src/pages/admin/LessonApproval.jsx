@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { message, Pagination } from "antd";
+import { message, Pagination, Dropdown, Menu, Button } from "antd";
 import { useNavigate } from "react-router-dom";
+import { MoreOutlined, AppstoreOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import {
   getAllLessonsForApproval,
   approveLesson,
@@ -119,24 +120,27 @@ const LessonApproval = () => {
         <button
           className={`${styles.tabButton} ${activeTab === "All" ? styles.activeTab : ""
             } `}
-          onClick={() => setActiveTab("All")}
+          onClick={(e) => { e.stopPropagation(); setActiveTab("All"); }}
         >
+          <AppstoreOutlined style={{ marginRight: 6 }} />
           All <span className={styles.badge}>{lessons.length}</span>
         </button>
 
         <button
           className={`${styles.tabButton} ${activeTab === "To Review" ? styles.activeTab : ""
             } `}
-          onClick={() => setActiveTab("To Review")}
+          onClick={(e) => { e.stopPropagation(); setActiveTab("To Review"); }}
         >
+          <ClockCircleOutlined style={{ marginRight: 6 }} />
           To Review <span className={styles.badge}>{pendingCount}</span>
         </button>
 
         <button
           className={`${styles.tabButton} ${activeTab === "Processed" ? styles.activeTab : ""
             } `}
-          onClick={() => setActiveTab("Processed")}
+          onClick={(e) => { e.stopPropagation(); setActiveTab("Processed"); }}
         >
+          <CheckCircleOutlined style={{ marginRight: 6 }} />
           Processed <span className={styles.badge}>{processedCount}</span>
         </button>
       </div>
@@ -188,73 +192,123 @@ const LessonApproval = () => {
             render: (status) => <LessonStatusIcon status={status} />
           },
           {
-            title: "Actions",
+            title: "",
             key: "actions",
-            render: (_, lesson) => (
-              <div className={styles.listActions}>
-                {lesson.approvalStatus?.toLowerCase() === "pending" && (
-                  <>
-                    <FaCheckCircle
-                      title="Approve Lesson"
-                      onClick={(e) => { e.stopPropagation(); openModal(lesson, "approve"); }}
-                      className={styles.actionButton}
-                      style={{ color: "#28a745", marginRight: 8 }}
-                    />
-                    <FaTimesCircle
-                      title="Reject Lesson"
-                      onClick={(e) => { e.stopPropagation(); openModal(lesson, "reject"); }}
-                      className={styles.actionButton}
-                      style={{ color: "#dc3545" }}
-                    />
-                  </>
-                )}
-              </div>
-            )
+            width: 60,
+            render: (_, lesson) => {
+              if (lesson.approvalStatus?.toLowerCase() !== "pending") return null;
+
+              const menu = (
+                <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                  <Menu.Item
+                    key="approve"
+                    icon={<FaCheckCircle style={{ color: "#28a745" }} />}
+                    onClick={(e) => { e.domEvent.stopPropagation(); openModal(lesson, "approve"); }}
+                  >
+                    Approve
+                  </Menu.Item>
+                  <Menu.Item
+                    key="reject"
+                    icon={<FaTimesCircle style={{ color: "#dc3545" }} />}
+                    onClick={(e) => { e.domEvent.stopPropagation(); openModal(lesson, "reject"); }}
+                  >
+                    Reject
+                  </Menu.Item>
+                </Menu>
+              );
+
+              return (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Dropdown overlay={menu} trigger={['click']}>
+                    <Button icon={<MoreOutlined />} type="text" />
+                  </Dropdown>
+                </div>
+              );
+            }
           }
         ]}
         onRow={(record) => ({
           onClick: () => navigate(`/app/admin/lessons/${record._id}/review`)
         })}
-        renderCard={(lesson) => (
-          <div
-            className={styles.listItem} // Resusing existing style for card look if it has padding/border
-            style={{ display: 'flex', flexDirection: 'column', height: 'auto', alignItems: 'flex-start', gap: '8px' }}
-            onClick={() => navigate(`/app/admin/lessons/${lesson._id}/review`)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ color: "#1890ff", fontWeight: "bold" }}>
-                {lesson.parameters?.specificTopic || "Untitled"}
-              </span>
-              <LessonStatusIcon status={lesson.approvalStatus} />
+        renderCard={(lesson) => {
+          const menu = (
+            <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+              <Menu.Item
+                key="approve"
+                icon={<FaCheckCircle style={{ color: "#28a745" }} />}
+                onClick={(e) => { e.domEvent.stopPropagation(); openModal(lesson, "approve"); }}
+              >
+                Approve
+              </Menu.Item>
+              <Menu.Item
+                key="reject"
+                icon={<FaTimesCircle style={{ color: "#dc3545" }} />}
+                onClick={(e) => { e.domEvent.stopPropagation(); openModal(lesson, "reject"); }}
+              >
+                Reject
+              </Menu.Item>
+            </Menu>
+          );
+
+          return (
+            <div
+              className={styles.mobileCard}
+              onClick={() => navigate(`/app/admin/lessons/${lesson._id}/review`)}
+            >
+              {/* Header: ID/Date --- Actions */}
+              <div className={styles.mobileCardHeader}>
+                <span className={styles.headerLeft}>
+                  {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
+                </span>
+                <div onClick={(e) => e.stopPropagation()} className={styles.headerAction}>
+                  {lesson.approvalStatus?.toLowerCase() === "pending" && (
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <MoreOutlined style={{ fontSize: '20px' }} />
+                    </Dropdown>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.mobileCardBody}>
+                {/* Top Row: Icon + Title --- Status */}
+                <div className={styles.topRow}>
+                  <div className={styles.infoSection}>
+                    <div className={styles.iconCircle}>
+                      {lesson.classInfo.grade?.charAt(0) || "L"}
+                    </div>
+                    <div className={styles.textBlock}>
+                      <div className={styles.cardTitle}>
+                        {lesson.parameters?.specificTopic || "Untitled"}
+                      </div>
+                      <div className={styles.cardSubtitle}>
+                        {lesson.classInfo.subject}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.statusSection}>
+                    <LessonStatusIcon status={lesson.approvalStatus} />
+                  </div>
+                </div>
+
+                {/* Details List */}
+                <div className={styles.detailsList}>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Class</span>
+                    <span className={styles.detailValue}>{lesson.classInfo.className}</span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Grade</span>
+                    <span className={styles.detailValue}>{lesson.classInfo.grade}</span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Teacher</span>
+                    <span className={styles.detailValue}>{lesson.createdBy?.name}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: '13px', color: '#666' }}>
-              {lesson.classInfo.className} ({lesson.classInfo.subject})
-            </div>
-            <div style={{ fontSize: '13px', color: '#666' }}>
-              By {lesson.createdBy?.name} on {dayjs(lesson.lessonDate).format("MMM D, YYYY")}
-            </div>
-            <div style={{ alignSelf: 'flex-end', marginTop: '8px' }}>
-              {lesson.approvalStatus?.toLowerCase() === "pending" && (
-                <>
-                  <FaCheckCircle
-                    size={20}
-                    title="Approve Lesson"
-                    onClick={(e) => { e.stopPropagation(); openModal(lesson, "approve"); }}
-                    className={styles.actionButton}
-                    style={{ color: "#28a745", marginRight: 16 }}
-                  />
-                  <FaTimesCircle
-                    size={20}
-                    title="Reject Lesson"
-                    onClick={(e) => { e.stopPropagation(); openModal(lesson, "reject"); }}
-                    className={styles.actionButton}
-                    style={{ color: "#dc3545" }}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-        )}
+          );
+        }}
       />
       <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
         <Pagination

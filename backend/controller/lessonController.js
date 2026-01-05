@@ -317,11 +317,21 @@ exports.createLesson = async (req, res, next) => {
   }
 };
 
-// @desc    Get all lessons (Admin/Internal use)
+// @desc    Get all lessons (Admin/Internal use - Scoped to School)
 // @access  Private (Admin/Teacher)
 exports.getLessons = async (req, res) => {
   try {
-    const lessons = await LessonPlan.find().populate("createdBy", "name");
+    // Get the requesting user's schoolId for isolation
+    const currentUser = await User.findById(req.user.id).select("schoolId").lean();
+    if (!currentUser || !currentUser.schoolId) {
+      return res.status(400).json({ success: false, message: "User has no associated school." });
+    }
+
+    // Find all users in the same school to filter lessons by their IDs
+    const schoolUsers = await User.find({ schoolId: currentUser.schoolId }).select("_id").lean();
+    const schoolUserIds = schoolUsers.map(u => u._id);
+
+    const lessons = await LessonPlan.find({ createdBy: { $in: schoolUserIds } }).populate("createdBy", "name");
     return res.status(200).json({
       success: true,
       data: lessons,
@@ -405,7 +415,7 @@ exports.getLessonPlanById = async (req, res, next) => {
       lessonPlan.createdBy._id.toString() === req.user.id ||
       lessonPlan.createdBy.toString() === req.user.id ||
       req.user.roles.some((role) =>
-        ["school_admin", "super_admin", "math_head", "science_head", "english_head", "history_head", "geography_head"].includes(role)
+        ["admin", "super_admin", "math_head", "science_head", "english_head", "history_head", "geography_head"].includes(role)
       );
 
     if (!canView) {
@@ -852,7 +862,7 @@ exports.sendForApproval = async (req, res) => {
     // --- NOTIFICATION LOGIC ---
     try {
       const subject = lesson.classId?.subject;
-      let roleToNotify = "school_admin"; // Default fallback
+      let roleToNotify = "admin"; // Default fallback
 
       // Map Subject -> Role
       if (subject) {
@@ -870,7 +880,7 @@ exports.sendForApproval = async (req, res) => {
 
       // Fallback: If no subject head found, notify school_admin or principal
       if (recipients.length === 0) {
-        recipients = await User.find({ roles: { $in: ["school_admin", "principal"] } });
+        recipients = await User.find({ roles: { $in: ["admin"] } });
       }
 
       // FIX: Always include Super Admins in the notification loop
@@ -969,7 +979,7 @@ exports.rejectLesson = async (req, res) => {
     lesson.approvalStatus = 'rejected';
     lesson.approvedBy = req.user.id;
     lesson.approvalDate = new Date();
-    lesson.remarks = req.body.reason || 'No reason specified.'; // Changed from rejectionReason to remarks
+    lesson.remarks = req.body.remarks || req.body.reason || 'No reason specified.'; // Changed from rejectionReason to remarks
     await lesson.save();
 
     // Create Notification for the creator
@@ -1021,11 +1031,8 @@ exports.getAllLessonsForApproval = async (req, res) => {
       };
     }
 
-    // Principal or School Admin → Only their school
-    else if (
-      user.roles.includes("principal") ||
-      user.roles.includes("school_admin")
-    ) {
+    // Admin → Only their school
+    else if (user.roles.includes("admin")) {
       matchStage = {
         ...matchStage,
         "classInfo.schoolId": user.schoolId,

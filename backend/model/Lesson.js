@@ -287,6 +287,37 @@ if (mongoose.models.LessonPlan) {
         default: null,
       },
       // ===== END PHASE 6 =====
+
+      // ===== AI SMART SUGGESTIONS =====
+      aiSuggestions: {
+        usagePatterns: {
+          lastAnalyzed: {
+            type: Date,
+            default: null,
+          },
+          patterns: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
+          },
+        },
+        acceptedSuggestions: [
+          {
+            suggestionType: {
+              type: String,
+              enum: ["sowTopic", "date", "activityType", "resource"],
+            },
+            acceptedAt: {
+              type: Date,
+              default: Date.now,
+            },
+            wasAccurate: {
+              type: Boolean,
+              default: true,
+            },
+          },
+        ],
+      },
+      // ===== END AI SMART SUGGESTIONS =====
     },
     {
       timestamps: true,
@@ -303,6 +334,11 @@ if (mongoose.models.LessonPlan) {
   LessonPlanSchema.index({ "communityData.likes": -1 });
   LessonPlanSchema.index({ "communityData.downloads": -1 });
   LessonPlanSchema.index({ "communityData.averageRating": -1 });
+
+  // AI Smart Suggestions indexes for pattern analysis
+  LessonPlanSchema.index({ createdBy: 1, "parameters.sow.id": 1 });
+  LessonPlanSchema.index({ createdBy: 1, "parameters.activityType": 1 });
+  LessonPlanSchema.index({ createdBy: 1, classId: 1, lessonDate: -1 });
 
   // Text index for search functionality
   LessonPlanSchema.index({

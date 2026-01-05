@@ -1,26 +1,24 @@
 // AdminLayout.jsx
 import React, { useState } from 'react';
+import { BookOutlined, CheckCircleOutlined, TeamOutlined } from '@ant-design/icons';
 import './AdminLayout.css';
 import SyllabusManagement from './SyllabusManagement';
 import LessonApproval from './LessonApproval';
 import TeacherManagement from './TeacherManagement';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons'; // Example icon, adjust as needed
 
 const AdminLayout = () => {
     const [activeTab, setActiveTab] = useState('syllabus'); // Default active tab
-    const [searchTerm, setSearchTerm] = useState('');
 
     const renderContent = () => {
         switch (activeTab) {
             case 'syllabus':
-                return <SyllabusManagement searchTerm={searchTerm} />;
+                return <SyllabusManagement />;
             case 'approval':
-                return <LessonApproval searchTerm={searchTerm} />;
+                return <LessonApproval />;
             case 'teachers':
-                return <TeacherManagement searchTerm={searchTerm} />;
+                return <TeacherManagement />;
             default:
-                return <SyllabusManagement searchTerm={searchTerm} />;
+                return <SyllabusManagement />;
         }
     };
 
@@ -32,45 +30,27 @@ const AdminLayout = () => {
                         className={`tabButton ${activeTab === 'syllabus' ? 'active' : ''}`}
                         onClick={() => setActiveTab('syllabus')}
                     >
+                        <BookOutlined style={{ fontSize: '1.1rem' }} />
                         Syllabus Management
                     </button>
                     <button
                         className={`tabButton ${activeTab === 'approval' ? 'active' : ''}`}
                         onClick={() => setActiveTab('approval')}
                     >
+                        <CheckCircleOutlined style={{ fontSize: '1.1rem' }} />
                         Lesson Approval
                     </button>
                     <button
                         className={`tabButton ${activeTab === 'teachers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('teachers')}
                     >
+                        <TeamOutlined style={{ fontSize: '1.1rem' }} />
                         Teacher Management
                     </button>
                 </div>
             </div>
 
-            <div className="controlBarWrapper">
-                <div className="searchFilterGroup">
-                    <div className="customSearchBar">
-                        <FontAwesomeIcon icon={faSearch} className="searchIcon" />
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="searchInput"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    {/* You can add more filters here, like a customSelect */}
-                    {/* <select className="customSelect">
-                        <option>All Subjects</option>
-                        <option>Mathematics</option>
-                        <option>Science</option>
-                    </select> */}
-                </div>
-                {/* Potentially add a "Create New" button or other admin actions here */}
-                {/* <button className="createLessonButton">Create New</button> */}
-            </div>
+
 
             <div className="tabContent">
                 {renderContent()}

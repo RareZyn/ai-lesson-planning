@@ -1,0 +1,166 @@
+/* Exact copy of variables and key styles from MultiStepPlanner.module.css */
+
+:root {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary-bg: #f9fafb;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --radius-md: 12px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Page Container */
+.pageContainer {
+    min-height: 100vh;
+    background-color: #f8fafc;
+}
+
+/* Header matched to plannerHeader */
+.headerContainer {
+    text-align: center;
+    background: transparent;
+    border-bottom: none;
+    margin: 0 auto 2rem;
+    max-width: 1200px;
+    width: 100%;
+    position: relative;
+}
+
+.headerContainer h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+    display: inline-block;
+}
+
+/* Main Content Box matched to stepContent */
+.contentContainer {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.card {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons matched to MultiStepPlanner */
+.actions {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.primaryButton {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #4f46e5;
+    color: white;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.primaryButton:hover {
+    background-color: #4338ca;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.secondaryButton {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.secondaryButton:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+}
+
+/* Form Styles */
+.formLabel {
+    display: block;
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+/* Custom styling for Ant Design overrides to match theme */
+:global(.ant-steps-item-process .ant-steps-item-icon) {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+}
+
+:global(.ant-steps-item-finish .ant-steps-item-icon) {
+    border-color: #4f46e5 !important;
+}
+
+:global(.ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon) {
+    color: #4f46e5 !important;
+}
+
+:global(.ant-card) {
+    border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+    .contentContainer {
+        padding: 0 0.5rem;
+    }
+
+    .card {
+        padding: 1.25rem;
+    }
+
+    .headerContainer {
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+    }
+
+    .headerContainer h1 {
+        font-size: 1.5rem;
+    }
+
+    .actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .actions button {
+        width: 100%;
+        justify-content: center;
+    }
+}

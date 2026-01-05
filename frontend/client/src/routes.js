@@ -19,6 +19,7 @@ const ActivityViewerPage = React.lazy(() => import("./pages/assesstment/Activity
 const RubricViewerPage = React.lazy(() => import("./pages/assesstment/RubricViewerPage"));
 
 const UnauthorizedPage = React.lazy(() => import("./pages/general/UnauthorizedPage"));
+const AccountDeactivatedPage = React.lazy(() => import("./pages/auth/AccountDeactivatedPage"));
 const ProtectedRoute = React.lazy(() => import("./components/general/ProtectedRoute"));
 
 const MaterialManagement = React.lazy(() => import("./pages/material/MaterialManagement"));
@@ -30,6 +31,7 @@ const ClassLessonsPage = React.lazy(() => import("./pages/class/ClassLessonsPage
 const AdminLayout = React.lazy(() => import("./pages/admin/AdminLayout"));
 const TeacherAnalyticsPage = React.lazy(() => import("./pages/admin/TeacherAnalyticsPage"));
 const AdminLessonReviewPage = React.lazy(() => import("./pages/admin/AdminLessonReviewPage"));
+const CreateSyllabusPage = React.lazy(() => import("./pages/admin/CreateSyllabusPage"));
 
 // NEW IMPORTS - Answer Checker Module
 const SubmissionUploadPage = React.lazy(() => import("./pages/answerChecker/SubmissionUploadPage"));
@@ -84,6 +86,7 @@ const router = createBrowserRouter(
 
         //admin
         { path: "admin", element: <AdminLayout /> },
+        { path: "admin/syllabuses/create", element: <CreateSyllabusPage /> },
         { path: "admin/syllabuses/:id", element: <DisplaySyllabus /> },
         { path: "admin/teacher-analytics/:id", element: <TeacherAnalyticsPage /> },
         { path: "admin/lessons/:id/review", element: <AdminLessonReviewPage /> },
@@ -93,6 +96,7 @@ const router = createBrowserRouter(
     { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
     { path: "/unauthorized", element: <UnauthorizedPage /> },
+    { path: "/account-deactivated", element: <AccountDeactivatedPage /> },
   ],
   {
     future: {

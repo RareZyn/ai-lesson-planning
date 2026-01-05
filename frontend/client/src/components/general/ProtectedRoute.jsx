@@ -13,6 +13,7 @@ const ProtectedRoute = ({ children, roles }) => {
     loading: userLoading,
     isAuthenticated,
     isReady,
+    isDeactivated, // NEW: Check for deactivated status
   } = useUser();
 
   const location = useLocation();
@@ -28,9 +29,9 @@ const ProtectedRoute = ({ children, roles }) => {
   // Check if user has valid authentication (either from Firebase or MongoDB)
   const hasValidAuth = Boolean(
     (firebaseUser && firebaseUser.uid) || // Firebase user exists
-      (contextUser && (contextUser._id || contextUser.id)) || // MongoDB user exists
-      isAuthenticated || // UserContext says we're authenticated
-      (user && (user._id || user.id || user.uid)) // Any user object with valid ID
+    (contextUser && (contextUser._id || contextUser.id)) || // MongoDB user exists
+    isAuthenticated || // UserContext says we're authenticated
+    (user && (user._id || user.id || user.uid)) // Any user object with valid ID
   );
 
   useEffect(() => {
@@ -87,6 +88,11 @@ const ProtectedRoute = ({ children, roles }) => {
         <p>Verifying your session...</p>
       </div>
     );
+  }
+
+  // Redirect deactivated accounts to special page
+  if (isDeactivated) {
+    return <Navigate to="/account-deactivated" replace />;
   }
 
   // Redirect when not authenticated (after loading is complete)

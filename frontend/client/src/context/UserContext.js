@@ -67,7 +67,7 @@ export const UserProvider = ({ children }) => {
     async (user) => {
       if (!user) {
         clearAuthenticatedState();
-        return null;
+        return null; // Return null effectively
       }
       setLoading(true);
       try {
@@ -79,16 +79,27 @@ export const UserProvider = ({ children }) => {
         });
 
         if (response.success && response.user) {
-          setAuthenticatedState(response.user);
-          return response.user; // Return the backend user profile
+          // KEY CHANGE: Only auto-login if schoolId is present
+          if (response.user.schoolId) {
+            setAuthenticatedState(response.user);
+          } else {
+            console.log("Partial registration detected. User needs to complete profile with token.");
+            // Do NOT set authenticated state here.
+            // LoginPage.jsx will handle the modal.
+          }
+          return response.user;
         } else {
           throw new Error(response.message || "Backend sync failed");
         }
       } catch (error) {
         console.error("Error during handleFirebaseLogin:", error);
-        await signOut(auth); // Sign out of Firebase if backend fails
+        // Only sign out if it's a real backend failure, not just a partial profile
+        // But for safety, if backend fails, we should clear state
+        // await signOut(auth); // Commented out to allow LoginPage to handle flow? 
+        // Actually, if backend sync fails completely, we should probably reset.
+        // But for now, let's stick to clearing local state.
         clearAuthenticatedState();
-        return null; // Indicate failure
+        return null;
       } finally {
         setLoading(false);
       }
@@ -176,16 +187,20 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Check if account is deactivated
+  const isDeactivated = currentUser && currentUser.isActive === false;
+
   const contextValue = {
     currentUser,
     userId,
     loading,
     isAuthenticated,
     isReady,
+    isDeactivated, // NEW: Track deactivated status
     firebaseUser,
     logout,
     updateUser,
-    handleFirebaseLogin, // Expose the new centralized function
+    handleFirebaseLogin,
     refreshUser: checkExistingAuth,
   };
 
