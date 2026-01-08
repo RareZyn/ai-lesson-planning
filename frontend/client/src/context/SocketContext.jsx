@@ -22,19 +22,32 @@ export const SocketProvider = ({ children }) => {
             SERVER_URL = SERVER_URL.slice(0, -4);
         }
 
+        console.log("SERVER_URL = ", SERVER_URL)
+
         console.log("SocketContext: Initializing...", { user: user ? user._id : 'null', SERVER_URL });
 
         if (user) {
             // Connect only if user is logged in
             newSocket = io(SERVER_URL, {
-                transports: ["websocket"], // Use websocket for better performance
+                // Use polling as fallback for serverless platforms (like Vercel)
+                transports: ["polling", "websocket"],
                 reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
             });
 
             newSocket.on("connect", () => {
                 console.log("Socket connected:", newSocket.id);
                 // Join user-specific room
                 newSocket.emit("join", user._id || user.id);
+            });
+
+            newSocket.on("connect_error", (error) => {
+                console.warn("Socket connection error:", error.message);
+                // Disable socket if connection keeps failing
+                if (newSocket.io.opts.reconnectionAttempts === 0) {
+                    console.warn("Socket disabled - notifications will use polling");
+                }
             });
 
             setSocket(newSocket);

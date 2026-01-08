@@ -381,7 +381,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
               ))}
             </select>
             <small style={{ color: "#666", marginTop: "4px", display: "block" }}>
-              Don't see your material? <a href="/app/material" target="_blank">Upload it in Material Management</a> first.
+              Don't see your material? <a href="/app/materials" target="_blank">Upload it in Material Management</a> first.
             </small>
           </div>
         )}
