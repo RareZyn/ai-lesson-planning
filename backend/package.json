@@ -7,7 +7,9 @@
     "server": "nodemon server.js",
     "client": "npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm install && cd frontend && npm install && npm run build"
+    "build": "npm install && cd frontend && npm install && npm run build",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -41,6 +43,8 @@
   },
   "devDependencies": {
     "http-proxy-middleware": "^2.0.6",
-    "nodemon": "^3.1.10"
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }

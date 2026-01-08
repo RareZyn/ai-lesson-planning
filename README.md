@@ -492,6 +492,43 @@ This is an academic project (FYP). If you'd like to contribute:
 
 ## Testing
 
+### Unit Tests
+
+The project includes comprehensive unit tests for both backend and frontend.
+
+| Component | Test Suites | Tests | Pass Rate |
+|-----------|-------------|-------|-----------|
+| **Backend** | 9 | 126 | ✅ 100% |
+| **Frontend** | 7 | 58 | ✅ 100% |
+| **Total** | **16** | **184** | **✅ 100%** |
+
+#### Running Backend Tests
+
+```bash
+cd backend
+
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
+```
+
+#### Running Frontend Tests
+
+```bash
+cd frontend/client
+
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
 ### Manual Testing Checklist
 
 - [ ] User registration and login

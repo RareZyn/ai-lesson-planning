@@ -67,3 +67,6 @@ backend/config/serviceAccountKey.json
 
 # nijam
 /nijam_doc
+
+
+/backend/scripts
