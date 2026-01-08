@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeacherManagement.css";
 import { getTeachers, getInvitationCode, deleteTeacher, inviteTeacher, toggleTeacherStatus, revokeToken, resendInvite, updateTeacherRole } from "../../services/adminService";
-import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button } from "antd";
+import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button, Input } from "antd";
 import {
   ExclamationCircleOutlined,
   MoreOutlined,
@@ -41,6 +41,11 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [selectedRoles, setSelectedRoles] = useState([]);
+
+  // Resend Modal State
+  const [resendModalVisible, setResendModalVisible] = useState(false);
+  const [resendTokenId, setResendTokenId] = useState(null);
+  const [resendEmail, setResendEmail] = useState("");
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -140,6 +145,8 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       if (result.success) {
         message.success("Invitation sent successfully!");
         setEmail("");
+        setInvitationCode("");
+        setShowModal(false);
         fetchActiveTokens(); // Refresh list to show new token
       }
     } catch (error) {
@@ -219,18 +226,31 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     });
   };
 
-  const handleResendInvite = async (tokenId) => {
-    const emailToResend = window.prompt("Enter the email address to resend the invitation:");
-    if (!emailToResend) return;
+  const handleResendInvite = (tokenId) => {
+    setResendTokenId(tokenId);
+    setResendEmail(""); // Reset email
+    setResendModalVisible(true);
+  };
 
+  const handleResendSubmit = async () => {
+    if (!resendEmail) {
+      message.error("Please enter an email address.");
+      return;
+    }
+    setLoading(true);
     try {
-      const res = await resendInvite(tokenId, emailToResend);
+      const res = await resendInvite(resendTokenId, resendEmail);
       if (res.success) {
-        message.success('Invitation resent!');
+        message.success('Invitation resent successfully!');
+        setResendModalVisible(false);
+        setResendEmail("");
+        setResendTokenId(null);
       }
     } catch (err) {
       console.error(err);
       message.error(err.message || "Error resending invitation.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -713,7 +733,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
                   <div className="tm-modalSeparator">OR SHARE MANUALLY</div>
                   <div className="tm-inviteCodeSection">
                     <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5 }}>Invitation Code</div>
-                    <div className="tm-inviteCodeDisplay">{invitationCode}</div>
+                    <div className="tm-inviteCodeDisplay" style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{invitationCode}</div>
 
                     <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5, marginTop: 15 }}>Magic Link</div>
                     <div className="tm-magicLinkSection">
@@ -762,6 +782,32 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             </label>
           ))}
         </div>
+      </AntModal>
+
+      {/* =============== RESEND MODAL =============== */}
+      <AntModal
+        title={<span><SendOutlined style={{ marginRight: 8, color: '#1890ff' }} /> Resend Invitation</span>}
+        open={resendModalVisible}
+        onCancel={() => {
+          if (!loading) {
+            setResendModalVisible(false);
+            setResendEmail("");
+          }
+        }}
+        confirmLoading={loading}
+        onOk={handleResendSubmit}
+        okText="Resend"
+        cancelButtonProps={{ disabled: loading }}
+      >
+        <p style={{ marginBottom: 16 }}>Please enter the email address to resend the invitation to:</p>
+        <Input
+          placeholder="Enter email address"
+          value={resendEmail}
+          onChange={(e) => setResendEmail(e.target.value)}
+          onPressEnter={handleResendSubmit}
+          prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+          autoFocus
+        />
       </AntModal>
     </div>
   );

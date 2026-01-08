@@ -18,8 +18,7 @@ import {
     Col,
     Typography,
     Divider,
-    Modal,
-    Input,
+
     message,
 } from "antd";
 
@@ -40,7 +39,6 @@ import styles from "../planner/displaylesson/DisplayLessonPage.module.css";
 import approvalStyles from "./LessonApproval.module.css";
 
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
 
 const AdminLessonReviewPage = () => {
     const { id } = useParams();

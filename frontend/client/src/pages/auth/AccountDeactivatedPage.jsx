@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Result } from "antd";
+import { Button } from "antd";
 import { StopOutlined, LogoutOutlined, MailOutlined } from "@ant-design/icons";
 import { auth, signOut } from "../../firebase";
 import { useNavigate } from "react-router-dom";

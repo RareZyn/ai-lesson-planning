@@ -42,7 +42,7 @@ const Profile = ({ avatarSize = 36, className, style }) => {
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState(false);
-  const [form] = Form.useForm();
+  /* const [form] = Form.useForm(); */
 
 
   const [passwordForm] = Form.useForm();
