@@ -50,6 +50,7 @@ import {
 } from "@ant-design/icons";
 import { Progress, Timeline } from "antd";
 import { getTeacherAnalytics } from "../../services/adminService";
+import { useBreadcrumb } from "../../context/BreadcrumbContext";
 import "./TeacherAnalyticsPage.css";
 
 
@@ -58,6 +59,7 @@ const { Title, Text } = Typography;
 const TeacherAnalyticsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { setCustomBreadcrumbs } = useBreadcrumb();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -69,6 +71,13 @@ const TeacherAnalyticsPage = () => {
                 setLoading(true);
                 const result = await getTeacherAnalytics(id);
                 setData(result);
+
+                // Set custom breadcrumbs
+                setCustomBreadcrumbs([
+                    { label: "Home", link: "/app" },
+                    { label: "Admin Dashboard", link: "/app/admin" },
+                    { label: result.teacher?.name || "Teacher Analytics" }
+                ]);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -77,7 +86,10 @@ const TeacherAnalyticsPage = () => {
         };
 
         fetchData();
-    }, [id]);
+
+        // Cleanup
+        return () => setCustomBreadcrumbs(null);
+    }, [id, setCustomBreadcrumbs]);
 
     if (loading) {
         return (
@@ -134,7 +146,7 @@ const TeacherAnalyticsPage = () => {
                     onClick={() => navigate("/app/admin")}
                     style={{ paddingLeft: 0, fontSize: "1rem" }}
                 >
-                    Back to Teacher Management
+                    Back
                 </Button>
             </div>
 

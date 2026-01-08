@@ -231,10 +231,10 @@ export const deleteSyllabus = async (syllabusId) => {
     }
 };
 
+
 // Update syllabus
 export const updateSyllabus = async (syllabusId, syllabusData) => {
     try {
-        const token = getAuthToken();
         const formData = new FormData();
 
         if (syllabusData.grade) {
@@ -247,21 +247,17 @@ export const updateSyllabus = async (syllabusId, syllabusData) => {
             formData.append('file', syllabusData.file);
         }
 
-        const response = await fetch(`/api/admin/syllabuses/${syllabusId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-                // Don't set Content-Type for FormData
-            },
-            body: formData,
-        });
+        const response = await axios.put(
+            `/api/admin/syllabuses/${syllabusId}`,
+            formData,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+                },
+            }
+        );
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update syllabus');
-        }
-
-        return await response.json();
+        return response.data;
     } catch (error) {
         console.error('Error in updateSyllabus:', error);
         throw error;

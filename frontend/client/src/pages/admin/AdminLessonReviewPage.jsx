@@ -37,12 +37,14 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 import styles from "../planner/displaylesson/DisplayLessonPage.module.css";
 import approvalStyles from "./LessonApproval.module.css";
+import { useBreadcrumb } from "../../context/BreadcrumbContext";
 
 const { Title, Text, Paragraph } = Typography;
 
 const AdminLessonReviewPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { setCustomBreadcrumbs } = useBreadcrumb();
 
     const [lessonPlan, setLessonPlan] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +64,13 @@ const AdminLessonReviewPage = () => {
             try {
                 const data = await getLessonPlanById(id);
                 setLessonPlan(data);
+
+                // Set custom breadcrumbs
+                setCustomBreadcrumbs([
+                    { label: "Home", link: "/app" },
+                    { label: "Admin Dashboard", link: "/app/admin" },
+                    { label: `Review: ${data.parameters?.specificTopic || "Lesson"}` }
+                ]);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -69,7 +78,10 @@ const AdminLessonReviewPage = () => {
             }
         };
         fetchLesson();
-    }, [id]);
+
+        // Cleanup
+        return () => setCustomBreadcrumbs(null);
+    }, [id, setCustomBreadcrumbs]);
 
     // Helper functions for activity configuration
     const getActivityTypeLabel = (type) => {

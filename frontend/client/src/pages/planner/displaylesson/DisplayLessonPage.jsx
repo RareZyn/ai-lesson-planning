@@ -54,15 +54,15 @@ import {
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 
 import styles from "./DisplayLessonPage.module.css";
+import { useBreadcrumb } from "../../../context/BreadcrumbContext";
 
 const { Title, Text, Paragraph } = Typography;
-
-
 
 const DisplayLessonPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const screens = Grid.useBreakpoint();
+  const { setCustomBreadcrumbs } = useBreadcrumb();
 
   const [lessonPlan, setLessonPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +87,13 @@ const DisplayLessonPage = () => {
         const data = await getLessonPlanById(id);
         setLessonPlan(data);
 
+        // Set custom breadcrumbs
+        setCustomBreadcrumbs([
+          { label: "Home", link: "/app" },
+          { label: "Lesson Plans", link: "/app/lessons" },
+          { label: data.parameters?.specificTopic || "Lesson Detail" }
+        ]);
+
         // Auto-save to offline cache for offline editing
         try {
           await lessonOfflineService.saveLessonOffline(data);
@@ -101,7 +108,10 @@ const DisplayLessonPage = () => {
       }
     };
     fetchLesson();
-  }, [id]);
+
+    // Cleanup
+    return () => setCustomBreadcrumbs(null);
+  }, [id, setCustomBreadcrumbs]);
 
   // Helper functions for activity configuration
   const getActivityTypeLabel = (type) => {
