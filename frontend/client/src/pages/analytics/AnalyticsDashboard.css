@@ -145,14 +145,20 @@
     margin-bottom: 0.5rem;
   }
 
-  /* Make charts responsive */
+  /* Make charts responsive on mobile */
   .recharts-wrapper {
     width: 100% !important;
-    height: auto !important;
   }
 
-  /* Reduce chart height on mobile */
+  /* Ensure charts have proper height on mobile */
   .recharts-responsive-container {
+    min-height: 250px !important;
+    height: 250px !important;
+  }
+
+  /* Chart container wrapper needs explicit height */
+  .class-analytics-view .card-body .recharts-responsive-container {
+    width: 100% !important;
     min-height: 250px !important;
   }
 

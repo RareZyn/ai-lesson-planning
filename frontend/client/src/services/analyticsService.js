@@ -3,10 +3,121 @@ import axios from "axios";
 
 const API_URL = "/api/analytics";
 
+// Cache configuration
+const CACHE_PREFIX = "analytics_cache_";
+const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 /**
- * Get class performance analytics
+ * Cache utility functions
  */
-export const getClassAnalytics = async (classId, filters = {}) => {
+const cacheUtils = {
+  /**
+   * Generate a cache key based on endpoint and parameters
+   */
+  generateKey: (endpoint, params = {}) => {
+    const paramString = Object.keys(params)
+      .filter((key) => params[key] !== null && params[key] !== undefined)
+      .sort()
+      .map((key) => `${key}=${params[key]}`)
+      .join("&");
+    return `${CACHE_PREFIX}${endpoint}_${paramString}`;
+  },
+
+  /**
+   * Get cached data if valid (not expired)
+   */
+  get: (key) => {
+    try {
+      const cached = sessionStorage.getItem(key);
+      if (!cached) return null;
+
+      const { data, timestamp, ttl } = JSON.parse(cached);
+      const now = Date.now();
+
+      // Check if cache is still valid
+      if (now - timestamp < ttl) {
+        console.log(`[Cache] Hit for ${key}`);
+        return data;
+      }
+
+      // Cache expired, remove it
+      console.log(`[Cache] Expired for ${key}`);
+      sessionStorage.removeItem(key);
+      return null;
+    } catch (error) {
+      console.error("[Cache] Error reading cache:", error);
+      return null;
+    }
+  },
+
+  /**
+   * Set cache data with TTL
+   */
+  set: (key, data, ttl = DEFAULT_CACHE_TTL) => {
+    try {
+      const cacheEntry = {
+        data,
+        timestamp: Date.now(),
+        ttl,
+      };
+      sessionStorage.setItem(key, JSON.stringify(cacheEntry));
+      console.log(`[Cache] Stored ${key}`);
+    } catch (error) {
+      console.error("[Cache] Error storing cache:", error);
+      // If storage is full, clear old analytics cache
+      if (error.name === "QuotaExceededError") {
+        cacheUtils.clearAll();
+      }
+    }
+  },
+
+  /**
+   * Clear specific cache entry
+   */
+  clear: (key) => {
+    sessionStorage.removeItem(key);
+  },
+
+  /**
+   * Clear all analytics cache
+   */
+  clearAll: () => {
+    const keys = Object.keys(sessionStorage).filter((key) =>
+      key.startsWith(CACHE_PREFIX)
+    );
+    keys.forEach((key) => sessionStorage.removeItem(key));
+    console.log(`[Cache] Cleared ${keys.length} analytics cache entries`);
+  },
+
+  /**
+   * Clear cache for a specific class
+   */
+  clearForClass: (classId) => {
+    const keys = Object.keys(sessionStorage).filter(
+      (key) => key.startsWith(CACHE_PREFIX) && key.includes(classId)
+    );
+    keys.forEach((key) => sessionStorage.removeItem(key));
+    console.log(`[Cache] Cleared ${keys.length} cache entries for class ${classId}`);
+  },
+};
+
+/**
+ * Get class performance analytics (with caching)
+ * @param {string} classId - Class ID
+ * @param {object} filters - Filter options
+ * @param {boolean} forceRefresh - Force fetch from server, bypass cache
+ */
+export const getClassAnalytics = async (classId, filters = {}, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(`class_${classId}`, filters);
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     const params = new URLSearchParams();
     if (filters.startDate) params.append("startDate", filters.startDate);
@@ -17,6 +128,10 @@ export const getClassAnalytics = async (classId, filters = {}) => {
     const response = await axios.get(`${API_URL}/class/${classId}?${params.toString()}`, {
       withCredentials: true,
     });
+
+    // Cache the response
+    cacheUtils.set(cacheKey, response.data);
+
     return response.data;
   } catch (error) {
     console.error("Error fetching class analytics:", error);
@@ -25,9 +140,18 @@ export const getClassAnalytics = async (classId, filters = {}) => {
 };
 
 /**
- * Get individual student progress
+ * Get individual student progress (with caching)
  */
-export const getStudentProgress = async (studentId, filters = {}) => {
+export const getStudentProgress = async (studentId, filters = {}, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(`student_${studentId}`, filters);
+
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     const params = new URLSearchParams();
     if (filters.startDate) params.append("startDate", filters.startDate);
@@ -37,6 +161,8 @@ export const getStudentProgress = async (studentId, filters = {}) => {
     const response = await axios.get(`${API_URL}/student/${studentId}?${params.toString()}`, {
       withCredentials: true,
     });
+
+    cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching student progress:", error);
@@ -45,9 +171,21 @@ export const getStudentProgress = async (studentId, filters = {}) => {
 };
 
 /**
- * Get frequently missed questions
+ * Get frequently missed questions (with caching)
  */
-export const getFrequentlyMissedQuestions = async (classId, assessmentId = null) => {
+export const getFrequentlyMissedQuestions = async (classId, assessmentId = null, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(
+    assessmentId ? `missed_assessment_${assessmentId}` : `missed_class_${classId}`,
+    {}
+  );
+
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     const endpoint = assessmentId
       ? `${API_URL}/missed-questions/assessment/${assessmentId}`
@@ -56,6 +194,8 @@ export const getFrequentlyMissedQuestions = async (classId, assessmentId = null)
     const response = await axios.get(endpoint, {
       withCredentials: true,
     });
+
+    cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching missed questions:", error);
@@ -64,13 +204,24 @@ export const getFrequentlyMissedQuestions = async (classId, assessmentId = null)
 };
 
 /**
- * Get class students list
+ * Get class students list (with caching)
  */
-export const getClassStudentsList = async (classId) => {
+export const getClassStudentsList = async (classId, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(`students_${classId}`, {});
+
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     const response = await axios.get(`${API_URL}/students/${classId}`, {
       withCredentials: true,
     });
+
+    cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching students list:", error);
@@ -79,13 +230,24 @@ export const getClassStudentsList = async (classId) => {
 };
 
 /**
- * Get available topics for filtering
+ * Get available topics for filtering (with caching)
  */
-export const getAvailableTopics = async (classId) => {
+export const getAvailableTopics = async (classId, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(`topics_${classId}`, {});
+
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
   try {
     const response = await axios.get(`${API_URL}/topics/${classId}`, {
       withCredentials: true,
     });
+
+    cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching topics:", error);
@@ -94,7 +256,7 @@ export const getAvailableTopics = async (classId) => {
 };
 
 /**
- * Generate performance report
+ * Generate performance report (no caching - always fresh)
  */
 export const generateReport = async (reportConfig) => {
   try {
@@ -106,4 +268,18 @@ export const generateReport = async (reportConfig) => {
     console.error("Error generating report:", error);
     throw error;
   }
+};
+
+/**
+ * Clear all analytics cache
+ */
+export const clearAnalyticsCache = () => {
+  cacheUtils.clearAll();
+};
+
+/**
+ * Clear cache for a specific class
+ */
+export const clearClassCache = (classId) => {
+  cacheUtils.clearForClass(classId);
 };

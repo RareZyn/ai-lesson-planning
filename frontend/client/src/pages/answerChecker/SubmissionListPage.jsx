@@ -57,7 +57,10 @@ const SubmissionListPage = () => {
 
     try {
       const token = localStorage.getItem("authToken");
-      const params = {};
+      const params = {
+        // Fetch all assessments for client-side pagination and search
+        limit: 9999,
+      };
 
       if (filterClass) {
         params.classId = filterClass;

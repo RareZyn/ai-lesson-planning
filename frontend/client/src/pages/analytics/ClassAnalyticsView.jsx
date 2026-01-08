@@ -29,6 +29,7 @@ import {
   getFrequentlyMissedQuestions,
   getAvailableTopics,
   generateReport,
+  clearClassCache,
 } from "../../services/analyticsService";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -54,21 +55,25 @@ const ClassAnalyticsView = ({ classId }) => {
     assessmentType: null,
   });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
 
-      // Fetch analytics data
-      const analyticsResponse = await getClassAnalytics(classId, filters);
+      // Fetch analytics data (uses cache unless forceRefresh)
+      const analyticsResponse = await getClassAnalytics(classId, filters, forceRefresh);
       setAnalyticsData(analyticsResponse.data);
 
       // Fetch missed questions
-      const missedResponse = await getFrequentlyMissedQuestions(classId);
+      const missedResponse = await getFrequentlyMissedQuestions(classId, null, forceRefresh);
       setMissedQuestions(missedResponse.data);
 
       // Fetch available topics
-      const topicsResponse = await getAvailableTopics(classId);
+      const topicsResponse = await getAvailableTopics(classId, forceRefresh);
       setTopics(topicsResponse.data);
+
+      if (forceRefresh) {
+        message.success("Data refreshed successfully");
+      }
     } catch (error) {
       console.error("Error fetching analytics:", error);
       message.error("Failed to load analytics data");
@@ -76,6 +81,11 @@ const ClassAnalyticsView = ({ classId }) => {
       setLoading(false);
     }
   }, [classId, filters]);
+
+  const handleForceRefresh = () => {
+    clearClassCache(classId);
+    fetchData(true);
+  };
 
   useEffect(() => {
     if (classId) {
@@ -267,14 +277,21 @@ const ClassAnalyticsView = ({ classId }) => {
               <Button
                 variant="outline-secondary"
                 onClick={handleResetFilters}
-                className="w-100"
+                title="Reset filters"
               >
-                <ReloadOutlined /> Reset
+                Reset
+              </Button>
+              <Button
+                variant="outline-primary"
+                onClick={handleForceRefresh}
+                title="Refresh data from server"
+              >
+                <ReloadOutlined /> Refresh
               </Button>
               <Button
                 variant="primary"
                 onClick={handleDownloadReport}
-                className="w-100"
+                title="Download report"
               >
                 <DownloadOutlined /> Report
               </Button>
@@ -333,22 +350,24 @@ const ClassAnalyticsView = ({ classId }) => {
             <Card.Body>
               <h5 className="mb-3">Performance Trend Over Time</h5>
               {analyticsData.trendData && analyticsData.trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={analyticsData.trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="averageScore"
-                      stroke="#8884d8"
-                      strokeWidth={2}
-                      name="Average Score (%)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ width: "100%", height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={analyticsData.trendData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="averageScore"
+                        stroke="#8884d8"
+                        strokeWidth={2}
+                        name="Average Score (%)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
                 <p className="text-muted text-center py-5">
                   No trend data available
@@ -365,27 +384,29 @@ const ClassAnalyticsView = ({ classId }) => {
               <h5 className="mb-3">By Difficulty Level</h5>
               {analyticsData.difficultyBreakdown &&
               analyticsData.difficultyBreakdown.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={analyticsData.difficultyBreakdown}
-                      dataKey="count"
-                      nameKey="difficulty"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={(entry) => `${entry.difficulty}: ${entry.count}`}
-                    >
-                      {analyticsData.difficultyBreakdown.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div style={{ width: "100%", height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analyticsData.difficultyBreakdown}
+                        dataKey="count"
+                        nameKey="difficulty"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={(entry) => `${entry.difficulty}: ${entry.count}`}
+                      >
+                        {analyticsData.difficultyBreakdown.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
                 <p className="text-muted text-center py-5">No data available</p>
               )}
@@ -402,32 +423,34 @@ const ClassAnalyticsView = ({ classId }) => {
               <h5 className="mb-3">Topic Mastery Levels</h5>
               {analyticsData.topicMastery &&
               analyticsData.topicMastery.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart
-                    data={analyticsData.topicMastery}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="topic"
-                      angle={-45}
-                      textAnchor="end"
-                      height={120}
-                      interval={0}
-                    />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="averageScore" name="Average Score (%)">
-                      {analyticsData.topicMastery.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={MASTERY_COLORS[entry.masteryLevel]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ width: "100%", height: 400 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={analyticsData.topicMastery}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="topic"
+                        angle={-45}
+                        textAnchor="end"
+                        height={120}
+                        interval={0}
+                      />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="averageScore" name="Average Score (%)">
+                        {analyticsData.topicMastery.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={MASTERY_COLORS[entry.masteryLevel]}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
                 <p className="text-muted text-center py-5">
                   No topic data available
