@@ -360,7 +360,10 @@ exports.getSubmissionsByAssessment = async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
+    // Exclude large image fields to prevent MongoDB memory limit errors during sort
+    // The list view doesn't need full images - they can be fetched when viewing individual submissions
     const submissions = await StudentAnswer.find(query)
+      .select("-answers.originalImage -answerSheetImage")
       .populate("studentId", "name studentId avatar")
       .populate("classId", "className grade")
       .sort(sort);
@@ -407,7 +410,9 @@ exports.getSubmissionsByClass = async (req, res) => {
       query.processingStatus = status;
     }
 
+    // Exclude large image fields to prevent MongoDB memory limit errors during sort
     const submissions = await StudentAnswer.find(query)
+      .select("-answers.originalImage -answerSheetImage")
       .populate("studentId", "name studentId avatar")
       .populate("assessmentId", "title activityType")
       .populate("classId", "className grade")
@@ -502,7 +507,9 @@ exports.getAssessmentStats = async (req, res) => {
 
     // Optionally include full submissions list if requested
     if (includeSubmissions === "true") {
+      // Exclude large image fields to prevent MongoDB memory limit errors
       const submissions = await StudentAnswer.find({ assessmentId })
+        .select("-answers.originalImage -answerSheetImage")
         .populate("studentId", "name studentId avatar")
         .populate("classId", "className grade")
         .sort({ submittedAt: -1 });

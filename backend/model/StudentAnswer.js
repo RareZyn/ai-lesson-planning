@@ -199,6 +199,8 @@ studentAnswerSchema.index({ assessmentId: 1, studentId: 1 });
 studentAnswerSchema.index({ classId: 1, submittedAt: -1 });
 studentAnswerSchema.index({ processingStatus: 1 });
 studentAnswerSchema.index({ "answers.status": 1 });
+// Compound index for sorting submissions by assessment (prevents memory limit errors)
+studentAnswerSchema.index({ assessmentId: 1, submittedAt: -1 });
 
 // Instance method to calculate overall stats
 studentAnswerSchema.methods.calculateOverallStats = function () {
@@ -281,7 +283,9 @@ studentAnswerSchema.statics.getForReview = function (filters = {}) {
   if (filters.classId) query.classId = filters.classId;
   if (filters.assessmentId) query.assessmentId = filters.assessmentId;
 
+  // Exclude large image fields to prevent MongoDB memory limit errors
   return this.find(query)
+    .select("-answers.originalImage -answerSheetImage")
     .populate("studentId", "name studentId")
     .populate("assessmentId", "title")
     .sort({ submittedAt: -1 });
@@ -291,10 +295,12 @@ studentAnswerSchema.statics.getForReview = function (filters = {}) {
 studentAnswerSchema.statics.getLowConfidenceSubmissions = function (
   threshold = 0.6
 ) {
+  // Exclude large image fields to prevent MongoDB memory limit errors
   return this.find({
     "overallStats.averageConfidence": { $lt: threshold },
     processingStatus: { $in: ["completed", "processing_grading"] },
   })
+    .select("-answers.originalImage -answerSheetImage")
     .populate("studentId", "name studentId")
     .populate("assessmentId", "title")
     .sort({ "overallStats.averageConfidence": 1 });
