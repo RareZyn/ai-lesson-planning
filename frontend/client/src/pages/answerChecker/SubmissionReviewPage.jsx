@@ -587,26 +587,75 @@ const SubmissionReviewPage = () => {
                     {getStatusBadge(answer.status)}
                   </h6>
 
-                  {/* Image on top for essays */}
-                  {hasImage && isValidBase64 && (
-                    <div className="mb-4">
-                      <Image
-                        src={imageToDisplay}
-                        alt={`Question ${answer.questionNumber}`}
-                        style={{
-                          width: "100%",
-                          maxHeight: "500px",
-                          objectFit: "contain",
-                          borderRadius: "8px",
-                          border: "1px solid #ddd",
-                        }}
-                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-                        preview={{
-                          mask: "Click to preview",
-                        }}
-                      />
-                    </div>
-                  )}
+                  {/* Image/PDF on top for essays */}
+                  {hasImage && isValidBase64 && (() => {
+                    const isPdf = imageToDisplay.startsWith("data:application/pdf");
+                    const isImage = imageToDisplay.startsWith("data:image/");
+
+                    return (
+                      <div className="mb-4">
+                        {isPdf ? (
+                          // PDF Display
+                          <div>
+                            <div
+                              className="d-flex align-items-center justify-content-between p-3"
+                              style={{
+                                borderRadius: "8px",
+                                border: "2px solid #1890ff",
+                                backgroundColor: "#f5f5f5",
+                              }}
+                            >
+                              <div className="d-flex align-items-center">
+                                <FilePdfOutlined
+                                  style={{
+                                    fontSize: "48px",
+                                    color: "#ff4d4f",
+                                    marginRight: "20px",
+                                  }}
+                                />
+                                <div>
+                                  <h6 className="mb-1">PDF Answer Sheet - Question {answer.questionNumber}</h6>
+                                  <small className="text-muted">
+                                    Click to view the PDF document
+                                  </small>
+                                </div>
+                              </div>
+                              <Button
+                                variant="primary"
+                                onClick={() => {
+                                  // Open PDF in new tab
+                                  const pdfWindow = window.open();
+                                  pdfWindow.document.write(
+                                    `<iframe width='100%' height='100%' src='${imageToDisplay}'></iframe>`
+                                  );
+                                }}
+                              >
+                                <FilePdfOutlined className="me-2" />
+                                View PDF
+                              </Button>
+                            </div>
+                          </div>
+                        ) : isImage ? (
+                          // Image Display
+                          <Image
+                            src={imageToDisplay}
+                            alt={`Question ${answer.questionNumber}`}
+                            style={{
+                              width: "100%",
+                              maxHeight: "500px",
+                              objectFit: "contain",
+                              borderRadius: "8px",
+                              border: "1px solid #ddd",
+                            }}
+                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                            preview={{
+                              mask: "Click to preview",
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                    );
+                  })()}
 
                   {/* Two columns: Extracted Text and Grading Results */}
                   <div className="row">
@@ -839,23 +888,68 @@ const SubmissionReviewPage = () => {
                         Question {answer.questionNumber}{" "}
                         {getStatusBadge(answer.status)}
                       </h6>
-                      {hasImage && isValidBase64 ? (
-                        <Image
-                          src={imageToDisplay}
-                          alt={`Question ${answer.questionNumber}`}
-                          style={{
-                            width: "100%",
-                            maxHeight: "300px",
-                            objectFit: "contain",
-                            borderRadius: "8px",
-                            border: "1px solid #ddd",
-                          }}
-                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-                          preview={{
-                            mask: "Click to preview",
-                          }}
-                        />
-                      ) : (
+                      {hasImage && isValidBase64 ? (() => {
+                        const isPdf = imageToDisplay.startsWith("data:application/pdf");
+                        const isImage = imageToDisplay.startsWith("data:image/");
+
+                        return isPdf ? (
+                          // PDF Display
+                          <div>
+                            <div
+                              className="d-flex flex-column align-items-center justify-content-center p-3"
+                              style={{
+                                borderRadius: "8px",
+                                border: "2px solid #1890ff",
+                                backgroundColor: "#f5f5f5",
+                                minHeight: "200px",
+                              }}
+                            >
+                              <FilePdfOutlined
+                                style={{
+                                  fontSize: "48px",
+                                  color: "#ff4d4f",
+                                  marginBottom: "12px",
+                                }}
+                              />
+                              <h6 className="mb-2 text-center">PDF Answer</h6>
+                              <small className="text-muted text-center mb-3">
+                                Question {answer.questionNumber}
+                              </small>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => {
+                                  // Open PDF in new tab
+                                  const pdfWindow = window.open();
+                                  pdfWindow.document.write(
+                                    `<iframe width='100%' height='100%' src='${imageToDisplay}'></iframe>`
+                                  );
+                                }}
+                              >
+                                <FilePdfOutlined className="me-2" />
+                                View PDF
+                              </Button>
+                            </div>
+                          </div>
+                        ) : isImage ? (
+                          // Image Display
+                          <Image
+                            src={imageToDisplay}
+                            alt={`Question ${answer.questionNumber}`}
+                            style={{
+                              width: "100%",
+                              maxHeight: "300px",
+                              objectFit: "contain",
+                              borderRadius: "8px",
+                              border: "1px solid #ddd",
+                            }}
+                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                            preview={{
+                              mask: "Click to preview",
+                            }}
+                          />
+                        ) : null;
+                      })() : (
                         <div
                           className="d-flex align-items-center justify-content-center text-muted"
                           style={{

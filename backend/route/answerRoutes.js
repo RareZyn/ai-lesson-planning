@@ -10,6 +10,7 @@ const {
   getSubmissionsByClass,
   getAssessmentStats,
   deleteSubmission,
+  refreshAllStats,
 } = require("../controller/answerSubmissionController");
 
 // Apply authentication to all routes
@@ -18,6 +19,9 @@ router.use(protect);
 // Submission routes
 router.post("/submit", submitAnswer); // POST /api/answers/submit
 router.post("/batch-submit", batchSubmitAnswers); // POST /api/answers/batch-submit
+
+// Stats management
+router.post("/refresh-all-stats", refreshAllStats); // POST /api/answers/refresh-all-stats
 
 // Get submissions
 router.get("/assessment/:assessmentId/stats", getAssessmentStats); // GET /api/answers/assessment/:assessmentId/stats

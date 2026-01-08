@@ -344,58 +344,60 @@ const StudentProgressView = ({ classId }) => {
                   <h5 className="mb-3">Progress Over Time</h5>
                   {progressData.progressOverTime &&
                   progressData.progressOverTime.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={350}>
-                      <LineChart data={progressData.progressOverTime}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="assessmentNumber"
-                          label={{
-                            value: "Assessment Number",
-                            position: "insideBottom",
-                            offset: -5,
-                          }}
-                        />
-                        <YAxis
-                          domain={[0, 100]}
-                          label={{
-                            value: "Score (%)",
-                            angle: -90,
-                            position: "insideLeft",
-                          }}
-                        />
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-white p-2 border rounded shadow-sm">
-                                  <p className="mb-1">
-                                    <strong>{data.assessmentTitle}</strong>
-                                  </p>
-                                  <p className="mb-1">
-                                    Score: {data.score.toFixed(1)}%
-                                  </p>
-                                  <p className="mb-0 text-muted">
-                                    {dayjs(data.date).format("DD MMM YYYY")}
-                                  </p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="score"
-                          stroke="#8884d8"
-                          strokeWidth={2}
-                          name="Score (%)"
-                          dot={{ r: 5 }}
-                          activeDot={{ r: 7 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <div style={{ width: "100%", height: 350 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={progressData.progressOverTime}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="assessmentNumber"
+                            label={{
+                              value: "Assessment Number",
+                              position: "insideBottom",
+                              offset: -5,
+                            }}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            label={{
+                              value: "Score (%)",
+                              angle: -90,
+                              position: "insideLeft",
+                            }}
+                          />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-white p-2 border rounded shadow-sm">
+                                    <p className="mb-1">
+                                      <strong>{data.assessmentTitle}</strong>
+                                    </p>
+                                    <p className="mb-1">
+                                      Score: {data.score.toFixed(1)}%
+                                    </p>
+                                    <p className="mb-0 text-muted">
+                                      {dayjs(data.date).format("DD MMM YYYY")}
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="score"
+                            stroke="#8884d8"
+                            strokeWidth={2}
+                            name="Score (%)"
+                            dot={{ r: 5 }}
+                            activeDot={{ r: 7 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   ) : (
                     <p className="text-muted text-center py-5">
                       No progress data available
@@ -414,29 +416,31 @@ const StudentProgressView = ({ classId }) => {
                   <h5 className="mb-3">Topic Performance</h5>
                   {progressData.topicPerformance &&
                   progressData.topicPerformance.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart
-                        data={progressData.topicPerformance}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="topic"
-                          angle={-45}
-                          textAnchor="end"
-                          height={120}
-                          interval={0}
-                        />
-                        <YAxis domain={[0, 100]} />
-                        <Tooltip />
-                        <Legend />
-                        <Bar
-                          dataKey="averageScore"
-                          fill="#8884d8"
-                          name="Average Score (%)"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div style={{ width: "100%", height: 400 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={progressData.topicPerformance}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="topic"
+                            angle={-45}
+                            textAnchor="end"
+                            height={120}
+                            interval={0}
+                          />
+                          <YAxis domain={[0, 100]} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar
+                            dataKey="averageScore"
+                            fill="#8884d8"
+                            name="Average Score (%)"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   ) : (
                     <p className="text-muted text-center py-5">
                       No topic data available

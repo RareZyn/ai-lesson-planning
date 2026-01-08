@@ -44,7 +44,8 @@ const AnalyticsDashboard = () => {
 
       if (response.data.success && response.data.data.length > 0) {
         setClasses(response.data.data);
-        setSelectedClass(response.data.data[0]._id);
+        // Set last class as default
+        setSelectedClass(response.data.data[response.data.data.length - 1]._id);
       } else {
         setError("No classes found. Please create a class first.");
       }

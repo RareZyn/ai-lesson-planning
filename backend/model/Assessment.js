@@ -235,6 +235,38 @@ const AssessmentSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Cached submission statistics for performance
+    submissionStats: {
+      totalStudentsInClass: {
+        type: Number,
+        default: 0,
+      },
+      totalSubmissions: {
+        type: Number,
+        default: 0,
+      },
+      completedSubmissions: {
+        type: Number,
+        default: 0,
+      },
+      pendingSubmissions: {
+        type: Number,
+        default: 0,
+      },
+      submissionRate: {
+        type: Number,
+        default: 0,
+      },
+      overallAverage: {
+        type: Number,
+        default: 0,
+      },
+      lastUpdated: {
+        type: Date,
+        default: null,
+      },
+    },
+
     // ===== PHASE 6: OFFLINE SYNC SUPPORT =====
     version: {
       type: Number,
@@ -350,6 +382,77 @@ AssessmentSchema.statics.getUserAssessments = function (userId, filters = {}) {
     .populate("lessonPlanId", "parameters plan")
     .populate("classId", "className grade subject")
     .sort({ createdAt: -1 });
+};
+
+// FIXED: Static method to update submission statistics for an assessment
+AssessmentSchema.statics.updateSubmissionStats = async function (assessmentId) {
+  try {
+    const Assessment = this;
+    const StudentAnswer = require("./StudentAnswer");
+    const Class = require("./Class");
+
+    // Get assessment with class info
+    const assessment = await Assessment.findById(assessmentId).populate(
+      "classId",
+      "students classStats"
+    );
+
+    if (!assessment) {
+      console.error("Assessment not found:", assessmentId);
+      return null;
+    }
+
+    // Get total students in class
+    const totalStudentsInClass =
+      assessment.classId?.classStats?.totalStudents ||
+      assessment.classId?.students?.length ||
+      0;
+
+    // Get all submissions for this assessment
+    const submissions = await StudentAnswer.find({ assessmentId });
+
+    // Count completed vs pending submissions
+    const completedSubmissions = submissions.filter(
+      (s) => s.processingStatus === "completed"
+    ).length;
+    const pendingSubmissions = submissions.length - completedSubmissions;
+
+    // Calculate overall average (only from completed submissions)
+    let overallAverage = 0;
+    if (completedSubmissions > 0) {
+      const completedSubs = submissions.filter(
+        (s) => s.processingStatus === "completed"
+      );
+      const totalPercentage = completedSubs.reduce(
+        (sum, sub) => sum + (sub.overallStats?.percentage || 0),
+        0
+      );
+      overallAverage = totalPercentage / completedSubmissions;
+    }
+
+    // Calculate submission rate
+    const submissionRate =
+      totalStudentsInClass > 0
+        ? (submissions.length / totalStudentsInClass) * 100
+        : 0;
+
+    // Update the assessment's submissionStats
+    assessment.submissionStats = {
+      totalStudentsInClass,
+      totalSubmissions: submissions.length,
+      completedSubmissions,
+      pendingSubmissions,
+      submissionRate: parseFloat(submissionRate.toFixed(1)),
+      overallAverage: parseFloat(overallAverage.toFixed(1)),
+      lastUpdated: new Date(),
+    };
+
+    await assessment.save();
+    return assessment.submissionStats;
+  } catch (error) {
+    console.error("Error updating submission stats:", error);
+    return null;
+  }
 };
 
 // FIXED: Enhanced pre-save middleware with SPM exam support

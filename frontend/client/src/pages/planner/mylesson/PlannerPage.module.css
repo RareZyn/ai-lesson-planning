@@ -371,7 +371,6 @@
   border-radius: 12px;
   background-color: #f9fafb;
   width: 100%;
-  aspect-ratio: 1 / 1;
   /* Enforce square */
   min-height: 0;
   /* Remove fixed min-height */
