@@ -16,6 +16,7 @@ import { Modal as AntModal, message, Pagination, Dropdown, Menu } from 'antd';
 import { ExclamationCircleOutlined, MoreOutlined, BookOutlined, CalendarOutlined, FileTextOutlined } from '@ant-design/icons';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import CommonTable from '../../../components/common/CommonTable';
+import PlaceholderCard from '../../../components/common/PlaceholderCard';
 
 const CreateLessonCard = ({ showModal }) => (
   <div
@@ -388,9 +389,8 @@ const PlannerPage = () => {
             <LessonCard key={lesson._id} lesson={lesson} />
           ))
         ) : (
-          <div className={styles.statusMessage_empty}>
-            <h3>No Lesson Plans Found</h3>
-            <p>Start by scheduling your first lesson above or adjust your search filters.</p>
+          <div style={{ gridColumn: 'span 1' }}>
+            <PlaceholderCard type="lesson" />
           </div>
         )}
 

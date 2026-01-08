@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { UserProvider } from "./context/UserContext";
 import { SocketProvider } from "./context/SocketContext";
+import { BreadcrumbProvider } from "./context/BreadcrumbContext";
 import router from "./routes";
 import "./index.css";
 
@@ -21,12 +22,14 @@ root.render(
     <AuthProvider>
       <UserProvider>
         <SocketProvider>
-          <RouterProvider
-            router={router}
-            future={{
-              v7_startTransition: true,
-            }}
-          />
+          <BreadcrumbProvider>
+            <RouterProvider
+              router={router}
+              future={{
+                v7_startTransition: true,
+              }}
+            />
+          </BreadcrumbProvider>
         </SocketProvider>
       </UserProvider>
     </AuthProvider>

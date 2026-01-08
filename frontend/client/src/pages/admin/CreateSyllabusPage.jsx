@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Steps, Form, Input, Select, Button,
-    Upload, Table, Space, Divider, message, Alert, Row, Col, Card
+    Upload, Table, Space, Divider, message, Alert, Row, Col, Card, Spin
 } from 'antd';
 import {
     InboxOutlined, PlusOutlined, DeleteOutlined,
@@ -221,6 +221,17 @@ const CreateSyllabusPage = () => {
         XLSX.writeFile(wb, `${subject || 'Syllabus'}_Template.xlsx`);
     };
 
+    const handleDownloadParsedData = () => {
+        if (!parsedData || parsedData.length === 0) {
+            message.warning("No data to download.");
+            return;
+        }
+        const ws = XLSX.utils.json_to_sheet(parsedData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Syllabus Data");
+        XLSX.writeFile(wb, `${subject || 'Syllabus'}_Data.xlsx`);
+    };
+
     const handleSave = async () => {
         if (!grade || !subject || !parsedData) return;
         setLoading(true);
@@ -279,6 +290,25 @@ const CreateSyllabusPage = () => {
             </div>
 
             <div className={styles.contentContainer}>
+                {extracting && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'rgba(255, 255, 255, 0.8)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <Spin size="large" />
+                        <h3 style={{ marginTop: 20, color: '#4f46e5' }}>Extracting Data with AI...</h3>
+                        <p>Please wait, this may take a moment.</p>
+                    </div>
+                )}
                 <div className={styles.card}>
                     {/* STEP 0: DETAILS & SCHEMA */}
                     {currentStep === 0 && (
@@ -397,16 +427,44 @@ const CreateSyllabusPage = () => {
                                 </Button>
                             </Card>
 
+
+
                             <div className={styles.actions}>
                                 <button className={styles.secondaryButton} onClick={() => setCurrentStep(0)}>Back</button>
+                                <button
+                                    className={styles.primaryButton}
+                                    onClick={() => setCurrentStep(2)}
+                                    disabled={!parsedData || extracting}
+                                >
+                                    Next: Preview
+                                </button>
                             </div>
                         </Space>
                     )}
 
-                    {/* STEP 2: REVIEW */}
+                    {/* STEP 2: PREVIEW */}
                     {currentStep === 2 && (
                         <div>
-                            <Alert message={`Previewing ${parsedData?.length || 0} rows. Please verify data accuracy.`} type="success" showIcon style={{ marginBottom: 24 }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                <div>
+                                    <h3>Review Extracted Data</h3>
+                                    <p style={{ color: '#6b7280', margin: 0 }}>Verify data accuracy before saving.</p>
+                                </div>
+                                <Button
+                                    type="link"
+                                    icon={<DownloadOutlined />}
+                                    onClick={handleDownloadParsedData}
+                                >
+                                    Download to Edit (.xlsx)
+                                </Button>
+                            </div>
+
+                            <Alert
+                                message={`Previewing ${parsedData?.length || 0} rows. If you need to make changes, download the Excel file, edit it, and re-upload in the previous step.`}
+                                type="info"
+                                showIcon
+                                style={{ marginBottom: 24 }}
+                            />
 
                             <Table
                                 dataSource={parsedData}
@@ -422,7 +480,7 @@ const CreateSyllabusPage = () => {
                                 <button className={styles.secondaryButton} onClick={() => setCurrentStep(1)}>Back</button>
                                 <button className={styles.primaryButton} onClick={handleSave} disabled={loading}>
                                     <SaveOutlined style={{ marginRight: 8 }} />
-                                    {loading ? 'Saving...' : 'Save Syllabus'}
+                                    {loading ? 'Saving...' : 'Confirm & Save'}
                                 </button>
                             </div>
                         </div>

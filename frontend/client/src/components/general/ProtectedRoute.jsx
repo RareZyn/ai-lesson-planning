@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
+import LoadingSpinner from "../common/LoadingSpinner";
 import "./ProtectedRoute.css";
 
 const ProtectedRoute = ({ children, roles }) => {
@@ -82,12 +83,7 @@ const ProtectedRoute = ({ children, roles }) => {
 
   // Show loading state while auth is being determined
   if (isLoading) {
-    return (
-      <div className="auth-loading">
-        <div className="spinner"></div>
-        <p>Verifying your session...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Verifying your session..." />;
   }
 
   // Redirect deactivated accounts to special page
@@ -101,13 +97,10 @@ const ProtectedRoute = ({ children, roles }) => {
       return <Navigate to="/login" state={{ from: location }} replace />;
     }
     return (
-      <div className="auth-redirect">
-        <div className="spinner"></div>
-        <p>
-          Authentication required. Redirecting to login in {redirectCountdown}{" "}
-          seconds...
-        </p>
-      </div>
+      <LoadingSpinner
+        fullscreen
+        tip={`Authentication required. Redirecting to login in ${redirectCountdown} seconds...`}
+      />
     );
   }
 
@@ -131,12 +124,7 @@ const ProtectedRoute = ({ children, roles }) => {
   if (showContent) {
     return children;
   } else {
-    return (
-      <div className="auth-loading">
-        <div className="spinner"></div>
-        <p>Preparing your dashboard...</p>
-      </div>
-    );
+    return <LoadingSpinner fullscreen tip="Preparing your dashboard..." />;
   }
 };
 

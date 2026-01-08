@@ -8,11 +8,8 @@ import {
     Col,
     Avatar,
     Tag,
-
     Statistic,
-    Spin,
-    Alert,
-
+    Alert
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -50,6 +47,8 @@ import {
 } from "@ant-design/icons";
 import { Progress, Timeline } from "antd";
 import { getTeacherAnalytics } from "../../services/adminService";
+import { useBreadcrumb } from "../../context/BreadcrumbContext";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./TeacherAnalyticsPage.css";
 
 
@@ -58,6 +57,7 @@ const { Title, Text } = Typography;
 const TeacherAnalyticsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { setCustomBreadcrumbs } = useBreadcrumb();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -69,6 +69,13 @@ const TeacherAnalyticsPage = () => {
                 setLoading(true);
                 const result = await getTeacherAnalytics(id);
                 setData(result);
+
+                // Set custom breadcrumbs
+                setCustomBreadcrumbs([
+                    { label: "Home", link: "/app" },
+                    { label: "Admin Dashboard", link: "/app/admin" },
+                    { label: result.teacher?.name || "Teacher Analytics" }
+                ]);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -77,14 +84,13 @@ const TeacherAnalyticsPage = () => {
         };
 
         fetchData();
-    }, [id]);
+
+        // Cleanup
+        return () => setCustomBreadcrumbs(null);
+    }, [id, setCustomBreadcrumbs]);
 
     if (loading) {
-        return (
-            <div style={{ padding: "3rem", textAlign: "center" }}>
-                <Spin size="large" tip="Loading analytics..." />
-            </div>
-        );
+        return <LoadingSpinner tip="Loading analytics..." />;
     }
 
     if (error) {
@@ -134,7 +140,7 @@ const TeacherAnalyticsPage = () => {
                     onClick={() => navigate("/app/admin")}
                     style={{ paddingLeft: 0, fontSize: "1rem" }}
                 >
-                    Back to Teacher Management
+                    Back
                 </Button>
             </div>
 

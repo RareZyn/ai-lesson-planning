@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useBreadcrumb } from "../context/BreadcrumbContext";
 import "./Breadcrumb.css";
 
-const Breadcrumb = ({ customBreadcrumbs = null }) => {
+const Breadcrumb = ({ customBreadcrumbs: propBreadcrumbs = null }) => {
   const location = useLocation();
+  const { customBreadcrumbs: contextBreadcrumbs } = useBreadcrumb();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Use props if provided, otherwise use context
+  const activeBreadcrumbs = propBreadcrumbs || contextBreadcrumbs;
 
   const breadcrumbNameMap = {
     "/app": "Home",
@@ -23,12 +28,14 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
   const nonRoutablePaths = [
     /^\/app\/admin\/lessons$/,
     /^\/app\/admin\/lessons\/[^/]+$/,
+    /^\/app\/admin\/teacher-analytics$/,
+    /^\/app\/admin\/syllabuses$/,
   ];
 
 
   // If custom breadcrumbs are provided, use them
-  if (customBreadcrumbs) {
-    const shouldCollapse = customBreadcrumbs.length > 2 && !isExpanded;
+  if (activeBreadcrumbs) {
+    const shouldCollapse = activeBreadcrumbs.length > 2 && !isExpanded;
 
     return (
       <nav className="breadcrumb-container">
@@ -50,14 +57,14 @@ const Breadcrumb = ({ customBreadcrumbs = null }) => {
               </li>
               <li className="breadcrumb-item">
                 <span className="breadcrumb-current">
-                  {customBreadcrumbs[customBreadcrumbs.length - 1].label}
+                  {activeBreadcrumbs[activeBreadcrumbs.length - 1].label}
                 </span>
               </li>
             </>
           ) : (
-            customBreadcrumbs.map((crumb, index) => (
+            activeBreadcrumbs.map((crumb, index) => (
               <li key={index} className="breadcrumb-item">
-                {crumb.link && index < customBreadcrumbs.length - 1 ? (
+                {crumb.link && index < activeBreadcrumbs.length - 1 ? (
                   <Link to={crumb.link} className="breadcrumb-link">
                     {crumb.label}
                   </Link>

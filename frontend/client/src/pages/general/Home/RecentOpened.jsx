@@ -7,6 +7,7 @@ import { getRecentLessonPlans } from "../../../services/lessonService";
 import LessonCard from "../../planner/displaylesson/LessonCard";
 import { FaPlus } from "react-icons/fa";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import PlaceholderCard from "../../../components/common/PlaceholderCard";
 
 const CreateLessonCard = ({ onClick }) => (
   <div
@@ -127,11 +128,17 @@ const RecentOpened = () => {
         <div className="horizontal-scroll-item">
           <CreateLessonCard onClick={handleCreateLessonClick} />
         </div>
-        {recentItems.map((item) => (
-          <div key={item._id} className="horizontal-scroll-item">
-            <LessonCard lesson={item} isRecent={true} />
+        {recentItems.length === 0 ? (
+          <div className="horizontal-scroll-item">
+            <PlaceholderCard type="lesson" />
           </div>
-        ))}
+        ) : (
+          recentItems.map((item) => (
+            <div key={item._id} className="horizontal-scroll-item">
+              <LessonCard lesson={item} isRecent={true} />
+            </div>
+          ))
+        )}
       </div>
     );
   };
@@ -140,18 +147,16 @@ const RecentOpened = () => {
     <div className="recent-opened-container">
       <div className="recent-header">
         <h2 className="recent-opened-title">Recent Lessons</h2>
-        {recentItems.length > 0 && (
-          <button
-            className="btn btn-link p-0 view-all-btn"
-            onClick={handleViewAll}
-            aria-label="View all lessons"
-          >
-            View All
-            <span className="arrow ms-1" aria-hidden="true">
-              ›
-            </span>
-          </button>
-        )}
+        <button
+          className="btn btn-link p-0 view-all-btn"
+          onClick={handleViewAll}
+          aria-label="View all lessons"
+        >
+          View All
+          <span className="arrow ms-1" aria-hidden="true">
+            ›
+          </span>
+        </button>
       </div>
 
       {renderContent()}
