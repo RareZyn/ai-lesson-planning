@@ -102,7 +102,7 @@ exports.registerTeacherWithToken = async (req, res) => {
       email,
       password,
       schoolId: foundToken.schoolId, // Assign schoolId from the token
-      role: "teacher", // Default role for token-based registration
+      roles: ["teacher"], // Default role for token-based registration
       firebaseUid,
       geminiApiKey: geminiApiKey || "",
     });
@@ -216,7 +216,7 @@ exports.googleAuthWithToken = async (req, res) => {
       if (!user.schoolId) {
         // If an existing Google user somehow doesn't have a schoolId, update it
         user.schoolId = foundToken.schoolId;
-        user.role = "teacher"; // Ensure role is teacher for token-based Google registration
+        user.roles = ["teacher"]; // Ensure role is teacher for token-based Google registration
         user.lastLogin = new Date();
         if (geminiApiKey) user.geminiApiKey = geminiApiKey;
         await user.save();
@@ -248,7 +248,7 @@ exports.googleAuthWithToken = async (req, res) => {
         }
         user.googleId = googleId;
         user.schoolId = foundToken.schoolId;
-        user.role = "teacher";
+        user.roles = ["teacher"];
         if (avatar) user.avatar = avatar;
         if (geminiApiKey) user.geminiApiKey = geminiApiKey;
         user.lastLogin = new Date();
@@ -259,7 +259,7 @@ exports.googleAuthWithToken = async (req, res) => {
           name: name || email.split("@")[0],
           email,
           schoolId: foundToken.schoolId,
-          role: "teacher", // Set role as teacher
+          roles: ["teacher"], // Set role as teacher
           googleId,
           avatar: avatar || "",
           geminiApiKey: geminiApiKey || "",
@@ -551,7 +551,7 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
           firebaseUid,
           email: email.toLowerCase(),
           name: userName,
-          role: "teacher", // Default to teacher, but without schoolId initially
+          roles: ["teacher"], // Default to teacher, but without schoolId initially
           isEmailVerified: true,
           lastLogin: new Date(),
           avatar: photoURL || "",
@@ -650,13 +650,13 @@ exports.registerSchool = async (req, res) => {
       schoolType: schoolType || "KSSM",
     });
 
-    // 2. Create the admin user
+    // 2. Create the admin user (also give teacher role for full access)
     const user = await User.create({
       name,
       email,
       password,
       schoolId: school._id,
-      roles: ["admin"], // First user becomes admin
+      roles: ["admin", "teacher"], // First user becomes admin with teacher capabilities
       firebaseUid,
       geminiApiKey: geminiApiKey || "",
     });
@@ -724,7 +724,7 @@ exports.googleRegisterSchool = async (req, res) => {
     if (user) {
       // Update existing user
       user.schoolId = school._id;
-      user.roles = ["admin"];
+      user.roles = ["admin", "teacher"];
       user.googleId = googleId;
       if (avatar) user.avatar = avatar;
       if (geminiApiKey) user.geminiApiKey = geminiApiKey;
@@ -738,7 +738,7 @@ exports.googleRegisterSchool = async (req, res) => {
         googleId,
         avatar: avatar || "",
         schoolId: school._id,
-        roles: ["admin"],
+        roles: ["admin", "teacher"],
         geminiApiKey: geminiApiKey || "",
       });
     }
