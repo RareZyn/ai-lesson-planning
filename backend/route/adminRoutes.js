@@ -19,84 +19,85 @@ const {
   updateTeacherRole,
   getAuditLogs
 } = require("../controller/adminController");
-const { protect, authorize } = require("../middleware/auth");
+const { protect, checkPermission } = require("../middleware/auth");
+const { PERMISSIONS } = require("../config/permissions");
 const multer = require("multer");
 const upload = multer();
 
 const router = express.Router();
 
-// Apply authentication and authorization to all routes
-router
-  .use(protect)
-  .use(authorize(
-    "admin",
-    "super_admin",
-    "math_head",
-    "english_head",
-    "science_head",
-    "teacher"
-  ));
+// Apply authentication to all routes
+router.use(protect);
 
 // Teachers management
 router.get(
   "/teachers",
+  checkPermission(PERMISSIONS.USER_READ),
   getTeachersBySchool
 );
 
 router.delete(
   "/teachers/:id",
+  checkPermission(PERMISSIONS.USER_DELETE),
   deleteTeacher
 );
 
 router.put(
   "/teachers/:id/status",
+  checkPermission(PERMISSIONS.USER_UPDATE),
   toggleTeacherStatus
 );
 
 router.put(
   "/teachers/:id/role",
+  checkPermission(PERMISSIONS.USER_UPDATE),
   updateTeacherRole
 );
 
 // Teacher token generation
 router.post(
   "/generate-teacher-token",
+  checkPermission(PERMISSIONS.USER_CREATE),
   generateTeacherRegistrationToken
 );
 
-router.get("/tokens/active", getActiveTokens);
+router.get("/tokens/active", checkPermission(PERMISSIONS.USER_READ), getActiveTokens);
 
-router.delete("/tokens/:id", revokeToken);
+router.delete("/tokens/:id", checkPermission(PERMISSIONS.USER_DELETE), revokeToken);
 
-router.post("/tokens/:id/resend", resendInvite);
+router.post("/tokens/:id/resend", checkPermission(PERMISSIONS.USER_UPDATE), resendInvite);
 
-router.post("/invite", inviteTeacher);
+router.post("/invite", checkPermission(PERMISSIONS.USER_CREATE), inviteTeacher);
 
-router.get("/audit-logs", getAuditLogs);
+router.get("/audit-logs", checkPermission(PERMISSIONS.AUDIT_LOG_READ), getAuditLogs);
 
-router.get("/teachers/:id/analytics", getTeacherAnalytics);
+router.get("/teachers/:id/analytics", checkPermission(PERMISSIONS.USER_READ), getTeacherAnalytics);
 
 // AI Syllabus Extraction Route
 router.post(
   "/syllabuses/extract-data",
   upload.single('file'),
+  // checkPermission(PERMISSIONS.SYLLABUS_MANAGE), // TODO: Add specific permission if needed, currently reusing ADMIN_DASHBOARD or similar?
+  // Actually, syllabuses are material/curriculum. Admin usually manages these.
+  checkPermission(PERMISSIONS.ADMIN_DASHBOARD),
   extractSyllabusData
 );
 
 // Syllabus management routes
 router.route("/syllabuses")
-  .get(getSyllabuses)                        // GET all syllabuses
-  .post(uploadSyllabus);                       // POST new syllabus (JSON)
+  .get(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), getSyllabuses)
+  .post(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), uploadSyllabus);
 
 router.route("/syllabuses/:id")
-  .get(getSyllabusById)                         // GET single syllabus
-  .put(upload.single('file'), updateSyllabus)   // UPDATE syllabus
-  .delete(deleteSyllabus);                      // DELETE syllabus
+  .get(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), getSyllabusById)
+  .put(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), upload.single('file'), updateSyllabus)
+  .delete(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), deleteSyllabus);
 
 // Legacy route (for backward compatibility if needed)
 router.post(
   "/upload-syllabus",
   upload.single('file'),
+  checkPermission(PERMISSIONS.SCHOOL_SETTINGS),
   uploadSyllabus
 );
 

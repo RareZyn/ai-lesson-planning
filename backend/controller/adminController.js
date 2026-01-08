@@ -968,7 +968,7 @@ exports.revokeToken = async (req, res) => {
 
 // @desc    Resend invitation email for a token
 // @route   POST /api/admin/tokens/:id/resend
-// @access  Private (school_admin, super_admin)
+// @access  Private (admin, super_admin)
 exports.resendInvite = async (req, res) => {
   try {
     const { id } = req.params;
@@ -991,7 +991,7 @@ exports.resendInvite = async (req, res) => {
     }
 
     // Construct Magic Link
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    const clientUrl = `${process.env.FRONTEND_URL}.vercel.app` || "http://localhost:3000";
     const inviteLink = `${clientUrl}/register?token=${tokenDoc.token}`;
 
     // Send Email (reuse the template from inviteTeacher)

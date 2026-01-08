@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const mongoose = require("mongoose");
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
 const Class = require("../model/Class");
@@ -1033,19 +1034,24 @@ exports.getAllLessonsForApproval = async (req, res) => {
 
     // Admin → Only their school
     else if (user.roles.includes("admin")) {
+      console.log("Admin filtering applied for school:", user.schoolId);
       matchStage = {
         ...matchStage,
-        "classInfo.schoolId": user.schoolId,
+        "creatorInfo.schoolId": new mongoose.Types.ObjectId(user.schoolId), // Ensure ObjectId type
       };
     }
 
     // Super Admin → Can see everything (still no drafts)
     else if (user.roles.includes("super_admin")) {
+      console.log("Super Admin - getting all pending lessons");
       // already covered by base match
     }
 
+    console.log("Match Stage:", JSON.stringify(matchStage, null, 2));
+
     // Aggregation
     const lessons = await LessonPlan.aggregate([
+      // Lookup Class Info for Subject filtering
       {
         $lookup: {
           from: "classes",
@@ -1054,20 +1060,41 @@ exports.getAllLessonsForApproval = async (req, res) => {
           as: "classInfo",
         },
       },
-      { $unwind: "$classInfo" },
+      { $unwind: { path: "$classInfo", preserveNullAndEmptyArrays: true } }, // Keep lessons even if class is deleted
+
+      // Lookup User Info (Creator) for School filtering
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "creatorInfo",
+        },
+      },
+      { $unwind: "$creatorInfo" },
+
       { $match: matchStage },
       { $sort: { createdAt: -1 } },
+
+      // Project only necessary fields (optional but good for performace/security)
+      // For now, keep it simple to ensure frontend gets what it needs
     ]);
 
-    // Populate createdBy field
-    await LessonPlan.populate(lessons, {
-      path: "createdBy",
-      select: "name email roles",
-    });
+    // Populate createdBy field explicitly if needed, but we already have creatorInfo. 
+    // However, the frontend might expect `createdBy` to be an object.
+    // The aggregation result has `creatorInfo` as an object. 
+    // We can map it back or rely on Mongoose populate if we returned documents, but this is an aggregation.
+    // Let's manually ensure the shape matches what frontend expects (usually populated createdBy).
+
+    const formattedLessons = lessons.map(lesson => ({
+      ...lesson,
+      createdBy: lesson.creatorInfo, // Map creatorInfo back to createdBy
+      classInfo: lesson.classInfo
+    }));
 
     res.status(200).json({
       success: true,
-      lessons,
+      lessons: formattedLessons,
     });
   } catch (error) {
     console.error("❌ Error fetching lessons for approval:", error);

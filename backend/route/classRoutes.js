@@ -9,7 +9,8 @@ const {
   getClassesBySubject,
   getRecentClasses,
 } = require('../controller/classController');
-const { protect } = require('../middleware/auth');
+const { protect, checkPermission } = require('../middleware/auth');
+const { PERMISSIONS } = require('../config/permissions');
 
 const router = express.Router();
 
@@ -18,23 +19,22 @@ router.use(protect);
 
 
 // --- Specific routes first ---
-router.get('/recent', getRecentClasses);          // GET /api/classes/recent
-router.get('/year/:year', getClassesByYear);    // GET /api/classes/year/2025
-router.get('/subject/:subject', getClassesBySubject); // GET /api/classes/subject/English
+router.get('/recent', checkPermission(PERMISSIONS.CLASS_READ), getRecentClasses);
+router.get('/year/:year', checkPermission(PERMISSIONS.CLASS_READ), getClassesByYear);
+router.get('/subject/:subject', checkPermission(PERMISSIONS.CLASS_READ), getClassesBySubject);
 
 
 // --- Routes for the base path '/' ---
 router.route('/')
-  .get(getClasses)      // GET /api/classes
-  .post(createClass);     // POST /api/classes
+  .get(checkPermission(PERMISSIONS.CLASS_READ), getClasses)
+  .post(checkPermission(PERMISSIONS.CLASS_CREATE), createClass);
 
 
 // --- Generic wildcard routes last ---
-// These will handle any request that didn't match the specific routes above
 router.route('/:id')
-  .get(getClassById)      // GET /api/classes/some_object_id
-  .put(updateClass)       // PUT /api/classes/some_object_id
-  .delete(deleteClass);   // DELETE /api/classes/some_object_id
+  .get(checkPermission(PERMISSIONS.CLASS_READ), getClassById)
+  .put(checkPermission(PERMISSIONS.CLASS_UPDATE), updateClass)
+  .delete(checkPermission(PERMISSIONS.CLASS_DELETE), deleteClass);
 
 
 module.exports = router;
