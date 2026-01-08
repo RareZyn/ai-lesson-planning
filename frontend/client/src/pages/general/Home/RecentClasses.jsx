@@ -6,6 +6,7 @@ import ClassCard from "../../class/ClassCard";
 import { FaPlus } from "react-icons/fa";
 import CreateClassModal from "../../class/CreateClassModal";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import PlaceholderCard from "../../../components/common/PlaceholderCard";
 
 const CreateClassCard = ({ onClick }) => {
   return (
@@ -67,7 +68,9 @@ const RecentClasses = () => {
           <div className="horizontal-scroll-item">
             <CreateClassCard onClick={handleCreateClassClick} />
           </div>
-          <p style={{ gridColumn: "1 / -1", marginTop: "1rem" }}>No recent classes found.</p>
+          <div className="horizontal-scroll-item">
+            <PlaceholderCard type="class" />
+          </div>
         </div>
       );
     }

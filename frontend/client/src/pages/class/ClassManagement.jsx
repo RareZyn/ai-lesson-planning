@@ -6,6 +6,7 @@ import ClassCard from './ClassCard'; // The reusable card for displaying a class
 import { Search as SearchIcon, Groups as GroupsIcon } from '@mui/icons-material';
 import { FaPlus } from 'react-icons/fa';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PlaceholderCard from '../../components/common/PlaceholderCard';
 import './ClassManagement.css';
 
 const CreateClassCard = ({ onClick }) => (
@@ -117,9 +118,13 @@ const ClassManagement = () => {
             <CreateClassCard onClick={() => setIsModalOpen(true)} />
 
             {/* --- Render the fetched class cards --- */}
-            {filteredClasses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((cls) => (
-              <ClassCard key={cls._id} classInfo={cls} />
-            ))}
+            {filteredClasses.length > 0 ? (
+              filteredClasses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((cls) => (
+                <ClassCard key={cls._id} classInfo={cls} />
+              ))
+            ) : !searchTerm ? (
+              <PlaceholderCard type="class" />
+            ) : null}
 
             {/* --- Special message if search finds no results --- */}
             {classes.length > 0 && filteredClasses.length === 0 && searchTerm && (

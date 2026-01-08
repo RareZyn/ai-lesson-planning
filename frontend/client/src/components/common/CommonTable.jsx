@@ -1,5 +1,6 @@
 import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
+import { InboxOutlined } from '@ant-design/icons';
 import './CommonTable.css';
 
 /**
@@ -22,6 +23,7 @@ const CommonTable = ({
     rowKey = 'id',
     onRow,
     renderCard,
+    emptyText = 'No data available'
 }) => {
 
     const getRowKey = (record, index) => {
@@ -49,8 +51,21 @@ const CommonTable = ({
 
     if (!dataSource || dataSource.length === 0) {
         return (
-            <div className="common-empty-state">
-                No data available
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '60px 20px',
+                color: '#999',
+                textAlign: 'center',
+                width: '100%',
+                background: '#fff',
+                borderRadius: '8px',
+                border: '1px dashed #d9d9d9'
+            }}>
+                <InboxOutlined style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
+                <span style={{ fontSize: '16px' }}>{emptyText}</span>
             </div>
         );
     }

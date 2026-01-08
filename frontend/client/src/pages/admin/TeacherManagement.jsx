@@ -300,12 +300,11 @@ const TeacherManagement = ({ searchTerm = "" }) => {
 
   // RENDER PENDING INVITES
   const renderPendingInvites = () => {
-    if (activeTokens.length === 0) return <p className="tm-empty" style={{ textAlign: 'center', padding: 20 }}>No pending invitations found.</p>;
-
     return (
       <>
         <CommonTable
           dataSource={currentTokens}
+          emptyText="No pending invitations found."
           rowKey="token"
           columns={[
             {
@@ -487,15 +486,13 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       {loading ? (
         <LoadingSpinner tip="Loading data..." />
       ) : activeTab === 'teachers' ? (
-        filteredTeachers.length === 0 ? (
-          <p className="tm-empty" style={{ textAlign: 'center', padding: 20 }}>No teachers found.</p>
-        ) : (
-          <>
-            <CommonTable
-              loading={loading}
-              dataSource={currentTeachers}
-              rowKey="_id"
-              columns={[
+        <>
+          <CommonTable
+            loading={loading}
+            dataSource={currentTeachers}
+            emptyText="No teachers found."
+            rowKey="_id"
+            columns={[
                 {
                   title: "Name",
                   dataIndex: "name",
@@ -687,7 +684,6 @@ const TeacherManagement = ({ searchTerm = "" }) => {
               </div>
             )}
           </>
-        )
       ) : (
         renderPendingInvites()
       )}

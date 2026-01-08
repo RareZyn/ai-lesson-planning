@@ -13,7 +13,6 @@ import {
     Statistic,
     Avatar,
     Tag,
-    Spin,
     Space,
     Timeline,
     Descriptions
@@ -46,6 +45,7 @@ import {
 } from "recharts";
 import { auth, EmailAuthProvider, linkWithCredential } from "../../firebase";
 import { getTeacherAnalytics } from "../../services/adminService";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const { Title, Text } = Typography;
 
@@ -215,7 +215,7 @@ const ProfilePage = () => {
     // -- Render Helpers --
 
     const renderAnalyticsSection = () => {
-        if (loadingAnalytics) return <Spin className="mt-4" tip="Loading stats..." />;
+        if (loadingAnalytics) return <LoadingSpinner tip="Loading stats..." />;
         if (!analyticsData) return null;
 
         const { analytics } = analyticsData;

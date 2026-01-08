@@ -18,13 +18,13 @@ import {
     Modal as AntModal,
     message,
     Upload,
-    Steps,
-    Spin
+    Steps
 } from 'antd';
 import * as XLSX from 'xlsx';
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, BookOutlined, UserOutlined, CalendarOutlined, NumberOutlined, ReadOutlined, ExclamationCircleOutlined, DownloadOutlined, InboxOutlined, FileExcelOutlined, SaveOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, BookOutlined, UserOutlined, CalendarOutlined, NumberOutlined, ReadOutlined, ExclamationCircleOutlined, DownloadOutlined, InboxOutlined, SaveOutlined } from '@ant-design/icons';
 import { updateSyllabus } from '../../services/adminService';
 import { useBreadcrumb } from '../../context/BreadcrumbContext';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { Title, Text } = Typography;
 const { Link: AnchorLink } = Anchor;
@@ -164,13 +164,6 @@ const DisplaySyllabus = () => {
         }
     };
 
-    const handleFileChange = (info) => {
-        const { status } = info.file;
-        if (status !== 'uploading') {
-            setEditFile(info.file.originFileObj);
-        }
-    };
-
     const handleUpdateSyllabus = async () => {
         if (!editFile) {
             message.error("Please upload the modified Excel file.");
@@ -224,16 +217,7 @@ const DisplaySyllabus = () => {
     };
 
     if (loading) {
-        return (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: "60vh" }}>
-                <div className="text-center">
-                    <div className="spinner-border text-primary mb-3" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <Text type="secondary">Loading syllabus...</Text>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner tip="Loading syllabus..." />;
     }
 
     if (error || !syllabus) {

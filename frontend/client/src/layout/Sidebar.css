@@ -1,10 +1,28 @@
-/* Sidebar Container */
+/* ==========================================================================
+   Sidebar.css
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Variables & Mixins (Simulated)
+   -------------------------------------------------------------------------- */
+/* Colors:
+   Background: #EDEDED
+   Active/Primary: #5880F1
+   Text: #000000 / rgba(0,0,0,0.6)
+   Overlay: rgba(0,0,0,0.3)
+   Mobile Nav Bg: rgba(237, 237, 237, 0.9)
+*/
+
+/* --------------------------------------------------------------------------
+   Desktop Sidebar Structure
+   -------------------------------------------------------------------------- */
+
 .sidebar {
   width: 80px;
   height: 100%;
   background-color: #EDEDED;
   color: #000000;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -16,16 +34,14 @@
   flex-shrink: 0;
 }
 
-/* 
-  FIX #1: Changed '.expanded' to '.pinned' to match the class name 
-  being applied by the React component. This is the main fix for the
-  expansion problem.
-*/
 .sidebar.pinned {
   width: 200px;
 }
 
-/* Menu List */
+/* --------------------------------------------------------------------------
+   Menu List & Items
+   -------------------------------------------------------------------------- */
+
 .sidebar-menu {
   list-style: none;
   padding: 0;
@@ -34,7 +50,6 @@
   overflow-y: auto;
 }
 
-/* Menu Items */
 .menu-item {
   padding: 10px;
   display: flex;
@@ -54,7 +69,7 @@
   background-color: #e0e0e0;
 }
 
-/* Active State - Controlled by React Router */
+/* Active State */
 .menu-item.active {
   color: #5880F1;
   background-color: rgba(88, 128, 241, 0.1);
@@ -77,50 +92,37 @@
   color: rgba(0, 0, 0, 0.6);
 }
 
-/* Labels */
+/* Labels & Transitions */
 .menu-label {
   margin-left: 15px;
   opacity: 1;
   transform: translateX(0);
-  transition:
-    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
   pointer-events: none;
-  /* Important for the transition */
 }
 
-/* 
-  FIX #2: Rewrote the invalid nested SASS/SCSS syntax into valid CSS.
-  The original code had rules nested inside other rules, which browsers ignore.
-*/
+/* Collapsed State Styles */
 .sidebar:not(.pinned) .menu-icon {
-  /* This rule was inside .sidebar:not(.pinned) before */
   justify-content: center;
 }
 
 .sidebar:not(.pinned) .menu-label {
-  /* This rule was also nested */
   opacity: 0;
   transform: translateX(-10px);
-  transition:
-    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   visibility: hidden;
-  /* Use visibility instead of a timed none */
 }
 
-/* 
-  Tooltip for collapsed state - This rule was also broken by the invalid nesting.
-  It is now a valid top-level CSS rule.
-*/
+/* Tooltip for Collapsed State */
 .sidebar:not(.pinned) .menu-item:hover .menu-label {
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
   transition-delay: 0.1s;
   position: absolute;
-  left: 80px;
-  /* Positioned outside the collapsed sidebar */
+  left: 80px; /* Outside sidebar */
   background: #34495e;
   color: white;
   padding: 8px 12px;
@@ -129,40 +131,30 @@
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
-  /* The label itself shouldn't be clickable */
 }
 
+/* --------------------------------------------------------------------------
+   Bottom Actions & Footer
+   -------------------------------------------------------------------------- */
 
-/* Bottom Actions Section */
 .sidebar-bottom-actions {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   padding-top: 8px;
   margin-top: auto;
-  /* Ensure it sticks to bottom if parent flex allows, though flex-grow on menu does this */
 }
 
 .logout-item:hover {
   background-color: #fff1f0;
-  /* Light red background for logout hover */
   color: #ff4d4f;
 }
 
-/* Footer Section */
 .sidebar-footer {
   padding: 6px 0;
   display: flex;
   justify-content: flex-end;
-  /* border-top: 1px solid #ddd;  We might double border if bottom-actions also has one, let's keep footer border or remove it?
-     Let's remove sidebar-footer border since bottom-actions has it. 
-     Or keep it if they are separate. 
-     Actually, sidebar-bottom-actions is inside the flex container.
-  */
   border-top: none;
 }
 
-/* 
-  FIX #3: Changed '.expand-btn' to '.pin-btn' to match the component's JSX.
-*/
 .pin-btn {
   background: none;
   border: none;
@@ -189,16 +181,34 @@
   transition: fill 0.3s ease;
 }
 
-/* Bottom Navigation Styles */
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION
+   ========================================================================== */
+
 .bottom-navigation {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #EDEDED;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 300px;
+  max-width: 92%;
+  
+  /* Glassmorphism with #EDEDED base */
+  background: rgba(237, 237, 237, 0.9);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  
   z-index: 1000;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-  padding: 4px 0;
+  padding: 8px 16px;
+  border-radius: 24px;
+  
+  /* Animation */
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              opacity 0.3s ease, 
+              bottom 0.3s ease;
 }
 
 .bottom-menu {
@@ -209,8 +219,6 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  overflow: hidden;
-  /* Prevent scrolling */
 }
 
 .bottom-menu-item {
@@ -218,256 +226,124 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
+  padding: 6px 10px;
   text-decoration: none;
-  color: rgba(0, 0, 0, 0.65);
-  flex: 1;
-  /* Grow efficiently */
-  min-width: 0;
-  /* Allow shrinking below content size if needed */
-  transition: all 0.2s ease;
+  color: rgba(0, 0, 0, 0.6);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 16px;
   position: relative;
+  min-width: 56px; /* Optimized touch target */
 }
 
-.bottom-menu-item:hover {
-  background-color: transparent;
-  /* Remove hover bg on mobile for cleaner look */
-  color: #5880F1;
-}
-
+/* Bottom Menu Active State */
 .bottom-menu-item.active {
   color: #5880F1;
-  font-weight: 600;
+  background: rgba(88, 128, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+.bottom-menu-item:not(.active):hover {
+  color: #5880F1;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .bottom-menu-icon {
   width: 24px;
   height: 24px;
+  font-size: 24px; /* Fix for Ant Design icon scaling */
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 2px;
-  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.bottom-menu-item.active .bottom-menu-icon {
+  transform: scale(1.1);
 }
 
 .bottom-menu-label {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  line-height: 1;
   opacity: 0.8;
+  margin-top: 2px;
 }
 
 .bottom-menu-item.active .bottom-menu-label {
   opacity: 1;
+  font-weight: 600;
 }
 
-/* Fix for Profile Component in Bottom Nav */
+/* Profile Icon in Mobile Menu */
 .mobile-profile-icon {
-  margin: 0 !important;
-  gap: 0 !important;
-  width: 100% !important;
-  justify-content: center !important;
   display: flex !important;
-}
-
-.mobile-profile-icon .profile-avatar {
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center;
   justify-content: center;
-  width: 100%;
+  align-items: center;
+  width: 24px;
+  height: 24px;
 }
 
-.mobile-profile-icon .profile-avatar .ant-avatar {
-  margin: 0 auto;
+.mobile-profile-icon .ant-avatar {
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
 }
 
-
-/* Responsive Adjustments */
-@media (min-width: 769px) {
-  .bottom-navigation {
-    display: none;
-  }
+.bottom-menu-item.active .mobile-profile-icon .ant-avatar {
+  border-color: #5880F1;
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-
-  .bottom-navigation {
-    padding: 10px 4px 12px 4px;
-    width: 98%;
-    /* Maximize width */
-    max-width: 600px;
-    /* Allow it to be wider on tablets */
-    min-width: auto;
-  }
-
-  .bottom-menu {
-    justify-content: space-between;
-  }
-
-  .bottom-menu-item {
-    flex: 1;
-    min-width: 0;
-    max-width: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 2px;
-  }
-
-  .bottom-menu-icon {
-    width: 26px;
-    /* Bigger icon */
-    height: 26px;
-  }
-
-  .bottom-menu-label {
-    font-size: 13px;
-    /* Bigger font */
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
-    margin-top: 4px;
-    /* More space */
-  }
-}
-
-@media (max-width: 480px) {
-  .bottom-navigation {
-    padding: 8px 2px 10px 2px;
-    width: 99%;
-    /* Practically full width */
-    bottom: 10px;
-    border-radius: 20px;
-  }
-
-  .bottom-menu-item {
-    padding: 6px 0;
-  }
-
-  .bottom-menu-icon {
-    width: 24px;
-    height: 24px;
-    margin-bottom: 3px;
-  }
-
-  .bottom-menu-label {
-    font-size: 12px;
-    /* Readable size */
-  }
-}
-
-@media (max-width: 380px) {
-  .bottom-navigation {
-    padding: 6px 0 8px 0;
-    width: 100%;
-    /* Full width for very small screens */
-    bottom: 0;
-    /* Stick to bottom on tiny screens to save space visually? Or keep floating */
-    bottom: 5px;
-    border-radius: 16px;
-  }
-
-  .bottom-menu-icon {
-    width: 22px;
-    height: 22px;
-  }
-
-  .bottom-menu-label {
-    font-size: 11px;
-    /* Smallest readable size */
-    white-space: nowrap;
-  }
-}
-
-/* Material Icons Specific Adjustments (Unchanged) */
-.menu-icon .MuiSvgIcon-root,
-.bottom-menu-icon .MuiSvgIcon-root {
-  width: 100%;
-  height: 100%;
-  transition: all 0.3s ease;
-  fill: currentColor;
-}
-
-/* Glass Effect for Bottom Nav */
-.bottom-navigation.glass-effect {
-  background: rgba(255, 255, 255, 0.9);
-  /* Slightly more opaque for floating */
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-
-  /* Floating & Centering */
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
-  min-width: 280px;
-  /* Ensure enough space */
-  max-width: 90%;
-  border-radius: 24px;
-  padding: 8px 12px;
-
-  /* Animation */
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-  z-index: 1000;
-}
-
-/* Visibility States */
+/* Navigation Scroll Visibility */
 .bottom-navigation.nav-visible {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
 }
 
 .bottom-navigation.nav-hidden {
-  transform: translateX(-50%) translateY(150%);
-  /* Slide down */
+  transform: translateX(-50%) translateY(160%); /* Slide out completely */
   opacity: 0;
   pointer-events: none;
 }
 
-/* Mobile Menu Backdrop */
+/* ==========================================================================
+   MOBILE "OTHERS" POPUP & BACKDROP
+   ========================================================================== */
+
 .mobile-menu-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.2);
-  /* Lighter backdrop */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
   z-index: 999;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s ease;
 }
 
-/* Others Menu Popup */
 .mobile-others-menu {
   position: fixed;
-  bottom: 90px;
-  /* Above floating nav (20px + height ~60px + gap) */
+  bottom: 100px; /* Positioned above the nav */
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  width: auto;
+  min-width: 220px;
+  
+  /* Matches Bottom Nav Style */
+  background: rgba(237, 237, 237, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  
+  border-radius: 20px;
   padding: 8px;
   z-index: 1001;
-  min-width: 200px;
   display: flex;
   flex-direction: column;
-  animation: slideUpCentered 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  gap: 4px;
+  animation: slideUpCentered 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .mobile-other-item {
@@ -478,37 +354,38 @@
   color: #333;
   font-size: 0.95rem;
   font-weight: 500;
+  border-radius: 12px;
   transition: all 0.2s;
-  border-radius: 8px;
-  /* Rounded items */
 }
 
 .mobile-other-item:hover,
 .mobile-other-item.active {
-  background: rgba(88, 128, 241, 0.1);
+  background: rgba(88, 128, 241, 0.15);
   color: #5880F1;
 }
 
 .mobile-other-icon {
-  margin-right: 12px;
+  margin-right: 14px;
   display: flex;
   align-items: center;
-  color: #666;
-  width: 24px;
-  /* Slightly larger */
   justify-content: center;
+  width: 20px;
+  color: #666;
 }
 
 .mobile-other-item.active .mobile-other-icon {
   color: #5880F1;
 }
 
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
 @keyframes slideUpCentered {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(10px) scale(0.95);
+    transform: translateX(-50%) translateY(20px) scale(0.9);
   }
-
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -516,11 +393,60 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  to {
-    opacity: 1;
+/* ==========================================================================
+   MEDIA QUERIES
+   ========================================================================== */
+
+/* --- Desktop (Over 768px) --- */
+@media (min-width: 769px) {
+  .bottom-navigation,
+  .mobile-menu-backdrop,
+  .mobile-others-menu {
+    display: none !important;
+  }
+}
+
+/* --- Tablet/Mobile (Under 768px) --- */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  
+  .bottom-navigation {
+    width: auto;
+    min-width: 320px;
+  }
+}
+
+/* --- Small Mobile (Under 480px) --- */
+@media (max-width: 480px) {
+  .bottom-navigation {
+    bottom: 16px;
+    width: 94%;
+    min-width: unset;
+    padding: 8px 12px;
+    border-radius: 20px;
+  }
+  
+  .bottom-menu-label {
+    font-size: 10px;
+  }
+}
+
+/* --- Very Small Screen (Under 360px) --- */
+@media (max-width: 360px) {
+  .bottom-navigation {
+    bottom: 10px;
+    width: 96%;
+    padding: 6px 8px;
+  }
+  
+  .bottom-menu-item {
+    padding: 4px;
+    min-width: 48px;
   }
 }

@@ -8,11 +8,8 @@ import {
     Col,
     Avatar,
     Tag,
-
     Statistic,
-    Spin,
-    Alert,
-
+    Alert
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -51,6 +48,7 @@ import {
 import { Progress, Timeline } from "antd";
 import { getTeacherAnalytics } from "../../services/adminService";
 import { useBreadcrumb } from "../../context/BreadcrumbContext";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./TeacherAnalyticsPage.css";
 
 
@@ -92,11 +90,7 @@ const TeacherAnalyticsPage = () => {
     }, [id, setCustomBreadcrumbs]);
 
     if (loading) {
-        return (
-            <div style={{ padding: "3rem", textAlign: "center" }}>
-                <Spin size="large" tip="Loading analytics..." />
-            </div>
-        );
+        return <LoadingSpinner tip="Loading analytics..." />;
     }
 
     if (error) {
