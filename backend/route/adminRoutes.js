@@ -61,11 +61,11 @@ router.post(
   generateTeacherRegistrationToken
 );
 
-router.get("/tokens/active", checkPermission(PERMISSIONS.USER_READ), getActiveTokens);
+router.get("/tokens/active", checkPermission(PERMISSIONS.TOKEN_READ), getActiveTokens);
 
-router.delete("/tokens/:id", checkPermission(PERMISSIONS.USER_DELETE), revokeToken);
+router.delete("/tokens/:id", checkPermission(PERMISSIONS.TOKEN_DELETE), revokeToken);
 
-router.post("/tokens/:id/resend", checkPermission(PERMISSIONS.USER_UPDATE), resendInvite);
+router.post("/tokens/:id/resend", checkPermission(PERMISSIONS.TOKEN_UPDATE), resendInvite);
 
 router.post("/invite", checkPermission(PERMISSIONS.USER_CREATE), inviteTeacher);
 
@@ -85,7 +85,7 @@ router.post(
 
 // Syllabus management routes
 router.route("/syllabuses")
-  .get(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), getSyllabuses)
+  .get(checkPermission(PERMISSIONS.LESSON_READ), getSyllabuses)
   .post(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), uploadSyllabus);
 
 router.route("/syllabuses/:id")

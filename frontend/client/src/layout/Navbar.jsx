@@ -7,13 +7,17 @@ import { Badge, Dropdown, List, Avatar, Typography, Empty } from "antd";
 import { BellOutlined, InfoCircleOutlined, RightOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Breadcrumb from "./Breadcrumb";
+import { useSocket } from "../context/SocketContext"; // Import useSocket
 
 const { Text } = Typography;
+
+
 
 const Navbar = () => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+  const socket = useSocket(); // Get socket instance
 
   const fetchNotifications = async () => {
     try {
@@ -31,16 +35,53 @@ const Navbar = () => {
 
   useEffect(() => {
     fetchNotifications();
+
+    if (socket) {
+      socket.on("new_notification", (notification) => {
+        console.log("Real-time notification received:", notification);
+        setUnreadNotifications((prev) => [notification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      });
+
+      // Listen for single read event (from other devices/tabs/pages)
+      socket.on("notification_read", (readNotificationId) => {
+        setUnreadNotifications((prev) => {
+          const filtered = prev.filter((n) => n._id !== readNotificationId);
+          setUnreadCount(filtered.length);
+          return filtered;
+        });
+      });
+
+      // Listen for "Mark All as Read" event
+      socket.on("all_notifications_read", () => {
+        setUnreadNotifications([]);
+        setUnreadCount(0);
+      });
+
+      return () => {
+        socket.off("new_notification");
+        socket.off("notification_read");
+        socket.off("all_notifications_read");
+      };
+    }
+
+    // Fallback polling (keep it just in case socket disconnects, but increase interval)
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [socket]);
 
   const handleNotificationClick = async (notification) => {
+    // Optimistic Update: Remove from list immediately
+    setUnreadNotifications((prev) => prev.filter((n) => n._id !== notification._id));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
     try {
       await notificationService.markAsRead(notification._id);
-      fetchNotifications(); // Refresh state
+      // fetchNotifications(); // No need to re-fetch immediately if we trust optimistic update
     } catch (error) {
       console.error("Error marking as read", error);
+      // Rollback if needed (optional, but good practice would be to re-fetch on error)
+      fetchNotifications();
     }
 
     if (notification.type === "lesson_approval" && notification.lessonId) {

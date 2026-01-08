@@ -22,7 +22,7 @@ import "./Profile.css";
 import { useUser } from "../../context/UserContext";
 import { useAuth } from "../../context/AuthContext";
 
-const Profile = ({ avatarSize = 36 }) => {
+const Profile = ({ avatarSize = 36, className, style }) => {
   const navigate = useNavigate();
 
   // Use your context providers instead of direct Firebase auth
@@ -234,7 +234,7 @@ const Profile = ({ avatarSize = 36 }) => {
   ];
 
   return (
-    <div className="profile-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <div className={`profile-container ${className || ''}`} style={{ display: 'flex', alignItems: 'center', gap: '16px', ...style }}>
 
 
       {/* Profile Dropdown */}

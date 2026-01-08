@@ -318,31 +318,52 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             {
               title: "",
               key: "action",
-              width: 200,
-              render: (_, record) => (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => handleCopyMagicLink(record.token)}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<SendOutlined />}
-                    onClick={() => handleResendInvite(record._id)}
-                  >
-                    Resend
-                  </Button>
-                  <Button
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleRevokeToken(record._id)}
-                  />
-                </div>
-              )
+              // width: 60,
+              render: (_, record) => {
+                const menu = (
+                  <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                    <Menu.Item
+                      key="copy"
+                      icon={<CopyOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleCopyMagicLink(record.token);
+                      }}
+                    >
+                      Copy Link
+                    </Menu.Item>
+                    <Menu.Item
+                      key="resend"
+                      icon={<SendOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleResendInvite(record._id);
+                      }}
+                    >
+                      Resend Invite
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      key="revoke"
+                      icon={<DeleteOutlined style={{ color: "#dc3545" }} />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleRevokeToken(record._id);
+                      }}
+                    >
+                      Revoke Invitation
+                    </Menu.Item>
+                  </Menu>
+                );
+                return (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <Button icon={<MoreOutlined />} type="text" />
+                    </Dropdown>
+                  </div >
+                );
+              }
+
             }
           ]}
           renderCard={(token) => (
@@ -352,7 +373,19 @@ const TeacherManagement = ({ searchTerm = "" }) => {
                   Created {new Date(token.createdAt).toLocaleDateString()}
                 </span>
                 <div onClick={(e) => e.stopPropagation()}>
-                  <Button type="text" icon={<CopyOutlined />} onClick={() => handleCopyMagicLink(token.token)} />
+                  <Dropdown
+                    overlay={
+                      <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                        <Menu.Item key="copy" icon={<CopyOutlined />} onClick={(e) => { e.domEvent.stopPropagation(); handleCopyMagicLink(token.token); }}>Copy Link</Menu.Item>
+                        <Menu.Item key="resend" icon={<SendOutlined />} onClick={(e) => { e.domEvent.stopPropagation(); handleResendInvite(token._id); }}>Resend Invite</Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item key="revoke" icon={<DeleteOutlined style={{ color: "#dc3545" }} />} onClick={(e) => { e.domEvent.stopPropagation(); handleRevokeToken(token._id); }}>Revoke</Menu.Item>
+                      </Menu>
+                    }
+                    trigger={['click']}
+                  >
+                    <MoreOutlined style={{ fontSize: '20px', color: '#94a3b8' }} />
+                  </Dropdown>
                 </div>
               </div>
               <div className="tm-mobileCardBody">
@@ -379,17 +412,19 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             </div>
           )}
         />
-        {activeTokens.length > 10 && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-            <Pagination
-              current={currentPage}
-              pageSize={itemsPerPage}
-              total={activeTokens.length}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
+        {
+          activeTokens.length > 10 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <Pagination
+                current={currentPage}
+                pageSize={itemsPerPage}
+                total={activeTokens.length}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )
+        }
       </>
     );
   };

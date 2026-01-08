@@ -47,11 +47,19 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
   };
 
   // This function will be called by the modal upon successful creation
-  const handleClassCreated = (newClass) => {
+  const handleClassCreated = (response) => {
+    // Check if response is wrapped (e.g., { success: true, data: { ... } }) or the object itself
+    const newClass = response?.data || response;
+
+    if (!newClass || !newClass.grade) {
+      console.error("Invalid class data received:", response);
+      return;
+    }
+
     // Add the new class to the list and re-sort
     const updatedClasses = [...classes, newClass].sort((a, b) => {
-      const formA = parseInt(a.grade.replace(/\D/g, "")) || 0;
-      const formB = parseInt(b.grade.replace(/\D/g, "")) || 0;
+      const formA = parseInt((a.grade || "").replace(/\D/g, "")) || 0;
+      const formB = parseInt((b.grade || "").replace(/\D/g, "")) || 0;
       return formA - formB;
     });
     setClasses(updatedClasses);
@@ -64,6 +72,9 @@ const Step1_ChooseClass = ({ data, updateData, onNext }) => {
 
   // Group classes by grade for better organization
   const classesByGrade = classes.reduce((acc, cls) => {
+    // Safety check for invalid class objects
+    if (!cls || !cls.grade) return acc;
+
     if (!acc[cls.grade]) {
       acc[cls.grade] = [];
     }

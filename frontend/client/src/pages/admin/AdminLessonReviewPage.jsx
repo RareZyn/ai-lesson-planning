@@ -37,6 +37,7 @@ import {
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 import styles from "../planner/displaylesson/DisplayLessonPage.module.css";
+import approvalStyles from "./LessonApproval.module.css";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -50,8 +51,10 @@ const AdminLessonReviewPage = () => {
     const [error, setError] = useState(null);
 
     // Approval/Rejection State
-    const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState("");
+    // Unified Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+    const [remark, setRemark] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
@@ -185,41 +188,28 @@ const AdminLessonReviewPage = () => {
     };
 
     // Action Handlers
-    const handleApprove = () => {
-        Modal.confirm({
-            title: "Approve Lesson Plan",
-            content: "Are you sure you want to APPROVE this lesson plan?",
-            okText: "Approve",
-            okButtonProps: { style: { backgroundColor: "#52c41a", borderColor: "#52c41a" } },
-            onOk: async () => {
-                setIsProcessing(true);
-                try {
-                    await approveLesson(id);
-                    message.success("Lesson approved successfully!");
-                    navigate(-1); // Go back
-                } catch (err) {
-                    message.error(`Error: ${err.message}`);
-                } finally {
-                    setIsProcessing(false);
-                }
-            },
-        });
+    const openModal = (type) => {
+        setActionType(type);
+        setRemark("");
+        setIsModalOpen(true);
     };
 
-    const handleRejectClick = () => {
-        setIsRejectModalVisible(true);
-    };
-
-    const submitRejection = async () => {
-        if (!rejectionReason.trim()) {
+    const handleConfirm = async () => {
+        if (actionType === "reject" && !remark.trim()) {
             message.warning("Please provide a reason for rejection.");
             return;
         }
+
         setIsProcessing(true);
         try {
-            await rejectLesson(id, rejectionReason);
-            message.success("Lesson rejected successfully!");
-            setIsRejectModalVisible(false);
+            if (actionType === "approve") {
+                await approveLesson(id, { remark });
+                message.success("Lesson approved successfully!");
+            } else if (actionType === "reject") {
+                await rejectLesson(id, remark);
+                message.success("Lesson rejected successfully!");
+            }
+            setIsModalOpen(false);
             navigate(-1); // Go back
         } catch (err) {
             message.error(`Error: ${err.message}`);
@@ -259,7 +249,7 @@ const AdminLessonReviewPage = () => {
             </div>
 
             {/* Header - Review Mode */}
-            <Card className="mb-4" style={{ borderRadius: "12px", borderTop: "4px solid #722ed1" }}>
+            <Card className="mb-4" style={{ borderRadius: "12px" }}>
                 <Row justify="space-between" align="middle">
                     <Col xs={24} lg={12}>
                         <Space direction="vertical" size={0}>
@@ -281,10 +271,10 @@ const AdminLessonReviewPage = () => {
                             {/* Approval Actions */}
                             {lessonPlan.approvalStatus === 'pending' && (
                                 <>
-                                    <Button danger icon={<CloseOutlined />} onClick={handleRejectClick} disabled={isProcessing} size="large">
+                                    <Button danger icon={<CloseOutlined />} onClick={() => openModal("reject")} disabled={isProcessing} size="large">
                                         Reject
                                     </Button>
-                                    <Button type="primary" icon={<CheckOutlined />} onClick={handleApprove} loading={isProcessing} disabled={isProcessing} size="large" style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}>
+                                    <Button type="primary" icon={<CheckOutlined />} onClick={() => openModal("approve")} loading={isProcessing} disabled={isProcessing} size="large" style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}>
                                         Approve
                                     </Button>
                                 </>
@@ -352,49 +342,118 @@ const AdminLessonReviewPage = () => {
                     </Card>
 
                     <Card title="Syllabus Content" className="mb-4">
-                        {parameters.sow && (
+                        {parameters.sow ? (
                             <div className={styles.syllabusContainer}>
                                 {Object.entries(parameters.sow).map(([key, value]) => {
+                                    // Filter out internal keys
                                     if (["id", "_id", "key", "topicKey"].includes(key)) return null;
-                                    const label = key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()).trim();
-                                    const renderValue = (val) => {
-                                        if (Array.isArray(val)) return <ul>{val.map((v, i) => <li key={i}>{v}</li>)}</ul>;
-                                        if (typeof val === 'object' && val !== null) {
-                                            return <pre style={{ fontSize: '10px' }}>{JSON.stringify(val, null, 2)}</pre>;
+
+                                    // Formatter
+                                    const label = key
+                                        .replace(/([A-Z])/g, " $1")
+                                        .replace(/^./, (str) => str.toUpperCase())
+                                        .trim();
+
+                                    // Recursive helper
+                                    const renderSyllabusValue = (val) => {
+                                        if (Array.isArray(val)) {
+                                            return (
+                                                <ul style={{ paddingLeft: "1.2rem", marginBottom: 0, wordBreak: "break-word" }}>
+                                                    {val.map((item, index) => (
+                                                        <li key={index}>{renderSyllabusValue(item)}</li>
+                                                    ))}
+                                                </ul>
+                                            );
                                         }
-                                        return val;
-                                    }
+                                        if (typeof val === "object" && val !== null) {
+                                            return (
+                                                <div style={{ paddingLeft: "0.5rem", wordBreak: "break-word" }}>
+                                                    {Object.entries(val).map(([subKey, subValue]) => (
+                                                        <div key={subKey}>
+                                                            <Text strong>{subKey}: </Text>
+                                                            {renderSyllabusValue(subValue)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <Paragraph
+                                                ellipsis={{ rows: 3, expandable: true, symbol: "more" }}
+                                                style={{ marginBottom: 0, wordBreak: "break-word", whiteSpace: "pre-wrap" }}
+                                            >
+                                                {String(val)}
+                                            </Paragraph>
+                                        );
+                                    };
+
                                     return (
-                                        <div key={key} className="mb-2">
-                                            <Text strong>{label}: </Text>
-                                            <Text type="secondary">{renderValue(value)}</Text>
+                                        <div key={key} className={styles.syllabusRow}>
+                                            <div className={styles.syllabusLabel}>{label}</div>
+                                            <div className={styles.syllabusValue}>
+                                                {renderSyllabusValue(value)}
+                                            </div>
                                         </div>
-                                    )
+                                    );
                                 })}
                             </div>
+                        ) : (
+                            <Alert message="No syllabus data attached to this lesson." type="info" />
                         )}
                     </Card>
                 </Col>
             </Row>
 
             {/* Rejection Modal */}
-            <Modal
-                title="Reject Lesson Plan"
-                open={isRejectModalVisible}
-                onOk={submitRejection}
-                onCancel={() => setIsRejectModalVisible(false)}
-                confirmLoading={isProcessing}
-                okText="Reject"
-                okButtonProps={{ danger: true }}
-            >
-                <Paragraph>Please provide a reason for rejecting this lesson plan. This will be sent to the teacher.</Paragraph>
-                <TextArea
-                    rows={4}
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="e.g., Learning objectives are not clear..."
-                />
-            </Modal>
+            {/* === CUSTOM CONFIRMATION MODAL === */}
+            {
+                isModalOpen && (
+                    <div className={approvalStyles.modalBackdrop}>
+                        <div className={approvalStyles.modalContent}>
+                            <h3>
+                                {actionType === "approve"
+                                    ? "Approve Lesson Plan"
+                                    : "Reject Lesson Plan"}
+                            </h3>
+                            <p>
+                                Are you sure you want to{" "}
+                                <b>{actionType === "approve" ? "approve" : "reject"}</b> this
+                                lesson?
+                            </p>
+                            <p style={{ marginTop: "10px", marginBottom: "5px" }}>
+                                <strong>Topic:</strong>{" "}
+                                {parameters.specificTopic || "Untitled"}
+                            </p>
+
+                            <textarea
+                                placeholder="Optional remark..."
+                                value={remark}
+                                onChange={(e) => setRemark(e.target.value)}
+                                className={approvalStyles.remarkInput}
+                            />
+
+                            <div className={approvalStyles.modalButtons}>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className={approvalStyles.cancelButton}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirm}
+                                    className={
+                                        actionType === "approve"
+                                            ? approvalStyles.approveButton
+                                            : approvalStyles.rejectButton
+                                    }
+                                >
+                                    {actionType === "approve" ? "Approve" : "Reject"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 };

@@ -44,20 +44,22 @@ const CreateClassModal = ({ isOpen, onClose, onSave, currentClass }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
+      let activeClass;
       if (currentClass) {
-        await updateClass(currentClass._id, formData);
+        activeClass = await updateClass(currentClass._id, formData);
         Modal.success({
           title: 'Success',
           content: 'Class updated successfully',
         });
       } else {
-        await createClass(formData);
+        // createClass returns { success: true, data: newClass } or similar
+        activeClass = await createClass(formData);
         Modal.success({
           title: 'Success',
           content: 'Class created successfully',
         });
       }
-      onSave(); // Notify parent component that save was successful
+      onSave(activeClass); // Notify parent component with the result
     } catch (error) {
       console.error('Error saving class:', error);
       Modal.error({
