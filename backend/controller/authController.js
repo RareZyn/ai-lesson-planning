@@ -532,6 +532,13 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
         if (photoURL) user.avatar = photoURL;
         if (displayName && !user.name) user.name = displayName;
         if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+        if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+
+        // SANITIZATION: Fix potential newline issues in roles (e.g., "admin\n")
+        if (user.roles && user.roles.length > 0) {
+          user.roles = user.roles.map(r => r ? r.trim() : r).filter(r => r);
+        }
+
         await user.save();
         console.log("Updated existing user with Firebase UID and last login.");
       } else {
@@ -561,6 +568,13 @@ exports.findOrCreateFirebaseUser = async (req, res) => {
       user.lastLogin = new Date();
       if (photoURL && photoURL !== user.avatar) user.avatar = photoURL;
       if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+      if (geminiApiKey) user.geminiApiKey = geminiApiKey;
+
+      // SANITIZATION: Fix potential newline issues in roles
+      if (user.roles && user.roles.length > 0) {
+        user.roles = user.roles.map(r => r ? r.trim() : r).filter(r => r);
+      }
+
       await user.save();
       console.log("Updated existing Firebase user last login.");
     }

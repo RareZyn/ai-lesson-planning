@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
+const { hasPermission } = require("../config/permissions");
 
 // Protect routes - authenticate token
 exports.protect = async (req, res, next) => {
@@ -89,6 +90,31 @@ exports.authorize = (...roles) => {
       return res.status(403).json({
         success: false,
         message: `User role(s) ${userRoles.join(", ")} are not authorized to access this route`,
+      });
+    }
+
+    next();
+  };
+};
+
+/// Check if user has specific permission
+exports.checkPermission = (permission) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to access this route",
+      });
+    }
+
+    const userRoles = Array.isArray(req.user.roles)
+      ? req.user.roles
+      : [req.user.role || "teacher"];
+
+    if (!hasPermission(userRoles, permission)) {
+      return res.status(403).json({
+        success: false,
+        message: `You do not have permission to perform this action (${permission})`,
       });
     }
 

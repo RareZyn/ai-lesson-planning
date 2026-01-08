@@ -44,6 +44,12 @@ exports.markAsRead = async (req, res) => {
         notification.isRead = true;
         await notification.save();
 
+        // Emit socket event to update clients
+        const io = req.app.get("io");
+        if (io) {
+            io.to(`user_${req.user.id}`).emit("notification_read", notification._id);
+        }
+
         res.status(200).json({
             success: true,
             data: notification,
@@ -64,6 +70,12 @@ exports.markAllAsRead = async (req, res) => {
             { recipient: req.user.id, isRead: false },
             { isRead: true }
         );
+
+        // Emit socket event to update clients
+        const io = req.app.get("io");
+        if (io) {
+            io.to(`user_${req.user.id}`).emit("all_notifications_read");
+        }
 
         res.status(200).json({
             success: true,

@@ -831,48 +831,57 @@ exports.inviteTeacher = async (req, res) => {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invitation to Join Lesson Planner</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 0;">
           <tr>
             <td align="center">
-              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
-                <!-- Header -->
+              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 0; overflow: hidden;">
+                <!-- Header with Logo -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">✨ You're Invited!</h1>
+                  <td style="background-color: #ffffff; padding: 30px 40px; border-bottom: 1px solid #f1f5f9; text-align: center;">
+                     <img src="https://i.imgur.com/rOI9pod.png alt="Lesson Planner Logo" style="height: 60px; display: block; margin: 0 auto;">
                   </td>
                 </tr>
-                <!-- Body -->
+                
+                <!-- Main Content -->
                 <tr>
-                  <td style="padding: 40px 30px;">
-                    <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 22px; font-weight: 600;">Join Lesson Planner</h2>
-                    <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                      <strong>${requesterUser.name}</strong> has invited you to join their school organization on <strong>Lesson Planner</strong>.
+                  <td style="padding: 40px;">
+                    <h2 style="margin: 0 0 24px 0; color: #1e293b; font-size: 20px; font-weight: 600;">You've been invited to collaborate</h2>
+                    <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">
+                      Hello,
                     </p>
-                    <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                      Click the button below to create your teacher account and start planning amazing lessons with AI assistance.
+                    <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">
+                      <strong>${requesterUser.name}</strong> has invited you to join their organization on <strong>Lesson Planner</strong>. 
+                      Accept the invitation to create your account and start accessing shared resources and AI-powered planning tools.
                     </p>
-                    <!-- CTA Button -->
+                    
+                    <!-- Call to Action -->
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="padding: 10px 0 30px 0;">
-                          <a href="${inviteLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">Accept Invitation</a>
+                        <td align="left" style="padding: 10px 0 30px 0;">
+                          <a href="${inviteLink}" style="display: inline-block; padding: 14px 32px; background-color: #1890ff; color: #ffffff; text-decoration: none; border-radius: 0; font-size: 15px; font-weight: 600; transition: background-color 0.2s;">Accept Invitation</a>
                         </td>
                       </tr>
                     </table>
-                    <!-- Divider -->
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                    <!-- Link fallback -->
-                    <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px;">Or copy and paste this link:</p>
-                    <p style="margin: 0; padding: 12px; background-color: #f7fafc; border-radius: 8px; word-break: break-all; font-size: 13px; color: #667eea;">${inviteLink}</p>
+
+                    <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.5;">
+                      If the button above doesn't work, verify your account by clicking the link below:<br>
+                      <a href="${inviteLink}" style="color: #1890ff; text-decoration: none; word-break: break-all;">${inviteLink}</a>
+                    </p>
                   </td>
                 </tr>
+
                 <!-- Footer -->
                 <tr>
-                  <td style="background-color: #f7fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="margin: 0 0 8px 0; color: #a0aec0; font-size: 13px;">This invitation expires in <strong>24 hours</strong>.</p>
-                    <p style="margin: 0; color: #a0aec0; font-size: 12px;">© ${new Date().getFullYear()} Lesson Planner. All rights reserved.</p>
+                  <td style="background-color: #f8fafc; padding: 30px 40px; border-top: 1px solid #e2e8f0; text-align: center;">
+                    <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px;">
+                      This invitation is valid for <strong>24 hours</strong>.
+                    </p>
+                    <p style="margin: 0; color: #94a3b8; font-size: 13px;">
+                      &copy; ${new Date().getFullYear()} AI Lesson Planner. All rights reserved.
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -968,7 +977,7 @@ exports.revokeToken = async (req, res) => {
 
 // @desc    Resend invitation email for a token
 // @route   POST /api/admin/tokens/:id/resend
-// @access  Private (school_admin, super_admin)
+// @access  Private (admin, super_admin)
 exports.resendInvite = async (req, res) => {
   try {
     const { id } = req.params;
@@ -991,7 +1000,7 @@ exports.resendInvite = async (req, res) => {
     }
 
     // Construct Magic Link
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    const clientUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}.vercel.app` : "http://localhost:3000";
     const inviteLink = `${clientUrl}/register?token=${tokenDoc.token}`;
 
     // Send Email (reuse the template from inviteTeacher)
@@ -1001,41 +1010,57 @@ exports.resendInvite = async (req, res) => {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reminder: Invitation to Join Lesson Planner</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 0;">
           <tr>
             <td align="center">
-              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
+              <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 0; overflow: hidden;">
+                <!-- Header with Logo -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">📧 Reminder: You're Invited!</h1>
+                  <td style="background-color: #ffffff; padding: 30px 40px; border-bottom: 1px solid #f1f5f9; text-align: center;">
+                     <img src="https://i.imgur.com/rOI9pod.png" alt="Lesson Planner Logo" style="height: 60px; display: block; margin: 0 auto;">
                   </td>
                 </tr>
+                
+                <!-- Main Content -->
                 <tr>
-                  <td style="padding: 40px 30px;">
-                    <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 22px; font-weight: 600;">Join Lesson Planner</h2>
-                    <p style="margin: 0 0 20px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                      <strong>${requesterUser.name}</strong> is reminding you about your invitation to join <strong>Lesson Planner</strong>.
+                  <td style="padding: 40px;">
+                    <h2 style="margin: 0 0 24px 0; color: #1e293b; font-size: 20px; font-weight: 600;">Reminder: You've been invited</h2>
+                    <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">
+                      Hello,
                     </p>
-                    <p style="margin: 0 0 30px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
-                      Click the button below to create your account.
+                    <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">
+                      This is a reminder that <strong>${requesterUser.name}</strong> has invited you to join <strong>Lesson Planner</strong>.
+                      We noticed you haven't accepted the invitation yet.
                     </p>
+                    
+                    <!-- Call to Action -->
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="padding: 10px 0 30px 0;">
-                          <a href="${inviteLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">Accept Invitation</a>
+                        <td align="left" style="padding: 10px 0 30px 0;">
+                          <a href="${inviteLink}" style="display: inline-block; padding: 14px 32px; background-color: #1890ff; color: #ffffff; text-decoration: none; border-radius: 0; font-size: 15px; font-weight: 600; transition: background-color 0.2s;">Accept Invitation</a>
                         </td>
                       </tr>
                     </table>
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                    <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px;">Or copy and paste this link:</p>
-                    <p style="margin: 0; padding: 12px; background-color: #f7fafc; border-radius: 8px; word-break: break-all; font-size: 13px; color: #667eea;">${inviteLink}</p>
+
+                    <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.5;">
+                      If the button above doesn't work, click the link below to get started:<br>
+                      <a href="${inviteLink}" style="color: #1890ff; text-decoration: none; word-break: break-all;">${inviteLink}</a>
+                    </p>
                   </td>
                 </tr>
+
+                <!-- Footer -->
                 <tr>
-                  <td style="background-color: #f7fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-                    <p style="margin: 0; color: #a0aec0; font-size: 12px;">© ${new Date().getFullYear()} Lesson Planner. All rights reserved.</p>
+                  <td style="background-color: #f8fafc; padding: 30px 40px; border-top: 1px solid #e2e8f0; text-align: center;">
+                    <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 13px;">
+                      This link expires soon.
+                    </p>
+                    <p style="margin: 0; color: #94a3b8; font-size: 13px;">
+                      &copy; ${new Date().getFullYear()} AI Lesson Planner. All rights reserved.
+                    </p>
                   </td>
                 </tr>
               </table>

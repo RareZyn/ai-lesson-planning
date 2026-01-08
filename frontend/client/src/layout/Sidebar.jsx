@@ -167,7 +167,7 @@ const Sidebar = () => {
             <li>
               <div className="bottom-menu-item">
                 <span className="bottom-menu-icon" style={{ overflow: 'visible' }}>
-                  <Profile avatarSize={24} />
+                  <Profile avatarSize={22} className="mobile-profile-icon" />
                 </span>
                 <span className="bottom-menu-label">Profile</span>
               </div>

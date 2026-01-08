@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import io from "socket.io-client";
-import { useAuth } from "./AuthContext";
+import { useUser } from "./UserContext";
 
 const SocketContext = createContext();
 
@@ -10,13 +10,19 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
-    const { user } = useAuth(); // Assuming AuthContext provides 'user' object
+    const { currentUser: user } = useUser(); // Use UserContext instead of AuthContext
 
     useEffect(() => {
         let newSocket;
 
-        const SERVER_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-        // Adjust URL logic if needed based on prod/dev environment
+        let SERVER_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+        // Fix: Strip '/api' from the URL if present, as socket.io needs the root URL
+        if (SERVER_URL.endsWith('/api')) {
+            SERVER_URL = SERVER_URL.slice(0, -4);
+        }
+
+        console.log("SocketContext: Initializing...", { user: user ? user._id : 'null', SERVER_URL });
 
         if (user) {
             // Connect only if user is logged in

@@ -36,6 +36,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Increased lim
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// Database connection middleware
+app.use(require('./middleware/dbConnect'));
+
 // Import routes
 const authRoutes = require("./route/auth");
 const assessmentRoutes = require("./route/assessment");

@@ -265,6 +265,27 @@
   opacity: 1;
 }
 
+/* Fix for Profile Component in Bottom Nav */
+.mobile-profile-icon {
+  margin: 0 !important;
+  gap: 0 !important;
+  width: 100% !important;
+  justify-content: center !important;
+  display: flex !important;
+}
+
+.mobile-profile-icon .profile-avatar {
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.mobile-profile-icon .profile-avatar .ant-avatar {
+  margin: 0 auto;
+}
+
 
 /* Responsive Adjustments */
 @media (min-width: 769px) {
@@ -279,64 +300,91 @@
   }
 
   .bottom-navigation {
-    padding: 6px 0 8px 0;
+    padding: 10px 4px 12px 4px;
+    width: 98%;
+    /* Maximize width */
+    max-width: 600px;
+    /* Allow it to be wider on tablets */
+    min-width: auto;
+  }
+
+  .bottom-menu {
+    justify-content: space-between;
   }
 
   .bottom-menu-item {
-    padding: 6px 6px;
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 2px;
   }
 
   .bottom-menu-icon {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    /* Bigger icon */
+    height: 26px;
   }
 
   .bottom-menu-label {
-    font-size: 10px;
+    font-size: 13px;
+    /* Bigger font */
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+    margin-top: 4px;
+    /* More space */
   }
 }
 
 @media (max-width: 480px) {
   .bottom-navigation {
-    padding: 4px 0 6px 0;
+    padding: 8px 2px 10px 2px;
+    width: 99%;
+    /* Practically full width */
+    bottom: 10px;
+    border-radius: 20px;
   }
 
   .bottom-menu-item {
-    padding: 4px 4px;
-    min-width: 50px;
-    max-width: 70px;
+    padding: 6px 0;
   }
 
   .bottom-menu-icon {
-    width: 18px;
-    height: 18px;
-    margin-bottom: 2px;
+    width: 24px;
+    height: 24px;
+    margin-bottom: 3px;
   }
 
   .bottom-menu-label {
-    font-size: 9px;
+    font-size: 12px;
+    /* Readable size */
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 380px) {
   .bottom-navigation {
-    padding: 3px 0 5px 0;
-  }
-
-  .bottom-menu-item {
-    padding: 3px 2px;
-    min-width: 45px;
-    max-width: 60px;
+    padding: 6px 0 8px 0;
+    width: 100%;
+    /* Full width for very small screens */
+    bottom: 0;
+    /* Stick to bottom on tiny screens to save space visually? Or keep floating */
+    bottom: 5px;
+    border-radius: 16px;
   }
 
   .bottom-menu-icon {
-    width: 16px;
-    height: 16px;
-    margin-bottom: 2px;
+    width: 22px;
+    height: 22px;
   }
 
   .bottom-menu-label {
-    font-size: 8px;
+    font-size: 11px;
+    /* Smallest readable size */
+    white-space: nowrap;
   }
 }
 

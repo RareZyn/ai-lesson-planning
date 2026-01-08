@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeacherManagement.css";
 import { getTeachers, getInvitationCode, deleteTeacher, inviteTeacher, toggleTeacherStatus, revokeToken, resendInvite, updateTeacherRole } from "../../services/adminService";
-import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button } from "antd";
+import { Modal as AntModal, message, Pagination, Dropdown, Menu, Button, Input } from "antd";
 import {
   ExclamationCircleOutlined,
   MoreOutlined,
@@ -41,6 +41,11 @@ const TeacherManagement = ({ searchTerm = "" }) => {
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [selectedRoles, setSelectedRoles] = useState([]);
+
+  // Resend Modal State
+  const [resendModalVisible, setResendModalVisible] = useState(false);
+  const [resendTokenId, setResendTokenId] = useState(null);
+  const [resendEmail, setResendEmail] = useState("");
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -140,6 +145,8 @@ const TeacherManagement = ({ searchTerm = "" }) => {
       if (result.success) {
         message.success("Invitation sent successfully!");
         setEmail("");
+        setInvitationCode("");
+        setShowModal(false);
         fetchActiveTokens(); // Refresh list to show new token
       }
     } catch (error) {
@@ -219,18 +226,31 @@ const TeacherManagement = ({ searchTerm = "" }) => {
     });
   };
 
-  const handleResendInvite = async (tokenId) => {
-    const emailToResend = window.prompt("Enter the email address to resend the invitation:");
-    if (!emailToResend) return;
+  const handleResendInvite = (tokenId) => {
+    setResendTokenId(tokenId);
+    setResendEmail(""); // Reset email
+    setResendModalVisible(true);
+  };
 
+  const handleResendSubmit = async () => {
+    if (!resendEmail) {
+      message.error("Please enter an email address.");
+      return;
+    }
+    setLoading(true);
     try {
-      const res = await resendInvite(tokenId, emailToResend);
+      const res = await resendInvite(resendTokenId, resendEmail);
       if (res.success) {
-        message.success('Invitation resent!');
+        message.success('Invitation resent successfully!');
+        setResendModalVisible(false);
+        setResendEmail("");
+        setResendTokenId(null);
       }
     } catch (err) {
       console.error(err);
       message.error(err.message || "Error resending invitation.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -318,31 +338,52 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             {
               title: "",
               key: "action",
-              width: 200,
-              render: (_, record) => (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => handleCopyMagicLink(record.token)}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<SendOutlined />}
-                    onClick={() => handleResendInvite(record._id)}
-                  >
-                    Resend
-                  </Button>
-                  <Button
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleRevokeToken(record._id)}
-                  />
-                </div>
-              )
+              // width: 60,
+              render: (_, record) => {
+                const menu = (
+                  <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                    <Menu.Item
+                      key="copy"
+                      icon={<CopyOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleCopyMagicLink(record.token);
+                      }}
+                    >
+                      Copy Link
+                    </Menu.Item>
+                    <Menu.Item
+                      key="resend"
+                      icon={<SendOutlined />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleResendInvite(record._id);
+                      }}
+                    >
+                      Resend Invite
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      key="revoke"
+                      icon={<DeleteOutlined style={{ color: "#dc3545" }} />}
+                      onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        handleRevokeToken(record._id);
+                      }}
+                    >
+                      Revoke Invitation
+                    </Menu.Item>
+                  </Menu>
+                );
+                return (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Dropdown overlay={menu} trigger={['click']}>
+                      <Button icon={<MoreOutlined />} type="text" />
+                    </Dropdown>
+                  </div >
+                );
+              }
+
             }
           ]}
           renderCard={(token) => (
@@ -352,7 +393,19 @@ const TeacherManagement = ({ searchTerm = "" }) => {
                   Created {new Date(token.createdAt).toLocaleDateString()}
                 </span>
                 <div onClick={(e) => e.stopPropagation()}>
-                  <Button type="text" icon={<CopyOutlined />} onClick={() => handleCopyMagicLink(token.token)} />
+                  <Dropdown
+                    overlay={
+                      <Menu onClick={(e) => e.domEvent.stopPropagation()}>
+                        <Menu.Item key="copy" icon={<CopyOutlined />} onClick={(e) => { e.domEvent.stopPropagation(); handleCopyMagicLink(token.token); }}>Copy Link</Menu.Item>
+                        <Menu.Item key="resend" icon={<SendOutlined />} onClick={(e) => { e.domEvent.stopPropagation(); handleResendInvite(token._id); }}>Resend Invite</Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item key="revoke" icon={<DeleteOutlined style={{ color: "#dc3545" }} />} onClick={(e) => { e.domEvent.stopPropagation(); handleRevokeToken(token._id); }}>Revoke</Menu.Item>
+                      </Menu>
+                    }
+                    trigger={['click']}
+                  >
+                    <MoreOutlined style={{ fontSize: '20px', color: '#94a3b8' }} />
+                  </Dropdown>
                 </div>
               </div>
               <div className="tm-mobileCardBody">
@@ -379,17 +432,19 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             </div>
           )}
         />
-        {activeTokens.length > 10 && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-            <Pagination
-              current={currentPage}
-              pageSize={itemsPerPage}
-              total={activeTokens.length}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
-          </div>
-        )}
+        {
+          activeTokens.length > 10 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <Pagination
+                current={currentPage}
+                pageSize={itemsPerPage}
+                total={activeTokens.length}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )
+        }
       </>
     );
   };
@@ -678,7 +733,7 @@ const TeacherManagement = ({ searchTerm = "" }) => {
                   <div className="tm-modalSeparator">OR SHARE MANUALLY</div>
                   <div className="tm-inviteCodeSection">
                     <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5 }}>Invitation Code</div>
-                    <div className="tm-inviteCodeDisplay">{invitationCode}</div>
+                    <div className="tm-inviteCodeDisplay" style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{invitationCode}</div>
 
                     <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: 5, marginTop: 15 }}>Magic Link</div>
                     <div className="tm-magicLinkSection">
@@ -727,6 +782,32 @@ const TeacherManagement = ({ searchTerm = "" }) => {
             </label>
           ))}
         </div>
+      </AntModal>
+
+      {/* =============== RESEND MODAL =============== */}
+      <AntModal
+        title={<span><SendOutlined style={{ marginRight: 8, color: '#1890ff' }} /> Resend Invitation</span>}
+        open={resendModalVisible}
+        onCancel={() => {
+          if (!loading) {
+            setResendModalVisible(false);
+            setResendEmail("");
+          }
+        }}
+        confirmLoading={loading}
+        onOk={handleResendSubmit}
+        okText="Resend"
+        cancelButtonProps={{ disabled: loading }}
+      >
+        <p style={{ marginBottom: 16 }}>Please enter the email address to resend the invitation to:</p>
+        <Input
+          placeholder="Enter email address"
+          value={resendEmail}
+          onChange={(e) => setResendEmail(e.target.value)}
+          onPressEnter={handleResendSubmit}
+          prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+          autoFocus
+        />
       </AntModal>
     </div>
   );
