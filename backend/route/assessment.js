@@ -14,11 +14,17 @@ const {
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
   regenerateAssessment,
-  generateExamContent, // NEW: Import SPM exam generation function
+  getPublicAssessmentsByLessonPlan,
 } = require("../controller/assessmentController");
 const { protect, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
+
+// ==============================================
+// PUBLIC ROUTES (No authentication required)
+// ==============================================
+// Get public assessments for a shared community lesson plan
+router.get("/public/by-lesson/:lessonPlanId", getPublicAssessmentsByLessonPlan);
 
 // ==============================================
 // LESSON-BASED ASSESSMENT ROUTES

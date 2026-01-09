@@ -1533,6 +1533,130 @@ const regenerateAssessment = async (req, res) => {
   }
 };
 
+/**
+ * Get Public Assessments by Lesson Plan ID
+ * This endpoint is for community shared lessons - no ownership check
+ * Only returns assessments for lesson plans that are shared to community
+ */
+const getPublicAssessmentsByLessonPlan = async (req, res) => {
+  try {
+    const { lessonPlanId } = req.params;
+
+    if (!lessonPlanId) {
+      return res.status(400).json({
+        success: false,
+        message: "Lesson plan ID is required",
+      });
+    }
+
+    console.log("🔍 Getting public assessments for lesson plan:", lessonPlanId);
+
+    // First, verify the lesson plan is shared to community
+    const lessonPlan = await LessonPlan.findById(lessonPlanId);
+
+    if (!lessonPlan) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson plan not found",
+      });
+    }
+
+    // Only allow access to assessments if the lesson is shared to community
+    if (!lessonPlan.isSharedToCommunity) {
+      return res.status(403).json({
+        success: false,
+        message: "This lesson plan is not shared to the community",
+      });
+    }
+
+    // Fetch assessments for this lesson plan (no ownership check)
+    const assessments = await Assessment.find({
+      lessonPlanId: lessonPlanId,
+      $or: [
+        { isStandalone: { $exists: false } },
+        { isStandalone: false },
+        { isStandalone: null },
+      ],
+    })
+      .populate({
+        path: "classId",
+        select: "className grade subject year",
+      })
+      .sort({ createdAt: -1 });
+
+    console.log(
+      `✅ Found ${assessments.length} public assessments for lesson plan ${lessonPlanId}`
+    );
+
+    // Transform assessments for public display (remove sensitive data if needed)
+    const publicAssessments = assessments.map((assessment) => {
+      const transformed = assessment.toObject();
+      const content = transformed.generatedContent || {};
+
+      // Log for debugging
+      console.log(`📋 Assessment ${transformed._id} content check:`, {
+        activityType: transformed.activityType,
+        hasActivity: transformed.hasActivity,
+        hasRubric: transformed.hasRubric,
+        hasActivityHTML: !!content.activityHTML,
+        hasAssessmentHTML: !!content.assessmentHTML,
+        hasExamHTML: !!content.examHTML,
+        hasRubricHTML: !!content.rubricHTML,
+        hasAnswerKeyHTML: !!content.answerKeyHTML,
+      });
+
+      // Explicitly include all generated content fields to ensure proper serialization
+      return {
+        _id: transformed._id,
+        title: transformed.title,
+        assessmentTitle: transformed.title,
+        description: transformed.description,
+        assessmentDescription: transformed.description,
+        activityType: transformed.activityType,
+        assessmentType: transformed.assessmentType,
+        questionCount: transformed.questionCount,
+        duration: transformed.duration,
+        difficulty: transformed.difficulty,
+        skills: transformed.skills,
+        // Explicitly include all generatedContent fields
+        generatedContent: {
+          activityHTML: content.activityHTML || null,
+          assessmentHTML: content.assessmentHTML || null,
+          examHTML: content.examHTML || null,
+          rubricHTML: content.rubricHTML || null,
+          answerKeyHTML: content.answerKeyHTML || null,
+          activityContent: content.activityContent || null,
+          assessmentContent: content.assessmentContent || null,
+          examContent: content.examContent || null,
+          rubricContent: content.rubricContent || null,
+          answerKeyContent: content.answerKeyContent || null,
+          hasStudentContent: content.hasStudentContent || false,
+          hasTeacherContent: content.hasTeacherContent || false,
+        },
+        status: transformed.status,
+        hasActivity: transformed.hasActivity,
+        hasRubric: transformed.hasRubric,
+        createdAt: transformed.createdAt,
+        classId: transformed.classId,
+        lessonPlanSnapshot: transformed.lessonPlanSnapshot,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: publicAssessments.length,
+      data: publicAssessments,
+    });
+  } catch (error) {
+    console.error("❌ Get public assessments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching public assessments",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 // Export all controller functions
 module.exports = {
   generateFromLessonPlan,
@@ -1548,4 +1672,5 @@ module.exports = {
   getLessonPlansWithoutAssessments,
   getUserAssessmentsFiltered,
   regenerateAssessment,
+  getPublicAssessmentsByLessonPlan,
 };

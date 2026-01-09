@@ -84,19 +84,21 @@ const Community = () => {
     }
   };
 
-  // Fetch ALL assessments for a set of lessons
+  // Fetch ALL assessments for a set of lessons (uses public endpoint for community shared lessons)
   const fetchAssessmentsForLessons = async (lessonList) => {
     if (!lessonList || lessonList.length === 0) return;
 
     try {
       const assessmentsMap = {};
 
-      // Fetch ALL assessments for each lesson
+      // Fetch ALL assessments for each lesson using the PUBLIC endpoint
+      // This allows any user to see assessments for shared community lessons
       await Promise.all(
         lessonList.map(async (lesson) => {
           if (lesson._id) {
             try {
-              const response = await assessmentAPI.getAssessmentsByLessonPlan(
+              // Use public endpoint for community shared lessons
+              const response = await assessmentAPI.getPublicAssessmentsByLessonPlan(
                 lesson._id
               );
               // Store ALL assessments for this lesson, not just the first one

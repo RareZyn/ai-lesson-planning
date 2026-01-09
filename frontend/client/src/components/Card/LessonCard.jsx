@@ -29,7 +29,7 @@ const LessonCard = ({
   onBookmark,
   onUnshare,
   currentUserId,
-  assessment = null, // Single assessment for this lesson
+  assessments = [], // Array of assessments for this lesson
 }) => {
   const [isLiked, setIsLiked] = useState(
     lesson.communityData?.hasUserLiked || false
@@ -38,7 +38,7 @@ const LessonCard = ({
     lesson.isBookmarked || false
   );
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isDownloadingAssessment, setIsDownloadingAssessment] = useState(false);
+  const [downloadingAssessmentId, setDownloadingAssessmentId] = useState(null);
 
   // Update local state when lesson prop changes
   useEffect(() => {
@@ -139,13 +139,13 @@ const LessonCard = ({
     setIsModalVisible(true);
   };
 
-  const handleDownloadAssessment = async () => {
-    if (!assessment) {
+  const handleDownloadAssessment = async (assessmentToDownload) => {
+    if (!assessmentToDownload) {
       message.error('No assessment available for download');
       return;
     }
 
-    setIsDownloadingAssessment(true);
+    setDownloadingAssessmentId(assessmentToDownload._id);
     try {
       // Create a temporary container with the assessment content
       const tempContainer = document.createElement('div');
@@ -159,12 +159,12 @@ const LessonCard = ({
       // Determine which content to export based on activity type
       let contentHtml = '';
 
-      if (assessment.activityType === 'spm-exam') {
-        contentHtml = assessment.generatedContent?.examHTML || assessment.generatedContent?.assessmentHTML || '';
-      } else if (assessment.activityType === 'assessment') {
-        contentHtml = assessment.generatedContent?.assessmentHTML || '';
+      if (assessmentToDownload.activityType === 'spm-exam') {
+        contentHtml = assessmentToDownload.generatedContent?.examHTML || assessmentToDownload.generatedContent?.assessmentHTML || '';
+      } else if (assessmentToDownload.activityType === 'assessment') {
+        contentHtml = assessmentToDownload.generatedContent?.assessmentHTML || '';
       } else {
-        contentHtml = assessment.generatedContent?.activityHTML || '';
+        contentHtml = assessmentToDownload.generatedContent?.activityHTML || '';
       }
 
       if (!contentHtml) {
@@ -176,7 +176,7 @@ const LessonCard = ({
       document.body.appendChild(tempContainer);
 
       // Generate filename
-      const fileName = `${assessment.assessmentTitle || 'Assessment'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `${assessmentToDownload.assessmentTitle || 'Assessment'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       // Export to PDF using enhancedPdfExport service
       await pdfExportService.exportHtmlElementToPdf(
@@ -192,7 +192,7 @@ const LessonCard = ({
       console.error('Error downloading assessment:', error);
       message.error('Failed to download assessment. Please try again.');
     } finally {
-      setIsDownloadingAssessment(false);
+      setDownloadingAssessmentId(null);
     }
   };
 
@@ -475,6 +475,11 @@ const LessonCard = ({
                     <MessageOutlined />{" "}
                     {lesson.communityData?.reviews?.length || 0}
                   </span>
+                  {assessments && assessments.length > 0 && (
+                    <span style={{ color: "#1890ff" }}>
+                      <FileTextOutlined /> {assessments.length}
+                    </span>
+                  )}
                 </div>
               </div>
             }
@@ -686,92 +691,123 @@ const LessonCard = ({
         {/* Assessment Section */}
         <Divider orientation="left" style={{ marginTop: "24px", marginBottom: "16px" }}>
           <FileTextOutlined style={{ marginRight: "8px" }} />
-          Related Assessment
+          Related Assessments ({assessments.length})
         </Divider>
 
-        {assessment ? (
-          <div style={{ marginBottom: "20px" }}>
-            <div
-              style={{
-                padding: "16px",
-                backgroundColor: "#f8f9fa",
-                borderRadius: "8px",
-                border: "1px solid #e8e8e8",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                <div style={{ flex: 1 }}>
-                  <h5 style={{ marginBottom: "8px", color: "#1890ff" }}>
-                    <FileTextOutlined style={{ marginRight: "6px" }} />
-                    {assessment.assessmentTitle || assessment.title || "Assessment"}
-                  </h5>
+        {assessments && assessments.length > 0 ? (
+          <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            {assessments.map((assessment, index) => (
+              <div
+                key={assessment._id || index}
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "8px",
+                  border: "1px solid #e8e8e8",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                  <div style={{ flex: 1 }}>
+                    <h5 style={{ marginBottom: "8px", color: "#1890ff" }}>
+                      <FileTextOutlined style={{ marginRight: "6px" }} />
+                      {assessment.assessmentTitle || assessment.title || `Assessment ${index + 1}`}
+                    </h5>
 
-                  {assessment.assessmentDescription && (
-                    <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
-                      {assessment.assessmentDescription}
-                    </p>
-                  )}
-
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
-                    <Tag color="purple">
-                      {assessment.activityType?.toUpperCase() || "ACTIVITY"}
-                    </Tag>
-
-                    {assessment.assessmentType && (
-                      <Tag color="cyan">{assessment.assessmentType}</Tag>
+                    {assessment.assessmentDescription && (
+                      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+                        {assessment.assessmentDescription}
+                      </p>
                     )}
 
-                    {assessment.duration && (
-                      <Tag icon={<ClockCircleOutlined />}>{assessment.duration}</Tag>
-                    )}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
+                      <Tag color="purple">
+                        {assessment.activityType?.toUpperCase() || "ACTIVITY"}
+                      </Tag>
 
-                    {assessment.questionCount && (
-                      <Tag color="green">{assessment.questionCount} Questions</Tag>
+                      {assessment.assessmentType && (
+                        <Tag color="cyan">{assessment.assessmentType}</Tag>
+                      )}
+
+                      {assessment.duration && (
+                        <Tag icon={<ClockCircleOutlined />}>{assessment.duration}</Tag>
+                      )}
+
+                      {assessment.questionCount && (
+                        <Tag color="green">{assessment.questionCount} Questions</Tag>
+                      )}
+                    </div>
+
+                    {assessment.skills && assessment.skills.length > 0 && (
+                      <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                        <strong>Skills:</strong> {assessment.skills.join(", ")}
+                      </div>
                     )}
                   </div>
 
-                  {assessment.skills && assessment.skills.length > 0 && (
-                    <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
-                      <strong>Skills:</strong> {assessment.skills.join(", ")}
-                    </div>
-                  )}
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => handleDownloadAssessment(assessment)}
+                    loading={downloadingAssessmentId === assessment._id}
+                    style={{ marginLeft: "12px" }}
+                  >
+                    Download
+                  </Button>
                 </div>
 
-                <Button
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  onClick={handleDownloadAssessment}
-                  loading={isDownloadingAssessment}
-                  style={{ marginLeft: "12px" }}
-                >
-                  Download
-                </Button>
-              </div>
+                {/* Show content availability as single combined indicator */}
+                <div style={{ marginTop: "12px", fontSize: "12px" }}>
+                  {(() => {
+                    const content = assessment.generatedContent || {};
 
-              {/* Show content availability indicators */}
-              <div style={{ marginTop: "12px", display: "flex", gap: "16px", fontSize: "12px" }}>
-                {assessment.generatedContent?.activityHTML && (
-                  <span style={{ color: "#52c41a" }}>
-                    <CheckCircleOutlined /> Activity Sheet
-                  </span>
-                )}
-                {assessment.generatedContent?.assessmentHTML && (
-                  <span style={{ color: "#52c41a" }}>
-                    <CheckCircleOutlined /> Assessment Questions
-                  </span>
-                )}
-                {assessment.generatedContent?.rubricHTML && (
-                  <span style={{ color: "#52c41a" }}>
-                    <CheckCircleOutlined /> Rubric
-                  </span>
-                )}
-                {assessment.generatedContent?.answerKeyHTML && (
-                  <span style={{ color: "#52c41a" }}>
-                    <CheckCircleOutlined /> Answer Key
-                  </span>
-                )}
+                    // Check for student content
+                    const hasStudentContent = !!(
+                      assessment.hasActivity ||
+                      content.activityHTML ||
+                      content.assessmentHTML ||
+                      content.examHTML
+                    );
+
+                    // Check for teacher content
+                    const hasTeacherContent = !!(
+                      assessment.hasRubric ||
+                      content.rubricHTML ||
+                      content.answerKeyHTML
+                    );
+
+                    if (!hasStudentContent && !hasTeacherContent) return null;
+
+                    // Determine labels based on activity type
+                    let studentLabel = "Activity Sheet";
+                    let teacherLabel = "Rubric";
+
+                    if (assessment.activityType === "spm-exam") {
+                      studentLabel = "SPM Exam Paper";
+                      teacherLabel = "Answer Key";
+                    } else if (assessment.activityType === "assessment") {
+                      studentLabel = "Assessment Paper";
+                      teacherLabel = "Answer Key";
+                    }
+
+                    // Build combined label
+                    let displayLabel = "";
+                    if (hasStudentContent && hasTeacherContent) {
+                      displayLabel = `${studentLabel} & ${teacherLabel}`;
+                    } else if (hasStudentContent) {
+                      displayLabel = studentLabel;
+                    } else if (hasTeacherContent) {
+                      displayLabel = teacherLabel;
+                    }
+
+                    return (
+                      <span style={{ color: "#52c41a" }}>
+                        <CheckCircleOutlined /> {displayLabel}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         ) : (
           <div style={{ marginBottom: "20px" }}>

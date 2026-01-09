@@ -600,7 +600,7 @@ export const assessmentAPI = {
   },
 
   /**
-   * Get assessments for a specific lesson plan
+   * Get assessments for a specific lesson plan (owned by current user)
    */
   getAssessmentsByLessonPlan: async (lessonPlanId) => {
     try {
@@ -611,6 +611,23 @@ export const assessmentAPI = {
     } catch (error) {
       console.error("Error fetching assessments for lesson plan:", error);
       throw error;
+    }
+  },
+
+  /**
+   * Get public assessments for a shared community lesson plan
+   * This endpoint doesn't require ownership - for community viewing
+   */
+  getPublicAssessmentsByLessonPlan: async (lessonPlanId) => {
+    try {
+      const response = await apiClient.get(
+        `/assessment/public/by-lesson/${lessonPlanId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching public assessments for lesson plan:", error);
+      // Return empty array instead of throwing for non-critical community feature
+      return { success: false, data: [] };
     }
   },
 
