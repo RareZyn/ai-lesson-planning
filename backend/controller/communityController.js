@@ -1,6 +1,8 @@
 // backend/controller/communityController.js - Updated with bookmark functionality
 const LessonPlan = require("../model/Lesson");
 const User = require("../model/User");
+const Assessment = require("../model/Assessment");
+const Class = require("../model/Class");
 const mongoose = require("mongoose");
 
 /**
@@ -860,6 +862,206 @@ exports.getCommunityStats = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: "Server error while fetching community stats",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * @desc    Copy a community lesson plan to user's own class
+ * @route   POST /api/community/copy/:id
+ * @access  Public
+ */
+exports.copyLessonToClass = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { targetClassId, userId } = req.body;
+
+    // Validate required fields
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required in request body",
+      });
+    }
+
+    if (!targetClassId) {
+      return res.status(400).json({
+        success: false,
+        message: "targetClassId is required in request body",
+      });
+    }
+
+    // Resolve Firebase UID to MongoDB ObjectId if needed
+    const resolvedUserId = await resolveUserId(userId);
+
+    // Find the original lesson plan
+    const originalLesson = await LessonPlan.findById(id);
+
+    if (!originalLesson) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson plan not found",
+      });
+    }
+
+    // Check if lesson is shared to community
+    if (!originalLesson.isSharedToCommunity) {
+      return res.status(400).json({
+        success: false,
+        message: "Lesson plan is not available for copying",
+      });
+    }
+
+    // Find the target class and verify ownership
+    const targetClass = await Class.findById(targetClassId);
+
+    if (!targetClass) {
+      return res.status(404).json({
+        success: false,
+        message: "Target class not found",
+      });
+    }
+
+    // Verify class belongs to the user
+    if (targetClass.createdBy.toString() !== resolvedUserId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to add lessons to this class",
+      });
+    }
+
+    // Verify grade matches
+    if (targetClass.grade !== originalLesson.parameters.grade) {
+      return res.status(400).json({
+        success: false,
+        message: `Grade mismatch. Lesson is for ${originalLesson.parameters.grade}, but class is ${targetClass.grade}`,
+      });
+    }
+
+    // Create a copy of the lesson plan
+    const lessonCopy = new LessonPlan({
+      createdBy: resolvedUserId,
+      classId: targetClassId,
+      lessonDate: new Date(), // Set to current date
+      parameters: {
+        ...originalLesson.parameters,
+        // Keep all parameters but update any class-specific references
+      },
+      plan: {
+        ...originalLesson.plan,
+      },
+      status: "completed",
+      version: 1,
+      isSharedToCommunity: false, // Not shared
+      communityData: undefined, // Clear community data
+      assessmentStatus: "not_generated",
+      generatedAssessments: [],
+      // Track the source
+      copiedFrom: originalLesson._id,
+    });
+
+    await lessonCopy.save();
+
+    // Find and copy all assessments linked to the original lesson plan
+    const originalAssessments = await Assessment.find({
+      lessonPlanId: originalLesson._id,
+    });
+
+    let assessmentsCopied = 0;
+    const copiedAssessmentIds = [];
+
+    for (const originalAssessment of originalAssessments) {
+      const assessmentCopy = new Assessment({
+        title: originalAssessment.title,
+        description: originalAssessment.description,
+        createdBy: resolvedUserId,
+        lessonPlanId: lessonCopy._id, // Link to new lesson plan
+        classId: targetClassId,
+        activityType: originalAssessment.activityType,
+        assessmentType: originalAssessment.assessmentType,
+        questionCount: originalAssessment.questionCount,
+        duration: originalAssessment.duration,
+        difficulty: originalAssessment.difficulty,
+        skills: originalAssessment.skills || [],
+        generatedContent: {
+          ...originalAssessment.generatedContent,
+          generatedAt: new Date(),
+        },
+        lessonPlanSnapshot: originalAssessment.lessonPlanSnapshot,
+        status: originalAssessment.status,
+        hasActivity: originalAssessment.hasActivity,
+        hasRubric: originalAssessment.hasRubric,
+        tags: originalAssessment.tags || [],
+        notes: originalAssessment.notes,
+        examConfiguration: originalAssessment.examConfiguration,
+        isStandalone: false,
+        version: 1,
+        // Reset usage tracking
+        usageCount: 0,
+        lastUsed: null,
+        regenerationCount: 0,
+      });
+
+      await assessmentCopy.save();
+      copiedAssessmentIds.push({
+        assessmentId: assessmentCopy._id,
+        activityType: assessmentCopy.activityType,
+        generatedAt: new Date(),
+      });
+      assessmentsCopied++;
+    }
+
+    // Update the lesson plan with the assessment references
+    if (copiedAssessmentIds.length > 0) {
+      lessonCopy.generatedAssessments = copiedAssessmentIds;
+      lessonCopy.assessmentStatus = "generated";
+      await lessonCopy.save();
+    }
+
+    // Increment download count on the original lesson
+    if (!originalLesson.communityData) {
+      originalLesson.communityData = { downloads: 0, downloadedBy: [] };
+    }
+    originalLesson.communityData.downloads += 1;
+
+    // Record who copied it
+    if (!originalLesson.communityData.downloadedBy) {
+      originalLesson.communityData.downloadedBy = [];
+    }
+
+    const alreadyCopied = originalLesson.communityData.downloadedBy.some(
+      (download) =>
+        download.user && download.user.toString() === resolvedUserId.toString()
+    );
+
+    if (!alreadyCopied) {
+      originalLesson.communityData.downloadedBy.push({
+        user: resolvedUserId,
+        downloadedAt: new Date(),
+      });
+    }
+
+    await originalLesson.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Lesson plan added to your class successfully",
+      data: {
+        lessonPlanId: lessonCopy._id,
+        assessmentsCopied,
+        targetClass: {
+          id: targetClass._id,
+          className: targetClass.className,
+          grade: targetClass.grade,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error copying lesson plan to class:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while copying lesson plan",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

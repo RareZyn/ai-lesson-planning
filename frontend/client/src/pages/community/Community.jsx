@@ -455,6 +455,27 @@ const Community = () => {
     }
   };
 
+  const handleAddToClassSuccess = (data) => {
+    // Update the download count in local state for the original lesson
+    if (data && data.lessonPlanId) {
+      const updateDownloadCount = (lessonArray) =>
+        lessonArray.map((lesson) =>
+          lesson._id === data.lessonPlanId
+            ? {
+                ...lesson,
+                communityData: {
+                  ...lesson.communityData,
+                  downloads: (lesson.communityData?.downloads || 0) + 1,
+                },
+              }
+            : lesson
+        );
+
+      setLessons(updateDownloadCount);
+      setBookmarkedLessons(updateDownloadCount);
+    }
+  };
+
   const renderLessons = () => {
     if (loading) {
       return (
@@ -519,6 +540,7 @@ const Community = () => {
               onDownload={handleDownload}
               onBookmark={handleBookmark}
               onUnshare={handleUnshare}
+              onAddToClassSuccess={handleAddToClassSuccess}
               currentUserId={userId}
               assessments={assessmentsByLesson[lesson._id] || []}
             />

@@ -207,6 +207,33 @@ const getRecentClasses = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    Get classes by grade for the logged-in user
+ * @route   GET /api/classes/grade/:grade
+ * @access  Private
+ */
+const getClassesByGrade = async (req, res, next) => {
+    try {
+        const { grade } = req.params;
+        const userId = req.user.id;
+
+        // Find classes that match the grade and belong to the user
+        const classes = await Class.find({
+            createdBy: userId,
+            grade: grade
+        }).sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: classes.length,
+            data: classes
+        });
+    } catch (error) {
+        console.error("Error fetching classes by grade:", error);
+        next(error);
+    }
+};
+
 module.exports = {
     getClasses,
     getClassById,
@@ -215,5 +242,6 @@ module.exports = {
     deleteClass,
     getClassesByYear,
     getClassesBySubject,
-    getRecentClasses
+    getRecentClasses,
+    getClassesByGrade
 };

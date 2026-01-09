@@ -8,6 +8,7 @@ const {
   getClassesByYear,
   getClassesBySubject,
   getRecentClasses,
+  getClassesByGrade,
 } = require('../controller/classController');
 const { protect, checkPermission } = require('../middleware/auth');
 const { PERMISSIONS } = require('../config/permissions');
@@ -22,6 +23,7 @@ router.use(protect);
 router.get('/recent', checkPermission(PERMISSIONS.CLASS_READ), getRecentClasses);
 router.get('/year/:year', checkPermission(PERMISSIONS.CLASS_READ), getClassesByYear);
 router.get('/subject/:subject', checkPermission(PERMISSIONS.CLASS_READ), getClassesBySubject);
+router.get('/grade/:grade', checkPermission(PERMISSIONS.CLASS_READ), getClassesByGrade);
 
 
 // --- Routes for the base path '/' ---

@@ -77,3 +77,18 @@ export const getRecentClasses = async () => {
         throw new Error(error.response?.data?.message || 'Could not fetch recent classes.');
     }
 };
+
+/**
+ * Fetches classes by grade for the current user.
+ * @param {string} grade - The grade to filter by (e.g., "Form 1", "Form 2")
+ * @returns {Promise<Array>} A promise that resolves to an array of classes matching the grade.
+ */
+export const getClassesByGrade = async (grade) => {
+    try {
+        const response = await axios.get(`/api/classes/grade/${encodeURIComponent(grade)}`, getAuthConfig());
+        return response.data.data || [];
+    } catch (error) {
+        console.error("Error fetching classes by grade:", error.response?.data);
+        throw new Error(error.response?.data?.message || 'Could not fetch classes by grade.');
+    }
+};

@@ -206,6 +206,32 @@ export const communityAPI = {
       throw error;
     }
   },
+
+  // Copy a community lesson plan to user's own class
+  copyLessonToClass: async (lessonPlanId, targetClassId, userId) => {
+    try {
+      if (!lessonPlanId) {
+        throw new Error("lessonPlanId is required for copyLessonToClass");
+      }
+
+      if (!targetClassId) {
+        throw new Error("targetClassId is required for copyLessonToClass");
+      }
+
+      if (!userId) {
+        throw new Error("userId is required for copyLessonToClass");
+      }
+
+      const response = await apiClient.post(`/community/copy/${lessonPlanId}`, {
+        targetClassId,
+        userId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error copying lesson to class:", error);
+      throw error;
+    }
+  },
 };
 
 export default communityAPI;

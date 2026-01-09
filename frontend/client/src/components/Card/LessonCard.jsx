@@ -15,9 +15,11 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   RollbackOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { exportToPdf } from "../../services/exportService";
 import { pdfExportService } from "../../services/enhancedPdfExport";
+import AddToClassModal from "../Modal/AddToClassModal";
 import "./LessonCard.css";
 
 const { Meta } = Card;
@@ -28,6 +30,7 @@ const LessonCard = ({
   onDownload,
   onBookmark,
   onUnshare,
+  onAddToClassSuccess,
   currentUserId,
   assessments = [], // Array of assessments for this lesson
 }) => {
@@ -38,6 +41,7 @@ const LessonCard = ({
     lesson.isBookmarked || false
   );
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddToClassModalVisible, setIsAddToClassModalVisible] = useState(false);
   const [downloadingAssessmentId, setDownloadingAssessmentId] = useState(null);
 
   // Update local state when lesson prop changes
@@ -137,6 +141,21 @@ const LessonCard = ({
 
   const handleCardClick = () => {
     setIsModalVisible(true);
+  };
+
+  const handleAddToClass = (e) => {
+    e.stopPropagation();
+    if (!currentUserId) {
+      message.error("Please log in to add lessons to your class");
+      return;
+    }
+    setIsAddToClassModalVisible(true);
+  };
+
+  const handleAddToClassSuccess = (data) => {
+    if (onAddToClassSuccess) {
+      onAddToClassSuccess(data);
+    }
   };
 
   const handleDownloadAssessment = async (assessmentToDownload) => {
@@ -299,7 +318,7 @@ const LessonCard = ({
         {likes}
       </Button>
     </Tooltip>,
-    <Tooltip title="Download" key="download">
+    <Tooltip title="Download PDF" key="download">
       <Button
         type="text"
         icon={<DownloadOutlined />}
@@ -325,6 +344,15 @@ const LessonCard = ({
           )
         }
         onClick={handleBookmark}
+        className="action-btn"
+        disabled={isOwnLesson}
+      />
+    </Tooltip>,
+    <Tooltip title="Add to My Class" key="addToClass">
+      <Button
+        type="text"
+        icon={<PlusOutlined style={{ color: isOwnLesson ? "#d9d9d9" : "#52c41a" }} />}
+        onClick={handleAddToClass}
         className="action-btn"
         disabled={isOwnLesson}
       />
@@ -856,6 +884,16 @@ const LessonCard = ({
           )}
         </div>
       </Modal>
+
+      {/* Add to Class Modal */}
+      <AddToClassModal
+        visible={isAddToClassModalVisible}
+        onClose={() => setIsAddToClassModalVisible(false)}
+        lesson={lesson}
+        assessments={assessments}
+        currentUserId={currentUserId}
+        onSuccess={handleAddToClassSuccess}
+      />
     </>
   );
 };

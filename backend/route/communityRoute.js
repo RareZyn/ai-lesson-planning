@@ -12,6 +12,7 @@ const {
   toggleLikeLessonPlan,
   downloadLessonPlan,
   getCommunityStats,
+  copyLessonToClass,
 } = require("../controller/communityController");
 
 // Existing routes
@@ -27,5 +28,8 @@ router.get("/stats", getCommunityStats);
 // New bookmark routes
 router.get("/bookmarks", getUserBookmarks);
 router.put("/bookmark/:id", toggleBookmark);
+
+// Copy lesson to class route
+router.post("/copy/:id", copyLessonToClass);
 
 module.exports = router;
