@@ -106,7 +106,7 @@ const DisplaySyllabus = () => {
                 try {
                     await deleteSyllabus(id);
                     message.success('Syllabus deleted successfully');
-                    navigate('/app/admin/syllabuses');
+                    navigate('/app/admin');
                 } catch (err) {
                     console.error('Error deleting syllabus:', err);
                     message.error('Failed to delete syllabus');

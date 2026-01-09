@@ -32,6 +32,7 @@ const SyllabusManagement = ({ searchTerm }) => {
     // State for view management
     const [schoolType, setSchoolType] = useState('KSSM'); // Default fallback
     const [selectedGradeView, setSelectedGradeView] = useState(null);
+    const [selectedSubject, setSelectedSubject] = useState('');
 
     useEffect(() => {
         fetchSyllabuses();
@@ -62,6 +63,7 @@ const SyllabusManagement = ({ searchTerm }) => {
 
     const handleBackToGrades = () => {
         setSelectedGradeView(null);
+        setSelectedSubject('');
     };
 
     const handleViewSyllabus = (syllabus) => {
@@ -77,6 +79,7 @@ const SyllabusManagement = ({ searchTerm }) => {
     // Filter syllabuses for the selected grade
     const filteredSyllabuses = syllabuses.filter(syllabus => {
         if (selectedGradeView && syllabus.grade !== selectedGradeView) return false;
+        if (selectedSubject && syllabus.subject !== selectedSubject) return false;
 
         // Search filter
         if (searchTerm) {
@@ -109,8 +112,19 @@ const SyllabusManagement = ({ searchTerm }) => {
                         {currentGrades.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
 
-                    <select className={styles.filterSelect} disabled>
-                        <option>All Subjects</option>
+                    <select
+                        className={styles.filterSelect}
+                        value={selectedSubject}
+                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        disabled={!selectedGradeView}
+                    >
+                        <option value="">All Subjects</option>
+                        {[...new Set(syllabuses
+                            .filter(s => !selectedGradeView || s.grade === selectedGradeView)
+                            .map(s => s.subject)
+                        )].sort().map(subj => (
+                            <option key={subj} value={subj}>{subj}</option>
+                        ))}
                     </select>
                 </div>
             </div>
