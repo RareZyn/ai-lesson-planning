@@ -11,12 +11,14 @@ import {
   Tag,
   Space,
   Divider,
+  Tooltip,
 } from "antd";
 import {
   ArrowLeftOutlined,
   EyeOutlined,
   DownloadOutlined,
   PrinterOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
 import {
@@ -24,6 +26,7 @@ import {
   exportAnswerKeyToPdf,
 } from "../../utils/assessmentPdfExport";
 import { printRubric, printAnswerKey } from "../../utils/assessmentPrint";
+import EditAnswerModal from "../../components/Modal/Assessment/EditAnswerModal";
 
 const { Title, Text } = Typography;
 
@@ -318,6 +321,11 @@ const RubricViewerPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [printing, setPrinting] = useState(false);
 
+  // Edit modal states
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [selectedAnswerIndex, setSelectedAnswerIndex] = useState(0);
+
   const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
@@ -437,6 +445,110 @@ const RubricViewerPage = () => {
       default:
         return "Activity";
     }
+  };
+
+  // Get answers/criteria from assessment content for editing
+  const getAnswersFromAssessment = () => {
+    if (!assessment?.generatedContent) return [];
+
+    const { answerKeyContent, rubricContent } = assessment.generatedContent;
+
+    // For assessment and spm-exam, use answer key
+    if (
+      assessment.activityType === "spm-exam" ||
+      assessment.activityType === "assessment"
+    ) {
+      if (answerKeyContent?.answers && Array.isArray(answerKeyContent.answers)) {
+        return answerKeyContent.answers;
+      }
+    }
+
+    // For other types, use rubric criteria
+    if (rubricContent?.criteria && Array.isArray(rubricContent.criteria)) {
+      return rubricContent.criteria;
+    }
+
+    return [];
+  };
+
+  // Get the content type (answerKey or rubric)
+  const getContentType = () => {
+    if (
+      assessment?.activityType === "spm-exam" ||
+      assessment?.activityType === "assessment"
+    ) {
+      return "answerKey";
+    }
+    return "rubric";
+  };
+
+  // Handle opening the edit modal for an answer/criterion
+  const handleEditAnswer = (answer, index) => {
+    setSelectedAnswer(answer);
+    setSelectedAnswerIndex(index);
+    setEditModalOpen(true);
+  };
+
+  // Handle saving an edited answer/criterion
+  const handleSaveAnswer = async (updatedAnswer, index) => {
+    try {
+      const answers = getAnswersFromAssessment();
+      const updatedAnswers = [...answers];
+      updatedAnswers[index] = updatedAnswer;
+
+      const isAnswerKey = getContentType() === "answerKey";
+      const contentField = isAnswerKey ? "answerKeyContent" : "rubricContent";
+      const arrayField = isAnswerKey ? "answers" : "criteria";
+
+      // Prepare the update data
+      const updateData = {
+        generatedContent: {
+          ...assessment.generatedContent,
+          [contentField]: {
+            ...assessment.generatedContent[contentField],
+            [arrayField]: updatedAnswers,
+          },
+        },
+      };
+
+      // Regenerate HTML from updated content
+      const updatedContent = {
+        ...assessment.generatedContent[contentField],
+        [arrayField]: updatedAnswers,
+      };
+
+      // Generate new HTML
+      let newHTML;
+      if (isAnswerKey) {
+        newHTML = convertAnswerKeyContentToHTML(updatedContent);
+        updateData.generatedContent.answerKeyHTML = newHTML;
+      } else {
+        newHTML = convertRubricContentToHTML(updatedContent);
+        updateData.generatedContent.rubricHTML = newHTML;
+      }
+
+      // Call API to update assessment
+      const response = await assessmentAPI.updateAssessment(assessment._id, updateData);
+
+      if (response.success || response.data) {
+        message.success(
+          isAnswerKey ? "Answer updated successfully!" : "Rubric criteria updated successfully!"
+        );
+        // Refresh the assessment data
+        await fetchAssessment();
+      } else {
+        throw new Error(response.message || "Failed to update");
+      }
+    } catch (error) {
+      console.error("Error saving answer:", error);
+      message.error(error.message || "Failed to save changes");
+    }
+  };
+
+  // Check if editing is available
+  const canEditAnswers = () => {
+    const answers = getAnswersFromAssessment();
+    return answers.length > 0;
   };
 
   const handleViewActivity = () => {
@@ -776,6 +888,106 @@ const RubricViewerPage = () => {
         )}
       </Card>
 
+      {/* Edit Answers/Rubric Section */}
+      {canEditAnswers() && (
+        <Card
+          title={
+            <Space>
+              <EditOutlined />
+              <span>Edit {getContentType() === "answerKey" ? "Answers" : "Rubric Criteria"}</span>
+            </Space>
+          }
+          style={{ marginBottom: "24px" }}
+        >
+          <div style={{ marginBottom: 16 }}>
+            <Text type="secondary">
+              Click on any {getContentType() === "answerKey" ? "answer" : "criterion"} below to edit it.
+            </Text>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {getAnswersFromAssessment().map((item, index) => (
+              <Card
+                key={index}
+                size="small"
+                hoverable
+                style={{ cursor: "pointer" }}
+                onClick={() => handleEditAnswer(item, index)}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    {getContentType() === "answerKey" ? (
+                      // Answer key item display
+                      <>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                          Question {item.questionNumber || index + 1}
+                          <Tag color="blue" style={{ marginLeft: 8 }}>
+                            {item.points || item.marks || 1} {(item.points || item.marks || 1) === 1 ? "point" : "points"}
+                          </Tag>
+                        </div>
+                        <div style={{
+                          color: "#52c41a",
+                          fontSize: 13,
+                          marginBottom: 4,
+                        }}>
+                          <strong>Answer:</strong> {item.correctAnswer?.substring(0, 100)}{item.correctAnswer?.length > 100 ? "..." : ""}
+                        </div>
+                        {item.explanation && (
+                          <div style={{
+                            color: "#666",
+                            fontSize: 12,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: "vertical",
+                          }}>
+                            {item.explanation}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // Rubric criterion display
+                      <>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                          {item.category || `Criterion ${index + 1}`}
+                          <Tag color="purple" style={{ marginLeft: 8 }}>
+                            {item.points || 4} points max
+                          </Tag>
+                        </div>
+                        <div style={{
+                          color: "#666",
+                          fontSize: 12,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}>
+                          <strong>Excellent:</strong> {item.excellent?.substring(0, 80)}{item.excellent?.length > 80 ? "..." : ""}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Tooltip title={`Edit this ${getContentType() === "answerKey" ? "answer" : "criterion"}`}>
+                    <Button
+                      type="primary"
+                      icon={<EditOutlined />}
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditAnswer(item, index);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Tooltip>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Guidelines */}
       <Card title={`${getTeacherContentName()} Guidelines`} size="small">
         <div style={{ display: "grid", gap: "16px" }}>
@@ -956,6 +1168,20 @@ const RubricViewerPage = () => {
           </div>
         </div>
       </Card>
+
+      {/* Edit Answer/Rubric Modal */}
+      <EditAnswerModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedAnswer(null);
+        }}
+        answer={selectedAnswer}
+        answerIndex={selectedAnswerIndex}
+        onSave={handleSaveAnswer}
+        activityType={assessment?.activityType}
+        contentType={getContentType()}
+      />
     </div>
   );
 };

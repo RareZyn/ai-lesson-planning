@@ -10,17 +10,21 @@ import {
   Typography,
   Tag,
   Space,
+  Tooltip,
 } from "antd";
 import {
   ArrowLeftOutlined,
   EyeOutlined,
   DownloadOutlined,
   PrinterOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { assessmentAPI } from "../../services/assessmentService";
 import { exportAssessmentToPdf } from "../../utils/assessmentPdfExport";
 import { printAssessmentContent } from "../../utils/assessmentPrint";
 import { isOnline } from "../../services/networkStatus";
+import EditQuestionModal from "../../components/Modal/Assessment/EditQuestionModal";
 
 const { Title, Text } = Typography;
 
@@ -302,6 +306,12 @@ const ActivityViewerPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [printing, setPrinting] = useState(false);
 
+  // Edit modal states
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const [showEditWarning, setShowEditWarning] = useState(false);
+
   const fetchAssessment = useCallback(async () => {
     try {
       setLoading(true);
@@ -453,6 +463,291 @@ const ActivityViewerPage = () => {
     const teacherContent = getTeacherContent();
     const hasContent = !!teacherContent;
     return hasContent;
+  };
+
+  // Get editable content items from assessment for editing
+  const getEditableContentFromAssessment = () => {
+    if (!assessment?.generatedContent) return { items: [], contentType: null };
+
+    const { assessmentContent, activityContent, examContent } =
+      assessment.generatedContent;
+
+    // For assessment type - get questions
+    if (assessment.activityType === "assessment") {
+      const content = assessmentContent;
+      if (content?.questions && Array.isArray(content.questions)) {
+        return { items: content.questions, contentType: "questions" };
+      }
+    }
+
+    // For SPM exam - questions are nested inside parts[]
+    if (assessment.activityType === "spm-exam") {
+      const content = examContent || assessmentContent;
+
+      // SPM Paper structure: questions are inside parts[].questions
+      if (content?.parts && Array.isArray(content.parts)) {
+        const allQuestions = [];
+        content.parts.forEach((part, partIndex) => {
+          if (part.questions && Array.isArray(part.questions)) {
+            part.questions.forEach((question, qIndex) => {
+              allQuestions.push({
+                ...question,
+                partNumber: part.partNumber || partIndex + 1,
+                partTitle: part.title || `Part ${partIndex + 1}`,
+                questionNumber: question.questionNumber || qIndex + 1,
+                question: question.question || question.text || "",
+                type: question.type || "multiple_choice",
+                points: question.marks || 1,
+                options: question.options || [],
+                // Store original indices for saving
+                _partIndex: partIndex,
+                _questionIndex: qIndex,
+              });
+            });
+          }
+        });
+        if (allQuestions.length > 0) {
+          return { items: allQuestions, contentType: "spm-questions" };
+        }
+      }
+
+      // Fallback: check if questions are at top level
+      if (content?.questions && Array.isArray(content.questions)) {
+        return { items: content.questions, contentType: "questions" };
+      }
+    }
+
+    // For essay type - get prompt and guidelines as editable items
+    if (assessment.activityType === "essay" && activityContent) {
+      const items = [];
+      if (activityContent.prompt) {
+        items.push({
+          type: "prompt",
+          content: activityContent.prompt,
+          label: "Essay Prompt",
+        });
+      }
+      if (activityContent.guidelines && Array.isArray(activityContent.guidelines)) {
+        activityContent.guidelines.forEach((guideline, index) => {
+          items.push({
+            type: "guideline",
+            index,
+            content: guideline,
+            label: `Guideline ${index + 1}`,
+          });
+        });
+      }
+      if (activityContent.instructions && Array.isArray(activityContent.instructions)) {
+        activityContent.instructions.forEach((instruction, index) => {
+          items.push({
+            type: "instruction",
+            index,
+            content: instruction,
+            label: `Instruction ${index + 1}`,
+          });
+        });
+      }
+      return { items, contentType: "essay" };
+    }
+
+    // For activity/activityInClass type - get activities
+    if ((assessment.activityType === "activity" || assessment.activityType === "activityInClass") && activityContent) {
+      const items = [];
+      if (activityContent.activities && Array.isArray(activityContent.activities)) {
+        activityContent.activities.forEach((section, sectionIndex) => {
+          if (section.tasks && Array.isArray(section.tasks)) {
+            section.tasks.forEach((task, taskIndex) => {
+              items.push({
+                type: "task",
+                sectionIndex,
+                taskIndex,
+                section: section.section,
+                content: task,
+                label: `${section.section} - Task ${taskIndex + 1}`,
+              });
+            });
+          }
+        });
+      }
+      if (activityContent.instructions && Array.isArray(activityContent.instructions)) {
+        activityContent.instructions.forEach((instruction, index) => {
+          items.push({
+            type: "instruction",
+            index,
+            content: instruction,
+            label: `Instruction ${index + 1}`,
+          });
+        });
+      }
+      return { items, contentType: "activity" };
+    }
+
+    // For textbook type - get tasks and questions
+    if (assessment.activityType === "textbook" && activityContent) {
+      const items = [];
+      ["preActivity", "mainActivity", "postActivity"].forEach((phase) => {
+        if (activityContent[phase] && Array.isArray(activityContent[phase])) {
+          activityContent[phase].forEach((task, index) => {
+            items.push({
+              type: phase,
+              index,
+              content: task,
+              label: `${phase.replace(/([A-Z])/g, " $1").trim()} - Task ${index + 1}`,
+            });
+          });
+        }
+      });
+      if (activityContent.questions && Array.isArray(activityContent.questions)) {
+        activityContent.questions.forEach((question, index) => {
+          items.push({
+            type: "question",
+            index,
+            content: question.question,
+            questionType: question.type,
+            label: `Question ${index + 1}`,
+            original: question,
+          });
+        });
+      }
+      return { items, contentType: "textbook" };
+    }
+
+    // Fallback - try to get questions array from any content
+    if (activityContent?.questions && Array.isArray(activityContent.questions)) {
+      return { items: activityContent.questions, contentType: "questions" };
+    }
+
+    if (assessmentContent?.questions && Array.isArray(assessmentContent.questions)) {
+      return { items: assessmentContent.questions, contentType: "questions" };
+    }
+
+    return { items: [], contentType: null };
+  };
+
+  // Handle opening the edit modal for a question
+  const handleEditQuestion = (question, index) => {
+    setSelectedQuestion(question);
+    setSelectedQuestionIndex(index);
+    setEditModalOpen(true);
+    setShowEditWarning(true);
+  };
+
+  // Handle saving an edited question
+  const handleSaveQuestion = async (updatedQuestion, index) => {
+    try {
+      const { contentType } = getEditableContentFromAssessment();
+
+      // Determine which content field to update
+      let contentField = "assessmentContent";
+      if (assessment.activityType === "spm-exam") {
+        contentField = assessment.generatedContent?.examContent ? "examContent" : "assessmentContent";
+      } else if (assessment.activityType !== "assessment") {
+        contentField = "activityContent";
+      }
+
+      // Get the current content - deep copy to avoid mutation
+      const currentContent = JSON.parse(JSON.stringify(assessment.generatedContent[contentField]));
+
+      // Update based on content type
+      if (contentType === "spm-questions") {
+        // Handle SPM Paper questions (nested inside parts[])
+        const partIndex = updatedQuestion._partIndex;
+        const questionIndex = updatedQuestion._questionIndex;
+
+        if (currentContent.parts && currentContent.parts[partIndex]?.questions) {
+          // Remove the helper properties before saving
+          const { _partIndex, _questionIndex, partNumber, partTitle, ...cleanedQuestion } = updatedQuestion;
+
+          // Update the question in the correct part
+          currentContent.parts[partIndex].questions[questionIndex] = {
+            ...currentContent.parts[partIndex].questions[questionIndex],
+            ...cleanedQuestion,
+            // Map back the field names
+            text: cleanedQuestion.question || cleanedQuestion.text,
+            marks: cleanedQuestion.points || cleanedQuestion.marks,
+          };
+        }
+      } else if (contentType === "questions") {
+        // Handle questions array update
+        const questions = [...(currentContent.questions || [])];
+        questions[index] = updatedQuestion;
+        currentContent.questions = questions;
+      } else if (contentType === "essay") {
+        // Handle essay content update
+        const item = updatedQuestion; // The updated item
+        if (item.type === "prompt") {
+          currentContent.prompt = item.content;
+        } else if (item.type === "guideline") {
+          if (!currentContent.guidelines) currentContent.guidelines = [];
+          currentContent.guidelines[item.index] = item.content;
+        } else if (item.type === "instruction") {
+          if (!currentContent.instructions) currentContent.instructions = [];
+          currentContent.instructions[item.index] = item.content;
+        }
+      } else if (contentType === "activity") {
+        // Handle activity content update
+        const item = updatedQuestion;
+        if (item.type === "task") {
+          if (currentContent.activities && currentContent.activities[item.sectionIndex]) {
+            currentContent.activities[item.sectionIndex].tasks[item.taskIndex] = item.content;
+          }
+        } else if (item.type === "instruction") {
+          if (!currentContent.instructions) currentContent.instructions = [];
+          currentContent.instructions[item.index] = item.content;
+        }
+      } else if (contentType === "textbook") {
+        // Handle textbook content update
+        const item = updatedQuestion;
+        if (["preActivity", "mainActivity", "postActivity"].includes(item.type)) {
+          if (!currentContent[item.type]) currentContent[item.type] = [];
+          currentContent[item.type][item.index] = item.content;
+        } else if (item.type === "question") {
+          if (!currentContent.questions) currentContent.questions = [];
+          currentContent.questions[item.index] = {
+            ...currentContent.questions[item.index],
+            question: item.content,
+          };
+        }
+      }
+
+      // Prepare the update data
+      const updateData = {
+        generatedContent: {
+          ...assessment.generatedContent,
+          [contentField]: currentContent,
+        },
+      };
+
+      // Generate new HTML
+      let newHTML;
+      if (contentField === "assessmentContent" || contentField === "examContent") {
+        newHTML = convertAssessmentContentToHTML(currentContent);
+        updateData.generatedContent[contentField === "examContent" ? "examHTML" : "assessmentHTML"] = newHTML;
+      } else {
+        newHTML = convertActivityContentToHTML(currentContent, assessment.activityType);
+        updateData.generatedContent.activityHTML = newHTML;
+      }
+
+      // Call API to update assessment
+      const response = await assessmentAPI.updateAssessment(assessment._id, updateData);
+
+      if (response.success || response.data) {
+        message.success("Content updated successfully!");
+        // Refresh the assessment data
+        await fetchAssessment();
+      } else {
+        throw new Error(response.message || "Failed to update content");
+      }
+    } catch (error) {
+      console.error("Error saving content:", error);
+      message.error(error.message || "Failed to save content");
+    }
+  };
+
+  // Check if editing is available (has parseable content)
+  const canEditQuestions = () => {
+    const { items } = getEditableContentFromAssessment();
+    return items.length > 0;
   };
 
   const handleViewRubric = () => {
@@ -757,6 +1052,33 @@ const ActivityViewerPage = () => {
         </div>
       </Card>
 
+      {/* Edit Warning Alert */}
+      {showEditWarning && (
+        <Alert
+          message="Question Editing Reminder"
+          description={
+            <span>
+              When you edit questions, remember to <strong>manually update</strong> the
+              corresponding answers in the <strong>{getTeacherContentName()}</strong> to ensure
+              consistency between questions and answers.
+            </span>
+          }
+          type="warning"
+          icon={<ExclamationCircleOutlined />}
+          showIcon
+          closable
+          onClose={() => setShowEditWarning(false)}
+          style={{ marginBottom: "24px" }}
+          action={
+            hasTeacherContent() && (
+              <Button size="small" onClick={handleViewRubric}>
+                Go to {getTeacherContentName()}
+              </Button>
+            )
+          }
+        />
+      )}
+
       {/* Student Content */}
       <Card title={getContentTypeName()} style={{ marginBottom: "24px" }}>
         {studentContent ? (
@@ -813,6 +1135,165 @@ const ActivityViewerPage = () => {
           />
         )}
       </Card>
+
+      {/* Edit Content Section */}
+      {!canEditQuestions() && studentContent && (
+        <Card
+          title={
+            <Space>
+              <EditOutlined />
+              <span>Edit Content</span>
+            </Space>
+          }
+          style={{ marginBottom: "24px" }}
+        >
+          <Alert
+            message="Editing Not Available"
+            description={
+              <span>
+                This assessment's content is stored in HTML format only and cannot be edited
+                individually. To make changes, you can regenerate the assessment with updated
+                parameters or contact your administrator.
+              </span>
+            }
+            type="info"
+            showIcon
+          />
+        </Card>
+      )}
+      {canEditQuestions() && (() => {
+        const { items, contentType } = getEditableContentFromAssessment();
+        const getEditSectionTitle = () => {
+          switch (contentType) {
+            case "questions": return "Edit Questions";
+            case "spm-questions": return "Edit SPM Exam Questions";
+            case "essay": return "Edit Essay Content";
+            case "activity": return "Edit Activity Tasks";
+            case "textbook": return "Edit Textbook Content";
+            default: return "Edit Content";
+          }
+        };
+
+        return (
+          <Card
+            title={
+              <Space>
+                <EditOutlined />
+                <span>{getEditSectionTitle()}</span>
+              </Space>
+            }
+            style={{ marginBottom: "24px" }}
+            extra={
+              <Alert
+                message="Remember to update the answer key/rubric after editing"
+                type="info"
+                showIcon
+                icon={<ExclamationCircleOutlined />}
+                style={{ margin: 0, padding: "4px 12px" }}
+              />
+            }
+          >
+            <div style={{ marginBottom: 16 }}>
+              <Text type="secondary">
+                Click on any item below to edit it. After editing, make sure to update the
+                corresponding content in the {getTeacherContentName()}.
+              </Text>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {items.map((item, index) => (
+                <Card
+                  key={index}
+                  size="small"
+                  hoverable
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleEditQuestion(item, index)}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      {(contentType === "questions" || contentType === "spm-questions") ? (
+                        // Question item display
+                        <>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                            {contentType === "spm-questions" && item.partTitle && (
+                              <Tag color="cyan" style={{ marginRight: 8 }}>
+                                {item.partTitle}
+                              </Tag>
+                            )}
+                            Question {item.questionNumber || index + 1}
+                            <Tag color="blue" style={{ marginLeft: 8 }}>
+                              {item.points || item.marks || 1} {(item.points || item.marks || 1) === 1 ? "mark" : "marks"}
+                            </Tag>
+                            {item.type && (
+                              <Tag color="purple" style={{ marginLeft: 4 }}>
+                                {item.type.replace(/_/g, " ")}
+                              </Tag>
+                            )}
+                          </div>
+                          <div style={{
+                            color: "#666",
+                            fontSize: 13,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                          }}>
+                            {item.question || item.text || "No question text"}
+                          </div>
+                        </>
+                      ) : (
+                        // Other content types (essay, activity, textbook)
+                        <>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                            {item.label}
+                            <Tag
+                              color={
+                                item.type === "prompt" ? "orange" :
+                                item.type === "guideline" ? "purple" :
+                                item.type === "instruction" ? "blue" :
+                                item.type === "task" ? "green" :
+                                item.type === "question" ? "red" :
+                                "default"
+                              }
+                              style={{ marginLeft: 8 }}
+                            >
+                              {item.type}
+                            </Tag>
+                          </div>
+                          <div style={{
+                            color: "#666",
+                            fontSize: 13,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                          }}>
+                            {item.content || "No content"}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <Tooltip title="Edit this item">
+                      <Button
+                        type="primary"
+                        icon={<EditOutlined />}
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditQuestion(item, index);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Assessment Details */}
       <Card title="Assessment Details" size="small">
@@ -983,6 +1464,19 @@ const ActivityViewerPage = () => {
           )}
         </div>
       </Card>
+
+      {/* Edit Question Modal */}
+      <EditQuestionModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedQuestion(null);
+        }}
+        question={selectedQuestion}
+        questionIndex={selectedQuestionIndex}
+        onSave={handleSaveQuestion}
+        activityType={assessment?.activityType}
+      />
     </div>
   );
 };

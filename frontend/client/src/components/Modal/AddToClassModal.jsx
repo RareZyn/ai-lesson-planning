@@ -30,6 +30,7 @@ const AddToClassModal = ({
     if (visible && lesson?.parameters?.grade) {
       fetchClasses();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, lesson?.parameters?.grade]);
 
   // Reset state when modal closes
