@@ -339,14 +339,7 @@ const EssayStandaloneModal = ({
                     >
                       {essayTypes.map((type) => (
                         <Option key={type.value} value={type.value}>
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {type.label}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "#666" }}>
-                              {type.description}
-                            </div>
-                          </div>
+                          {type.label}
                         </Option>
                       ))}
                     </Select>
@@ -379,14 +372,7 @@ const EssayStandaloneModal = ({
                     >
                       {writingFocusOptions.map((focus) => (
                         <Option key={focus.value} value={focus.value}>
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {focus.label}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "#666" }}>
-                              {focus.description}
-                            </div>
-                          </div>
+                          {focus.label}
                         </Option>
                       ))}
                     </Select>

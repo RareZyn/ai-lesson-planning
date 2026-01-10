@@ -392,15 +392,7 @@ const AssessmentStandaloneModal = ({
                           value={type.value}
                           style={{ paddingLeft: "20px" }}
                         >
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {type.label}
-                            </div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              {type.description} • {type.timeRange} •{" "}
-                              {type.questionRange}
-                            </Text>
-                          </div>
+                          {type.label}
                         </Option>
                       ))}
                       <Option
@@ -747,14 +739,7 @@ const AssessmentStandaloneModal = ({
                 >
                   {literatureComponents.map((component) => (
                     <Option key={component.value} value={component.value}>
-                      <div>
-                        <div style={{ fontWeight: "500" }}>
-                          {component.label}
-                        </div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          {component.description}
-                        </Text>
-                      </div>
+                      {component.label}
                     </Option>
                   ))}
                 </Select>

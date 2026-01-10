@@ -558,14 +558,7 @@ const TextbookStandaloneModal = ({
                     >
                       {exerciseTypes.map((type) => (
                         <Option key={type.value} value={type.value}>
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {type.label}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "#666" }}>
-                              {type.description}
-                            </div>
-                          </div>
+                          {type.label}
                         </Option>
                       ))}
                     </Select>
