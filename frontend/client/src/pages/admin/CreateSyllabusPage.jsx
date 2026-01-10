@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Steps, Form, Input, Select, Button,
-    Upload, Table, Space, Divider, message, Alert, Row, Col, Card, Spin
+    Upload, Table, Space, Divider, message, Alert, Row, Col, Card
 } from 'antd';
 import {
     InboxOutlined, PlusOutlined, DeleteOutlined,
@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { uploadSyllabus, extractSyllabusData } from '../../services/adminService';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from './CreateSyllabusPage.module.css';
 
 const { Option } = Select;
@@ -242,7 +243,7 @@ const CreateSyllabusPage = () => {
                 syllabusData: parsedData,
             });
             message.success("Syllabus created successfully!");
-            navigate('/admin');
+            navigate('/app/admin');
         } catch (error) {
             message.error("Save failed: " + error.message);
         } finally {
@@ -297,16 +298,9 @@ const CreateSyllabusPage = () => {
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        background: 'rgba(255, 255, 255, 0.8)',
                         zIndex: 9999,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center'
                     }}>
-                        <Spin size="large" />
-                        <h3 style={{ marginTop: 20, color: '#4f46e5' }}>Extracting Data with AI...</h3>
-                        <p>Please wait, this may take a moment.</p>
+                        <LoadingSpinner tip="Extracting Data with AI... Please wait, this may take a moment." />
                     </div>
                 )}
                 <div className={styles.card}>
