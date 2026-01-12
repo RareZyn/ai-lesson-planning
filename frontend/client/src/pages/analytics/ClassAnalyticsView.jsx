@@ -32,7 +32,7 @@ import {
   clearClassCache,
 } from "../../services/analyticsService";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
@@ -170,7 +170,7 @@ const ClassAnalyticsView = ({ classId }) => {
         reportData.studentPerformance &&
         reportData.studentPerformance.length > 0
       ) {
-        doc.autoTable({
+        autoTable(doc, {
           startY: 95,
           head: [["Student Name", "Student ID", "Avg Score", "Assessments"]],
           body: reportData.studentPerformance.map((student) => [

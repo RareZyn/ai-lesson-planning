@@ -27,7 +27,7 @@ import {
   generateReport,
 } from "../../services/analyticsService";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
@@ -169,7 +169,7 @@ const StudentProgressView = ({ classId }) => {
         reportData.assessmentDetails &&
         reportData.assessmentDetails.length > 0
       ) {
-        doc.autoTable({
+        autoTable(doc, {
           startY: 95,
           head: [["Assessment", "Date", "Score", "Type"]],
           body: reportData.assessmentDetails.map((assessment) => [

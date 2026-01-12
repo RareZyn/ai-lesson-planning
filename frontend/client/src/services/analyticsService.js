@@ -36,16 +36,13 @@ const cacheUtils = {
 
       // Check if cache is still valid
       if (now - timestamp < ttl) {
-        console.log(`[Cache] Hit for ${key}`);
         return data;
       }
 
       // Cache expired, remove it
-      console.log(`[Cache] Expired for ${key}`);
       sessionStorage.removeItem(key);
       return null;
     } catch (error) {
-      console.error("[Cache] Error reading cache:", error);
       return null;
     }
   },
@@ -61,7 +58,6 @@ const cacheUtils = {
         ttl,
       };
       sessionStorage.setItem(key, JSON.stringify(cacheEntry));
-      console.log(`[Cache] Stored ${key}`);
     } catch (error) {
       console.error("[Cache] Error storing cache:", error);
       // If storage is full, clear old analytics cache
@@ -86,7 +82,6 @@ const cacheUtils = {
       key.startsWith(CACHE_PREFIX)
     );
     keys.forEach((key) => sessionStorage.removeItem(key));
-    console.log(`[Cache] Cleared ${keys.length} analytics cache entries`);
   },
 
   /**
@@ -97,7 +92,6 @@ const cacheUtils = {
       (key) => key.startsWith(CACHE_PREFIX) && key.includes(classId)
     );
     keys.forEach((key) => sessionStorage.removeItem(key));
-    console.log(`[Cache] Cleared ${keys.length} cache entries for class ${classId}`);
   },
 };
 
@@ -134,7 +128,6 @@ export const getClassAnalytics = async (classId, filters = {}, forceRefresh = fa
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching class analytics:", error);
     throw error;
   }
 };
@@ -165,7 +158,6 @@ export const getStudentProgress = async (studentId, filters = {}, forceRefresh =
     cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching student progress:", error);
     throw error;
   }
 };
@@ -198,7 +190,6 @@ export const getFrequentlyMissedQuestions = async (classId, assessmentId = null,
     cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching missed questions:", error);
     throw error;
   }
 };
@@ -224,7 +215,6 @@ export const getClassStudentsList = async (classId, forceRefresh = false) => {
     cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching students list:", error);
     throw error;
   }
 };
@@ -250,7 +240,6 @@ export const getAvailableTopics = async (classId, forceRefresh = false) => {
     cacheUtils.set(cacheKey, response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching topics:", error);
     throw error;
   }
 };
@@ -265,7 +254,6 @@ export const generateReport = async (reportConfig) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error generating report:", error);
     throw error;
   }
 };

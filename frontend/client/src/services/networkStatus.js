@@ -6,6 +6,10 @@
 // Network status listeners
 const listeners = new Set();
 
+// Polling interval for connectivity check when offline
+let connectivityCheckInterval = null;
+const CONNECTIVITY_CHECK_INTERVAL = 3000; // Check every 3 seconds when offline
+
 // Current network status
 let currentStatus = {
   online: navigator.onLine,
@@ -43,8 +47,40 @@ export function stopNetworkMonitoring() {
     navigator.connection.removeEventListener('change', handleConnectionChange);
   }
 
+  // Stop connectivity polling if active
+  stopConnectivityPolling();
+
   listeners.clear();
   console.log('[Network Status] Monitoring stopped');
+}
+
+/**
+ * Start polling for connectivity when offline
+ */
+function startConnectivityPolling() {
+  if (connectivityCheckInterval) return; // Already polling
+
+  console.log('[Network Status] Starting connectivity polling');
+
+  connectivityCheckInterval = setInterval(async () => {
+    const isActuallyOnline = await testConnectivity();
+
+    if (isActuallyOnline && !currentStatus.online) {
+      console.log('[Network Status] Connectivity detected via polling');
+      handleOnline();
+    }
+  }, CONNECTIVITY_CHECK_INTERVAL);
+}
+
+/**
+ * Stop polling for connectivity
+ */
+function stopConnectivityPolling() {
+  if (connectivityCheckInterval) {
+    console.log('[Network Status] Stopping connectivity polling');
+    clearInterval(connectivityCheckInterval);
+    connectivityCheckInterval = null;
+  }
 }
 
 /**
@@ -52,6 +88,9 @@ export function stopNetworkMonitoring() {
  */
 function handleOnline() {
   console.log('[Network Status] Connection restored');
+
+  // Stop polling since we're online now
+  stopConnectivityPolling();
 
   currentStatus = {
     online: true,
@@ -80,6 +119,9 @@ function handleOffline() {
   };
 
   notifyListeners(currentStatus);
+
+  // Start polling to detect when we're back online faster
+  startConnectivityPolling();
 }
 
 /**
