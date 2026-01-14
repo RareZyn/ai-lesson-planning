@@ -43,7 +43,7 @@ import {
     Cell,
     Legend
 } from "recharts";
-import { auth, EmailAuthProvider, linkWithCredential } from "../../firebase";
+import { auth, EmailAuthProvider, linkWithCredential, updatePassword } from "../../firebase";
 import { getTeacherAnalytics } from "../../services/adminService";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
@@ -185,15 +185,25 @@ const ProfilePage = () => {
                 throw new Error(data.message || "Failed to change password");
             }
 
-            if (!hasPassword) {
-                const currentFirebaseUser = auth.currentUser;
-                if (currentFirebaseUser) {
+            // Sync password with Firebase
+            const currentFirebaseUser = auth.currentUser;
+            if (currentFirebaseUser) {
+                // Check if password provider is already linked in Firebase
+                const providers = currentFirebaseUser.providerData.map(p => p.providerId);
+                const hasFirebasePassword = providers.includes('password');
+
+                if (!hasFirebasePassword) {
+                    // Link new password credential to Firebase
                     const credential = EmailAuthProvider.credential(currentFirebaseUser.email, values.newPassword);
                     await linkWithCredential(currentFirebaseUser, credential);
                     message.success("Password set and linked to account!");
+                } else {
+                    // Password provider already exists, just update in Firebase
+                    await updatePassword(currentFirebaseUser, values.newPassword);
+                    message.success(data.message || "Password updated successfully!");
                 }
             } else {
-                message.success(data.message || "Password updated successfully!");
+                message.success(data.message || "Password updated in database!");
             }
 
             passwordForm.resetFields();
