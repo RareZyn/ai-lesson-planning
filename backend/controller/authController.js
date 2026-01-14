@@ -293,8 +293,9 @@ exports.googleAuthWithToken = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     // Populate schoolId to include school details in the response
+    // Also select password field to check if user has a password set
     const user = await User.findById(req.user.id)
-      .select("+geminiApiKey")
+      .select("+geminiApiKey +password")
       .populate("schoolId"); // Populate the schoolId field
 
     if (!user) {
@@ -304,6 +305,7 @@ exports.getMe = async (req, res) => {
     // Include decrypted API key status (not the actual key)
     const userResponse = user.toJSON(); // Already handles removing password/encrypted API key
     userResponse.hasGeminiApiKey = !!user.geminiApiKey; // Check if key exists (encrypted or not)
+    userResponse.hasPassword = !!user.password; // Check if user has a password set
 
     // Ensure role and schoolId are part of the direct response
     userResponse.role = user.role;

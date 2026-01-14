@@ -96,13 +96,9 @@ const ProfilePage = () => {
         };
 
         if (user) {
-            // 1. Password Check Logic
-            if (auth.currentUser) {
-                const providers = auth.currentUser.providerData.map(p => p.providerId);
-                setHasPassword(providers.includes('password'));
-            } else {
-                setHasPassword(true);
-            }
+            // 1. Password Check Logic - Use backend hasPassword field
+            // This accurately reflects whether password exists in MongoDB
+            setHasPassword(user.hasPassword || false);
 
             // 2. Fetch Profile Data (API Key)
             fetchApiKey();
