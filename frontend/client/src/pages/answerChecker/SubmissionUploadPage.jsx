@@ -14,8 +14,10 @@ import AssessmentSelector from "../../components/AnswerChecker/AssessmentSelecto
 import ImageUploader from "../../components/AnswerChecker/ImageUploader";
 import SpmAnswerSheetUploader from "../../components/AnswerChecker/SpmAnswerSheetUploader";
 import BulkAnswerUploader from "../../components/AnswerChecker/BulkAnswerUploader";
+import MultiAnswerUploader from "../../components/AnswerChecker/MultiAnswerUploader";
 import { submissionService } from "../../services/submissionService";
 import { ocrAPI } from "../../services/ocrService";
+import { gradingService } from "../../services/gradingServiceClient";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -441,7 +443,7 @@ const SubmissionUploadPage = () => {
               {assessmentDetails?.activityType !== "spm-exam" && (
                 <div className="mb-4">
                   <h5 className="mb-3">Choose Upload Method</h5>
-                  <div className="d-flex gap-3">
+                  <div className="d-flex gap-3 flex-wrap">
                     <Button
                       variant={uploadMode === "individual" ? "primary" : "outline-primary"}
                       onClick={() => setUploadMode("individual")}
@@ -456,12 +458,21 @@ const SubmissionUploadPage = () => {
                     >
                       Bulk Upload (Images/PDF)
                     </Button>
+                    <Button
+                      variant={uploadMode === "multi-answer" ? "primary" : "outline-primary"}
+                      onClick={() => setUploadMode("multi-answer")}
+                      disabled={submitting}
+                    >
+                      Multi-Answer Image
+                    </Button>
                   </div>
                   <Alert variant="info" className="mt-3 mb-0">
                     <small>
                       {uploadMode === "individual"
                         ? "Upload one image per question. Best for structured answer sheets."
-                        : "Upload multiple images or PDF files at once. The system will process all pages/images together."}
+                        : uploadMode === "bulk"
+                        ? "Upload multiple images or PDF files at once. The system will process all pages/images together."
+                        : "Upload ONE image containing all numbered answers (e.g., 1) False 2) True...). AI will detect and separate each answer."}
                     </small>
                   </Alert>
                 </div>
@@ -511,6 +522,99 @@ const SubmissionUploadPage = () => {
 
                   <BulkAnswerUploader
                     onFilesChange={setBulkFiles}
+                    disabled={submitting}
+                  />
+                </div>
+              ) : uploadMode === "multi-answer" ? (
+                /* Multi-Answer Image Mode */
+                <div>
+                  <h4 className="mb-4">Step 3: Multi-Answer Image Upload</h4>
+
+                  <MultiAnswerUploader
+                    assessmentId={selectedAssessment}
+                    expectedQuestionCount={
+                      assessmentDetails?.questionCount ||
+                      assessmentDetails?.generatedContent?.assessmentContent?.questions?.length
+                    }
+                    onExtractComplete={(data) => {
+                      console.log("Extraction complete:", data);
+                    }}
+                    onSubmit={async (extractionData) => {
+                      setSubmitting(true);
+                      setUploadProgress(0);
+
+                      try {
+                        // Extract lessonPlanId
+                        const lessonPlanId = assessmentDetails.lessonPlanId
+                          ? typeof assessmentDetails.lessonPlanId === 'string'
+                            ? assessmentDetails.lessonPlanId
+                            : assessmentDetails.lessonPlanId._id
+                          : null;
+
+                        // Prepare answers array from extracted data (without image - stored separately)
+                        const answers = extractionData.answers.map((answer) => ({
+                          questionNumber: answer.questionNumber,
+                          questionText: `Question ${answer.questionNumber}`,
+                          ocrText: answer.answerText, // Pre-extracted text
+                          confidence: answer.confidence,
+                          isEdited: answer.isEdited || false,
+                        }));
+
+                        const submissionData = {
+                          assessmentId: selectedAssessment,
+                          lessonPlanId,
+                          classId: selectedClass,
+                          studentId: selectedStudent,
+                          submissionMethod: "multi_answer_image",
+                          answers,
+                          answerSheetImage: extractionData.originalImage, // Store image once
+                        };
+
+                        setUploadProgress(30);
+
+                        // Submit to backend
+                        const result = await submissionService.submitAnswer(submissionData);
+
+                        if (result.success) {
+                          setUploadProgress(50);
+                          message.success("Answers submitted! Starting AI grading...");
+
+                          // Auto-trigger grading for multi-answer submissions
+                          try {
+                            const gradingResult = await gradingService.scoreSubmission(result.submissionId);
+
+                            if (gradingResult.success) {
+                              setUploadProgress(100);
+                              message.success("Grading completed successfully!");
+                            } else {
+                              // Grading failed but submission succeeded - still navigate
+                              console.warn("Auto-grading failed:", gradingResult.message);
+                              message.warning("Submission saved. Grading may require manual trigger.");
+                            }
+                          } catch (gradingErr) {
+                            console.error("Auto-grading error:", gradingErr);
+                            message.warning("Submission saved. Please start grading manually.");
+                          }
+
+                          setUploadProgress(100);
+
+                          // Navigate to review page
+                          setTimeout(() => {
+                            navigate(
+                              `/app/submissions/${selectedAssessment}/${result.submissionId}`
+                            );
+                          }, 1000);
+                        } else {
+                          throw new Error(result.message || "Submission failed");
+                        }
+                      } catch (err) {
+                        console.error("Multi-answer submission error:", err);
+                        const errorMsg = err.message || "Failed to submit answers";
+                        message.error(errorMsg);
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
                     disabled={submitting}
                   />
                 </div>
@@ -568,9 +672,10 @@ const SubmissionUploadPage = () => {
           )}
 
           {/* Navigation Buttons */}
-          {/* Hide submit button for SPM exams - the SpmAnswerSheetUploader handles submission */}
+          {/* Hide submit button for SPM exams and multi-answer mode - they have their own submit buttons */}
           {!(
-            currentStep === 2 && assessmentDetails?.activityType === "spm-exam"
+            currentStep === 2 &&
+            (assessmentDetails?.activityType === "spm-exam" || uploadMode === "multi-answer")
           ) && (
             <div className="d-flex justify-content-between mt-4">
               <Button
@@ -626,9 +731,9 @@ const SubmissionUploadPage = () => {
             </div>
           )}
 
-          {/* Back button for SPM exams */}
+          {/* Back button for SPM exams and multi-answer mode */}
           {currentStep === 2 &&
-            assessmentDetails?.activityType === "spm-exam" && (
+            (assessmentDetails?.activityType === "spm-exam" || uploadMode === "multi-answer") && (
               <div className="d-flex justify-content-start mt-4">
                 <Button
                   variant="secondary"

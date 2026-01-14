@@ -11,6 +11,7 @@ import {
   FlagOutlined,
   ExclamationCircleOutlined,
   FilePdfOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { submissionService } from "../../services/submissionService";
@@ -414,6 +415,21 @@ const SubmissionReviewPage = () => {
         </Alert>
       )}
 
+      {/* Requires Review Alert */}
+      {submission.processingStatus === "requires_review" && (
+        <Alert variant="warning" className="mb-4">
+          <WarningOutlined className="me-2" />
+          <strong>Grading Requires Attention:</strong> This submission could not be automatically graded.
+          {submission.processingErrors?.length > 0 && (
+            <ul className="mb-0 mt-2">
+              {submission.processingErrors.map((err, i) => (
+                <li key={i}>{err.message}</li>
+              ))}
+            </ul>
+          )}
+        </Alert>
+      )}
+
       {/* Overall Stats */}
       {submission.processingStatus === "completed" && (
         <Card className="mb-4">
@@ -467,10 +483,6 @@ const SubmissionReviewPage = () => {
         return (
           <Card className="mb-4" style={{ borderLeft: "4px solid #1890ff" }}>
             <Card.Body>
-              <h5 className="mb-3">
-                📄 SPM Paper 1 Answer Sheet
-                <small className="text-muted ms-2">(Shared across all 40 questions)</small>
-              </h5>
               <div className="row">
                 <div className="col-md-8 mx-auto">
                   {isPdf ? (

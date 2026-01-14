@@ -255,6 +255,79 @@ export const ocrAPI = {
   },
 
   /**
+   * Extract multiple numbered answers from a single image
+   * @param {File|string} imageInput - File object or base64 string
+   * @param {Object} options - Optional configuration
+   * @param {string} options.assessmentId - Assessment ID for context
+   * @param {number} options.expectedQuestionCount - Expected number of questions
+   * @returns {Promise<Object>} Extraction result with answers array
+   */
+  extractMultiAnswers: async (imageInput, options = {}) => {
+    try {
+      let base64Image;
+
+      // Convert File to base64 if needed
+      if (imageInput instanceof File) {
+        base64Image = await fileToBase64(imageInput);
+      } else if (typeof imageInput === "string") {
+        base64Image = imageInput;
+      } else {
+        throw new Error("Invalid image input type");
+      }
+
+      // Auto-compress if image is large
+      const sizeInMB = (base64Image.length * 0.75) / (1024 * 1024);
+      if (sizeInMB > 10 && base64Image.startsWith("data:image/")) {
+        console.log(
+          `📦 Compressing image (${sizeInMB.toFixed(2)} MB -> target <10 MB)...`
+        );
+        base64Image = await compressImage(base64Image, 10);
+        const newSize = (base64Image.length * 0.75) / (1024 * 1024);
+        console.log(`✅ Compressed to ${newSize.toFixed(2)} MB`);
+      }
+
+      console.log("🔍 Extracting multiple answers from image...");
+
+      const response = await apiClient.post("/ocr/extract-multi-answers", {
+        image: base64Image,
+        assessmentId: options.assessmentId || null,
+        expectedQuestionCount: options.expectedQuestionCount || null,
+      });
+
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.error("Error extracting multiple answers:", error);
+
+      let errorMessage = "Failed to extract answers from image";
+
+      if (error.response?.status === 400) {
+        errorMessage =
+          error.response.data.message || "Invalid image or request";
+      } else if (error.response?.status === 401) {
+        errorMessage =
+          "Invalid API key. Please check your Gemini API key in settings.";
+      } else if (error.response?.status === 429) {
+        errorMessage =
+          "API quota exceeded. Please try again later or check your Gemini API limits.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+        error: error.response?.data || error,
+      };
+    }
+  },
+
+  /**
    * Process OCR for a student submission
    * @param {string} submissionId - Submission ID to process
    * @returns {Promise<Object>} OCR processing result

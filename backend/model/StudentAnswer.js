@@ -36,7 +36,7 @@ const studentAnswerSchema = new mongoose.Schema(
     },
     submissionMethod: {
       type: String,
-      enum: ["upload_image", "manual_text", "typed_answer", "upload_bulk"],
+      enum: ["upload_image", "manual_text", "typed_answer", "upload_bulk", "multi_answer_image"],
       required: true,
     },
 
@@ -308,6 +308,12 @@ studentAnswerSchema.statics.getLowConfidenceSubmissions = function (
 
 // Pre-save middleware to update processing status
 studentAnswerSchema.pre("save", function (next) {
+  // Don't override if status was explicitly set to completed or error
+  // (these are terminal states set by the grading controller)
+  if (this.processingStatus === "completed" || this.processingStatus === "error") {
+    return next();
+  }
+
   // Check if all answers have been processed
   if (this.answers && this.answers.length > 0) {
     const allOCRCompleted = this.answers.every(

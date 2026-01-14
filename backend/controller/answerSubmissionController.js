@@ -19,6 +19,7 @@ exports.submitAnswer = async (req, res) => {
       submissionMethod,
       answers, // Array of { questionNumber, originalImage } - for individual mode
       files, // Array of { fileName, fileType, fileData, fileIndex } - for bulk mode
+      answerSheetImage, // Single image for multi_answer_image mode
     } = req.body;
 
     // Validate required fields
@@ -98,6 +99,27 @@ exports.submitAnswer = async (req, res) => {
         status: "pending_ocr",
       }));
       totalItems = files.length;
+    } else if (submissionMethod === "multi_answer_image" && answers) {
+      // Handle multi-answer image mode - OCR already completed
+      // Don't store image in each answer - store once in answerSheetImage to avoid MongoDB 16MB limit
+      formattedAnswers = answers.map((answer) => ({
+        questionNumber: answer.questionNumber,
+        questionText: answer.questionText || `Question ${answer.questionNumber}`,
+        originalImage: "", // Empty - image stored in answerSheetImage
+        uploadedAt: new Date(),
+        ocrData: {
+          extractedText: answer.ocrText || "", // Pre-extracted text from AI
+          confidence: answer.confidence || 0.9, // High confidence since AI extracted
+          metadata: {
+            extractionMethod: "multi_answer_ai",
+            isEdited: answer.isEdited || false,
+          },
+          processedAt: new Date(),
+        },
+        grading: {},
+        status: "ocr_completed", // OCR already done
+      }));
+      totalItems = answers.length;
     } else {
       // Handle individual upload mode
       formattedAnswers = answers.map((answer) => ({
@@ -125,17 +147,18 @@ exports.submitAnswer = async (req, res) => {
       studentId,
       submissionMethod: submissionMethod || "upload_image",
       submittedAt: new Date(),
+      answerSheetImage: submissionMethod === "multi_answer_image" ? answerSheetImage : undefined,
       answers: formattedAnswers,
       overallStats: {
         totalQuestions: totalItems,
-        questionsAttempted: 0,
+        questionsAttempted: submissionMethod === "multi_answer_image" ? totalItems : 0,
         totalScore: 0,
         maxPossibleScore: 0,
         percentage: 0,
-        averageConfidence: 0,
+        averageConfidence: submissionMethod === "multi_answer_image" ? 0.9 : 0,
         processingTime: 0,
       },
-      processingStatus: "pending",
+      processingStatus: submissionMethod === "multi_answer_image" ? "processing_grading" : "pending",
     });
 
     // Populate and return

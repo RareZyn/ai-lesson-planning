@@ -9,6 +9,7 @@ const {
   getOCRStatus,
   retryFailedOCR,
   processSpmAnswerSheet,
+  extractMultiAnswers,
 } = require("../controller/ocrController");
 
 // Apply authentication to all routes
@@ -16,6 +17,9 @@ router.use(protect);
 
 // Standalone OCR routes
 router.post("/extract", extractTextFromImage); // POST /api/ocr/extract
+
+// Multi-Answer Extraction (numbered answer list from single image)
+router.post("/extract-multi-answers", extractMultiAnswers); // POST /api/ocr/extract-multi-answers
 
 // SPM Answer Sheet Processing (MCQ bubble detection)
 router.post("/process-spm-answer-sheet", processSpmAnswerSheet); // POST /api/ocr/process-spm-answer-sheet

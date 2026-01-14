@@ -326,8 +326,21 @@ const gradeSubmission = async (submission, assessment, geminiApiKey) => {
 
   for (const answer of submission.answers) {
     try {
-      // Skip if no OCR text extracted
+      // Skip if no OCR text extracted - but still mark as graded
       if (!answer.ocrData || !answer.ocrData.extractedText) {
+        answer.status = "graded";
+        answer.grading = {
+          aiScore: {
+            score: 0,
+            maxScore: 1,
+            percentage: 0,
+            feedback: "No answer text found. The answer appears to be blank or could not be extracted.",
+            reasoning: "No text extracted from image",
+            scoredAt: new Date(),
+          },
+          finalScore: 0,
+          isManuallyAdjusted: false,
+        };
         results.push({
           questionNumber: answer.questionNumber,
           success: false,
@@ -383,6 +396,20 @@ const gradeSubmission = async (submission, assessment, geminiApiKey) => {
       );
 
       if (!keyAnswer) {
+        // Mark as graded even without answer key (manual review needed)
+        answer.status = "graded";
+        answer.grading = {
+          aiScore: {
+            score: 0,
+            maxScore: 1,
+            percentage: 0,
+            feedback: "No answer key found for this question. Manual grading required.",
+            reasoning: "Answer key missing",
+            scoredAt: new Date(),
+          },
+          finalScore: 0,
+          isManuallyAdjusted: false,
+        };
         results.push({
           questionNumber: answer.questionNumber,
           success: false,

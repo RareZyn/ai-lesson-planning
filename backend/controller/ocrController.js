@@ -2,6 +2,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const User = require("../model/User");
 const StudentAnswer = require("../model/StudentAnswer");
+const { extractMultipleAnswers, validateExtractedAnswers } = require("../services/multiAnswerExtractor");
 
 /**
  * @desc    Extract text from single image (standalone)
@@ -1191,6 +1192,129 @@ Return a JSON object with this EXACT structure:
   }
 };
 
+/**
+ * @desc    Extract multiple numbered answers from a single image
+ * @route   POST /api/ocr/extract-multi-answers
+ * @access  Private
+ *
+ * This endpoint analyzes an image containing a student's numbered answer list
+ * (e.g., "1) False  2) Making new friends  3) True...") and extracts each
+ * answer into a structured JSON format for grading.
+ */
+const extractMultiAnswers = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    console.log("📝 Starting multi-answer extraction...");
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    const { image, expectedQuestionCount, assessmentId } = req.body;
+
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: "No image data provided",
+      });
+    }
+
+    // Validate base64 format (accept both images and PDFs)
+    if (!image.startsWith("data:image/") && !image.startsWith("data:application/pdf")) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file format. Expected image or PDF base64 data URL.",
+      });
+    }
+
+    // Get user with Gemini API key
+    const user = await User.findById(req.user.id).select("+geminiApiKey");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const geminiApiKey = user.getGeminiApiKey();
+
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No Gemini API key found. Please add your API key in profile settings.",
+      });
+    }
+
+    console.log("🔑 Gemini API key found, extracting answers...");
+
+    // Extract multiple answers using the service
+    const extractionResult = await extractMultipleAnswers(image, geminiApiKey, {
+      expectedQuestionCount: expectedQuestionCount ? parseInt(expectedQuestionCount) : null,
+      assessmentId,
+    });
+
+    // Validate the extracted answers
+    const validation = validateExtractedAnswers(
+      extractionResult.answers,
+      expectedQuestionCount ? parseInt(expectedQuestionCount) : null
+    );
+
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log(`✅ Multi-answer extraction completed in ${processingTime}s`);
+    console.log(`📊 Detected ${extractionResult.totalDetected} answers`);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        answers: extractionResult.answers,
+        totalDetected: extractionResult.totalDetected,
+        metadata: {
+          ...extractionResult.metadata,
+          processingTime: `${processingTime}s`,
+        },
+        validation: validation,
+      },
+      message: `Successfully extracted ${extractionResult.totalDetected} answers`,
+    });
+  } catch (error) {
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`❌ Multi-answer extraction error after ${processingTime}s:`, error);
+
+    let errorMessage = "Failed to extract answers from image";
+    let statusCode = 500;
+
+    if (error.message?.includes("API_KEY_INVALID")) {
+      errorMessage =
+        "Invalid Gemini API key. Please check your API key in profile settings.";
+      statusCode = 401;
+    } else if (error.message?.includes("RESOURCE_EXHAUSTED")) {
+      errorMessage =
+        "Gemini API quota exceeded. Please try again later or check your API limits.";
+      statusCode = 429;
+    } else if (error.message?.includes("INVALID_ARGUMENT")) {
+      errorMessage =
+        "Invalid image format or size. Please ensure the image is valid.";
+      statusCode = 400;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      processingTime: `${processingTime}s`,
+    });
+  }
+};
+
 module.exports = {
   extractTextFromImage,
   processSubmissionOCR,
@@ -1198,4 +1322,5 @@ module.exports = {
   getOCRStatus,
   retryFailedOCR,
   processSpmAnswerSheet,
+  extractMultiAnswers,
 };

@@ -71,6 +71,15 @@ exports.scoreSubmission = async (req, res) => {
     const hasRubric = !!assessment.generatedContent?.rubricContent;
 
     if (!hasAnswerKey && !hasRubric) {
+      // Update status to indicate grading cannot proceed
+      submission.processingStatus = "requires_review";
+      submission.processingErrors.push({
+        stage: "grading",
+        message: "No answer key or rubric available for grading",
+        timestamp: new Date(),
+      });
+      await submission.save();
+
       return res.status(400).json({
         success: false,
         message: "Assessment does not have an answer key or rubric for grading",
