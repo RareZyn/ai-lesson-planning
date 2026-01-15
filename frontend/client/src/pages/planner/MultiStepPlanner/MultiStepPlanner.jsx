@@ -24,6 +24,11 @@ import {
   recordFeedback
 } from "../../../services/smartSuggestionsService";
 
+
+
+import { getSyllabuses, getSyllabusById } from "../../../services/adminService";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+
 const MultiStepPlanner = () => {
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
@@ -64,6 +69,72 @@ const MultiStepPlanner = () => {
   useEffect(() => {
     console.log("Form data updated:", formData);
   }, [formData]);
+
+  // --- SYLLABUS FETCHING LOGIC (Lifted from Step 2) ---
+  const [syllabusItems, setSyllabusItems] = useState([]);
+  const [isSyllabusLoading, setIsSyllabusLoading] = useState(false);
+  const [syllabusError, setSyllabusError] = useState(null);
+
+  useEffect(() => {
+    // If we have a grade, fetch syllabus
+    if (!formData.grade) {
+      setSyllabusItems([]);
+      return;
+    }
+
+    const fetchSyllabusData = async () => {
+      setIsSyllabusLoading(true);
+      setSyllabusError(null);
+
+      try {
+        console.log(`[Planner] Fetching Syllabuses for grade: "${formData.grade}"`);
+        const allSyllabuses = await getSyllabuses();
+
+        const matchingSyllabus = allSyllabuses.find(s => s.grade === formData.grade);
+
+        if (matchingSyllabus) {
+          const fullSyllabus = await getSyllabusById(matchingSyllabus.id);
+          const items = fullSyllabus.data || [];
+
+          if (items.length > 0) {
+            setSyllabusItems(items);
+          } else {
+            setSyllabusItems([]);
+          }
+
+        } else {
+          setSyllabusItems([]);
+        }
+
+      } catch (err) {
+        console.error("Failed to fetch Syllabus:", err);
+        setSyllabusError("Failed to load syllabus data.");
+      } finally {
+        setIsSyllabusLoading(false);
+      }
+    };
+
+    fetchSyllabusData();
+  }, [formData.grade]);
+
+  // Helper to find key (Same logic as Step 2)
+  const getTopicKey = (items) => {
+    if (!items || items.length === 0) return "Title";
+    const firstItem = items[0];
+    const keys = Object.keys(firstItem);
+    const candidates = ["Title", "title", "Topic", "topic", "Lesson", "lesson", "Unit", "unit", "Chapter", "chapter", "Content", "Standard"];
+
+    for (const candidate of candidates) {
+      const found = keys.find(k => k === candidate);
+      if (found) return found;
+    }
+    for (const candidate of candidates) {
+      const found = keys.find(k => k.toLowerCase().includes(candidate.toLowerCase()));
+      if (found) return found;
+    }
+    const stringKey = keys.find(k => typeof firstItem[k] === 'string' && firstItem[k].length > 0);
+    return stringKey || keys[0];
+  };
 
 
   // --- SMART SUGGESTIONS LOGIC ---
@@ -116,34 +187,38 @@ const MultiStepPlanner = () => {
   // 2. Apply Handlers
   const handleApplyTopic = (sowTopic) => {
     // sowTopic matches structure expected by form logic? 
-    // Adapting to match what Step2 expects for 'sow'
-    // Usually 'sow' is the full object from the SOW dropdown
-    // Start simple: Update formData.sow if possible, or just notify user to select it
-    // If sowTopic contains ID, we can find it. If just strings, might be tricky.
+    // { title: "Unit 1...", rationale: "..." }
 
-    // Assumption: The suggestion provides enough data to map to formData
-    // For now, let's assume we update the specificTopic or additionalNotes if SOW is complex
-    // Or if suggestion returns a matching SOW object
+    console.log("Applying topic suggestion:", sowTopic);
+    let matchedItem = null;
 
-    // If backend returns a clear title, we might set that as specificTopic if no SOW object
-    // But typically SOW is selected from a list.
-    // Let's retry: Update specificTopic for now? OR alert the user.
-    // Ideally, the SOW suggestions should return an ID if it matches our DB.
+    if (syllabusItems.length > 0) {
+      const key = getTopicKey(syllabusItems);
+      // Try strict match first
+      matchedItem = syllabusItems.find(item => item[key] === sowTopic.title);
 
-    // Let's assume for now we set specificTopic text as a seamless fallback
-    // and if we have the sow object, we set it.
+      // If not found, try fuzzy match? Or assume AI returns exact string from previous context prompt
+      if (!matchedItem) {
+        matchedItem = syllabusItems.find(item => item[key]?.toLowerCase() === sowTopic.title.toLowerCase());
+      }
+    }
 
-    // UPDATE: Backend suggestion structure: { title, rationale }
-
-    // We will set specificTopic and maybe a note
     setFormData(prev => ({
       ...prev,
-      specificTopic: sowTopic.title || prev.specificTopic,
+      // If we matched an item, use it. Else, we keep the previous 'sow' or empty it?
+      // Better to set specificTopic at least.
+      sow: matchedItem || prev.sow,
+      specificTopic: sowTopic.title || matchedItem?.[getTopicKey(syllabusItems)] || prev.specificTopic,
     }));
 
     // Also track as applied
     markApplied('sowTopic');
-    message.success(`Applied topic: ${sowTopic.title}`);
+
+    if (matchedItem) {
+      message.success(`Applied syllabus item: ${sowTopic.title}`);
+    } else {
+      message.warning(`Applied topic title "${sowTopic.title}" (Exact match in syllabus not found)`);
+    }
   };
 
   const handleApplyDate = (dateSuggestion) => {
@@ -402,6 +477,9 @@ const MultiStepPlanner = () => {
               updateData={handleDataChange}
               onNext={handleNext}
               onPrev={handlePrev}
+              syllabusItems={syllabusItems} // Pass data down
+              isSyllabusLoading={isSyllabusLoading}
+              syllabusError={syllabusError}
             />
           )}
 
@@ -440,6 +518,11 @@ const MultiStepPlanner = () => {
         )}
 
       </div>
+
+      {/* Global Loading Overlay */}
+      {isLoading && (
+        <LoadingSpinner fullscreen={true} tip="Generating your customized lesson plan..." />
+      )}
     </div>
   );
 };

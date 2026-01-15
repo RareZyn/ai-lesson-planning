@@ -19,3 +19,4 @@ exports.lessonPlanValidationSchema = Joi.object({
         'object.base': 'Activities object with pre, during, and post lesson stages is required.'
     })
 });
+

@@ -1000,7 +1000,8 @@ exports.resendInvite = async (req, res) => {
     }
 
     // Construct Magic Link
-    const clientUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}.vercel.app` : "http://localhost:3000";
+    // const clientUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}.vercel.app` : "http://localhost:3000";
+    const clientUrl = "https://ai-lesson-planning.vercel.app";
     const inviteLink = `${clientUrl}/register?token=${tokenDoc.token}`;
 
     // Send Email (reuse the template from inviteTeacher)

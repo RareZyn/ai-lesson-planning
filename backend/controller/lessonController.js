@@ -1022,29 +1022,22 @@ exports.getAllLessonsForApproval = async (req, res) => {
       approvalStatus: { $nin: ["draft", null] }, // exclude drafts + nulls
     };
 
-    const subjectRole = user.roles.find((r) => roleToSubject[r]);
-
-    // Subject Head → Only their subject
-    if (subjectRole) {
-      matchStage = {
-        ...matchStage,
-        "classInfo.subject": roleToSubject[subjectRole],
-      };
-    }
-
-    // Admin → Only their school
-    else if (user.roles.includes("admin")) {
-      console.log("Admin filtering applied for school:", user.schoolId);
-      matchStage = {
-        ...matchStage,
-        "creatorInfo.schoolId": new mongoose.Types.ObjectId(user.schoolId), // Ensure ObjectId type
-      };
-    }
-
-    // Super Admin → Can see everything (still no drafts)
-    else if (user.roles.includes("super_admin")) {
+    // 1. School Filtering (Security Boundary)
+    // ONLY Super Admins can see cross-school content
+    if (!user.roles.includes("super_admin")) {
+      if (!user.schoolId) {
+        return res.status(400).json({ success: false, message: "User not associated with a school." });
+      }
+      matchStage["creatorInfo.schoolId"] = new mongoose.Types.ObjectId(user.schoolId);
+    } else {
       console.log("Super Admin - getting all pending lessons");
-      // already covered by base match
+    }
+
+    // 2. Subject Filtering
+    // Subject Heads see only their subject (and their school, enforced above)
+    const subjectRole = user.roles.find((r) => roleToSubject[r]);
+    if (subjectRole) {
+      matchStage["classInfo.subject"] = roleToSubject[subjectRole];
     }
 
     console.log("Match Stage:", JSON.stringify(matchStage, null, 2));
