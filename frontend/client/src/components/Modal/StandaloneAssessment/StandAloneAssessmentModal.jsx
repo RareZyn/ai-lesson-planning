@@ -40,15 +40,6 @@ const StandAloneAssessmentModal = ({ isOpen, onClose, onActivitySelect }) => {
   // Subject options
   const subjectOptions = [
     { value: "english", label: "English" },
-    { value: "mathematics", label: "Mathematics" },
-    { value: "science", label: "Science" },
-    { value: "history", label: "History" },
-    { value: "geography", label: "Geography" },
-    { value: "bahasa_malaysia", label: "Bahasa Malaysia" },
-    { value: "moral", label: "Moral Education" },
-    { value: "physical_education", label: "Physical Education" },
-    { value: "art", label: "Art" },
-    { value: "music", label: "Music" },
   ];
 
   // Activity type options
