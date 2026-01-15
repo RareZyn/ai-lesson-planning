@@ -133,6 +133,44 @@ export const getClassAnalytics = async (classId, filters = {}, forceRefresh = fa
 };
 
 /**
+ * Get all class analytics data in a single request (optimized)
+ * Combines: class analytics, missed questions, and available topics
+ * @param {string} classId - Class ID
+ * @param {object} filters - Filter options
+ * @param {boolean} forceRefresh - Force fetch from server, bypass cache
+ */
+export const getClassAnalyticsCombined = async (classId, filters = {}, forceRefresh = false) => {
+  const cacheKey = cacheUtils.generateKey(`class_combined_${classId}`, filters);
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cachedData = cacheUtils.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
+  try {
+    const params = new URLSearchParams();
+    if (filters.startDate) params.append("startDate", filters.startDate);
+    if (filters.endDate) params.append("endDate", filters.endDate);
+    if (filters.topic) params.append("topic", filters.topic);
+    if (filters.assessmentType) params.append("assessmentType", filters.assessmentType);
+
+    const response = await axios.get(`${API_URL}/class/${classId}/combined?${params.toString()}`, {
+      withCredentials: true,
+    });
+
+    // Cache the response
+    cacheUtils.set(cacheKey, response.data);
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Get individual student progress (with caching)
  */
 export const getStudentProgress = async (studentId, filters = {}, forceRefresh = false) => {

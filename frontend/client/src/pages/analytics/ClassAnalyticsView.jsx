@@ -23,9 +23,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  getClassAnalytics,
-  getFrequentlyMissedQuestions,
-  getAvailableTopics,
+  getClassAnalyticsCombined,
   generateReport,
   clearClassCache,
 } from "../../services/analyticsService";
@@ -77,17 +75,12 @@ const ClassAnalyticsView = ({ classId }) => {
     try {
       setLoading(true);
 
-      // Fetch analytics data (uses cache unless forceRefresh)
-      const analyticsResponse = await getClassAnalytics(classId, filters, forceRefresh);
-      setAnalyticsData(analyticsResponse.data);
+      // Use combined endpoint for better performance (single API call)
+      const response = await getClassAnalyticsCombined(classId, filters, forceRefresh);
 
-      // Fetch missed questions
-      const missedResponse = await getFrequentlyMissedQuestions(classId, null, forceRefresh);
-      setMissedQuestions(missedResponse.data);
-
-      // Fetch available topics
-      const topicsResponse = await getAvailableTopics(classId, forceRefresh);
-      setTopics(topicsResponse.data);
+      setAnalyticsData(response.data.analytics);
+      setMissedQuestions(response.data.missedQuestions);
+      setTopics(response.data.topics);
 
       if (forceRefresh) {
         message.success("Data refreshed successfully");

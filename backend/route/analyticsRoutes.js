@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getClassAnalytics,
+  getClassAnalyticsCombined,
   getStudentProgress,
   getFrequentlyMissedQuestions,
   getClassStudentsList,
@@ -21,6 +22,14 @@ router.use(protect);
  * @access  Private
  */
 router.get("/class/:classId", getClassAnalytics);
+
+/**
+ * @route   GET /api/analytics/class/:classId/combined
+ * @desc    Get all class analytics data in a single request (optimized)
+ * @query   startDate, endDate, topic, assessmentType
+ * @access  Private
+ */
+router.get("/class/:classId/combined", getClassAnalyticsCombined);
 
 /**
  * @route   GET /api/analytics/student/:studentId

@@ -1,4 +1,5 @@
 // backend/controller/analyticsController.js
+const mongoose = require("mongoose");
 const Assessment = require("../model/Assessment");
 const Student = require("../model/Student");
 const StudentAnswer = require("../model/StudentAnswer");
@@ -7,29 +8,32 @@ const Class = require("../model/Class");
 /**
  * FR-001: Get performance analytics for a class
  * Includes: class averages, topic mastery, frequently missed questions
+ * Optimized with lean queries and minimal field selection
  */
 exports.getClassAnalytics = async (req, res) => {
   try {
     const { classId } = req.params;
     const { startDate, endDate, topic, assessmentType } = req.query;
 
-    // Build date filter
-    const dateFilter = {};
+    // Build match stage for aggregation
+    const matchStage = {
+      classId: new mongoose.Types.ObjectId(classId),
+      processingStatus: "completed",
+    };
+
     if (startDate || endDate) {
-      dateFilter.submittedAt = {};
-      if (startDate) dateFilter.submittedAt.$gte = new Date(startDate);
-      if (endDate) dateFilter.submittedAt.$lte = new Date(endDate);
+      matchStage.submittedAt = {};
+      if (startDate) matchStage.submittedAt.$gte = new Date(startDate);
+      if (endDate) matchStage.submittedAt.$lte = new Date(endDate);
     }
 
-    // Get all student answers for this class
-    const answers = await StudentAnswer.find({
-      classId,
-      processingStatus: "completed",
-      ...dateFilter,
-    })
+    // Use aggregation for better performance - fetch only needed fields
+    const answers = await StudentAnswer.find(matchStage)
+      .select("assessmentId studentId submittedAt overallStats")
       .populate("assessmentId", "title activityType difficulty lessonPlanSnapshot")
-      .populate("studentId", "name studentId performanceStats")
-      .sort({ submittedAt: -1 });
+      .populate("studentId", "_id")
+      .sort({ submittedAt: -1 })
+      .lean();
 
     if (answers.length === 0) {
       return res.status(200).json({
@@ -358,6 +362,7 @@ exports.getStudentProgress = async (req, res) => {
 
 /**
  * FR-001: Get frequently missed questions for an assessment or class
+ * Optimized with lean queries and minimal field selection
  */
 exports.getFrequentlyMissedQuestions = async (req, res) => {
   try {
@@ -365,13 +370,13 @@ exports.getFrequentlyMissedQuestions = async (req, res) => {
 
     // Build query
     const query = { processingStatus: "completed" };
-    if (classId) query.classId = classId;
-    if (assessmentId) query.assessmentId = assessmentId;
+    if (classId) query.classId = new mongoose.Types.ObjectId(classId);
+    if (assessmentId) query.assessmentId = new mongoose.Types.ObjectId(assessmentId);
 
-    const answers = await StudentAnswer.find(query).populate(
-      "assessmentId",
-      "title generatedContent"
-    );
+    // Only select the answers array fields needed for analysis
+    const answers = await StudentAnswer.find(query)
+      .select("answers.questionNumber answers.questionText answers.grading")
+      .lean();
 
     if (answers.length === 0) {
       return res.status(200).json({
@@ -470,15 +475,16 @@ exports.getClassStudentsList = async (req, res) => {
 
 /**
  * FR-004: Get available topics for filtering
+ * Optimized with lean queries
  */
 exports.getAvailableTopics = async (req, res) => {
   try {
     const { classId } = req.params;
 
-    // Get all assessments for this class
-    const assessments = await Assessment.find({ classId }).select(
-      "lessonPlanSnapshot"
-    );
+    // Get all assessments for this class - lean for faster reads
+    const assessments = await Assessment.find({ classId })
+      .select("lessonPlanSnapshot.learningStandard.main lessonPlanSnapshot.contentStandard.main")
+      .lean();
 
     // Extract unique topics
     const topicsSet = new Set();
@@ -643,6 +649,232 @@ exports.generateReport = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to generate report",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * FR-001: Get all class analytics data in a single request
+ * Combines: class analytics, missed questions, and available topics
+ * This reduces round trips from 3 API calls to 1
+ */
+exports.getClassAnalyticsCombined = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { startDate, endDate, topic, assessmentType } = req.query;
+
+    const classObjectId = new mongoose.Types.ObjectId(classId);
+
+    // Build match stage
+    const matchStage = {
+      classId: classObjectId,
+      processingStatus: "completed",
+    };
+
+    if (startDate || endDate) {
+      matchStage.submittedAt = {};
+      if (startDate) matchStage.submittedAt.$gte = new Date(startDate);
+      if (endDate) matchStage.submittedAt.$lte = new Date(endDate);
+    }
+
+    // Run all queries in parallel
+    const [answers, missedQuestionsData, assessments] = await Promise.all([
+      // Query 1: Main analytics data
+      StudentAnswer.find(matchStage)
+        .select("assessmentId studentId submittedAt overallStats")
+        .populate("assessmentId", "title activityType difficulty lessonPlanSnapshot")
+        .populate("studentId", "_id")
+        .sort({ submittedAt: -1 })
+        .lean(),
+
+      // Query 2: Missed questions data
+      StudentAnswer.find({ classId: classObjectId, processingStatus: "completed" })
+        .select("answers.questionNumber answers.questionText answers.grading")
+        .lean(),
+
+      // Query 3: Topics data
+      Assessment.find({ classId: classObjectId })
+        .select("lessonPlanSnapshot.learningStandard.main lessonPlanSnapshot.contentStandard.main")
+        .lean(),
+    ]);
+
+    // Process analytics data
+    let filteredAnswers = answers;
+    if (topic) {
+      filteredAnswers = answers.filter((answer) => {
+        const snapshot = answer.assessmentId?.lessonPlanSnapshot;
+        return (
+          snapshot?.learningStandard?.main?.includes(topic) ||
+          snapshot?.contentStandard?.main?.includes(topic)
+        );
+      });
+    }
+
+    if (assessmentType) {
+      filteredAnswers = filteredAnswers.filter(
+        (answer) => answer.assessmentId?.activityType === assessmentType
+      );
+    }
+
+    // Calculate class average
+    const totalPercentage = filteredAnswers.reduce(
+      (sum, answer) => sum + (answer.overallStats?.percentage || 0),
+      0
+    );
+    const classAverage = filteredAnswers.length > 0
+      ? totalPercentage / filteredAnswers.length
+      : 0;
+
+    // Get unique students
+    const uniqueStudents = new Set(
+      filteredAnswers.map((a) => a.studentId?._id?.toString())
+    );
+
+    // Calculate topic mastery
+    const topicMap = {};
+    filteredAnswers.forEach((answer) => {
+      const snapshot = answer.assessmentId?.lessonPlanSnapshot;
+      const topicName =
+        snapshot?.learningStandard?.main ||
+        snapshot?.contentStandard?.main ||
+        "Uncategorized";
+
+      if (!topicMap[topicName]) {
+        topicMap[topicName] = { topic: topicName, totalScore: 0, count: 0 };
+      }
+      topicMap[topicName].totalScore += answer.overallStats?.percentage || 0;
+      topicMap[topicName].count += 1;
+    });
+
+    const topicMastery = Object.values(topicMap).map((t) => ({
+      topic: t.topic,
+      averageScore: t.count > 0 ? t.totalScore / t.count : 0,
+      assessmentCount: t.count,
+      masteryLevel:
+        t.totalScore / t.count >= 75 ? "High" :
+        t.totalScore / t.count >= 50 ? "Medium" : "Low",
+    }));
+
+    // Calculate trend data
+    const assessmentMap = {};
+    filteredAnswers.forEach((answer) => {
+      const assessmentId = answer.assessmentId?._id?.toString();
+      if (!assessmentId) return;
+
+      if (!assessmentMap[assessmentId]) {
+        assessmentMap[assessmentId] = {
+          assessmentTitle: answer.assessmentId?.title || "Assessment",
+          date: answer.submittedAt,
+          scores: [],
+        };
+      }
+      assessmentMap[assessmentId].scores.push(answer.overallStats?.percentage || 0);
+      if (new Date(answer.submittedAt) < new Date(assessmentMap[assessmentId].date)) {
+        assessmentMap[assessmentId].date = answer.submittedAt;
+      }
+    });
+
+    const trendData = Object.values(assessmentMap)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((assessment, index) => ({
+        assessmentNumber: index + 1,
+        assessmentTitle: assessment.assessmentTitle,
+        date: assessment.date,
+        averageScore: assessment.scores.length > 0
+          ? assessment.scores.reduce((sum, s) => sum + s, 0) / assessment.scores.length
+          : 0,
+        studentCount: assessment.scores.length,
+      }));
+
+    // Calculate difficulty breakdown
+    const difficultyMap = {
+      Beginner: { count: 0, totalScore: 0 },
+      Intermediate: { count: 0, totalScore: 0 },
+      Advanced: { count: 0, totalScore: 0 },
+    };
+
+    filteredAnswers.forEach((answer) => {
+      const difficulty = answer.assessmentId?.difficulty || "Intermediate";
+      if (difficultyMap[difficulty]) {
+        difficultyMap[difficulty].count += 1;
+        difficultyMap[difficulty].totalScore += answer.overallStats?.percentage || 0;
+      }
+    });
+
+    const difficultyBreakdown = Object.keys(difficultyMap).map((level) => ({
+      difficulty: level,
+      count: difficultyMap[level].count,
+      averageScore: difficultyMap[level].count > 0
+        ? difficultyMap[level].totalScore / difficultyMap[level].count
+        : 0,
+    }));
+
+    // Process missed questions
+    const questionMap = {};
+    missedQuestionsData.forEach((submission) => {
+      submission.answers?.forEach((answer) => {
+        const qNum = answer.questionNumber;
+        if (!questionMap[qNum]) {
+          questionMap[qNum] = {
+            questionNumber: qNum,
+            questionText: answer.questionText || `Question ${qNum}`,
+            totalAttempts: 0,
+            totalScore: 0,
+            maxScore: 0,
+            incorrectCount: 0,
+          };
+        }
+        questionMap[qNum].totalAttempts += 1;
+        const score = answer.grading?.finalScore || answer.grading?.aiScore?.score || 0;
+        const maxScore = answer.grading?.aiScore?.maxScore || 10;
+        questionMap[qNum].totalScore += score;
+        questionMap[qNum].maxScore = maxScore;
+        if (score < maxScore * 0.5) {
+          questionMap[qNum].incorrectCount += 1;
+        }
+      });
+    });
+
+    const missedQuestions = Object.values(questionMap)
+      .map((q) => ({
+        ...q,
+        averageScore: q.totalAttempts > 0 ? q.totalScore / q.totalAttempts : 0,
+        errorRate: q.totalAttempts > 0 ? (q.incorrectCount / q.totalAttempts) * 100 : 0,
+      }))
+      .filter((q) => q.errorRate > 30)
+      .sort((a, b) => b.errorRate - a.errorRate)
+      .slice(0, 10);
+
+    // Process topics
+    const topicsSet = new Set();
+    assessments.forEach((assessment) => {
+      const snapshot = assessment.lessonPlanSnapshot;
+      if (snapshot?.learningStandard?.main) topicsSet.add(snapshot.learningStandard.main);
+      if (snapshot?.contentStandard?.main) topicsSet.add(snapshot.contentStandard.main);
+    });
+    const topics = Array.from(topicsSet).filter(Boolean).sort();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        analytics: {
+          classAverage: Math.round(classAverage * 10) / 10,
+          totalAssessments: filteredAnswers.length,
+          totalStudents: uniqueStudents.size,
+          topicMastery,
+          trendData,
+          difficultyBreakdown,
+        },
+        missedQuestions,
+        topics,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getClassAnalyticsCombined:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch combined analytics",
       error: error.message,
     });
   }
