@@ -308,9 +308,13 @@ studentAnswerSchema.statics.getLowConfidenceSubmissions = function (
 
 // Pre-save middleware to update processing status
 studentAnswerSchema.pre("save", function (next) {
-  // Don't override if status was explicitly set to completed or error
-  // (these are terminal states set by the grading controller)
-  if (this.processingStatus === "completed" || this.processingStatus === "error") {
+  // Don't override if status was explicitly set to these states by controllers
+  // - completed: grading finished successfully
+  // - error: processing failed
+  // - processing_grading: OCR done, waiting for teacher to start grading
+  // - requires_review: needs manual review
+  const terminalStates = ["completed", "error", "processing_grading", "requires_review"];
+  if (terminalStates.includes(this.processingStatus)) {
     return next();
   }
 

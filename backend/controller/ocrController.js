@@ -429,13 +429,13 @@ const processSubmissionOCR = async (req, res) => {
       processedCount > 0 ? totalConfidence / processedCount : 0;
     submission.overallStats.processingTime = (Date.now() - startTime) / 1000;
 
-    // Update processing status
+    // Update processing status - set to processing_grading so teacher can review OCR text before grading
     const lowConfidence = submission.answers.some(
       (a) => a.ocrData && a.ocrData.confidence < 0.6
     );
     submission.processingStatus = lowConfidence
       ? "requires_review"
-      : "completed";
+      : "processing_grading";
 
     await submission.save();
 
@@ -643,9 +643,10 @@ const batchProcessOCR = async (req, res) => {
         const lowConfidence = submission.answers.some(
           (a) => a.ocrData && a.ocrData.confidence < 0.6
         );
+        // Set to processing_grading so teacher can review OCR text before grading
         submission.processingStatus = lowConfidence
           ? "requires_review"
-          : "completed";
+          : "processing_grading";
 
         await submission.save();
 
