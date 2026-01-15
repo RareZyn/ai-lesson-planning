@@ -328,7 +328,8 @@ const AssessmentLesson = ({
                   showSearch
                   disabled={loading}
                   filterOption={(input, option) =>
-                    option.children.props.children[0].props.children
+                    option.children
+                      ?.toString()
                       .toLowerCase()
                       .indexOf(input.toLowerCase()) >= 0
                   }
@@ -348,15 +349,7 @@ const AssessmentLesson = ({
                           value={type.value}
                           style={{ paddingLeft: "20px" }}
                         >
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {type.label}
-                            </div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              {type.description} • {type.timeRange} •{" "}
-                              {type.questionRange}
-                            </Text>
-                          </div>
+                          {type.label}
                         </Option>
                       ))}
                       <Option

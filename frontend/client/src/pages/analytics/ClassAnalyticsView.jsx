@@ -422,25 +422,23 @@ const ClassAnalyticsView = ({ classId }) => {
               analyticsData.difficultyBreakdown.length > 0 ? (
                 <div style={{ width: "100%", height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analyticsData.difficultyBreakdown}
-                        dataKey="count"
-                        nameKey="difficulty"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={(entry) => `${entry.difficulty}: ${entry.count}`}
-                      >
+                    <BarChart
+                      data={analyticsData.difficultyBreakdown}
+                      margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="difficulty" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" name="Count">
                         {analyticsData.difficultyBreakdown.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
                           />
                         ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
