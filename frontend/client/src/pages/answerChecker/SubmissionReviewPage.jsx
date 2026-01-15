@@ -475,6 +475,28 @@ const SubmissionReviewPage = () => {
         </Card>
       )}
 
+      {/* Zero Score Warning */}
+      {submission.processingStatus === "completed" &&
+        (submission.overallStats?.totalScore === 0 ||
+          submission.overallStats?.percentage === 0) && (
+          <Alert variant="warning" className="mb-4">
+            <WarningOutlined className="me-2" />
+            <strong>Zero Score Detected:</strong> The student received a score of 0%.
+            This may indicate one of the following:
+            <ul className="mb-0 mt-2">
+              <li>The uploaded answer sheet may belong to a <strong>different assessment</strong>.</li>
+              <li>The student's answers may not match the expected answer format.</li>
+              <li>The OCR may have failed to extract the text correctly - please review the extracted text above.</li>
+              <li>The student may have genuinely answered all questions incorrectly.</li>
+            </ul>
+            <div className="mt-2">
+              <small className="text-muted">
+                Please verify that the correct assessment was selected for this submission.
+              </small>
+            </div>
+          </Alert>
+        )}
+
       {/* SPM Answer Sheet - Show once at the top */}
       {submission.answerSheetImage && (() => {
         const isPdf = submission.answerSheetImage.startsWith("data:application/pdf");

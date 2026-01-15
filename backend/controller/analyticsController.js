@@ -113,34 +113,40 @@ exports.getClassAnalytics = async (req, res) => {
           : "Low",
     }));
 
-    // Calculate trend data (by month)
-    const trendMap = {};
+    // Calculate trend data (by assessment - sorted by date)
+    // Group answers by assessment, then calculate class average per assessment
+    const assessmentMap = {};
     filteredAnswers.forEach((answer) => {
-      const month = new Date(answer.submittedAt).toLocaleDateString("en-MY", {
-        year: "numeric",
-        month: "short",
-      });
+      const assessmentId = answer.assessmentId?._id?.toString();
+      if (!assessmentId) return;
 
-      if (!trendMap[month]) {
-        trendMap[month] = {
-          month,
-          averageScore: 0,
-          totalScore: 0,
-          count: 0,
+      if (!assessmentMap[assessmentId]) {
+        assessmentMap[assessmentId] = {
+          assessmentId,
+          assessmentTitle: answer.assessmentId?.title || "Assessment",
+          date: answer.submittedAt,
+          scores: [],
         };
       }
 
-      trendMap[month].totalScore += answer.overallStats?.percentage || 0;
-      trendMap[month].count += 1;
+      assessmentMap[assessmentId].scores.push(answer.overallStats?.percentage || 0);
+      // Use earliest submission date for the assessment
+      if (new Date(answer.submittedAt) < new Date(assessmentMap[assessmentId].date)) {
+        assessmentMap[assessmentId].date = answer.submittedAt;
+      }
     });
 
-    const trendData = Object.values(trendMap)
-      .map((trend) => ({
-        month: trend.month,
-        averageScore: trend.count > 0 ? trend.totalScore / trend.count : 0,
-        assessmentCount: trend.count,
-      }))
-      .sort((a, b) => new Date(a.month) - new Date(b.month));
+    const trendData = Object.values(assessmentMap)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((assessment, index) => ({
+        assessmentNumber: index + 1,
+        assessmentTitle: assessment.assessmentTitle,
+        date: assessment.date,
+        averageScore: assessment.scores.length > 0
+          ? assessment.scores.reduce((sum, s) => sum + s, 0) / assessment.scores.length
+          : 0,
+        studentCount: assessment.scores.length,
+      }));
 
     // Calculate difficulty breakdown
     const difficultyMap = {

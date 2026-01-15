@@ -35,6 +35,26 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import dayjs from "dayjs";
 
+// Custom tooltip for performance trend chart
+const PerformanceTrendTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-2 border rounded shadow-sm">
+        <p className="mb-1">
+          <strong>{data.assessmentTitle}</strong>
+        </p>
+        <p className="mb-1">Class Average: {data.averageScore.toFixed(1)}%</p>
+        <p className="mb-1">Students: {data.studentCount}</p>
+        <p className="mb-0 text-muted">
+          {dayjs(data.date).format("DD MMM YYYY")}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
@@ -350,20 +370,36 @@ const ClassAnalyticsView = ({ classId }) => {
             <Card.Body>
               <h5 className="mb-3">Performance Trend Over Time</h5>
               {analyticsData.trendData && analyticsData.trendData.length > 0 ? (
-                <div style={{ width: "100%", height: 300 }}>
+                <div style={{ width: "100%", height: 350 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={analyticsData.trendData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
+                      <XAxis
+                        dataKey="assessmentNumber"
+                        label={{
+                          value: "Assessment Number",
+                          position: "insideBottom",
+                          offset: -5,
+                        }}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        label={{
+                          value: "Class Average (%)",
+                          angle: -90,
+                          position: "insideLeft",
+                        }}
+                      />
+                      <Tooltip content={<PerformanceTrendTooltip />} />
                       <Legend />
                       <Line
                         type="monotone"
                         dataKey="averageScore"
                         stroke="#8884d8"
                         strokeWidth={2}
-                        name="Average Score (%)"
+                        name="Class Average (%)"
+                        dot={{ r: 5 }}
+                        activeDot={{ r: 7 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
