@@ -26,6 +26,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -96,12 +97,13 @@
 }
 
 .submitButton {
-  background-color: #6a5acd; /* A nice purple for 'magic' */
-  color: white;
+  background-color: #ffffff;
+  border: 1px solid #faad14;
+  color: #faad14;
 }
 
 .submitButton:hover {
-  background-color: #5548a3;
+  background-color: #fff7e6;
 }
 
 .submitButton:disabled {

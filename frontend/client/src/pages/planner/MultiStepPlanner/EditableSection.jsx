@@ -40,11 +40,11 @@ const EditableSection = ({
           disabled={isLoading}
         />
         <Button
-          type="primary"
           icon={<SendOutlined />}
           onClick={handleEnhanceSubmit}
           loading={isLoading}
           disabled={!prompt.trim()}
+          className={styles.enhanceSendButton}
         />
       </Space.Compact>
     </div>
@@ -74,11 +74,16 @@ const EditableSection = ({
             type="text"
             size="small"
             icon={<ExperimentOutlined />}
+            className={styles.enhanceButton}
             style={{
-              color: '#4f46e5',
-              fontWeight: 500,
-              background: isPopoverOpen ? '#eef2ff' : 'transparent',
-              borderRadius: '6px'
+              position: 'relative',
+              top: 'auto',
+              right: 'auto',
+              width: 'auto',
+              height: 'auto',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '13px'
             }}
           >
             Enhance

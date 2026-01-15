@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { message } from "antd";
 import styles from "./MultiStepPlanner.module.css";
-import { getSyllabuses, getSyllabusById } from "../../../services/adminService";
+// import { getSyllabuses, getSyllabusById } from "../../../services/adminService"; // Moved to parent
 import { getMaterials } from "../../../services/materialService"; // Import material service
 
 // Import all the modal components
@@ -12,62 +12,28 @@ import TextBookModal from "../../../components/Modal/LessonBasedAssessment/Textb
 // NEW: Import SPM Exam modal
 import SPMExamModal from "../../../components/Modal/LessonBasedAssessment/SPMExamLessonModal";
 
-const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
-  const [syllabusItems, setSyllabusItems] = useState([]);
+const Step2_LessonDetails = ({ data, updateData, onNext, onPrev, syllabusItems, isSyllabusLoading, syllabusError }) => {
+  // const [syllabusItems, setSyllabusItems] = useState([]); // Removed internal state
   const [userMaterials, setUserMaterials] = useState([]); // State for materials
   const [sourceType, setSourceType] = useState(data.materialId ? "material" : "syllabus"); // Track source type
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Sync parent loading/error state if needed for local UI
+  useEffect(() => {
+    if (sourceType === 'syllabus') {
+      if (syllabusError) setError(syllabusError);
+      else setError(null);
+    }
+  }, [syllabusError, sourceType]);
 
 
   // State for modal management
   const [activeModal, setActiveModal] = useState(null);
   const [hasConfiguredActivity, setHasConfiguredActivity] = useState(false);
 
-  useEffect(() => {
-    if (!data.grade) {
-      setSyllabusItems([]);
-      return;
-    }
-
-    const fetchSyllabusData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        console.log(`Fetching Syllabuses for grade: "${data.grade}"`);
-        const allSyllabuses = await getSyllabuses();
-
-        const matchingSyllabus = allSyllabuses.find(s => s.grade === data.grade);
-
-        if (matchingSyllabus) {
-          const fullSyllabus = await getSyllabusById(matchingSyllabus.id);
-          const items = fullSyllabus.data || [];
-
-          if (items.length > 0) {
-            setSyllabusItems(items);
-          } else {
-            setSyllabusItems([]);
-            if (sourceType === 'syllabus') setError(`Syllabus found for ${data.grade} but it has no no items/topics.`);
-          }
-
-        } else {
-          setSyllabusItems([]);
-          if (sourceType === 'syllabus') setError(`No syllabus found for ${data.grade}. Please upload one in Admin.`);
-        }
-
-      } catch (err) {
-        console.error("Failed to fetch Syllabus:", err);
-        setError("Failed to load syllabus data.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (sourceType === 'syllabus') {
-      fetchSyllabusData();
-    }
-  }, [data.grade, sourceType]);
+  // REMOVED INTERNAL FETCHING LOGIC - Handled by parent
+  // useEffect(() => { ... }, [data.grade, sourceType]);
 
   // Fetch materials if source is material
   useEffect(() => {
@@ -325,18 +291,18 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
                   updateData("specificTopic", selectedItem[topicKey]);
                 }
               }}
-              disabled={isLoading}
+              disabled={isSyllabusLoading || isLoading}
               required
             >
               <option value="" disabled>
                 -- Select Topic --
               </option>
-              {isLoading && <option disabled>Loading syllabus...</option>}
+              {isSyllabusLoading && <option disabled>Loading syllabus...</option>}
               {error && <option disabled>Error: {error}</option>}
-              {!isLoading && !error && syllabusItems.length === 0 && (
+              {!isSyllabusLoading && !error && syllabusItems.length === 0 && (
                 <option disabled>No topics available for {data.grade}</option>
               )}
-              {!isLoading &&
+              {!isSyllabusLoading &&
                 !error &&
                 syllabusItems.map((item, index) => (
                   <option key={index} value={item[topicKey]}>
@@ -349,7 +315,7 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
               {data.grade
                 ? `Looking for syllabus topics in ${data.grade}`
                 : "Please select a class first"}
-              {isLoading && " - Loading..."}
+              {isSyllabusLoading && " - Loading..."}
             </small>
           </div>
         ) : (
@@ -389,25 +355,56 @@ const Step2_LessonDetails = ({ data, updateData, onNext, onPrev }) => {
         {data.sow && Object.keys(data.sow).length > 0 && (
           <div className={`${styles.infoBox} ${styles.infoBoxNeutral}`}>
             <strong style={{ display: "block", marginBottom: "8px", color: "#333" }}>Syllabus Content:</strong>
-            <div style={{ display: "grid", gap: "8px" }}>
+            <div style={{ display: "grid", gap: "12px" }}>
               {Object.entries(data.sow)
-                .filter(([key]) => key !== topicKey && key !== "id" && key !== "_id") // Exclude title and IDs
+                .filter(([key]) => key !== topicKey && key !== "id" && key !== "_id" && key !== "key")
                 .map(([key, value]) => {
-                  let displayValue = value;
-                  if (typeof value === 'object' && value !== null) {
-                    displayValue = JSON.stringify(value, null, 2);
-                  }
+
+                  // Helper to render complex values recursively
+                  const renderValue = (val) => {
+                    if (val === null || val === undefined) return "-";
+
+                    if (Array.isArray(val)) {
+                      return (
+                        <ul style={{ margin: "4px 0 4px 16px", padding: 0 }}>
+                          {val.map((item, i) => (
+                            <li key={i}>{renderValue(item)}</li>
+                          ))}
+                        </ul>
+                      );
+                    }
+
+                    if (typeof val === 'object') {
+                      return (
+                        <div style={{ marginLeft: "8px", borderLeft: "2px solid #eee", paddingLeft: "8px" }}>
+                          {Object.entries(val).map(([subKey, subVal]) => (
+                            <div key={subKey} style={{ marginBottom: "4px" }}>
+                              <span style={{ fontWeight: "600", color: "#666", fontSize: "0.9em" }}>
+                                {subKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                              </span>{" "}
+                              <span style={{ color: "#333" }}>{renderValue(subVal)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return <span>{String(val)}</span>;
+                  };
+
                   return (
-                    <div key={key} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "10px" }}>
-                      <span style={{ fontWeight: "600", color: "#555", textTransform: "capitalize" }}>
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
-                      </span>
-                      <span style={{ color: "#333", whiteSpace: "pre-wrap" }}>{displayValue}</span>
+                    <div key={key} style={{ borderBottom: "1px dashed #eee", paddingBottom: "8px" }}>
+                      <div style={{ fontWeight: "700", color: "#444", textTransform: "capitalize", marginBottom: "4px" }}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </div>
+                      <div style={{ color: "#333", lineHeight: "1.5" }}>
+                        {renderValue(value)}
+                      </div>
                     </div>
                   );
                 })
               }
-              {Object.keys(data.sow).filter(key => key !== topicKey && key !== "id" && key !== "_id").length === 0 && (
+              {Object.keys(data.sow).filter(key => key !== topicKey && key !== "id" && key !== "_id" && key !== "key").length === 0 && (
                 <span style={{ color: "#888", fontStyle: "italic" }}>No additional content details available.</span>
               )}
             </div>

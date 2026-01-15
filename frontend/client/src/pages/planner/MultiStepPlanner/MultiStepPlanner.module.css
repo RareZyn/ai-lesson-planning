@@ -527,12 +527,13 @@
 }
 
 .generateButton {
-  background-color: #27ae60;
-  color: white;
+  background-color: #ffffff;
+  border: 1px solid #faad14;
+  color: #faad14;
 }
 
 .generateButton:hover:not(:disabled) {
-  background-color: #229954;
+  background-color: #fff7e6;
 }
 
 .primaryButton:disabled,
@@ -670,9 +671,9 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background-color: #f0e6ff;
-  color: #6a5acd;
-  border: 1px solid #d3bfff;
+  background-color: #ffffff;
+  color: #faad14;
+  border: 1px solid #ffe58f;
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -686,8 +687,20 @@
 }
 
 .enhanceButton:hover {
-  background-color: #6a5acd;
+  background-color: #faad14;
   color: white;
   transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(106, 90, 205, 0.4);
+  box-shadow: 0 2px 8px rgba(250, 173, 20, 0.4);
+}
+
+.enhanceSendButton {
+  background-color: #ffffff;
+  border: 1px solid #faad14;
+  color: #faad14;
+}
+
+.enhanceSendButton:hover:not(:disabled) {
+  background-color: #fff7e6;
+  color: #faad14;
+  border-color: #faad14;
 }

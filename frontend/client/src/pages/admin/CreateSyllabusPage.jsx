@@ -292,16 +292,10 @@ const CreateSyllabusPage = () => {
 
             <div className={styles.contentContainer}>
                 {extracting && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        zIndex: 9999,
-                    }}>
-                        <LoadingSpinner tip="Extracting Data with AI... Please wait, this may take a moment." />
-                    </div>
+                    <LoadingSpinner
+                        fullscreen={true}
+                        tip="Extracting Data with AI... Please wait, this may take a moment."
+                    />
                 )}
                 <div className={styles.card}>
                     {/* STEP 0: DETAILS & SCHEMA */}
@@ -411,7 +405,7 @@ const CreateSyllabusPage = () => {
                                     type="primary"
                                     icon={<ExperimentOutlined />}
                                     size="large"
-                                    style={{ marginTop: 16, background: '#4f46e5', borderColor: '#4f46e5' }}
+                                    className={styles.aiExtractButton}
                                     onClick={handleExtractData}
                                     loading={extracting}
                                     disabled={!aiFile}

@@ -89,7 +89,7 @@ router.route("/syllabuses")
   .post(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), uploadSyllabus);
 
 router.route("/syllabuses/:id")
-  .get(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), getSyllabusById)
+  .get(checkPermission(PERMISSIONS.LESSON_CREATE), getSyllabusById)
   .put(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), upload.single('file'), updateSyllabus)
   .delete(checkPermission(PERMISSIONS.SCHOOL_SETTINGS), deleteSyllabus);
 
