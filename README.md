@@ -182,9 +182,81 @@ REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
 ## Running the Application
 
-### Development Mode
+### Option 1: Docker (Recommended for Production)
 
-**Option 1: Run Both Servers Concurrently (Recommended)**
+The easiest way to run the application is using Docker. This containerizes both the frontend and backend along with MongoDB.
+
+#### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (includes Docker and Docker Compose)
+
+#### Quick Start with Docker Compose
+
+```bash
+# 1. Clone the repository (if not already done)
+git clone <your-repository-url>
+cd ai-lesson-planning
+
+# 2. Make sure backend/.env is configured (see Environment Variables section)
+
+# 3. Build and start all services
+docker-compose up --build
+
+# 4. Access the application at http://localhost:5000
+```
+
+The application will be available at:
+- **Application**: http://localhost:5000
+- **Health Check**: http://localhost:5000/api/health
+- **MongoDB**: localhost:27017 (accessible from host)
+
+To stop the application:
+```bash
+# Press Ctrl+C, then run:
+docker-compose down
+
+# To remove volumes (database data) as well:
+docker-compose down -v
+```
+
+#### Build Docker Image Only
+
+If you want to build just the application image without MongoDB:
+
+```bash
+# Build the image
+docker build -t ai-lesson-planning:latest .
+
+# Run the container (requires external MongoDB)
+docker run -p 5000:5000 \
+  --env-file backend/.env \
+  -e MONGO_URI=your_mongodb_connection_string \
+  ai-lesson-planning:latest
+
+# Access at http://localhost:5000
+```
+
+#### Docker Commands Reference
+
+```bash
+# View running containers
+docker ps
+
+# View logs
+docker-compose logs -f app
+
+# Restart services
+docker-compose restart
+
+# Execute commands in running container
+docker exec -it ai-lesson-planning-app sh
+
+# Remove all containers and images
+docker-compose down --rmi all
+```
+
+### Option 2: Development Mode (Without Docker)
+
+**Run Both Servers Concurrently (Recommended)**
 
 ```bash
 npm run dev
@@ -192,7 +264,7 @@ npm run dev
 
 This will start both the backend (port 5000) and frontend (port 3000) simultaneously.
 
-**Option 2: Run Separately**
+**Run Separately**
 
 ```bash
 # Terminal 1 - Backend
@@ -204,11 +276,16 @@ npm run client
 
 ### Access the Application
 
+**With Docker:**
+- **Application**: http://localhost:5000
+- **Health Check**: http://localhost:5000/api/health
+
+**Development Mode:**
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000/api
 - **Health Check**: http://localhost:5000/api/health
 
-### Production Build
+### Option 3: Production Build (Without Docker)
 
 ```bash
 # Build frontend
@@ -217,7 +294,7 @@ npm run build
 
 # Start backend (serves built frontend)
 cd ../../
-npm start
+NODE_ENV=production npm start
 ```
 
 ## First Time Setup
@@ -386,6 +463,55 @@ See [CLAUDE.md](./CLAUDE.md) for complete API documentation.
 
 ## Troubleshooting
 
+### Docker-Related Issues
+
+#### Docker Build Fails
+
+**Problem**: `ERROR [internal] load metadata for docker.io/library/node:18-alpine`
+
+**Solution**:
+1. Check your internet connection
+2. Ensure Docker Desktop is running
+3. Try pulling the base image manually: `docker pull node:18-alpine`
+4. Check Docker Hub status: https://status.docker.com/
+
+#### Container Exits Immediately
+
+**Problem**: Container starts then immediately stops
+
+**Solution**:
+```bash
+# Check container logs
+docker-compose logs app
+
+# Common issues:
+# 1. Missing .env file - ensure backend/.env exists
+# 2. Invalid MONGO_URI - check database connection string
+# 3. Port already in use - stop other services using port 5000
+```
+
+#### Cannot Connect to MongoDB in Docker
+
+**Problem**: `MongoNetworkError: failed to connect to server`
+
+**Solution**:
+1. Ensure MongoDB container is running: `docker-compose ps`
+2. Check MongoDB health: `docker-compose logs mongodb`
+3. Wait for MongoDB to be fully ready (can take 10-30 seconds)
+4. Verify MONGO_URI in docker-compose.yml matches database credentials
+
+#### Docker Volume Permission Issues
+
+**Problem**: Permission denied when accessing mounted volumes
+
+**Solution**:
+```bash
+# On Linux/macOS, fix permissions
+sudo chown -R $USER:$USER ./backend/uploads
+
+# On Windows, run Docker Desktop as administrator
+```
+
 ### MongoDB Connection Error
 
 **Problem**: `MongoServerError: bad auth Authentication failed`
@@ -395,6 +521,7 @@ See [CLAUDE.md](./CLAUDE.md) for complete API documentation.
 2. Verify database username and password are correct
 3. Ensure IP address is whitelisted in MongoDB Atlas
 4. Check if database user has correct permissions
+5. If using Docker Compose, ensure MongoDB container is healthy
 
 ### Firebase Authentication Error
 

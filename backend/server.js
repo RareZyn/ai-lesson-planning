@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -94,14 +95,36 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, 'public');
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
+  // Serve static files
+  app.use(express.static(frontendBuildPath));
+
+  // Handle React routing - serve index.html for any unknown routes
+  // Using a more specific catch-all pattern for Express 5.x compatibility
+  app.use((req, res, next) => {
+    // Skip API routes
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(path.join(frontendBuildPath, 'index.html'));
+    } else {
+      // 404 for API routes
+      res.status(404).json({
+        success: false,
+        message: `Route ${req.originalUrl} not found`,
+      });
+    }
   });
-});
+} else {
+  // 404 handler for development
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `Route ${req.originalUrl} not found`,
+    });
+  });
+}
 
 // Global error handler
 app.use((err, req, res, next) => {
