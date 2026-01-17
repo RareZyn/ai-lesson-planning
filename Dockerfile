@@ -1,10 +1,4 @@
 # Repository: https://github.com/RareZyn/ai-lesson-planning
-# Multi-stage Dockerfile for AI Lesson Planning System
-# This Dockerfile builds both React frontend and Node.js backend in a single container
-#
-# WIF3005 - Framework-based Software Design and Development
-# Alternative Assessment Jan 2026
-#
 # Build command: docker build -t ai-lesson-planning:latest .
 # Run command: docker run -p 5000:5000 --env-file backend/.env ai-lesson-planning:latest
 
