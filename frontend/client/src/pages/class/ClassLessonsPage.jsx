@@ -13,6 +13,7 @@ import styles from "./ClassLessonsPage.module.css";
 import { ArrowBack, Edit, Delete } from "@mui/icons-material";
 import { FaPlus } from "react-icons/fa";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { useBreadcrumb } from "../../context/BreadcrumbContext";
 
 // Custom Modal Component (Same as PlannerPage)
 const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
@@ -43,6 +44,7 @@ const CustomModal = ({ isVisible, onClose, onOk, title, children }) => {
 const ClassLessonsPage = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
+  const { setCustomBreadcrumbs } = useBreadcrumb();
 
   const [lessons, setLessons] = useState([]);
   const [classInfo, setClassInfo] = useState(null);
@@ -79,6 +81,18 @@ const ClassLessonsPage = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Set Breadcrumbs
+  useEffect(() => {
+    if (classInfo) {
+      setCustomBreadcrumbs([
+        { label: "Home", link: "/app" },
+        { label: "My Classes", link: "/app/classes" }, // Changed 'Classes' to 'My Classes' to match possible menu name? Or just 'Classes'
+        { label: classInfo.className, link: null },
+      ]);
+    }
+    return () => setCustomBreadcrumbs(null);
+  }, [classInfo, setCustomBreadcrumbs]);
 
   // Handler to open the edit modal
   const handleEdit = () => {

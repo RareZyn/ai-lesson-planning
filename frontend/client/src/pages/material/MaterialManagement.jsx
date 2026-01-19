@@ -13,6 +13,7 @@ import { Modal, message, Progress, Dropdown, Menu, Button } from "antd";
 import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons";
 import "./MaterialManagement.css";
 import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialById } from "../../services/materialService";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import CommonTable from "../../components/common/CommonTable";
 
 
@@ -20,6 +21,7 @@ const MaterialManagement = () => {
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isOpeningMaterial, setIsOpeningMaterial] = useState(false);  // Global spinner state
   const [uploadType, setUploadType] = useState("file");
   const [selectedFile, setSelectedFile] = useState(null);
   const [linkUrl, setLinkUrl] = useState("");
@@ -89,7 +91,7 @@ const MaterialManagement = () => {
     }
 
     // For Files (PDF/Doc)
-    setIsLoading(true);
+    setIsOpeningMaterial(true);
     try {
       const response = await getMaterialById(material._id);
       if (response.success && response.data.originalFileUrl) {
@@ -121,7 +123,7 @@ const MaterialManagement = () => {
       console.error(error);
       message.error("Failed to load material");
     } finally {
-      setIsLoading(false);
+      setIsOpeningMaterial(false);
     }
   };
 
@@ -289,6 +291,12 @@ const MaterialManagement = () => {
 
   return (
     <div className="material-management-container">
+      {isOpeningMaterial && (
+        <LoadingSpinner
+          fullscreen={true}
+          tip="Opening material... Please wait."
+        />
+      )}
       <div className="material-header">
         <h2>Material Management</h2>
         <button
