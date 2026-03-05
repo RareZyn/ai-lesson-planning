@@ -690,12 +690,20 @@ exports.extractSyllabusData = async (req, res) => {
     try {
       jsonResponse = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse Gemini response:", responseText);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to parse AI response.",
-        rawResponse: responseText
-      });
+      // Response may be truncated due to output token limits — attempt repair
+      try {
+        const { jsonrepair } = require("jsonrepair");
+        const repaired = jsonrepair(responseText);
+        jsonResponse = JSON.parse(repaired);
+        console.warn("Gemini response was truncated — repaired with jsonrepair.");
+      } catch (repairError) {
+        console.error("Failed to parse Gemini response:", responseText);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to parse AI response. The document may be too large — try uploading fewer pages at a time.",
+          rawResponse: responseText
+        });
+      }
     }
 
     return res.status(200).json({
