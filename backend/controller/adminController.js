@@ -639,11 +639,17 @@ exports.extractSyllabusData = async (req, res) => {
 
     console.log("File received:", req.file.originalname, req.file.mimetype, req.file.size);
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ success: false, message: "Server misconfiguration: API Key missing" });
+    const userWithKey = await User.findById(req.user.id).select("+geminiApiKey");
+    const geminiApiKey = userWithKey ? userWithKey.getGeminiApiKey() : null;
+    if (!geminiApiKey) {
+      return res.status(400).json({
+        success: false,
+        message: "No Gemini API key found. Please add your API key in your profile settings.",
+      });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const userGenAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = userGenAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `
       Analyze this uploaded syllabus document (PDF/Image).
