@@ -89,7 +89,7 @@ const extractTextFromImage = async (req, res) => {
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Prepare prompt for OCR
     const prompt = isPdf
@@ -184,7 +184,7 @@ Return the extracted text in this JSON format:
           fileSize: `${sizeInMB.toFixed(2)} MB`,
           fileType: isPdf ? "PDF" : "Image",
           mimeType: mimeType,
-          model: "gemini-2.0-flash-exp",
+          model: "gemini-2.0-flash",
         },
       },
       message: "Text extracted successfully",
@@ -260,7 +260,7 @@ const processSubmissionOCR = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const results = [];
     let totalConfidence = 0;
@@ -525,7 +525,7 @@ const batchProcessOCR = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const results = {
       successful: [],
@@ -776,7 +776,7 @@ const retryFailedOCR = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const results = [];
 
@@ -961,7 +961,7 @@ const processSpmAnswerSheet = async (req, res) => {
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Specialized prompt for SPM answer sheet - HYBRID DETECTION (UPDATED FORMAT)
     const prompt = `You are analyzing an SPM Paper 1 answer sheet with 40 questions.
@@ -1153,7 +1153,7 @@ Return a JSON object with this EXACT structure:
         metadata: {
           ...detectionResult.metadata,
           processingTime: `${processingTime}s`,
-          model: "gemini-2.0-flash-exp",
+          model: "gemini-2.0-flash",
         },
       },
       message: "Answer sheet processed successfully",
